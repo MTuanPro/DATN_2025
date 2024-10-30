@@ -158,12 +158,12 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
      */
     public function nhapDiem(Request $request)
     {
-        // Validate
+        // Validate - cho phép diem_so null để xóa điểm
         $validated = $request->validate([
             'lop_hoc_phan_sinh_vien_id' => 'required|exists:lop_hoc_phan_sinh_vien,id',
             'cau_hinh_id' => 'required|exists:cau_hinh_dau_diem,id',
             'cot_diem' => 'required|integer|min:1',
-            'diem_so' => 'required|numeric|min:0|max:10',
+            'diem_so' => 'nullable|numeric|min:0|max:10', // Cho phép null để xóa điểm
             'ghi_chu' => 'nullable|string|max:500',
         ]);
 
@@ -209,6 +209,25 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         try {
             DB::beginTransaction();
 
+            // Nếu diem_so là null hoặc rỗng, xóa điểm
+            if ($validated['diem_so'] === null || $validated['diem_so'] === '') {
+                $deleted = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $validated['lop_hoc_phan_sinh_vien_id'])
+                    ->where('cau_hinh_id', $validated['cau_hinh_id'])
+                    ->where('cot_diem', $validated['cot_diem'])
+                    ->delete();
+
+                // Tự động tính lại điểm tổng
+                $this->diemService->tinhDiemTong($validated['lop_hoc_phan_sinh_vien_id']);
+
+                DB::commit();
+
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã xóa điểm thành công',
+                    'deleted' => $deleted > 0
+                ]);
+            }
+
             // Insert hoặc Update điểm
             $nhapDiem = NhapDiem::updateOrCreate(
                 [
@@ -240,6 +259,38 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ], 500);
         }
+    }
+
+    /**
+     * Lấy điểm TK của sinh viên (AJAX) - bao gồm điểm tạm thời
+     */
+    public function getDiemTK(Request $request)
+    {
+        $validated = $request->validate([
+            'lop_hoc_phan_sinh_vien_id' => 'required|exists:lop_hoc_phan_sinh_vien,id',
+        ]);
+
+        // Reload lại để lấy dữ liệu mới nhất
+        $lhpsv = LopHocPhanSinhVien::with('ketQuaHocTap')->find($validated['lop_hoc_phan_sinh_vien_id']);
+        $ketQua = $lhpsv->ketQuaHocTap;
+
+        // Nếu có điểm chính thức thì trả về
+        if ($ketQua && $ketQua->diem_he_10 !== null) {
+            return response()->json([
+                'success' => true,
+                'diem_tk' => number_format($ketQua->diem_he_10, 2),
+                'is_tam_thoi' => false
+            ]);
+        }
+
+        // Nếu chưa có điểm chính thức, tính điểm tạm thời
+        $diemTamThoi = $this->diemService->tinhDiemTKTamThoi($validated['lop_hoc_phan_sinh_vien_id']);
+
+        return response()->json([
+            'success' => true,
+            'diem_tk' => $diemTamThoi !== null ? number_format($diemTamThoi, 2) : '-',
+            'is_tam_thoi' => $diemTamThoi !== null
+        ]);
     }
 
     /**

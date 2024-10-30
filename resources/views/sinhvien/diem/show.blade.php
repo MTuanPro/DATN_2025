@@ -88,9 +88,18 @@
                                 @endphp
                                 @foreach ($lhpsv->lopHocPhan->cauHinhDauDiem as $index => $cauHinh)
                                     @php
-                                        $diem = $diemThanhPhan->get($cauHinh->id)?->first();
-                                        $diemGoc = $diem ? $diem->diem : null;
-                                        $diemSauTrongSo = $diemGoc ? ($diemGoc * $cauHinh->trong_so) / 100 : null;
+                                        // Lấy điểm của đầu điểm này (có thể có nhiều cột)
+                                        $diems = $diemThanhPhan->get($cauHinh->id);
+                                        
+                                        // Tính trung bình nếu có nhiều cột
+                                        if ($diems && $diems->count() > 0) {
+                                            $diemGoc = $diems->avg('diem_so');
+                                        } else {
+                                            $diemGoc = null;
+                                        }
+                                        
+                                        // Tính điểm sau trọng số
+                                        $diemSauTrongSo = $diemGoc ? ($diemGoc * $cauHinh->ty_le) / 100 : null;
 
                                         if ($diemSauTrongSo) {
                                             $tongDiem += $diemSauTrongSo;
@@ -99,12 +108,9 @@
                                     <tr>
                                         <td class="text-center">{{ $index + 1 }}</td>
                                         <td>
-                                            <strong>{{ $cauHinh->loai_diem }}</strong>
-                                            @if ($cauHinh->ghi_chu)
-                                                <br><small class="text-muted">{{ $cauHinh->ghi_chu }}</small>
-                                            @endif
+                                            <strong>{{ $cauHinh->ten_dau_diem }}</strong>
                                         </td>
-                                        <td class="text-center">{{ $cauHinh->trong_so }}%</td>
+                                        <td class="text-center">{{ $cauHinh->ty_le }}%</td>
                                         <td class="text-center">
                                             @if ($diemGoc !== null)
                                                 <strong class="text-primary">{{ number_format($diemGoc, 2) }}</strong>

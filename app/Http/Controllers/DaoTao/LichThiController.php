@@ -14,15 +14,18 @@ use App\Models\DiemDanh;
 use App\Models\CauHinhDauDiem;
 use App\Models\NhapDiem;
 use App\Models\LichHocChiTiet;
+use App\Models\LichThiSinhVien;
 use App\Http\Requests\StoreLichThiRequest;
 use App\Http\Requests\UpdateLichThiRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
+use App\Traits\ImportHelper;
 
 class LichThiController extends Controller
 {
+    use ImportHelper;
     /**
      * Hiển thị danh sách lịch thi
      */
@@ -514,8 +517,8 @@ class LichThiController extends Controller
             // Nếu có lỗi thì rollback và trả về
             if (!empty($errorMessages)) {
                 DB::rollBack();
-                \Log::info('Errors array:', $errors);
-                \Log::info('Error messages:', $errorMessages);
+                Log::info('Errors array:', $errors);
+                Log::info('Error messages:', $errorMessages);
                 return redirect()->back()
                     ->withInput()
                     ->withErrors($errors)
@@ -836,5 +839,364 @@ class LichThiController extends Controller
         $phongHocs = PhongHoc::orderBy('ten_phong')->get();
 
         return view('daotao.lich-thi.danh-sach-sinh-vien', compact('lichThi', 'sinhViens', 'phongHocs'));
+    }
+
+    /**
+     * Hiển thị form import
+     */
+    public function showImportForm()
+    {
+        return view('daotao.lich-thi.import');
+    }
+
+    /**
+     * Download template Excel/CSV
+     */
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="lich_thi_template.csv"',
+        ];
+
+        $columns = [
+            'ma_lop_hp',
+            'loai_thi',
+            'ngay_thi',
+            'ten_ca_hoc',
+            'ten_phong',
+            'so_sinh_vien_du_thi',
+            'ten_giam_thi_1',
+            'ten_giam_thi_2',
+            'hinh_thuc',
+            'link_online',
+            'ghi_chu',
+        ];
+
+        $callback = function () use ($columns) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
+
+            // Header
+            fputcsv($file, $columns);
+
+            // Sample data
+            fputcsv($file, [
+                'CNTT101.01',
+                'cuoi_ky',
+                '2024-12-20',
+                'Ca 1',
+                'P101',
+                '50',
+                'Nguyễn Văn A',
+                'Trần Thị B',
+                'offline',
+                '',
+                'Lịch thi cuối kỳ',
+            ]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Import lịch thi từ Excel hoặc CSV
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv,txt|max:5120',
+        ], [
+            'file.required' => 'Vui lòng chọn file Excel hoặc CSV',
+            'file.mimes' => 'File phải có định dạng Excel (.xlsx, .xls) hoặc CSV (.csv, .txt)',
+            'file.max' => 'File không được vượt quá 5MB',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $file = $request->file('file');
+            $extension = strtolower($file->getClientOriginalExtension());
+            
+            $data = [];
+            
+            // Đọc file Excel
+            if (in_array($extension, ['xlsx', 'xls'])) {
+                if (!extension_loaded('zip')) {
+                    DB::rollBack();
+                    return back()->with('error', 'PHP extension "zip" chưa được cài đặt. Vui lòng bật extension zip trong php.ini hoặc sử dụng file CSV thay vì Excel.');
+                }
+                
+                try {
+                    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+                    $worksheet = $spreadsheet->getActiveSheet();
+                    $data = $worksheet->toArray();
+                    
+                    array_shift($data); // Bỏ header
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return back()->with('error', 'Không thể đọc file Excel: ' . $e->getMessage());
+                }
+            } 
+            // Đọc file CSV
+            else {
+                $handle = fopen($file->getRealPath(), 'r');
+                
+                if ($handle === false) {
+                    throw new \Exception('Không thể đọc file');
+                }
+                
+                fgetcsv($handle); // Bỏ header
+                
+                while (($row = fgetcsv($handle)) !== false) {
+                    $data[] = $row;
+                }
+                
+                fclose($handle);
+            }
+
+            $imported = 0;
+            $errors = [];
+
+            foreach ($data as $rowNum => $row) {
+                $rowNum += 2; // +2 vì bỏ header và index bắt đầu từ 0
+
+                // Kiểm tra dòng trống
+                if (empty($row[0])) {
+                    continue;
+                }
+
+                try {
+                    // Parse data
+                    $maLopHp = trim($row[0] ?? '');
+                    $loaiThi = trim($row[1] ?? '');
+                    $ngayThiStr = trim($row[2] ?? '');
+                    $tenCaHoc = trim($row[3] ?? '');
+                    $tenPhong = !empty($row[4]) ? trim($row[4]) : null;
+                    $soSinhVienDuThi = !empty($row[5]) ? (int)trim($row[5]) : null;
+                    $tenGiamThi1 = !empty($row[6]) ? trim($row[6]) : null;
+                    $tenGiamThi2 = !empty($row[7]) ? trim($row[7]) : null;
+                    $hinhThuc = !empty($row[8]) ? trim($row[8]) : 'offline';
+                    $linkOnline = !empty($row[9]) ? trim($row[9]) : null;
+                    $ghiChu = !empty($row[10]) ? trim($row[10]) : null;
+
+                    // Validate các trường bắt buộc
+                    if (empty($maLopHp) || empty($loaiThi) || empty($ngayThiStr) || empty($tenCaHoc)) {
+                        $errors[] = "Dòng {$rowNum}: Thiếu thông tin bắt buộc (Mã lớp HP, Loại thi, Ngày thi, Tên ca học)";
+                        continue;
+                    }
+
+                    // Tìm lớp học phần
+                    $lopHocPhan = LopHocPhan::where('ma_lop_hp', $maLopHp)->first();
+                    if (!$lopHocPhan) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy lớp học phần với mã: {$maLopHp}";
+                        continue;
+                    }
+
+                    // Parse ngày thi
+                    $ngayThi = null;
+                    try {
+                        $ngayThi = $this->parseDate($ngayThiStr);
+                    } catch (\Exception $e) {
+                        $errors[] = "Dòng {$rowNum}: {$e->getMessage()}";
+                        continue;
+                    }
+
+                    // Kiểm tra ngày thi trong phạm vi học kỳ
+                    $hocKy = $lopHocPhan->hocKy;
+                    if ($hocKy) {
+                        $ngayThiCarbon = \Carbon\Carbon::parse($ngayThi);
+                        $ngayBatDauHocKy = \Carbon\Carbon::parse($hocKy->ngay_bat_dau);
+                        $ngayKetThucHocKy = \Carbon\Carbon::parse($hocKy->ngay_ket_thuc);
+                        
+                        if ($ngayThiCarbon->lt($ngayBatDauHocKy) || $ngayThiCarbon->gt($ngayKetThucHocKy)) {
+                            $errors[] = "Dòng {$rowNum}: Ngày thi phải nằm trong phạm vi học kỳ ({$ngayBatDauHocKy->format('d/m/Y')} - {$ngayKetThucHocKy->format('d/m/Y')})";
+                            continue;
+                        }
+                    }
+
+                    // Tìm ca học
+                    $caHoc = CaHoc::where('ten_ca', $tenCaHoc)
+                        ->where('trang_thai', true)
+                        ->first();
+                    if (!$caHoc) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy ca học với tên: {$tenCaHoc}";
+                        continue;
+                    }
+
+                    // Validate loại thi
+                    if (!in_array($loaiThi, ['giua_ky', 'cuoi_ky', 'thi_lai'])) {
+                        $errors[] = "Dòng {$rowNum}: Loại thi không hợp lệ (phải là: giua_ky, cuoi_ky, thi_lai)";
+                        continue;
+                    }
+
+                    // Validate hình thức
+                    if (!in_array($hinhThuc, ['offline', 'online', 'hybrid'])) {
+                        $errors[] = "Dòng {$rowNum}: Hình thức không hợp lệ (phải là: offline, online, hybrid)";
+                        continue;
+                    }
+
+                    // Validate link online nếu hình thức là online hoặc hybrid
+                    if (in_array($hinhThuc, ['online', 'hybrid']) && empty($linkOnline)) {
+                        $errors[] = "Dòng {$rowNum}: Link online là bắt buộc khi hình thức là online hoặc hybrid";
+                        continue;
+                    }
+
+                    // Tìm phòng thi (nếu có)
+                    $phongThiId = null;
+                    if ($tenPhong) {
+                        $phongThi = PhongHoc::where('ten_phong', $tenPhong)
+                            ->orWhere('ma_phong', $tenPhong)
+                            ->first();
+                        if (!$phongThi) {
+                            $errors[] = "Dòng {$rowNum}: Không tìm thấy phòng thi với tên/mã: {$tenPhong}";
+                            continue;
+                        }
+                        $phongThiId = $phongThi->id;
+
+                        // Kiểm tra sức chứa phòng
+                        $soSV = $soSinhVienDuThi ?? $lopHocPhan->lopHocPhanSinhViens->count();
+                        if ($soSV > $phongThi->suc_chua) {
+                            $errors[] = "Dòng {$rowNum}: Phòng thi chỉ chứa được {$phongThi->suc_chua} sinh viên, không đủ cho {$soSV} sinh viên dự thi";
+                            continue;
+                        }
+                    }
+
+                    // Tìm giám thị 1 (nếu có)
+                    $giamThi1Id = null;
+                    if ($tenGiamThi1) {
+                        $giamThi1 = GiangVien::where('ho_ten', $tenGiamThi1)
+                            ->orWhere('ma_giang_vien', $tenGiamThi1)
+                            ->first();
+                        if (!$giamThi1) {
+                            $errors[] = "Dòng {$rowNum}: Không tìm thấy giám thị 1 với tên/mã: {$tenGiamThi1}";
+                            continue;
+                        }
+                        $giamThi1Id = $giamThi1->id;
+                    }
+
+                    // Tìm giám thị 2 (nếu có)
+                    $giamThi2Id = null;
+                    if ($tenGiamThi2) {
+                        $giamThi2 = GiangVien::where('ho_ten', $tenGiamThi2)
+                            ->orWhere('ma_giang_vien', $tenGiamThi2)
+                            ->first();
+                        if (!$giamThi2) {
+                            $errors[] = "Dòng {$rowNum}: Không tìm thấy giám thị 2 với tên/mã: {$tenGiamThi2}";
+                            continue;
+                        }
+                        $giamThi2Id = $giamThi2->id;
+                    }
+
+                    // Kiểm tra trùng lịch thi sinh viên
+                    $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id')->toArray();
+                    if (!empty($sinhVienIds)) {
+                        $trungLichSinhVien = LichThi::kiemTraXungDotSinhVien(
+                            $sinhVienIds,
+                            $ngayThi,
+                            $caHoc->gio_bat_dau->format('H:i'),
+                            $caHoc->gio_ket_thuc->format('H:i')
+                        );
+
+                        if ($trungLichSinhVien) {
+                            $errors[] = "Dòng {$rowNum}: Có sinh viên trong lớp đã có lịch thi trùng giờ (Môn: {$trungLichSinhVien->lopHocPhan->monHoc->ten_mon})";
+                            continue;
+                        }
+                    }
+
+                    // Kiểm tra xung đột phòng thi
+                    if ($phongThiId) {
+                        $xungDotPhong = LichThi::kiemTraXungDotPhong(
+                            $phongThiId,
+                            $ngayThi,
+                            $caHoc->gio_bat_dau->format('H:i'),
+                            $caHoc->gio_ket_thuc->format('H:i')
+                        );
+
+                        if ($xungDotPhong) {
+                            $errors[] = "Dòng {$rowNum}: Phòng thi đã được sử dụng trong khoảng thời gian này";
+                            continue;
+                        }
+                    }
+
+                    // Kiểm tra xung đột giám thị
+                    $giamThiIds = array_filter([$giamThi1Id, $giamThi2Id]);
+                    if (!empty($giamThiIds)) {
+                        $xungDotGiamThi = LichThi::kiemTraXungDotGiamThi(
+                            $giamThiIds,
+                            $ngayThi,
+                            $caHoc->gio_bat_dau->format('H:i'),
+                            $caHoc->gio_ket_thuc->format('H:i')
+                        );
+
+                        if ($xungDotGiamThi) {
+                            $errors[] = "Dòng {$rowNum}: Giám thị đã có lịch thi trùng giờ";
+                            continue;
+                        }
+                    }
+
+                    // Tính số sinh viên dự thi nếu không nhập
+                    $soSV = $soSinhVienDuThi ?? $lopHocPhan->lopHocPhanSinhViens->count();
+
+                    // Tạo lịch thi
+                    $lichThi = LichThi::create([
+                        'lop_hoc_phan_id' => $lopHocPhan->id,
+                        'loai_thi' => $loaiThi,
+                        'ngay_thi' => $ngayThi,
+                        'ca_hoc_id' => $caHoc->id,
+                        'gio_bat_dau' => $caHoc->gio_bat_dau->format('H:i:s'),
+                        'gio_ket_thuc' => $caHoc->gio_ket_thuc->format('H:i:s'),
+                        'phong_thi_id' => $phongThiId,
+                        'so_sinh_vien_du_thi' => $soSV,
+                        'giam_thi_1_id' => $giamThi1Id,
+                        'giam_thi_2_id' => $giamThi2Id,
+                        'hinh_thuc' => $hinhThuc,
+                        'link_online' => $linkOnline,
+                        'ghi_chu' => $ghiChu,
+                    ]);
+
+                    // Tự động phân sinh viên vào phòng thi
+                    $sinhViens = $lopHocPhan->lopHocPhanSinhViens()->with('sinhVien')->get();
+                    if ($sinhViens->isNotEmpty() && $phongThiId) {
+                        $phongThi = PhongHoc::find($phongThiId);
+                        $soBaoDanh = 1;
+                        
+                        foreach ($sinhViens as $lopHocPhanSinhVien) {
+                            $sinhVien = $lopHocPhanSinhVien->sinhVien;
+                            
+                            LichThiSinhVien::create([
+                                'lich_thi_id' => $lichThi->id,
+                                'sinh_vien_id' => $sinhVien->id,
+                                'phong_thi_id' => $phongThiId,
+                                'so_bao_danh' => $soBaoDanh++,
+                                'trang_thai' => 'du_thi', // Giá trị hợp lệ: du_thi, vang_co_phep, vang_khong_phep
+                            ]);
+                        }
+                    }
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Dòng {$rowNum}: " . $e->getMessage();
+                }
+            }
+
+            DB::commit();
+
+            $message = "Đã import thành công {$imported} lịch thi.";
+            if (!empty($errors)) {
+                $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 5));
+                if (count($errors) > 5) {
+                    $message .= " và " . (count($errors) - 5) . " lỗi khác.";
+                }
+            }
+
+            return redirect()->route('dao-tao.lich-thi.index')
+                ->with($imported > 0 ? 'success' : 'error', $message)
+                ->with('errors', $errors);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Lỗi khi import: ' . $e->getMessage());
+        }
     }
 }

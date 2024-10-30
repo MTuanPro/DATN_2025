@@ -1,20 +1,20 @@
 @extends('layouts.layout-daotao')
 
-@section('title', 'Import Sinh viên từ Excel')
+@section('title', 'Import Lớp học phần từ Excel')
 
 @section('content')
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-6 order-md-1 order-last">
-                    <h3>Import Sinh viên từ Excel</h3>
-                    <p class="text-subtitle text-muted">Nhập hàng loạt sinh viên từ file Excel</p>
+                    <h3>Import Lớp học phần từ Excel</h3>
+                    <p class="text-subtitle text-muted">Nhập hàng loạt lớp học phần từ file Excel</p>
                 </div>
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.sinh-vien.index') }}">Sinh viên</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Lớp học phần</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Import Excel</li>
                         </ol>
                     </nav>
@@ -36,6 +36,18 @@
             </div>
         @endif
 
+        @if (session('errors') && is_array(session('errors')))
+            <div class="alert alert-warning alert-dismissible fade show" role="alert">
+                <i class="bi bi-exclamation-triangle"></i> <strong>Các lỗi chi tiết:</strong>
+                <ul class="mb-0 mt-2">
+                    @foreach (session('errors') as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+        @endif
+
         <section class="section">
             <!-- Hướng dẫn -->
             <div class="card mb-4">
@@ -45,34 +57,29 @@
                 <div class="card-body">
                     <ol>
                         <li>Tải file template Excel bên dưới</li>
-                        <li>Điền thông tin sinh viên vào file (bắt đầu từ dòng 2)</li>
-                        <li><strong>Lưu ý:</strong> Nếu MSSV đã tồn tại, hệ thống sẽ tự động cập nhật thông tin thay vì tạo mới</li>
+                        <li>Điền thông tin lớp học phần vào file (bắt đầu từ dòng 2)</li>
+                        <li><strong>Lưu ý:</strong> Nếu Mã lớp học phần đã tồn tại, hệ thống sẽ tự động cập nhật thông tin thay vì tạo mới</li>
                         <li>Đảm bảo các trường có dấu <span class="text-danger">*</span> không được để trống</li>
                         <li>
                             <strong>Lưu ý về thông tin:</strong>
                             <ul>
-                                <li><strong>Mã lớp:</strong> Phải tồn tại trong hệ thống (VD: CNTT-K15-01)</li>
-                                <li><strong>Khóa học:</strong> Nhập tên khóa học (VD: K15, K16, K2021-2025)</li>
-                                <li><strong>Ngành:</strong> Nhập tên ngành hoặc mã ngành (VD: "Công nghệ thông tin" hoặc "CNTT")</li>
-                                <li><strong>Trạng thái:</strong> Nhập tên trạng thái hoặc mã (VD: "Đang học" hoặc "DANG_HOC")</li>
+                                <li><strong>Mã lớp học phần:</strong> Phải là duy nhất, không trùng lặp (VD: CNTT101.01)</li>
+                                <li><strong>Môn học:</strong> Nhập tên môn học hoặc mã môn học (VD: "Lập trình web" hoặc "LTW")</li>
+                                <li><strong>Học kỳ:</strong> Nhập tên học kỳ (VD: "Học kỳ 1 - Năm học 2024-2025")</li>
+                                <li><strong>Nhóm lớp:</strong> Số nguyên, mặc định là 1</li>
+                                <li><strong>Sức chứa:</strong> Số nguyên từ 10-200, mặc định là 50</li>
+                                <li><strong>Số lượng tối thiểu:</strong> Số nguyên từ 5 trở lên, mặc định là 10</li>
+                                <li><strong>Hình thức:</strong> offline, online, hoặc hybrid (mặc định: offline)</li>
+                                <li><strong>Link online:</strong> Bắt buộc nếu hình thức là online hoặc hybrid</li>
+                                <li><strong>Ngày bắt đầu/Kết thúc:</strong> Hỗ trợ nhiều định dạng: YYYY-MM-DD (2024-09-01), DD/MM/YYYY (01/09/2024), DD-MM-YYYY (01-09-2024)</li>
+                                <li><strong>Trạng thái:</strong> mo_dang_ky, dang_hoc, ket_thuc, huy (mặc định: mo_dang_ky)</li>
                             </ul>
                         </li>
                         <li>Upload file và nhấn Import</li>
-                        <li><strong>Mật khẩu mặc định:</strong> Là Mã sinh viên</li>
                     </ol>
 
-                    <div class="alert alert-warning">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <strong>Chú ý:</strong> Hệ thống sẽ tự động tạo tài khoản đăng nhập cho sinh viên với:
-                        <ul class="mb-0 mt-2">
-                            <li>Email: Theo file Excel</li>
-                            <li>Mật khẩu: Mã sinh viên</li>
-                            <li>Vai trò: Sinh viên</li>
-                        </ul>
-                    </div>
-
                     <div class="text-center mt-3">
-                        <a href="{{ route('dao-tao.sinh-vien.download-template') }}" class="btn btn-success btn-lg">
+                        <a href="{{ route('dao-tao.lop-hoc-phan.download-template') }}" class="btn btn-success btn-lg">
                             <i class="bi bi-download"></i> Tải Template Excel
                         </a>
                     </div>
@@ -85,7 +92,7 @@
                     <h5 class="card-title mb-0">Upload File Excel</h5>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('dao-tao.sinh-vien.import') }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('dao-tao.lop-hoc-phan.import') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                         <div class="mb-4">
@@ -101,16 +108,16 @@
 
                         <div class="alert alert-info">
                             <i class="bi bi-clock-history"></i>
-                            <strong>Thời gian xử lý:</strong> Có thể mất vài phút tùy thuộc vào số lượng sinh viên.
+                            <strong>Thời gian xử lý:</strong> Có thể mất vài phút tùy thuộc vào số lượng lớp học phần.
                             Vui lòng không tắt trình duyệt trong khi import.
                         </div>
 
                         <div class="d-flex justify-content-end gap-2">
-                            <a href="{{ route('dao-tao.sinh-vien.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('dao-tao.lop-hoc-phan.index') }}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> Hủy
                             </a>
                             <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-upload"></i> Import Sinh viên
+                                <i class="bi bi-upload"></i> Import Lớp học phần
                             </button>
                         </div>
                     </form>
@@ -135,76 +142,82 @@
                             </thead>
                             <tbody>
                                 <tr>
-                                    <td>Mã SV</td>
+                                    <td>ma_lop_hp</td>
                                     <td><span class="badge bg-danger">Bắt buộc</span></td>
                                     <td>Chuỗi, không trùng</td>
-                                    <td>2021600001</td>
+                                    <td>CNTT101.01</td>
                                 </tr>
                                 <tr>
-                                    <td>Họ tên</td>
+                                    <td>ten_lop_hp</td>
                                     <td><span class="badge bg-danger">Bắt buộc</span></td>
                                     <td>Chuỗi</td>
-                                    <td>Nguyễn Văn A</td>
+                                    <td>Lập trình web - Nhóm 1</td>
                                 </tr>
                                 <tr>
-                                    <td>Email</td>
+                                    <td>mon_hoc</td>
                                     <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>Email, không trùng</td>
-                                    <td>nva@example.com</td>
+                                    <td>Tên hoặc mã môn học</td>
+                                    <td>Lập trình web hoặc LTW</td>
                                 </tr>
                                 <tr>
-                                    <td>Ngày sinh</td>
+                                    <td>hoc_ky</td>
                                     <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>YYYY-MM-DD</td>
-                                    <td>2003-01-15</td>
+                                    <td>Tên học kỳ</td>
+                                    <td>Học kỳ 1 - Năm học 2024-2025</td>
                                 </tr>
                                 <tr>
-                                    <td>Giới tính</td>
-                                    <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>nam/nu/khac</td>
-                                    <td>nam</td>
-                                </tr>
-                                <tr>
-                                    <td>SĐT</td>
-                                    <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>Số điện thoại</td>
-                                    <td>0901234567</td>
-                                </tr>
-                                <tr>
-                                    <td>CCCD</td>
-                                    <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>12 số, không trùng</td>
-                                    <td>001203012345</td>
-                                </tr>
-                                <tr>
-                                    <td>Mã lớp</td>
-                                    <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>Mã lớp có sẵn</td>
-                                    <td>CNTT-K15</td>
-                                </tr>
-                                <tr>
-                                    <td>Khóa học</td>
-                                    <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>Tên khóa học có sẵn</td>
-                                    <td>K15</td>
-                                </tr>
-                                <tr>
-                                    <td>Ngành</td>
-                                    <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>Tên ngành hoặc mã ngành</td>
-                                    <td>Công nghệ thông tin hoặc CNTT</td>
-                                </tr>
-                                <tr>
-                                    <td>Kỳ hiện tại</td>
-                                    <td><span class="badge bg-danger">Bắt buộc</span></td>
-                                    <td>Số từ 1-8</td>
+                                    <td>nhom_lop</td>
+                                    <td><span class="badge bg-warning">Tùy chọn</span></td>
+                                    <td>Số nguyên, mặc định: 1</td>
                                     <td>1</td>
                                 </tr>
                                 <tr>
-                                    <td>Trạng thái</td>
+                                    <td>suc_chua</td>
                                     <td><span class="badge bg-warning">Tùy chọn</span></td>
-                                    <td>Tên trạng thái hoặc mã (mặc định: Đang học)</td>
-                                    <td>Đang học hoặc DANG_HOC</td>
+                                    <td>Số nguyên 10-200, mặc định: 50</td>
+                                    <td>50</td>
+                                </tr>
+                                <tr>
+                                    <td>so_luong_toi_thieu</td>
+                                    <td><span class="badge bg-warning">Tùy chọn</span></td>
+                                    <td>Số nguyên ≥5, mặc định: 10</td>
+                                    <td>10</td>
+                                </tr>
+                                <tr>
+                                    <td>hinh_thuc</td>
+                                    <td><span class="badge bg-warning">Tùy chọn</span></td>
+                                    <td>offline/online/hybrid, mặc định: offline</td>
+                                    <td>offline</td>
+                                </tr>
+                                <tr>
+                                    <td>link_online</td>
+                                    <td><span class="badge bg-warning">Tùy chọn*</span></td>
+                                    <td>URL (bắt buộc nếu hình thức online/hybrid)</td>
+                                    <td>https://meet.google.com/xxx</td>
+                                </tr>
+                                <tr>
+                                    <td>ngay_bat_dau</td>
+                                    <td><span class="badge bg-warning">Tùy chọn</span></td>
+                                    <td>YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY</td>
+                                    <td>2024-09-01 hoặc 01/09/2024</td>
+                                </tr>
+                                <tr>
+                                    <td>ngay_ket_thuc</td>
+                                    <td><span class="badge bg-warning">Tùy chọn</span></td>
+                                    <td>YYYY-MM-DD, DD/MM/YYYY, DD-MM-YYYY, phải ≥ ngày bắt đầu</td>
+                                    <td>2024-12-31 hoặc 31/12/2024</td>
+                                </tr>
+                                <tr>
+                                    <td>trang_thai_lop</td>
+                                    <td><span class="badge bg-warning">Tùy chọn</span></td>
+                                    <td>mo_dang_ky/dang_hoc/ket_thuc/huy, mặc định: mo_dang_ky</td>
+                                    <td>mo_dang_ky</td>
+                                </tr>
+                                <tr>
+                                    <td>ghi_chu</td>
+                                    <td><span class="badge bg-warning">Tùy chọn</span></td>
+                                    <td>Chuỗi</td>
+                                    <td>Lớp học phần mẫu</td>
                                 </tr>
                             </tbody>
                         </table>
@@ -214,3 +227,4 @@
         </section>
     </div>
 @endsection
+

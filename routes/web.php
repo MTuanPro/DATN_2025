@@ -272,6 +272,9 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     // PHASE 4: Lớp học phần & Phân công
     Route::resource('lop-hoc-phan', LopHocPhanController::class);
     Route::post('lop-hoc-phan/sync-so-luong', [LopHocPhanController::class, 'syncSoLuongDangKy'])->name('lop-hoc-phan.sync-so-luong');
+    Route::get('lop-hoc-phan-import', [LopHocPhanController::class, 'showImportForm'])->name('lop-hoc-phan.show-import-form');
+    Route::post('lop-hoc-phan-import', [LopHocPhanController::class, 'import'])->name('lop-hoc-phan.import');
+    Route::get('lop-hoc-phan-template', [LopHocPhanController::class, 'downloadTemplate'])->name('lop-hoc-phan.download-template');
 
     // Phân công giảng dạy
     Route::get('lop-hoc-phan/{lopHocPhan}/phan-cong', [PhanCongGiangDayController::class, 'index'])->name('lop-hoc-phan.phan-cong');
@@ -333,6 +336,9 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 
     // PHASE 7.5: Quản lý Lịch thi
     Route::resource('lich-thi', \App\Http\Controllers\DaoTao\LichThiController::class);
+    Route::get('lich-thi-import', [\App\Http\Controllers\DaoTao\LichThiController::class, 'showImportForm'])->name('lich-thi.show-import-form');
+    Route::post('lich-thi-import', [\App\Http\Controllers\DaoTao\LichThiController::class, 'import'])->name('lich-thi.import');
+    Route::get('lich-thi-template', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadTemplate'])->name('lich-thi.download-template');
     Route::get('lich-thi/{lichThi}/phan-phong', [\App\Http\Controllers\DaoTao\LichThiController::class, 'phanPhong'])->name('lich-thi.phan-phong');
     Route::post('lich-thi/{lichThi}/cap-nhat-phong', [\App\Http\Controllers\DaoTao\LichThiController::class, 'capNhatPhong'])->name('lich-thi.cap-nhat-phong');
     Route::get('lich-thi/{lichThi}/danh-sach-sinh-vien', [\App\Http\Controllers\DaoTao\LichThiController::class, 'danhSachSinhVien'])->name('lich-thi.danh-sach-sinh-vien');
@@ -477,6 +483,7 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
         Route::get('/', [NhapDiemController::class, 'index'])->name('index');
         Route::get('/{lopHocPhan}', [NhapDiemController::class, 'show'])->name('show');
         Route::post('/store', [NhapDiemController::class, 'nhapDiem'])->name('store');
+        Route::post('/get-diem-tk', [NhapDiemController::class, 'getDiemTK'])->name('get-diem-tk');
         Route::post('/{lopHocPhan}/khoa', [NhapDiemController::class, 'khoaDiem'])->name('khoa');
         Route::post('/{lopHocPhan}/mo-khoa', [NhapDiemController::class, 'moKhoaDiem'])->name('mo-khoa');
         Route::get('/{lopHocPhan}/download-template', [NhapDiemController::class, 'downloadTemplate'])->name('download-template');

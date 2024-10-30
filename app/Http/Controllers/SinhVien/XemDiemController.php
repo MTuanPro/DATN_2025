@@ -63,7 +63,7 @@ class XemDiemController extends Controller
                 ->get();
         }
 
-        // Tính GPA học kỳ và tích lũy
+        // Tính GPA học kỳ và tích lũy (chỉ tính điểm đã duyệt)
         $gpaHocKy = $hocKyId ? $this->diemService->tinhGPAHocKy($sinhVien->id, $hocKyId) : 0;
         $gpaTichLuy = $this->diemService->tinhGPATichLuy($sinhVien->id);
         $tongTinChiDat = $this->diemService->tinhTongTinChiDat($sinhVien->id);

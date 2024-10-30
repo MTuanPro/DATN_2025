@@ -18,9 +18,11 @@ use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use App\Traits\ImportHelper;
 
 class SinhVienController extends Controller
 {
+    use ImportHelper;
     /**
      * Display a listing of the resource.
      */
@@ -556,54 +558,79 @@ class SinhVienController extends Controller
                         continue;
                     }
 
-                    // Kiểm tra trùng
-                    if (SinhVien::where('ma_sinh_vien', $maSV)->exists()) {
-                        $errors[] = "Dòng {$rowNum}: MSSV {$maSV} đã tồn tại";
-                        continue;
+                    // Parse ngày sinh
+                    $ngaySinhParsed = null;
+                    if (!empty($ngaySinh)) {
+                        try {
+                            $ngaySinhParsed = $this->parseDate($ngaySinh);
+                        } catch (\Exception $e) {
+                            $errors[] = "Dòng {$rowNum}: {$e->getMessage()}";
+                            continue;
+                        }
                     }
 
-                    if (SinhVien::where('email', $email)->exists()) {
+                    // Kiểm tra email trùng với sinh viên khác (nếu đang update)
+                    $existingSinhVien = SinhVien::where('ma_sinh_vien', $maSV)->first();
+                    if ($existingSinhVien && $existingSinhVien->email !== $email) {
+                        if (SinhVien::where('email', $email)->where('id', '!=', $existingSinhVien->id)->exists()) {
+                            $errors[] = "Dòng {$rowNum}: Email {$email} đã được sử dụng bởi sinh viên khác";
+                            continue;
+                        }
+                    } elseif (!$existingSinhVien && SinhVien::where('email', $email)->exists()) {
                         $errors[] = "Dòng {$rowNum}: Email {$email} đã tồn tại";
                         continue;
                     }
 
-                    // Tạo User
-                    $user = User::create([
-                        'name' => $hoTen,
-                        'email' => $email,
-                        'password' => Hash::make($maSV),
-                        'trang_thai' => 'hoat_dong',
-                        'email_verified_at' => now(),
-                    ]);
+                    // Tìm hoặc tạo User
+                    $user = User::where('email', $email)->first();
+                    if (!$user) {
+                        $user = User::create([
+                            'name' => $hoTen,
+                            'email' => $email,
+                            'password' => Hash::make($maSV),
+                            'trang_thai' => 'hoat_dong',
+                            'email_verified_at' => now(),
+                        ]);
 
-                    // Gán vai trò
-                    if ($vaiTroSV) {
-                        $user->vaiTro()->attach($vaiTroSV->id, [
-                            'nguoi_gan_id' => 1,
-                            'ngay_gan' => now(),
+                        // Gán vai trò
+                        if ($vaiTroSV) {
+                            $user->vaiTro()->attach($vaiTroSV->id, [
+                                'nguoi_gan_id' => 1,
+                                'ngay_gan' => now(),
+                            ]);
+                        }
+                    } else {
+                        // Update user nếu đã tồn tại
+                        $user->update([
+                            'name' => $hoTen,
                         ]);
                     }
 
-                    // Tạo sinh viên
-                    SinhVien::create([
-                        'ma_sinh_vien' => $maSV,
-                        'ho_ten' => $hoTen,
-                        'email' => $email,
-                        'ngay_sinh' => $ngaySinh,
-                        'gioi_tinh' => $gioiTinh,
-                        'so_dien_thoai' => $sdt,
-                        'can_cuoc_cong_dan' => $cccd,
-                        'khoa_hoc_id' => $khoaHoc->id,
-                        'lop_hanh_chinh_id' => $lopHanhChinh->id,
-                        'nganh_id' => $nganh->id,
-                        'ky_hien_tai' => $kyHienTai,
-                        'trang_thai_hoc_tap_id' => $trangThai->id,
-                        'giang_vien_chu_nhiem_id' => $lopHanhChinh->giang_vien_chu_nhiem_id,
-                        'user_id' => $user->id,
-                    ]);
+                    // Update hoặc tạo sinh viên (dựa vào ma_sinh_vien)
+                    $isNew = !SinhVien::where('ma_sinh_vien', $maSV)->exists();
+                    $sinhVien = SinhVien::updateOrCreate(
+                        ['ma_sinh_vien' => $maSV],
+                        [
+                            'ho_ten' => $hoTen,
+                            'email' => $email,
+                            'ngay_sinh' => $ngaySinhParsed,
+                            'gioi_tinh' => $gioiTinh,
+                            'so_dien_thoai' => $sdt,
+                            'can_cuoc_cong_dan' => $cccd,
+                            'khoa_hoc_id' => $khoaHoc->id,
+                            'lop_hanh_chinh_id' => $lopHanhChinh->id,
+                            'nganh_id' => $nganh->id,
+                            'ky_hien_tai' => $kyHienTai,
+                            'trang_thai_hoc_tap_id' => $trangThai->id,
+                            'giang_vien_chu_nhiem_id' => $lopHanhChinh->giang_vien_chu_nhiem_id,
+                            'user_id' => $user->id,
+                        ]
+                    );
 
-                    // Tăng sĩ số lớp
-                    $lopHanhChinh->increment('si_so');
+                    // Chỉ tăng sĩ số lớp khi tạo mới
+                    if ($isNew) {
+                        $lopHanhChinh->increment('si_so');
+                    }
 
                     $imported++;
                 } catch (\Exception $e) {
@@ -613,7 +640,7 @@ class SinhVienController extends Controller
 
             DB::commit();
 
-            $message = "Import thành công {$imported} sinh viên.";
+            $message = "Import thành công {$imported} sinh viên (đã tạo mới hoặc cập nhật).";
             if (count($errors) > 0) {
                 $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 5));
             }
