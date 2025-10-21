@@ -28,9 +28,9 @@
         <div class="dropdown">
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown"
                 data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="assets/images/faces/1.jpg" alt="user" width="36" height="36"
+                <img src="{{ asset('assets/images/faces/1.jpg') }}" alt="user" width="36" height="36"
                     class="rounded-circle me-2">
-                <span class="d-none d-md-inline">Musharof</span>
+                <span class="d-none d-md-inline">{{ auth()->user()->name ?? 'User' }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                 <li><a class="dropdown-item" href="#">Profile</a></li>
@@ -38,8 +38,18 @@
                 <li>
                     <hr class="dropdown-divider">
                 </li>
-                <li><a class="dropdown-item" href="#">Logout</a></li>
+                <li>
+                    <a class="dropdown-item" href="#"
+                        onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
+                        Logout
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
 </div>
+
+<!-- Form logout ẩn -->
+<form action="{{ route('logout') }}" method="POST" id="logout-form-header" style="display: none;">
+    @csrf
+</form>
