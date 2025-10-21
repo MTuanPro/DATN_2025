@@ -1,11 +1,10 @@
 <footer>
     <div class="footer clearfix mb-0 text-muted">
         <div class="float-start">
-            <p>2021 &copy; Mazer</p>
+            <p>{{ date('Y') }} &copy; S-MIS21</p>
         </div>
         <div class="float-end">
-            <p>Crafted with <span class="text-danger"><i class="bi bi-heart"></i></span> by <a
-                    href="http://ahmadsaugi.com">A. Saugi</a></p>
+            <p>Hệ thống Quản lý Sinh viên</p>
         </div>
     </div>
 </footer>
