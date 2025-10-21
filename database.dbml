@@ -1,0 +1,802 @@
+// ======================== ENUMS ========================
+Enum gioi_tinh_enum {
+  nam
+  nu
+  khac
+}
+
+Enum hinh_thuc_enum {
+  offline
+  online
+  hybrid
+}
+
+Enum trang_thai_lop_enum {
+  mo_dang_ky
+  dang_hoc
+  ket_thuc
+  huy
+}
+
+Enum trang_thai_diem_danh_enum {
+  co_mat
+  vang
+  di_tre
+  nghi_phep
+}
+
+Enum loai_mon_hoc_enum {
+  dai_cuong
+  co_so_nganh
+  chuyen_nganh_bat_buoc
+  chuyen_nganh_tu_chon
+  thuc_tap
+  do_an_tot_nghiep
+}
+
+Enum trang_thai_hoc_phi_enum {
+  chua_nop
+  da_nop_mot_phan
+  da_nop_du
+  qua_han
+}
+
+// ======================== Tài Khoản & Phân Quyền ========================
+Table users {
+  id int [pk]
+  name varchar [not null]
+  email varchar [not null, unique]
+  password varchar [not null]
+  email_verified_at datetime
+  remember_token varchar
+  trang_thai varchar [default: 'hoat_dong', note: 'hoat_dong, khoa, ngung_hoat_dong']
+  lan_dang_nhap_cuoi datetime
+  created_at timestamp
+  updated_at timestamp
+  note: 'Bảng users mặc định của Laravel, quản lý đăng nhập'
+}
+
+Table vai_tro {
+  id int [pk]
+  ma_vai_tro varchar [not null, unique, note: 'admin, truong_phong_dt, nhan_vien_dt, giang_vien, sinh_vien']
+  ten_vai_tro varchar [not null, unique]
+  mo_ta text
+  muc_do_uu_tien int [note: 'Mức độ ưu tiên: 1=cao nhất (admin), 5=thấp nhất']
+  created_at timestamp
+  updated_at timestamp
+  note: 'Vai trò: Admin, Trưởng Phòng Đào Tạo, Nhân Viên Đào Tạo, Giảng Viên, Sinh Viên'
+}
+
+Table tai_khoan_vai_tro {
+  id int [pk]
+  tai_khoan_id int [ref: > users.id, not null]
+  vai_tro_id int [ref: > vai_tro.id, not null]
+  ngay_gan datetime [note: 'Ngày gán vai trò']
+  nguoi_gan_id int [ref: > users.id, note: 'Người gán vai trò']
+  created_at timestamp
+  updated_at timestamp
+  indexes { (tai_khoan_id, vai_tro_id) [unique] }
+  note: 'Người dùng có thể có nhiều vai trò'
+}
+
+Table nhom_quyen {
+  id int [pk]
+  ma_nhom varchar [not null, unique]
+  ten_nhom varchar [not null]
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+  note: 'Nhóm quyền: Quản lý sinh viên, Quản lý giảng viên, Quản lý môn học, v.v.'
+}
+
+Table quyen {
+  id int [pk]
+  nhom_quyen_id int [ref: > nhom_quyen.id, not null]
+  ma_quyen varchar [not null, unique, note: 'sinh_vien.xem, sinh_vien.them, sinh_vien.sua, sinh_vien.xoa']
+  ten_quyen varchar [not null]
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+  note: 'Quyền chi tiết: xem, thêm, sửa, xóa'
+}
+
+Table vai_tro_quyen {
+  id int [pk]
+  vai_tro_id int [ref: > vai_tro.id]
+  quyen_id int [ref: > quyen.id]
+  created_at timestamp
+  updated_at timestamp
+  indexes { (vai_tro_id, quyen_id) [unique] }
+}
+
+// ======================== Nhân sự hệ thống ========================
+Table admin {
+  id int [pk]
+  ho_ten varchar
+  email varchar [unique]
+  so_dien_thoai varchar
+  anh_dai_dien varchar [note: 'Ảnh đại diện của admin']
+  user_id int [ref: > users.id, note: 'Foreign key tới bảng users']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
+}
+
+Table dao_tao {
+  id int [pk]
+  ho_ten varchar
+  email varchar [unique]
+  so_dien_thoai varchar
+  anh_dai_dien varchar [note: 'Ảnh đại diện của đào tạo']
+  user_id int [ref: > users.id, note: 'Foreign key tới bảng users']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
+}
+
+// ======================== Sinh viên ========================
+Table sinh_vien {
+  id int [pk]
+  ma_sinh_vien varchar [not null, unique]
+  ho_ten varchar [not null]
+  email varchar [not null, unique]
+  ngay_sinh date [not null, note: 'Bắt buộc có ngày sinh để kiểm tra tuổi nhập học']
+  gioi_tinh gioi_tinh_enum [not null, note: 'Bắt buộc để thống kê']
+  so_dien_thoai varchar [not null, note: 'Bắt buộc để liên hệ']
+  so_nha_duong varchar
+  phuong_xa varchar
+  quan_huyen varchar
+  tinh_thanh varchar
+  can_cuoc_cong_dan varchar [unique, not null, note: 'Bắt buộc có CCCD']
+  ngay_cap_cccd date
+  noi_cap_cccd varchar
+  anh_dai_dien varchar
+  khoa_hoc_id int [ref: > khoa_hoc.id, not null, note: 'Bắt buộc thuộc khóa học']
+  lop_hanh_chinh_id int [ref: > lop_hanh_chinh.id, not null, note: 'Bắt buộc có lớp hành chính']
+  nganh_id int [ref: > nganh.id, not null, note: 'Bắt buộc có ngành học']
+  chuyen_nganh_id int [ref: > chuyen_nganh.id, note: 'Chuyên ngành có thể chọn sau (năm 3)']
+  ky_hien_tai int [default: 1, note: 'Kỳ hiện tại của sinh viên (1-8)']
+  trang_thai_hoc_tap_id int [ref: > trang_thai_hoc_tap.id, not null, note: 'Bắt buộc có trạng thái']
+  giang_vien_chu_nhiem_id int [ref: > giang_vien.id, note: 'Giảng viên chủ nhiệm lớp']
+  user_id int [ref: > users.id, not null, unique, note: 'Mỗi SV có 1 tài khoản duy nhất']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
+}
+
+Table lop_hanh_chinh {
+  id int [pk]
+  ma_lop varchar [not null, unique]
+  ten_lop varchar [not null]
+  khoa_hoc_id int [ref: > khoa_hoc.id]
+  nganh_id int [ref: > nganh.id]
+  giang_vien_chu_nhiem_id int [ref: > giang_vien.id]
+  si_so int [default: 0]
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
+}
+
+// ======================== GV========================
+Table giang_vien {
+  id int [pk]
+  ma_giang_vien varchar [not null, unique]
+  ho_ten varchar [not null]
+  email varchar [not null, unique]
+  so_dien_thoai varchar [not null, note: 'Bắt buộc để liên hệ']
+  trinh_do_id int [ref: > dm_trinh_do.id, not null, note: 'Bắt buộc có trình độ']
+  chuyen_mon varchar [not null, note: 'Bắt buộc có chuyên môn']
+  khoa_id int [ref: > khoa.id, not null, note: 'Bắt buộc thuộc khoa']
+  ngay_vao_truong date [not null, note: 'Ngày vào làm việc']
+  anh_dai_dien varchar
+  user_id int [ref: > users.id, not null, unique, note: 'Mỗi GV có 1 tài khoản duy nhất']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
+}
+
+Table dm_trinh_do {
+  id int [pk]
+  ten_trinh_do varchar [not null, unique]
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ======================== Môn học và học phần ========================
+Table mon_hoc {
+  id int [pk]
+  ma_mon varchar [not null, unique]
+  ten_mon varchar [not null]
+  so_tin_chi int [not null, note: 'Tổng tín chỉ (1-5), phải = ly_thuyet + thuc_hanh']
+  so_tin_chi_ly_thuyet int [default: 0, note: 'Số tín chỉ lý thuyết (0-5)']
+  so_tin_chi_thuc_hanh int [default: 0, note: 'Số tín chỉ thực hành (0-5)']
+  mo_ta text
+  loai_mon loai_mon_hoc_enum [not null, note: 'Bắt buộc phân loại môn học']
+  khoa_id int [ref: > khoa.id, not null, note: 'Bắt buộc - Khoa quản lý môn học']
+  hinh_thuc_day hinh_thuc_enum [not null, note: 'Bắt buộc chọn hình thức']
+  thoi_luong_hoc int [note: 'Số giờ học (45 phút/giờ), tối thiểu = so_tin_chi * 15']
+  so_buoi_hoc int [note: 'Số buổi học dự kiến (tối thiểu 10 buổi)']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
+  note: 'Constraint: so_tin_chi = so_tin_chi_ly_thuyet + so_tin_chi_thuc_hanh'
+}
+
+Table mon_hoc_tien_quyet {
+  id int [pk]
+  mon_hoc_id int [ref: > mon_hoc.id, not null, note: 'Môn học chính']
+  mon_tien_quyet_id int [ref: > mon_hoc.id, not null, note: 'Môn học phải học trước']
+  loai_tien_quyet varchar [default: 'bat_buoc', note: 'bat_buoc, khuyen_nghi']
+  dieu_kien_qua_mon boolean [default: true, note: 'Phải qua môn tiên quyết mới được đăng ký']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (mon_hoc_id, mon_tien_quyet_id) [unique] }
+  note: 'Môn học tiên quyết - môn phải học trước khi học môn khác'
+}
+
+Table lop_hoc_phan {
+  id int [pk]
+  ma_lop_hp varchar [not null, unique, note: 'VD: CNTT101.01']
+  ten_lop_hp varchar [not null, note: 'Tên lớp học phần']
+  mon_hoc_id int [ref: > mon_hoc.id, not null]
+  hoc_ky_id int [ref: > hoc_ky.id, not null]
+  nhom_lop int [default: 1, note: 'Nhóm lớp (nếu có nhiều lớp cùng môn)']
+  suc_chua int [default: 50, note: 'Số lượng sinh viên tối đa (10-100)']
+  so_luong_dang_ky int [default: 0, note: 'Số sinh viên đã đăng ký (0 <= so_luong_dang_ky <= suc_chua)']
+  so_luong_toi_thieu int [default: 10, note: 'Số SV tối thiểu để mở lớp (5-30)']
+  hinh_thuc hinh_thuc_enum [default: 'offline']
+  link_online varchar [note: 'Bắt buộc nếu hinh_thuc = online hoặc hybrid']
+  ngay_bat_dau date [not null, note: 'Ngày bắt đầu học - phải trong khoảng học kỳ']
+  ngay_ket_thuc date [not null, note: 'Ngày kết thúc học - phải > ngay_bat_dau']
+  ghi_chu text
+  trang_thai_lop trang_thai_lop_enum [default: 'mo_dang_ky']
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
+  indexes {
+    (mon_hoc_id, hoc_ky_id, nhom_lop) [unique]
+  }
+  note: 'Constraint: ngay_bat_dau < ngay_ket_thuc; so_luong_dang_ky <= suc_chua; so_luong_toi_thieu <= suc_chua'
+}
+
+Table lop_hoc_phan_giang_vien {
+  id int [pk]
+  lop_hoc_phan_id int [ref: > lop_hoc_phan.id, not null]
+  giang_vien_id int [ref: > giang_vien.id, not null]
+  vai_tro varchar [default: 'giang_vien_chinh', note: 'giang_vien_chinh, giang_vien_phu, tro_giang']
+  phan_cong_giang_day text [note: 'Phần nội dung giảng viên này phụ trách']
+  ngay_phan_cong date
+  nguoi_phan_cong_id int [ref: > dao_tao.id]
+  created_at timestamp
+  updated_at timestamp
+  indexes { (lop_hoc_phan_id, giang_vien_id) [unique] }
+  note: 'Bảng phân công giảng viên dạy lớp học phần'
+}
+
+Table dang_ky_mon_hoc_tam {
+  id int [pk]
+  sinh_vien_id int [ref: > sinh_vien.id, not null]
+  mon_hoc_id int [ref: > mon_hoc.id, not null]
+  hoc_ky_id int [ref: > hoc_ky.id, not null]
+  ngay_dang_ky datetime [not null]
+  uu_tien int [default: 0, note: 'Độ ưu tiên (sinh viên năm cuối, học lại có ưu tiên cao hơn)']
+  trang_thai varchar [default: 'cho_xep_lop', note: 'cho_xep_lop, da_xep_lop, that_bai']
+  ly_do_that_bai text [note: 'Lý do không xếp được lớp: hết chỗ, thiếu môn tiên quyết, v.v.']
+  created_at timestamp
+  updated_at timestamp
+  indexes { (sinh_vien_id, mon_hoc_id, hoc_ky_id) [unique] }
+  note: 'Bảng đăng ký môn học tạm - chờ xếp lớp tự động'
+}
+
+Table lop_hoc_phan_sinh_vien {
+  id int [pk]
+  lop_hoc_phan_id int [ref: > lop_hoc_phan.id, not null]
+  sinh_vien_id int [ref: > sinh_vien.id, not null]
+  dang_ky_tam_id int [ref: > dang_ky_mon_hoc_tam.id, note: 'ID đăng ký tạm ban đầu']
+  ngay_dang_ky datetime [not null]
+  ngay_xep_lop datetime [note: 'Thời gian hệ thống xếp lớp tự động']
+  nguoi_duyet_id int [ref: > dao_tao.id, note: 'Người duyệt (nếu cần duyệt thủ công)']
+  ngay_duyet datetime
+  phuong_thuc_xep varchar [default: 'tu_dong', note: 'tu_dong, thu_cong']
+  trang_thai varchar [default: 'da_xep_lop', note: 'da_xep_lop, dang_hoc, da_hoan_thanh, bo_hoc, huy_dang_ky']
+  ly_do_huy text [note: 'Lý do hủy/bỏ học nếu có']
+  created_at timestamp
+  updated_at timestamp
+  indexes { (lop_hoc_phan_id, sinh_vien_id) [unique] }
+  note: 'Bảng đăng ký sinh viên vào lớp học phần sau khi đã xếp lớp'
+}
+
+Table lich_su_xep_lop {
+  id int [pk]
+  hoc_ky_id int [ref: > hoc_ky.id, not null]
+  ngay_chay_xep_lop datetime [not null]
+  so_sinh_vien_can_xep int [note: 'Tổng số SV đăng ký chờ xếp']
+  so_sinh_vien_xep_thanh_cong int
+  so_sinh_vien_xep_that_bai int
+  thoi_gian_xu_ly int [note: 'Thời gian xử lý (giây)']
+  nguoi_chay_id int [ref: > dao_tao.id]
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  note: 'Lịch sử các lần chạy thuật toán xếp lớp tự động'
+}
+
+Table quy_tac_xep_lop {
+  id int [pk]
+  ten_quy_tac varchar [not null]
+  thu_tu_uu_tien int [not null, note: 'Thứ tự áp dụng quy tắc']
+  mo_ta text
+  kich_hoat boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  note: 'Các quy tắc xếp lớp: ưu tiên năm cuối, học lại, không trùng lịch, v.v.'
+}
+
+// ======================== Lịch học và Thời khóa biểu ========================
+Table lich_hoc_co_dinh {
+  id int [pk]
+  lop_hoc_phan_id int [ref: > lop_hoc_phan.id, not null]
+  thu_trong_tuan int [not null, note: 'Thứ 2=2, 3=3,...7=7, CN=8 (giá trị từ 2-8)']
+  tiet_bat_dau int [not null, note: 'Tiết bắt đầu (1-10)']
+  tiet_ket_thuc int [not null, note: 'Tiết kết thúc (phải > tiet_bat_dau, tối đa 10)']
+  gio_bat_dau time [not null, note: 'Phải tương ứng với tiet_bat_dau']
+  gio_ket_thuc time [not null, note: 'Phải > gio_bat_dau']
+  phong_hoc_id int [ref: > phong_hoc.id, not null, note: 'Bắt buộc có phòng nếu offline']
+  giang_vien_id int [ref: > giang_vien.id, not null, note: 'Bắt buộc có giảng viên dạy buổi này']
+  hinh_thuc hinh_thuc_enum [default: 'offline']
+  link_online varchar [note: 'Bắt buộc nếu hinh_thuc = online/hybrid']
+  ghi_chu text [note: 'Lịch cố định hàng tuần']
+  created_at timestamp
+  updated_at timestamp
+  indexes { 
+    (lop_hoc_phan_id, thu_trong_tuan, tiet_bat_dau) [unique, name: 'unique_lop_thu_tiet']
+    (thu_trong_tuan, tiet_bat_dau, phong_hoc_id) [unique, name: 'unique_phong_thu_tiet']
+    (thu_trong_tuan, tiet_bat_dau, giang_vien_id) [name: 'idx_gv_trung_lich']
+  }
+  note: 'Lịch học cố định theo tuần (Thời khóa biểu) - Constraint: tiet_ket_thuc > tiet_bat_dau; gio_ket_thuc > gio_bat_dau; thu_trong_tuan 2-8'
+}
+
+Table lich_hoc_chi_tiet {
+  id int [pk]
+  lich_hoc_co_dinh_id int [ref: > lich_hoc_co_dinh.id]
+  lop_hoc_phan_id int [ref: > lop_hoc_phan.id, not null]
+  ngay_hoc date [not null]
+  tiet_bat_dau int [not null]
+  tiet_ket_thuc int [not null]
+  gio_bat_dau time [not null]
+  gio_ket_thuc time [not null]
+  phong_hoc_id int [ref: > phong_hoc.id]
+  giang_vien_id int [ref: > giang_vien.id, not null]
+  hinh_thuc hinh_thuc_enum [default: 'offline']
+  link_online varchar
+  noi_dung_giang_day text [note: 'Nội dung giảng dạy trong buổi']
+  tai_lieu_dinh_kem varchar
+  trang_thai varchar [default: 'chua_day', note: 'chua_day, dang_day, da_day, huy']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  indexes { 
+    (lop_hoc_phan_id, ngay_hoc) [name: 'idx_lop_ngay']
+    (ngay_hoc, tiet_bat_dau, phong_hoc_id) [unique, name: 'unique_phong_ngay_tiet']
+  }
+  note: 'Lịch học chi tiết từng buổi (được tạo từ lịch cố định hoặc thêm riêng)'
+}
+
+Table lich_thi {
+  id int [pk]
+  lop_hoc_phan_id int [ref: > lop_hoc_phan.id, not null]
+  loai_thi varchar [not null, note: 'Giữa kỳ, Cuối kỳ, Thi lại']
+  ngay_thi date [not null]
+  gio_bat_dau time [not null]
+  gio_ket_thuc time [not null]
+  phong_thi_id int [ref: > phong_hoc.id]
+  giam_thi_1_id int [ref: > giang_vien.id]
+  giam_thi_2_id int [ref: > giang_vien.id]
+  so_sinh_vien_du_thi int
+  hinh_thuc hinh_thuc_enum [default: 'offline']
+  link_online varchar
+  de_thi_file varchar [note: 'File đề thi']
+  dap_an_file varchar [note: 'File đáp án']
+  ngay_gui_lich datetime
+  nguoi_gui_id int [ref: > dao_tao.id]
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  indexes {
+    (ngay_thi, gio_bat_dau, phong_thi_id) [unique]
+  }
+  note: 'Lịch thi của lớp học phần'
+}
+
+// ======================== Điểm, đăng ký ========================
+Table ket_qua_hoc_tap {
+  id int [pk]
+  lop_hoc_phan_sinh_vien_id int [ref: > lop_hoc_phan_sinh_vien.id, not null, note: 'Tham chiếu đến bảng lop_hoc_phan_sinh_vien']
+  diem_he_10 float [note: 'Điểm hệ 10 (0-10)']
+  diem_he_4 float [note: 'Điểm hệ 4 (0-4)']
+  diem_chu varchar [note: 'A, B+, B, C+, C, D+, D, F']
+  qua_mon boolean [default: false, note: 'Qua môn nếu diem_he_10 >= 4.0']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (lop_hoc_phan_sinh_vien_id) [unique] }
+  note: 'Constraint: diem_he_10 BETWEEN 0 AND 10; diem_he_4 BETWEEN 0 AND 4; qua_mon = (diem_he_10 >= 4.0)'
+}
+
+Table cau_hinh_dau_diem {
+  id int [pk]
+  lop_hoc_phan_id int [ref: > lop_hoc_phan.id, not null]
+  ten_dau_diem varchar [not null, note: 'Chuyên cần, Giữa kỳ, Cuối kỳ, Thực hành, Tiểu luận']
+  ty_le float [not null, note: 'Tỷ lệ % (0-100, tổng của tất cả đầu điểm = 100)']
+  so_cot int [default: 1, note: 'Số cột điểm (VD: 3 cột điểm giữa kỳ)']
+  created_at timestamp
+  updated_at timestamp
+  indexes { (lop_hoc_phan_id, ten_dau_diem) [unique] }
+  note: 'Constraint: SUM(ty_le) WHERE lop_hoc_phan_id = X MUST = 100; ty_le > 0 AND ty_le <= 100'
+}
+
+Table nhap_diem {
+  id int [pk]
+  lop_hoc_phan_sinh_vien_id int [ref: > lop_hoc_phan_sinh_vien.id, not null, note: 'Tham chiếu đến bảng lop_hoc_phan_sinh_vien']
+  cau_hinh_id int [ref: > cau_hinh_dau_diem.id, not null]
+  cot_diem int [default: 1, note: 'Cột điểm thứ mấy (nếu có nhiều cột)']
+  diem_so float [note: 'Điểm số (0-10)']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (lop_hoc_phan_sinh_vien_id, cau_hinh_id, cot_diem) [unique] }
+  note: 'Constraint: diem_so BETWEEN 0 AND 10'
+}
+
+Table bang_diem {
+  id int [pk]
+  sinh_vien_id int [ref: > sinh_vien.id]
+  hoc_ky_id int [ref: > hoc_ky.id]
+  diem_trung_binh_hoc_ky float
+  diem_trung_binh_tich_luy float
+  tong_tin_chi_dat int
+  created_at timestamp
+  updated_at timestamp
+  indexes { (sinh_vien_id, hoc_ky_id) [unique] }
+}
+
+Table diem_danh {
+  id int [pk]
+  lop_hoc_phan_sinh_vien_id int [ref: > lop_hoc_phan_sinh_vien.id, not null]
+  lich_hoc_chi_tiet_id int [ref: > lich_hoc_chi_tiet.id, not null]
+  trang_thai trang_thai_diem_danh_enum [default: 'vang']
+  thoi_gian_diem_danh datetime [note: 'Thời gian giảng viên điểm danh']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (lop_hoc_phan_sinh_vien_id, lich_hoc_chi_tiet_id) [unique] }
+  note: 'Điểm danh sinh viên từng buổi học'
+}
+
+// ======================== Danh Mục, cấu trúc ct ========================
+Table khoa {
+  id int [pk]
+  ma_khoa varchar [not null, unique]
+  ten_khoa varchar [not null, unique]
+  truong_khoa_id int [ref: > giang_vien.id]
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table nganh {
+  id int [pk]
+  ma_nganh varchar [not null, unique]
+  ten_nganh varchar [not null]
+  khoa_id int [ref: > khoa.id]
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (ten_nganh, khoa_id) [unique] }
+}
+
+Table chuyen_nganh {
+  id int [pk]
+  ma_chuyen_nganh varchar [not null, unique]
+  ten_chuyen_nganh varchar [not null]
+  nganh_id int [ref: > nganh.id]
+  tong_tin_chi_toi_thieu int [note: 'Tổng số tín chỉ tối thiểu để tốt nghiệp']
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (ten_chuyen_nganh, nganh_id) [unique] }
+}
+
+Table chuong_trinh_khung {
+  id int [pk]
+  chuyen_nganh_id int [ref: > chuyen_nganh.id, not null]
+  mon_hoc_id int [ref: > mon_hoc.id, not null]
+  hoc_ky_goi_y int [not null, note: 'Học kỳ gợi ý (1-8)']
+  loai_mon_hoc loai_mon_hoc_enum [not null]
+  bat_buoc boolean [default: true, note: 'true: bắt buộc, false: tự chọn']
+  so_tin_chi_toi_thieu int [note: 'Số tín chỉ tối thiểu nếu là nhóm tự chọn']
+  thu_tu_hoc int [note: 'Thứ tự ưu tiên học trong học kỳ']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (chuyen_nganh_id, mon_hoc_id) [unique] }
+  note: 'Chương trình khung - Tất cả môn sinh viên phải học từ lúc vào đến lúc ra trường'
+}
+
+// ======================== Thời gian địa điểm ========================
+Table khoa_hoc {
+  id int [pk]
+  ten_khoa_hoc varchar [not null, unique, note: 'VD: K17, K18, K2021-2025']
+  nam_bat_dau int [not null]
+  nam_ket_thuc int [not null]
+  so_nam_dao_tao int [default: 4]
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+}
+
+Table hoc_ky {
+  id int [pk]
+  ten_hoc_ky varchar [not null, note: 'HK1, HK2, HK3 (Hè)']
+  nam_hoc varchar [not null, note: '2024-2025']
+  ngay_bat_dau date [not null]
+  ngay_ket_thuc date [not null]
+  ngay_bat_dau_dang_ky date
+  ngay_ket_thuc_dang_ky date
+  la_hoc_ky_hien_tai boolean [default: false]
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (ten_hoc_ky, nam_hoc) [unique] }
+}
+
+// ======================== Phòng học ========================
+Table phong_hoc {
+  id int [pk]
+  ma_phong varchar [not null, unique]
+  ten_phong varchar [not null]
+  suc_chua int
+  vi_tri varchar
+  loai_phong varchar [note: 'Lý thuyết, Thực hành, Hội trường, Phòng máy']
+  trang_thai varchar [default: 'Hoạt động', note: 'Hoạt động, Bảo trì, Không sử dụng']
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ======================== Cấu hình học phí ========================
+Table cau_hinh_hoc_phi {
+  id int [pk]
+  nam_hoc varchar [not null, note: '2024-2025']
+  don_gia_tren_tin_chi float [not null, note: 'Giá tiền/1 tín chỉ']
+  phi_dich_vu float [default: 0, note: 'Phí dịch vụ, bảo hiểm']
+  ap_dung_tu_ngay date [not null]
+  ap_dung_den_ngay date
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  note: 'Cấu hình giá học phí theo năm học'
+}
+
+Table hoc_phi_hoc_ky {
+  id int [pk]
+  sinh_vien_id int [ref: > sinh_vien.id, not null]
+  hoc_ky_id int [ref: > hoc_ky.id, not null]
+  tong_tin_chi_dang_ky int [default: 0, note: 'Tổng số tín chỉ đã đăng ký (tối đa 24 tín chỉ/kỳ)']
+  tong_hoc_phi_mon_hoc float [default: 0, note: 'Tổng tiền học phí các môn (>= 0)']
+  phi_dich_vu float [default: 0, note: 'Phí dịch vụ, bảo hiểm (>= 0)']
+  tong_so_tien float [default: 0, note: 'Tổng = hoc_phi_mon + phi_dv']
+  so_tien_da_dong float [default: 0, note: 'Số tiền đã đóng (0 <= so_tien_da_dong <= tong_so_tien)']
+  so_tien_con_lai float [default: 0, note: 'Số tiền còn lại = tong_so_tien - so_tien_da_dong (>= 0)']
+  han_dong date [not null, note: 'Hạn đóng học phí - bắt buộc']
+  ngay_dong_lan_cuoi datetime
+  trang_thai trang_thai_hoc_phi_enum [default: 'chua_nop']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  indexes { (sinh_vien_id, hoc_ky_id) [unique] }
+  note: 'Tổng hợp học phí theo học kỳ - Constraint: tong_so_tien = tong_hoc_phi_mon_hoc + phi_dich_vu; so_tien_con_lai = tong_so_tien - so_tien_da_dong'
+}
+
+Table chi_tiet_hoc_phi_mon {
+  id int [pk]
+  hoc_phi_hoc_ky_id int [ref: > hoc_phi_hoc_ky.id, not null]
+  lop_hoc_phan_sinh_vien_id int [ref: > lop_hoc_phan_sinh_vien.id, not null]
+  mon_hoc_id int [ref: > mon_hoc.id, not null]
+  so_tin_chi int [not null]
+  don_gia_tin_chi float [not null, note: 'Giá/tín chỉ tại thời điểm đăng ký']
+  thanh_tien float [not null, note: 'so_tin_chi * don_gia_tin_chi']
+  ngay_tinh datetime [not null, note: 'Ngày tính học phí (khi đăng ký môn)']
+  trang_thai varchar [default: 'chua_thanh_toan', note: 'chua_thanh_toan, da_thanh_toan, huy']
+  created_at timestamp
+  updated_at timestamp
+  indexes { 
+    (hoc_phi_hoc_ky_id, lop_hoc_phan_sinh_vien_id) [unique]
+  }
+  note: 'Chi tiết học phí theo từng môn đăng ký'
+}
+
+Table lich_su_dong_hoc_phi {
+  id int [pk]
+  hoc_phi_hoc_ky_id int [ref: > hoc_phi_hoc_ky.id, not null]
+  so_tien_dong float [not null]
+  ngay_dong datetime [not null]
+  phuong_thuc_thanh_toan varchar [note: 'Tiền mặt, Chuyển khoản, Ví điện tử, QR Code']
+  ma_giao_dich varchar [unique]
+  ngan_hang varchar
+  nguoi_thu_id int [ref: > dao_tao.id]
+  bien_lai_file varchar [note: 'File biên lai thanh toán']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  note: 'Lịch sử đóng học phí từng lần'
+}
+
+Table trang_thai_hoc_tap {
+  id int [pk]
+  ten_trang_thai varchar [not null, unique, note: 'Đang học, Bảo lưu, Thôi học, Tốt nghiệp']
+  mo_ta text
+  created_at timestamp
+  updated_at timestamp
+}
+
+// ======================== Cảnh báo học vụ ========================
+Table canh_bao_hoc_vu {
+  id int [pk]
+  sinh_vien_id int [ref: > sinh_vien.id, not null]
+  hoc_ky_id int [ref: > hoc_ky.id, not null]
+  loai_canh_bao varchar [not null, note: 'diem_thap, vang_nhieu, no_hoc_phi, hoc_ky_lien_tiep']
+  muc_do varchar [not null, note: 'canh_cao, dinh_chi, buoc_thoi_hoc']
+  ly_do text [not null, note: 'GPA < 1.0, vắng > 20%, nợ học phí quá hạn']
+  ngay_canh_bao date [not null]
+  nguoi_canh_bao_id int [ref: > dao_tao.id]
+  da_xu_ly boolean [default: false]
+  ngay_xu_ly date
+  ket_qua_xu_ly text
+  created_at timestamp
+  updated_at timestamp
+  indexes {
+    (sinh_vien_id, hoc_ky_id, loai_canh_bao) [name: 'idx_sv_hk_loai']
+  }
+  note: 'Cảnh báo học vụ: điểm thấp, vắng nhiều, nợ học phí'
+}
+
+// ======================== AI Chatbot Hỗ trợ học tập ========================
+Table ai_chatbot_knowledge_base {
+  id int [pk]
+  chu_de varchar [not null, note: 'Đăng ký môn, Lịch học, Học phí, Quy chế đào tạo, Thủ tục hành chính']
+  danh_muc varchar [note: 'FAQ, Hướng dẫn, Quy định']
+  cau_hoi_mau text [not null]
+  cau_tra_loi text [not null]
+  tu_khoa varchar [note: 'Từ khóa để tìm kiếm']
+  do_uu_tien int [default: 0, note: 'Độ ưu tiên hiển thị câu trả lời']
+  luot_truy_cap int [default: 0]
+  huu_ich int [default: 0, note: 'Số lượt đánh giá hữu ích']
+  nguoi_tao_id int [ref: > users.id]
+  ngay_cap_nhat datetime
+  kich_hoat boolean [default: true]
+  created_at timestamp
+  updated_at timestamp
+  note: 'Kho kiến thức cho AI Chatbot'
+}
+
+Table ai_chatbot_conversation {
+  id int [pk]
+  sinh_vien_id int [ref: > sinh_vien.id, not null]
+  session_id varchar [not null, note: 'ID phiên chat']
+  tieu_de_chat varchar [note: 'Tiêu đề tóm tắt cuộc hội thoại']
+  ngay_bat_dau datetime [not null]
+  ngay_ket_thuc datetime
+  trang_thai varchar [default: 'dang_mo', note: 'dang_mo, da_dong']
+  created_at timestamp
+  updated_at timestamp
+  note: 'Phiên hội thoại của sinh viên với chatbot'
+}
+
+Table ai_chatbot_message {
+  id int [pk]
+  conversation_id int [ref: > ai_chatbot_conversation.id, not null]
+  nguoi_gui varchar [not null, note: 'user, bot']
+  noi_dung text [not null]
+  knowledge_base_id int [ref: > ai_chatbot_knowledge_base.id, note: 'Câu trả lời từ KB nào']
+  do_tuong_dong float [note: 'Độ tương đồng câu hỏi (0-1)']
+  thoi_gian_gui datetime [not null]
+  created_at timestamp
+  updated_at timestamp
+  note: 'Chi tiết tin nhắn trong hội thoại'
+}
+
+Table ai_chatbot_feedback {
+  id int [pk]
+  message_id int [ref: > ai_chatbot_message.id, not null]
+  sinh_vien_id int [ref: > sinh_vien.id, not null]
+  danh_gia varchar [not null, note: 'huu_ich, khong_huu_ich']
+  ly_do text [note: 'Lý do đánh giá']
+  created_at timestamp
+  updated_at timestamp
+  note: 'Đánh giá chất lượng câu trả lời của bot'
+}
+
+// ======================== Thông báo & Tin tức ========================
+Table thong_bao {
+  id int [pk]
+  tieu_de varchar [not null]
+  noi_dung text [not null]
+  loai_nguon varchar [not null, default: 'thu_cong', note: 'thu_cong: Admin gửi, tu_dong: Hệ thống tự động']
+  loai_thong_bao varchar [not null, note: 'tin_tuc, thong_bao_chung, tin_gap, lich_hoc, lich_thi, hoc_phi, diem, dang_ky_mon']
+  muc_do_quan_trong varchar [default: 'binh_thuong', note: 'rat_quan_trong, quan_trong, binh_thuong']
+  ghim_dau_trang boolean [default: false, note: 'Ghim thông báo ở đầu']
+  doi_tuong varchar [not null, note: 'sinh_vien, giang_vien, dao_tao, lop_hanh_chinh, lop_hoc_phan, khoa, nganh, all']
+  doi_tuong_cu_the_id int [note: 'ID cụ thể: khoa_id, nganh_id, lop_hanh_chinh_id, lop_hoc_phan_id']
+  nguoi_gui_id int [ref: > users.id, note: 'NULL nếu là thông báo tự động']
+  anh_dai_dien varchar [note: 'Ảnh đại diện cho tin tức/thông báo']
+  file_dinh_kem varchar [note: 'File đính kèm (PDF, Word, Excel)']
+  lien_ket_id int [note: 'ID liên quan: lich_hoc_chi_tiet_id, lich_thi_id, hoc_phi_id']
+  lien_ket_loai varchar [note: 'Loại liên kết: lich_hoc, lich_thi, hoc_phi, diem']
+  ngay_gui datetime [not null]
+  ngay_het_han datetime
+  hien_thi_tu_ngay datetime [note: 'Thời gian bắt đầu hiển thị (hẹn giờ)']
+  gui_email boolean [default: false]
+  gui_sms boolean [default: false]
+  gui_web_notification boolean [default: true]
+  so_luot_xem int [default: 0]
+  trang_thai varchar [default: 'cong_khai', note: 'cong_khai, nhap, da_xoa']
+  created_at timestamp
+  updated_at timestamp
+  note: 'Thông báo, tin tức - cả thủ công (admin) và tự động (hệ thống)'
+}
+
+Table nguoi_nhan_thong_bao {
+  id int [pk]
+  thong_bao_id int [ref: > thong_bao.id, not null]
+  nguoi_nhan_id int [ref: > users.id, not null]
+  da_doc boolean [default: false]
+  ngay_doc datetime
+  da_gui_email boolean [default: false]
+  ngay_gui_email datetime
+  da_gui_sms boolean [default: false]
+  ngay_gui_sms datetime
+  created_at timestamp
+  updated_at timestamp
+  indexes { (thong_bao_id, nguoi_nhan_id) [unique] }
+  note: 'Chi tiết người nhận thông báo và trạng thái đọc'
+}
+
+Table mau_thong_bao_tu_dong {
+  id int [pk]
+  loai_thong_bao varchar [not null, unique, note: 'lich_hoc_moi, lich_thi_sap_toi, hoc_phi_sap_het_han, diem_da_cap_nhat']
+  tieu_de_mau varchar [not null, note: 'Tiêu đề có thể chứa biến: {mon_hoc}, {ngay_thi}']
+  noi_dung_mau text [not null, note: 'Nội dung có thể chứa biến']
+  doi_tuong_mac_dinh varchar [note: 'sinh_vien, giang_vien']
+  muc_do_uu_tien varchar [default: 'binh_thuong']
+  gui_email_mac_dinh boolean [default: false]
+  gui_sms_mac_dinh boolean [default: false]
+  kich_hoat boolean [default: true, note: 'Bật/tắt thông báo tự động này']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  note: 'Mẫu thông báo tự động của hệ thống'
+}
+
+// ======================== Nhật ký hoạt động (Audit Log) ========================
+Table nhat_ky_hoat_dong {
+  id int [pk]
+  user_id int [ref: > users.id, not null, note: 'Người thực hiện hành động']
+  hanh_dong varchar [not null, note: 'CREATE, UPDATE, DELETE, LOGIN, LOGOUT, EXPORT, IMPORT']
+  bang_du_lieu varchar [not null, note: 'Tên bảng bị tác động']
+  ban_ghi_id int [note: 'ID của bản ghi bị tác động']
+  du_lieu_cu text [note: 'JSON - Dữ liệu trước khi thay đổi']
+  du_lieu_moi text [note: 'JSON - Dữ liệu sau khi thay đổi']
+  ip_address varchar [note: 'IP của người thực hiện']
+  user_agent text [note: 'Thông tin trình duyệt']
+  mo_ta text [note: 'Mô tả chi tiết hành động']
+  thoi_gian datetime [not null]
+  created_at timestamp
+  indexes {
+    (user_id, thoi_gian) [name: 'idx_user_time']
+    (bang_du_lieu, ban_ghi_id) [name: 'idx_table_record']
+  }
+  note: 'Ghi lại mọi hành động quan trọng trong hệ thống để audit'
+}
+
