@@ -61,6 +61,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/users/{user}/verify-email', [AdminUserController::class, 'verifyEmail'])->name('users.verify-email');
     Route::get('/users/{user}/login-history', [AdminUserController::class, 'loginHistory'])->name('users.login-history');
     Route::post('/users/{user}/force-logout', [AdminUserController::class, 'forceLogout'])->name('users.force-logout');
+
+    // Vai trò Management
+    Route::resource('vai-tro', \App\Http\Controllers\Admin\VaiTroController::class);
 });
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========

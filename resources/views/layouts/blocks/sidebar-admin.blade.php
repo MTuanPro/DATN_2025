@@ -27,7 +27,7 @@
 
                 <!-- 1. TÀI KHOẢN & PHÂN QUYỀN -->
                 <li
-                    class="sidebar-item has-sub {{ Request::is('admin/users*') || Request::is('admin/roles*') || Request::is('admin/permissions*') ? 'active' : '' }}">
+                    class="sidebar-item has-sub {{ Request::is('admin/users*') || Request::is('admin/vai-tro*') || Request::is('admin/permissions*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-shield-lock-fill"></i>
                         <span>Tài khoản & Phân quyền</span>
@@ -36,11 +36,8 @@
                         <li class="submenu-item {{ Request::is('admin/users*') ? 'active' : '' }}">
                             <a href="{{ route('admin.users.index') }}">Quản lý Users</a>
                         </li>
-                        <li class="submenu-item">
-                            <a href="#">Quản lý Vai trò</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Gán Vai trò</a>
+                        <li class="submenu-item {{ Request::is('admin/vai-tro*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.vai-tro.index') }}">Quản lý Vai trò</a>
                         </li>
                         <li class="submenu-item">
                             <a href="#">Nhóm quyền</a>
