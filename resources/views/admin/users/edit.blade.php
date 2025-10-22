@@ -184,31 +184,31 @@
                         </div>
                     </div>
 
-                    {{-- Đặt lại mật khẩu --}}
-                    <div class="card">
-                        <div class="card-header">
-                            <h5 class="card-title">Đặt lại Mật khẩu</h5>
+                    {{-- Reset Mật khẩu qua Email --}}
+                    <div class="card border-warning">
+                        <div class="card-header bg-warning bg-opacity-10">
+                            <h5 class="card-title mb-0">
+                                <i class="bi bi-shield-lock text-warning"></i>
+                                Reset Mật khẩu
+                            </h5>
                         </div>
                         <div class="card-body">
-                            <form action="{{ route('admin.users.reset-password', $user->id) }}" method="POST">
+                            <div class="alert alert-info mb-3">
+                                <i class="bi bi-info-circle-fill"></i>
+                                <strong>Lưu ý:</strong>
+                                <ul class="mb-0 mt-2 small">
+                                    <li>Hệ thống sẽ gửi <strong>link reset mật khẩu</strong> qua email</li>
+                                    <li>Người dùng tự tạo mật khẩu mới theo yêu cầu bảo mật</li>
+                                    <li>Link có hiệu lực trong <strong>60 phút</strong></li>
+                                </ul>
+                            </div>
+
+                            <form action="{{ route('admin.users.reset-password', $user->id) }}" method="POST"
+                                onsubmit="return confirm('⚠️ Xác nhận gửi email reset mật khẩu đến:\n\n📧 {{ $user->email }}\n\nNgười dùng sẽ nhận link để tự đặt lại mật khẩu mới.')">
                                 @csrf
-                                <div class="form-group mb-3">
-                                    <label for="new_password" class="form-label">Mật khẩu mới</label>
-                                    <input type="password"
-                                        class="form-control @error('new_password') is-invalid @enderror" id="new_password"
-                                        name="new_password" placeholder="Nhập mật khẩu mới">
-                                    @error('new_password')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                                <div class="form-group mb-3">
-                                    <label for="new_password_confirmation" class="form-label">Xác nhận mật khẩu</label>
-                                    <input type="password" class="form-control" id="new_password_confirmation"
-                                        name="new_password_confirmation" placeholder="Nhập lại mật khẩu">
-                                </div>
-                                <button type="submit" class="btn btn-warning btn-sm w-100"
-                                    onclick="return confirm('Bạn có chắc chắn muốn đặt lại mật khẩu?')">
-                                    <i class="bi bi-key"></i> Đặt lại mật khẩu
+                                <button type="submit" class="btn btn-warning w-100">
+                                    <i class="bi bi-envelope-fill"></i>
+                                    Gửi Email Reset Mật khẩu
                                 </button>
                             </form>
                         </div>
@@ -220,31 +220,12 @@
                             <h5 class="card-title">Hành động Khác</h5>
                         </div>
                         <div class="card-body">
-                            @if (!$user->email_verified_at)
-                                <form action="{{ route('admin.users.verify-email', $user->id) }}" method="POST"
-                                    class="mb-2">
-                                    @csrf
-                                    <button type="submit" class="btn btn-success btn-sm w-100">
-                                        <i class="bi bi-check-circle"></i> Xác thực Email
-                                    </button>
-                                </form>
-                            @endif
-
                             @if ($user->id !== Auth::id())
-                                <form action="{{ route('admin.users.force-logout', $user->id) }}" method="POST"
-                                    class="mb-2">
-                                    @csrf
-                                    <button type="submit" class="btn btn-warning btn-sm w-100"
-                                        onclick="return confirm('Bạn có chắc chắn muốn force logout tài khoản này?')">
-                                        <i class="bi bi-box-arrow-right"></i> Force Logout
-                                    </button>
-                                </form>
-
                                 <form action="{{ route('admin.users.destroy', $user->id) }}" method="POST">
                                     @csrf
                                     @method('DELETE')
                                     <button type="submit" class="btn btn-danger btn-sm w-100"
-                                        onclick="return confirm('Bạn có chắc chắn muốn xóa tài khoản này?')">
+                                        onclick="return confirm('Xác nhận xóa tài khoản này?')">
                                         <i class="bi bi-trash"></i> Xóa tài khoản
                                     </button>
                                 </form>

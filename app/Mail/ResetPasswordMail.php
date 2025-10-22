@@ -14,15 +14,15 @@ class ResetPasswordMail extends Mailable
     use Queueable, SerializesModels;
 
     public $user;
-    public $newPassword;
+    public $resetLink;
 
     /**
      * Create a new message instance.
      */
-    public function __construct(User $user, string $newPassword)
+    public function __construct(User $user, string $resetLink)
     {
         $this->user = $user;
-        $this->newPassword = $newPassword;
+        $this->resetLink = $resetLink;
     }
 
     /**
@@ -46,7 +46,7 @@ class ResetPasswordMail extends Mailable
             view: 'emails.reset-password',
             with: [
                 'userName' => $this->user->name,
-                'newPassword' => $this->newPassword,
+                'resetLink' => $this->resetLink,
             ],
         );
     }

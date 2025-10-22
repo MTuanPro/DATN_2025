@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use App\Models\User;
 use App\Mail\ResetPasswordMail;
@@ -44,23 +45,30 @@ class ForgotPasswordController extends Controller
             ])->withInput();
         }
 
-        // Tạo mật khẩu mới ngẫu nhiên (8 ký tự)
-        $newPassword = Str::random(8);
+        // Tạo token reset password
+        $token = Str::random(64);
 
-        // Cập nhật mật khẩu mới cho user
-        $user->update([
-            'password' => Hash::make($newPassword),
+        // Xóa token cũ nếu có
+        DB::table('password_reset_tokens')
+            ->where('email', $user->email)
+            ->delete();
+
+        // Tạo token mới
+        DB::table('password_reset_tokens')->insert([
+            'email' => $user->email,
+            'token' => Hash::make($token),
+            'created_at' => now()
         ]);
 
-        // Gửi email chứa mật khẩu mới
+        // Tạo URL reset
+        $resetUrl = url('/reset-password/' . $token . '?email=' . urlencode($user->email));
+
+        // Gửi email chứa link reset
         try {
-            Mail::to($user->email)->send(new ResetPasswordMail($user, $newPassword));
+            Mail::to($user->email)->send(new ResetPasswordMail($user, $resetUrl));
 
-            return back()->with('success', 'Mật khẩu mới đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.');
+            return back()->with('success', 'Link đặt lại mật khẩu đã được gửi đến email của bạn. Vui lòng kiểm tra hộp thư.');
         } catch (\Exception $e) {
-            // Log error
-            \Log::error('Send reset password email failed: ' . $e->getMessage());
-
             return back()->withErrors([
                 'email' => 'Có lỗi xảy ra khi gửi email. Vui lòng thử lại sau.',
             ])->withInput();
