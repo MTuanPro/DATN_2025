@@ -5,19 +5,13 @@
 </header>
 
 
-<!-- Top header: search, notifications, avatar (added) -->
+<!-- Top header: notifications, avatar -->
 <div class="top-header d-flex align-items-center justify-content-between px-3 py-2 bg-white shadow-sm mb-3">
     <div class="d-flex align-items-center">
-
-        <form class="d-none d-sm-flex align-items-center" style="min-width:320px;">
-            <div class="input-group">
-                <span class="input-group-text bg-transparent border-end-0"><i class="bi bi-search"></i></span>
-                <input type="text" class="form-control border-start-0" placeholder="Search or type command...">
-            </div>
-        </form>
+        <!-- Search removed -->
     </div>
 
-    <div class="d-flex align-items-center">
+    <div class="d-flex align-items-center ms-auto">
         <button class="btn btn-link text-decoration-none text-muted me-2 d-none d-md-inline" title="Toggle dark mode">
             <i class="bi bi-moon"></i>
         </button>

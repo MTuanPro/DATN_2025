@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Quên mật khẩu - S-MIS21</title>
+    <title>Quên mật khẩu - S-MIS</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
@@ -18,8 +18,10 @@
             <div class="col-lg-5 col-12">
                 <div id="auth-left">
                     <div class="auth-logo">
-                        <a href="{{ url('/') }}"><img src="{{ asset('assets/images/logo/logo.png') }}"
-                                alt="Logo"></a>
+                        <a href="{{ url('/') }}">
+                            <h2 class="mb-0" style="color: #435ebe;"><i class="bi bi-mortarboard-fill me-2"></i>S-MIS
+                            </h2>
+                        </a>
                     </div>
                     <h1 class="auth-title">Quên mật khẩu?</h1>
                     <p class="auth-subtitle mb-5">Nhập email của bạn. Chúng tôi sẽ gửi mật khẩu mới về email.</p>
@@ -48,7 +50,9 @@
                                 <i class="bi bi-envelope"></i>
                             </div>
                             @error('email')
-                                <div class="invalid-feedback">{{ $message }}</div>
+                                <small class="text-danger d-block mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
+                                </small>
                             @enderror
                         </div>
                         <button class="btn btn-primary btn-block btn-lg shadow-lg mt-5">Gửi mật khẩu mới</button>

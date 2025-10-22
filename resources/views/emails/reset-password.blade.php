@@ -4,7 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Khôi phục mật khẩu - S-MIS21</title>
+    <title>Khôi phục mật khẩu - S-MIS</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -91,12 +91,12 @@
             <p>Nếu bạn không yêu cầu khôi phục mật khẩu, vui lòng liên hệ với quản trị viên ngay lập tức.</p>
 
             <p>Trân trọng,<br>
-                <strong>Hệ thống S-MIS21</strong>
+                <strong>Hệ thống S-MIS</strong>
             </p>
         </div>
         <div class="footer">
             <p>Email này được gửi tự động, vui lòng không trả lời.</p>
-            <p>&copy; {{ date('Y') }} S-MIS21. All rights reserved.</p>
+            <p>&copy; {{ date('Y') }} S-MIS. All rights reserved.</p>
         </div>
     </div>
 </body>
