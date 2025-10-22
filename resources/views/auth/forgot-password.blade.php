@@ -25,7 +25,8 @@
                         </a>
                     </div>
                     <h1 class="auth-title">Quên mật khẩu?</h1>
-                    <p class="auth-subtitle mb-5">Nhập email của bạn. Chúng tôi sẽ gửi mật khẩu mới về email.</p>
+                    <p class="auth-subtitle mb-5">Nhập email của bạn. Chúng tôi sẽ gửi link đặt lại mật khẩu qua email.
+                    </p>
 
                     @if (session('success'))
                         <div class="alert alert-success alert-dismissible fade show" role="alert">
@@ -51,13 +52,22 @@
                                 <i class="bi bi-envelope"></i>
                             </div>
                             @error('email')
-
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
                             @enderror
                         </div>
-                        <button class="btn btn-primary btn-block btn-lg shadow-lg mt-5">Gửi mật khẩu mới</button>
+
+                        <div class="alert alert-info">
+                            <small>
+                                <i class="bi bi-info-circle me-1"></i>
+                                Bạn sẽ nhận được email chứa link để tạo mật khẩu mới. Link có hiệu lực trong 60 phút.
+                            </small>
+                        </div>
+
+                        <button class="btn btn-primary btn-block btn-lg shadow-lg mt-3">
+                            <i class="bi bi-envelope-fill me-2"></i>Gửi Link Reset Mật khẩu
+                        </button>
                     </form>
                     <div class="text-center mt-5 text-lg fs-4">
                         <p class='text-gray-600'>Nhớ mật khẩu? <a href="{{ route('login') }}" class="font-bold">Đăng

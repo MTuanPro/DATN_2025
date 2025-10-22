@@ -1,6 +1,7 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\Auth;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
@@ -9,8 +10,25 @@ use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
 use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardController;
 
-// Route trang chủ - redirect to login
+// Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
 Route::get('/', function () {
+    if (Auth::check()) {
+        $user = Auth::user();
+        $roles = $user->vaiTro()->pluck('ma_vai_tro')->toArray();
+
+        if (in_array('admin', $roles)) {
+            return redirect()->route('admin.dashboard');
+        }
+        if (in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)) {
+            return redirect()->route('daotao.dashboard');
+        }
+        if (in_array('giang_vien', $roles)) {
+            return redirect()->route('giangvien.dashboard');
+        }
+        if (in_array('sinh_vien', $roles)) {
+            return redirect()->route('sinhvien.dashboard');
+        }
+    }
     return redirect()->route('login');
 });
 
@@ -24,6 +42,10 @@ Route::middleware('guest')->group(function () {
     Route::get('/forgot-password', [ForgotPasswordController::class, 'showForgotForm'])->name('forgot.password');
     Route::post('/forgot-password', [ForgotPasswordController::class, 'sendResetEmail'])->name('forgot.password.post');
 });
+
+// Reset Password - Không cần middleware guest (cho phép cả đã login và chưa login)
+Route::get('/reset-password/{token}', [AdminUserController::class, 'showResetForm'])->name('password.reset.form');
+Route::post('/reset-password', [AdminUserController::class, 'processReset'])->name('password.reset.process');
 
 // Logout (Cần đăng nhập)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');

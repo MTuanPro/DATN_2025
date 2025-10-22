@@ -9,7 +9,10 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Validation\Rules\Password;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Str;
+use Illuminate\Validation\Rules\Password as PasswordRule;
 
 class UserController extends Controller
 {
@@ -210,43 +213,105 @@ class UserController extends Controller
     }
 
     /**
-     * Đặt lại mật khẩu
+     * Gửi email reset mật khẩu
      */
-    public function resetPassword(Request $request, User $user)
+    public function resetPassword(User $user)
     {
-        $validated = $request->validate([
-            'new_password' => ['required', 'confirmed', Password::min(8)],
-        ], [
-            'new_password.required' => 'Vui lòng nhập mật khẩu mới',
-            'new_password.confirmed' => 'Xác nhận mật khẩu không khớp',
-            'new_password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
-        ]);
-
         try {
-            $user->update([
-                'password' => Hash::make($validated['new_password'])
+            // Tạo token
+            $token = Str::random(64);
+
+            // Xóa token cũ nếu có
+            DB::table('password_reset_tokens')
+                ->where('email', $user->email)
+                ->delete();
+
+            // Tạo token mới
+            DB::table('password_reset_tokens')->insert([
+                'email' => $user->email,
+                'token' => Hash::make($token),
+                'created_at' => now()
             ]);
 
-            return back()->with('success', 'Đặt lại mật khẩu thành công!');
+            // Tạo URL reset (không dùng route helper)
+            $resetUrl = url('/reset-password/' . $token . '?email=' . urlencode($user->email));
+
+            // Gửi email
+            Mail::to($user->email)->send(new \App\Mail\ResetPasswordMail($user, $resetUrl));
+
+            return back()->with('success', '✅ Đã gửi email chứa link đặt lại mật khẩu đến: ' . $user->email);
         } catch (\Exception $e) {
-            return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+            return back()->with('error', '❌ Có lỗi xảy ra: ' . $e->getMessage());
         }
     }
 
     /**
-     * Xác thực email
+     * Hiển thị form đặt lại mật khẩu
      */
-    public function verifyEmail(User $user)
+    public function showResetForm(Request $request)
     {
-        try {
-            $user->update([
-                'email_verified_at' => now()
-            ]);
+        return view('auth.reset-password', [
+            'token' => $request->token,
+            'email' => $request->email
+        ]);
+    }
 
-            return back()->with('success', 'Xác thực email thành công!');
-        } catch (\Exception $e) {
-            return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+    /**
+     * Xử lý đặt lại mật khẩu
+     */
+    public function processReset(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email',
+            'password' => [
+                'required',
+                'confirmed',
+                PasswordRule::min(8)
+                    ->letters()
+                    ->mixedCase()
+                    ->numbers()
+                    ->symbols()
+            ],
+        ], [
+            'password.required' => 'Mật khẩu không được để trống',
+            'password.confirmed' => 'Xác nhận mật khẩu không khớp',
+            'password.min' => 'Mật khẩu phải có ít nhất :min ký tự',
+            'password.letters' => 'Mật khẩu phải chứa chữ cái',
+            'password.mixed' => 'Mật khẩu phải chứa cả chữ hoa và chữ thường',
+            'password.numbers' => 'Mật khẩu phải chứa số',
+            'password.symbols' => 'Mật khẩu phải chứa ký tự đặc biệt',
+        ]);
+
+        // Kiểm tra token
+        $resetRecord = DB::table('password_reset_tokens')
+            ->where('email', $request->email)
+            ->first();
+
+        if (!$resetRecord) {
+            return back()->withErrors(['email' => 'Token không hợp lệ!']);
         }
+
+        // Kiểm tra token có đúng không
+        if (!Hash::check($request->token, $resetRecord->token)) {
+            return back()->withErrors(['email' => 'Token không hợp lệ!']);
+        }
+
+        // Kiểm tra token đã hết hạn chưa (60 phút)
+        if (now()->diffInMinutes($resetRecord->created_at) > 60) {
+            return back()->withErrors(['email' => 'Link đặt lại mật khẩu đã hết hạn!']);
+        }
+
+        // Cập nhật mật khẩu
+        $user = User::where('email', $request->email)->first();
+        $user->update([
+            'password' => Hash::make($request->password)
+        ]);
+
+        // Xóa token
+        DB::table('password_reset_tokens')->where('email', $request->email)->delete();
+
+        return redirect()->route('login')->with('success', 'Đặt lại mật khẩu thành công! Vui lòng đăng nhập.');
     }
 
     /**
@@ -254,8 +319,7 @@ class UserController extends Controller
      */
     public function loginHistory(User $user)
     {
-        // TODO: Cần tạo bảng login_history để lưu lịch sử đăng nhập
-        // Hiện tại chỉ hiển thị lần đăng nhập cuối
+        // TODO: Cần tạo bảng login_history
         return view('admin.users.login-history', compact('user'));
     }
 
@@ -270,13 +334,10 @@ class UserController extends Controller
         }
 
         try {
-            // Xóa remember token để bắt buộc đăng nhập lại
+            // Xóa remember token
             $user->update([
                 'remember_token' => null
             ]);
-
-            // TODO: Xóa tất cả sessions của user này từ database
-            // Cần config session driver = database
 
             return back()->with('success', 'Đã force logout tài khoản này!');
         } catch (\Exception $e) {

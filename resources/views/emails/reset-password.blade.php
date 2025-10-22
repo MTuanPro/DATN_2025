@@ -1,108 +1,189 @@
 <!DOCTYPE html>
-<html>
+<html lang="vi">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-    <title>Khôi phục mật khẩu - S-MIS</title>
-
+    <title>Reset Mật khẩu - S-MIS</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             line-height: 1.6;
             color: #333;
+            background-color: #f4f4f4;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .email-container {
             max-width: 600px;
             margin: 0 auto;
-            padding: 20px;
+            background-color: #ffffff;
+            border-radius: 10px;
+            overflow: hidden;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
         }
 
-        .container {
-            background-color: #f4f4f4;
-            border-radius: 5px;
-            padding: 30px;
-        }
-
-        .header {
-            background-color: #435ebe;
+        .email-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            padding: 20px;
+            padding: 30px 20px;
             text-align: center;
-            border-radius: 5px 5px 0 0;
-            margin: -30px -30px 20px -30px;
         }
 
-        .content {
-            background-color: white;
-            padding: 20px;
-            border-radius: 5px;
+        .email-header h1 {
+            margin: 0;
+            font-size: 24px;
         }
 
-        .password-box {
+        .email-header .icon {
+            font-size: 48px;
+            margin-bottom: 10px;
+        }
+
+        .email-body {
+            padding: 40px 30px;
+        }
+
+        .greeting {
+            font-size: 18px;
+            margin-bottom: 20px;
+        }
+
+        .message {
+            color: #666;
+            margin-bottom: 30px;
+        }
+
+        .button-container {
+            text-align: center;
+            margin: 40px 0;
+        }
+
+        .reset-button {
+            display: inline-block;
+            padding: 15px 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white !important;
+            text-decoration: none;
+            border-radius: 50px;
+            font-weight: bold;
+            font-size: 16px;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+            transition: all 0.3s ease;
+        }
+
+        .reset-button:hover {
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+            transform: translateY(-2px);
+        }
+
+        .divider {
+            border-top: 1px solid #e0e0e0;
+            margin: 30px 0;
+        }
+
+        .alternative-link {
             background-color: #f8f9fa;
-            border-left: 4px solid #435ebe;
+            border: 1px dashed #dee2e6;
+            border-radius: 8px;
             padding: 15px;
             margin: 20px 0;
-            font-size: 18px;
-            font-weight: bold;
-            letter-spacing: 2px;
         }
 
-        .footer {
-            margin-top: 20px;
+        .alternative-link p {
+            margin: 5px 0;
+            font-size: 12px;
+            color: #666;
+        }
+
+        .alternative-link a {
+            color: #667eea;
+            word-break: break-all;
+            font-size: 11px;
+        }
+
+        .warning-box {
+            background-color: #fff3cd;
+            border-left: 4px solid #ffc107;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .warning-box ul {
+            margin: 10px 0;
+            padding-left: 20px;
+        }
+
+        .warning-box li {
+            margin: 5px 0;
+            color: #856404;
+        }
+
+        .email-footer {
+            background-color: #f8f9fa;
+            padding: 20px;
             text-align: center;
             font-size: 12px;
             color: #666;
         }
 
-        .btn {
-            display: inline-block;
-            padding: 10px 20px;
-            background-color: #435ebe;
-            color: white;
-            text-decoration: none;
-            border-radius: 5px;
-            margin-top: 15px;
+        .email-footer p {
+            margin: 5px 0;
         }
     </style>
 </head>
 
 <body>
-    <div class="container">
-        <div class="header">
-            <h1>Khôi phục mật khẩu</h1>
+    <div class="email-container">
+        <div class="email-header">
+            <div class="icon">🔐</div>
+            <h1>Reset Mật khẩu</h1>
         </div>
-        <div class="content">
-            <p>Xin chào <strong>{{ $userName }}</strong>,</p>
 
-            <p>Chúng tôi đã nhận được yêu cầu khôi phục mật khẩu cho tài khoản của bạn.</p>
-
-            <p>Mật khẩu mới của bạn là:</p>
-
-            <div class="password-box">
-                {{ $newPassword }}
+        <div class="email-body">
+            <div class="greeting">
+                Xin chào <strong>{{ $userName }}</strong>,
             </div>
 
-            <p><strong>Lưu ý quan trọng:</strong></p>
-            <ul>
-                <li>Vui lòng đổi mật khẩu ngay sau khi đăng nhập lần đầu</li>
-                <li>Không chia sẻ mật khẩu này với bất kỳ ai</li>
-                <li>Mật khẩu phân biệt chữ hoa/chữ thường</li>
-            </ul>
+            <div class="message">
+                <p>Bạn nhận được email này vì chúng tôi đã nhận được yêu cầu đặt lại mật khẩu cho tài khoản của bạn
+                    trong hệ thống <strong>S-MIS</strong>.</p>
+            </div>
 
-            <p>Nếu bạn không yêu cầu khôi phục mật khẩu, vui lòng liên hệ với quản trị viên ngay lập tức.</p>
+            <div class="button-container">
+                <a href="{{ $resetLink }}" class="reset-button">
+                    🔑 TẠO MẬT KHẨU MỚI
+                </a>
+            </div>
 
-            <p>Trân trọng,<br>
+            <div class="divider"></div>
 
-                <strong>Hệ thống S-MIS</strong>
+            <div class="alternative-link">
+                <p><strong>Hoặc copy đường link sau vào trình duyệt:</strong></p>
+                <a href="{{ $resetLink }}">{{ $resetLink }}</a>
+            </div>
 
+            <div class="warning-box">
+                <p><strong>⚠️ Lưu ý quan trọng:</strong></p>
+                <ul>
+                    <li>Link này sẽ <strong>hết hiệu lực sau 60 phút</strong></li>
+                    <li>Nếu bạn không yêu cầu reset mật khẩu, vui lòng bỏ qua email này</li>
+                    <li>Không chia sẻ link này với bất kỳ ai</li>
+                    <li>Mật khẩu mới phải đáp ứng yêu cầu bảo mật của hệ thống</li>
+                </ul>
+            </div>
+
+            <p style="margin-top: 30px; color: #666;">
+                Trân trọng,<br>
+                <strong>Đội ngũ S-MIS</strong>
             </p>
         </div>
-        <div class="footer">
-            <p>Email này được gửi tự động, vui lòng không trả lời.</p>
 
-            <p>&copy; {{ date('Y') }} S-MIS. All rights reserved.</p>
-
+        <div class="email-footer">
+            <p>📧 Email tự động, vui lòng không trả lời</p>
+            <p>&copy; {{ date('Y') }} S-MIS - Student Management Information System</p>
         </div>
     </div>
 </body>
