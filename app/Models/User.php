@@ -118,4 +118,20 @@ class User extends Authenticatable
             ->flatten()
             ->unique('id');
     }
+
+    /**
+     * Relationship: User has one Admin
+     */
+    public function admin()
+    {
+        return $this->hasOne(\App\Models\Admin::class, 'user_id');
+    }
+
+    /**
+     * Relationship: User has one DaoTao
+     */
+    public function daoTao()
+    {
+        return $this->hasOne(\App\Models\DaoTao::class, 'user_id');
+    }
 }
