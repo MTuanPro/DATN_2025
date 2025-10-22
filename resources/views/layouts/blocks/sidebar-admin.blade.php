@@ -33,8 +33,8 @@
                         <span>Tài khoản & Phân quyền</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item">
-                            <a href="#">Quản lý Users</a>
+                        <li class="submenu-item {{ Request::is('admin/users*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.users.index') }}">Quản lý Users</a>
                         </li>
                         <li class="submenu-item">
                             <a href="#">Quản lý Vai trò</a>
