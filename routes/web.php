@@ -15,6 +15,16 @@ use App\Http\Controllers\Admin\DaoTaoController;
 use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController;
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
 use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardController;
+use App\Http\Controllers\DaoTao\CTDT\ChuongTrinhKhungController;
+use App\Http\Controllers\DaoTao\CTDT\ChuyenNganhController;
+use App\Http\Controllers\DaoTao\CTDT\KhoaController;
+use App\Http\Controllers\DaoTao\CTDT\NganhController;
+use App\Http\Controllers\DaoTao\CTDT\MonHocController;
+use App\Http\Controllers\DaoTao\CTDT\MonHocTienQuyetController;
+use App\Http\Controllers\DaoTao\CTDT\PhongHocController;
+use App\Http\Controllers\DaoTao\CTDT\TrangThaiHocTapController;
+use App\Http\Controllers\DaoTao\CTDT\TrinhDoController;
+
 
 // Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
 Route::get('/', function () {
@@ -93,7 +103,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('dao-tao', DaoTaoController::class);
     Route::post('/dao-tao/{daoTao}/assign-user', [DaoTaoController::class, 'assignUser'])->name('dao-tao.assign-user');
     Route::post('/dao-tao/{daoTao}/unassign-user', [DaoTaoController::class, 'unassignUser'])->name('dao-tao.unassign-user');
+
 });
+Route::prefix('dao-tao')->name('dao-tao.')->group(function () {
+    Route::resource('khoa', KhoaController::class);
+    Route::resource('nganh', NganhController::class);
+    Route::resource('chuyennganh', ChuyenNganhController::class);
+    Route::resource('trinhdo', TrinhDoController::class);
+    Route::resource('monhoc', MonHocController::class);
+    Route::resource('monhoctienquyet', MonHocTienQuyetController::class);
+    Route::resource('chuongtrinhkhung', ChuongTrinhKhungController::class);
+    Route::resource('trangthaihoctap', TrangThaiHocTapController::class);
+    Route::resource('phonghoc', PhongHocController::class);
+});
+
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
 Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('daotao.')->group(function () {
