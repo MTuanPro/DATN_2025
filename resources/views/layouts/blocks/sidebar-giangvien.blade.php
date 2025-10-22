@@ -3,8 +3,9 @@
         <div class="sidebar-header">
             <div class="d-flex justify-content-between">
                 <div class="logo">
-                    <a href="{{ route('giangvien.dashboard') }}"><img src="{{ asset('assets/images/logo/logo.png') }}"
-                            alt="Logo"></a>
+                    <a href="{{ route('giangvien.dashboard') }}">
+                        <h3 class="mb-0" style="color: #435ebe;"><i class="bi bi-mortarboard-fill me-2"></i>S-MIS</h3>
+                    </a>
                 </div>
                 <div class="toggler">
                     <a href="#" class="sidebar-hide d-xl-none d-block"><i class="bi bi-x bi-middle"></i></a>
