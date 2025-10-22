@@ -81,4 +81,41 @@ class User extends Authenticatable
     {
         return $this->vaiTro()->whereIn('ma_vai_tro', $roles)->exists();
     }
+
+    /**
+     * Kiểm tra user có quyền cụ thể không
+     */
+    public function hasPermission($permission)
+    {
+        return $this->vaiTro()
+            ->whereHas('quyens', function ($query) use ($permission) {
+                $query->where('ma_quyen', $permission);
+            })
+            ->exists();
+    }
+
+    /**
+     * Kiểm tra user có một trong các quyền không
+     */
+    public function hasAnyPermission(array $permissions)
+    {
+        return $this->vaiTro()
+            ->whereHas('quyens', function ($query) use ($permissions) {
+                $query->whereIn('ma_quyen', $permissions);
+            })
+            ->exists();
+    }
+
+    /**
+     * Lấy tất cả quyền của user
+     */
+    public function getAllPermissions()
+    {
+        return $this->vaiTro()
+            ->with('quyens')
+            ->get()
+            ->pluck('quyens')
+            ->flatten()
+            ->unique('id');
+    }
 }

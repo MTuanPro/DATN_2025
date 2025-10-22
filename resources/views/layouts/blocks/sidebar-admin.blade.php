@@ -27,7 +27,7 @@
 
                 <!-- 1. TÀI KHOẢN & PHÂN QUYỀN -->
                 <li
-                    class="sidebar-item has-sub {{ Request::is('admin/users*') || Request::is('admin/vai-tro*') || Request::is('admin/nhom-quyen*') || Request::is('admin/quyen*') ? 'active' : '' }}">
+                    class="sidebar-item has-sub {{ Request::is('admin/users*') || Request::is('admin/vai-tro*') || Request::is('admin/nhom-quyen*') || Request::is('admin/quyen*') || Request::is('admin/vai-tro-quyen*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-shield-lock-fill"></i>
                         <span>Tài khoản & Phân quyền</span>
@@ -36,17 +36,19 @@
                         <li class="submenu-item {{ Request::is('admin/users*') ? 'active' : '' }}">
                             <a href="{{ route('admin.users.index') }}">Quản lý Users</a>
                         </li>
-                        <li class="submenu-item {{ Request::is('admin/vai-tro*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('admin/vai-tro*') && !Request::is('admin/vai-tro-quyen*') ? 'active' : '' }}">
                             <a href="{{ route('admin.vai-tro.index') }}">Quản lý Vai trò</a>
                         </li>
                         <li class="submenu-item {{ Request::is('admin/nhom-quyen*') ? 'active' : '' }}">
                             <a href="{{ route('admin.nhom-quyen.index') }}">Nhóm quyền</a>
                         </li>
-                        <li class="submenu-item {{ Request::is('admin/quyen*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('admin/quyen*') && !Request::is('admin/vai-tro-quyen*') ? 'active' : '' }}">
                             <a href="{{ route('admin.quyen.index') }}">Quản lý Quyền</a>
                         </li>
-                        <li class="submenu-item">
-                            <a href="#">Map Vai trò - Quyền</a>
+                        <li class="submenu-item {{ Request::is('admin/vai-tro-quyen*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.vai-tro-quyen.index') }}">Map Vai trò - Quyền</a>
                         </li>
                     </ul>
                 </li>
