@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\UserController as AdminUserController;
 use App\Http\Controllers\Admin\VaiTroController;
 use App\Http\Controllers\Admin\NhomQuyenController;
 use App\Http\Controllers\Admin\QuyenController;
+use App\Http\Controllers\Admin\VaiTroQuyenController;
 use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController;
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
 use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardController;
@@ -73,6 +74,13 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Permission Management (Member 3)
     Route::resource('quyen', QuyenController::class);
+
+    // Map Vai trò - Quyền (Member 4)
+    Route::get('/vai-tro-quyen', [VaiTroQuyenController::class, 'index'])->name('vai-tro-quyen.index');
+    Route::put('/vai-tro-quyen/update-matrix', [VaiTroQuyenController::class, 'updateMatrix'])->name('vai-tro-quyen.update-matrix');
+    Route::put('/vai-tro-quyen/{vaiTro}', [VaiTroQuyenController::class, 'update'])->name('vai-tro-quyen.update');
+    Route::post('/vai-tro-quyen/{vaiTro}/attach/{quyen}', [VaiTroQuyenController::class, 'attachPermission'])->name('vai-tro-quyen.attach');
+    Route::delete('/vai-tro-quyen/{vaiTro}/detach/{quyen}', [VaiTroQuyenController::class, 'detachPermission'])->name('vai-tro-quyen.detach');
 });
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
