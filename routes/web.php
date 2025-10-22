@@ -6,6 +6,9 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\VaiTroController;
+use App\Http\Controllers\Admin\NhomQuyenController;
+use App\Http\Controllers\Admin\QuyenController;
 use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController;
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
 use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardController;
@@ -62,8 +65,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/users/{user}/login-history', [AdminUserController::class, 'loginHistory'])->name('users.login-history');
     Route::post('/users/{user}/force-logout', [AdminUserController::class, 'forceLogout'])->name('users.force-logout');
 
-    // Vai trò Management
-    Route::resource('vai-tro', \App\Http\Controllers\Admin\VaiTroController::class);
+    // Role Management (Member 2)
+    Route::resource('vai-tro', VaiTroController::class);
+
+    // Permission Group Management (Member 3)
+    Route::resource('nhom-quyen', NhomQuyenController::class);
+
+    // Permission Management (Member 3)
+    Route::resource('quyen', QuyenController::class);
 });
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========

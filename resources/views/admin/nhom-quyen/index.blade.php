@@ -1,20 +1,20 @@
 @extends('layouts.layout-admin')
 
-@section('title', 'Quản lý Vai trò')
+@section('title', 'Quản lý Nhóm quyền')
 
 @section('content')
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-6 order-md-1 order-last">
-                    <h3>Quản lý Vai trò</h3>
-                    <p class="text-subtitle text-muted">Danh sách tất cả vai trò trong hệ thống</p>
+                    <h3>Quản lý Nhóm quyền</h3>
+                    <p class="text-subtitle text-muted">Danh sách tất cả nhóm quyền trong hệ thống</p>
                 </div>
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
                             <li class="breadcrumb-item"><a href="{{ route('admin.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Vai trò</li>
+                            <li class="breadcrumb-item active" aria-current="page">Nhóm quyền</li>
                         </ol>
                     </nav>
                 </div>
@@ -26,18 +26,18 @@
                 <div class="card-header">
                     <div class="row">
                         <div class="col-md-6">
-                            <h5 class="card-title">Danh sách Vai trò</h5>
+                            <h5 class="card-title">Danh sách Nhóm quyền</h5>
                         </div>
                         <div class="col-md-6 text-end">
-                            <a href="{{ route('admin.vai-tro.create') }}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> Thêm vai trò
+                            <a href="{{ route('admin.nhom-quyen.create') }}" class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Thêm nhóm quyền
                             </a>
                         </div>
                     </div>
                 </div>
                 <div class="card-body">
                     <!-- Search Form -->
-                    <form method="GET" action="{{ route('admin.vai-tro.index') }}" class="mb-3">
+                    <form method="GET" action="{{ route('admin.nhom-quyen.index') }}" class="mb-3">
                         <div class="row">
                             <div class="col-md-10">
                                 <input type="text" name="search" class="form-control"
@@ -69,34 +69,30 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
-                                    <th>Mã vai trò</th>
-                                    <th>Tên vai trò</th>
+                                    <th>Mã nhóm quyền</th>
+                                    <th>Tên nhóm quyền</th>
                                     <th>Mô tả</th>
-                                    <th>Ưu tiên</th>
-                                    <th>Số người dùng</th>
+                                    <th>Số quyền</th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @forelse($vaiTros as $vaiTro)
+                                @forelse($nhomQuyens as $nhomQuyen)
                                     <tr>
-                                        <td><code>{{ $vaiTro->ma_vai_tro }}</code></td>
-                                        <td><strong>{{ $vaiTro->ten_vai_tro }}</strong></td>
-                                        <td>{{ Str::limit($vaiTro->mo_ta, 50) }}</td>
+                                        <td><code>{{ $nhomQuyen->ma_nhom }}</code></td>
+                                        <td><strong>{{ $nhomQuyen->ten_nhom }}</strong></td>
+                                        <td>{{ Str::limit($nhomQuyen->mo_ta, 50) }}</td>
                                         <td>
-                                            <span class="badge bg-secondary">{{ $vaiTro->muc_do_uu_tien }}</span>
-                                        </td>
-                                        <td>
-                                            <span class="badge bg-info">{{ $vaiTro->users_count }} người</span>
+                                            <span class="badge bg-info">{{ $nhomQuyen->quyens_count }} quyền</span>
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('admin.vai-tro.edit', $vaiTro) }}"
+                                                <a href="{{ route('admin.nhom-quyen.edit', $nhomQuyen) }}"
                                                     class="btn btn-sm btn-warning">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
-                                                <form action="{{ route('admin.vai-tro.destroy', $vaiTro) }}" method="POST"
-                                                    onsubmit="return confirm('Bạn có chắc chắn muốn xóa vai trò này?');">
+                                                <form action="{{ route('admin.nhom-quyen.destroy', $nhomQuyen) }}" method="POST"
+                                                    onsubmit="return confirm('Bạn có chắc chắn muốn xóa nhóm quyền này?');">
                                                     @csrf
                                                     @method('DELETE')
                                                     <button type="submit" class="btn btn-sm btn-danger">
@@ -108,9 +104,9 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center text-muted py-4">
+                                        <td colspan="5" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox fs-1"></i>
-                                            <p class="mt-2">Không có vai trò nào</p>
+                                            <p class="mt-2">Không có nhóm quyền nào</p>
                                         </td>
                                     </tr>
                                 @endforelse
@@ -120,10 +116,12 @@
 
                     <!-- Pagination -->
                     <div class="mt-3">
-                        {{ $vaiTros->links() }}
+                        {{ $nhomQuyens->links() }}
                     </div>
                 </div>
             </div>
         </section>
     </div>
 @endsection
+
+
