@@ -4,6 +4,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
     <title>Quên mật khẩu - S-MIS</title>
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.css') }}">
@@ -50,6 +51,7 @@
                                 <i class="bi bi-envelope"></i>
                             </div>
                             @error('email')
+
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>

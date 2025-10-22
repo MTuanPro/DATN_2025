@@ -31,7 +31,9 @@ class ResetPasswordMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
+
             subject: 'Khôi phục mật khẩu - S-MIS',
+
         );
     }
 
