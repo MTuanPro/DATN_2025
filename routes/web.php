@@ -10,6 +10,8 @@ use App\Http\Controllers\Admin\VaiTroController;
 use App\Http\Controllers\Admin\NhomQuyenController;
 use App\Http\Controllers\Admin\QuyenController;
 use App\Http\Controllers\Admin\VaiTroQuyenController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\DaoTaoController;
 use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController;
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
 use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardController;
@@ -81,6 +83,16 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::put('/vai-tro-quyen/{vaiTro}', [VaiTroQuyenController::class, 'update'])->name('vai-tro-quyen.update');
     Route::post('/vai-tro-quyen/{vaiTro}/attach/{quyen}', [VaiTroQuyenController::class, 'attachPermission'])->name('vai-tro-quyen.attach');
     Route::delete('/vai-tro-quyen/{vaiTro}/detach/{quyen}', [VaiTroQuyenController::class, 'detachPermission'])->name('vai-tro-quyen.detach');
+
+    // Admin Management (Member 5)
+    Route::resource('admin', AdminController::class);
+    Route::post('/admin/{admin}/assign-user', [AdminController::class, 'assignUser'])->name('admin.assign-user');
+    Route::post('/admin/{admin}/unassign-user', [AdminController::class, 'unassignUser'])->name('admin.unassign-user');
+
+    // Dao Tao Management (Member 5)
+    Route::resource('dao-tao', DaoTaoController::class);
+    Route::post('/dao-tao/{daoTao}/assign-user', [DaoTaoController::class, 'assignUser'])->name('dao-tao.assign-user');
+    Route::post('/dao-tao/{daoTao}/unassign-user', [DaoTaoController::class, 'unassignUser'])->name('dao-tao.unassign-user');
 });
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
