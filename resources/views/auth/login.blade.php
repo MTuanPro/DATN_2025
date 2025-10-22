@@ -5,6 +5,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - S-MIS</title>
+
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
@@ -18,6 +19,7 @@
             <div class="col-lg-5 col-12">
                 <div id="auth-left">
                     <div class="auth-logo">
+
                         <a href="{{ url('/') }}">
                             <h2 class="mb-0" style="color: #435ebe;"><i class="bi bi-mortarboard-fill me-2"></i>S-MIS
                             </h2>
@@ -50,9 +52,11 @@
                                 <i class="bi bi-person"></i>
                             </div>
                             @error('email')
+
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
+
                             @enderror
                         </div>
                         <div class="form-group position-relative has-icon-left mb-4">
@@ -63,9 +67,11 @@
                                 <i class="bi bi-shield-lock"></i>
                             </div>
                             @error('password')
+
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
+
                             @enderror
                         </div>
                         <div class="form-check form-check-lg d-flex align-items-end">
