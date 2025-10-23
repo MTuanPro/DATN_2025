@@ -22,6 +22,7 @@ return new class extends Migration
             $table->integer('thu_tu_hoc')->nullable()->comment('Thứ tự ưu tiên học trong học kỳ');
             $table->text('ghi_chu')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['chuyen_nganh_id', 'mon_hoc_id']);
         });
