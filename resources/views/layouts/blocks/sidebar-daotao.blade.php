@@ -37,12 +37,15 @@
                         </li>
                         <li class="submenu-item"><a href="{{ route('dao-tao.chuyen-nganh.index') }}">Quản lý Chuyên
                                 ngành</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Trình độ</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.trinh-do.index') }}">Quản lý Trình độ</a>
+                        </li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.trang-thai-hoc-tap.index') }}">Trạng thái
+                                học tập</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.phong-hoc.index') }}">Quản lý Phòng học</a>
+                        </li>
                         <li class="submenu-item"><a href="#">Quản lý Môn học</a></li>
                         <li class="submenu-item"><a href="#">Môn tiên quyết</a></li>
                         <li class="submenu-item"><a href="#">Chương trình khung</a></li>
-                        <li class="submenu-item"><a href="#">Trạng thái học tập</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Phòng học</a></li>
                     </ul>
                 </li>
 

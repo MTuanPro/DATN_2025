@@ -22,9 +22,9 @@ use App\Http\Controllers\DaoTao\CTDT\KhoaHocController;
 use App\Http\Controllers\DaoTao\CTDT\NganhController;
 use App\Http\Controllers\DaoTao\CTDT\MonHocController;
 use App\Http\Controllers\DaoTao\CTDT\MonHocTienQuyetController;
-use App\Http\Controllers\DaoTao\CTDT\PhongHocController;
-use App\Http\Controllers\DaoTao\CTDT\TrangThaiHocTapController;
-use App\Http\Controllers\DaoTao\CTDT\TrinhDoController;
+use App\Http\Controllers\DaoTao\DanhMuc\PhongHocController;
+use App\Http\Controllers\DaoTao\DanhMuc\TrangThaiHocTapController;
+use App\Http\Controllers\DaoTao\DanhMuc\TrinhDoController;
 
 
 // Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
@@ -110,13 +110,12 @@ Route::prefix('dao-tao')->name('dao-tao.')->group(function () {
     Route::resource('nganh', NganhController::class);
     Route::resource('chuyen-nganh', ChuyenNganhController::class);
     Route::resource('khoa-hoc', KhoaHocController::class);
-    Route::resource('chuyennganh', ChuyenNganhController::class);
-    Route::resource('trinhdo', TrinhDoController::class);
+    Route::resource('trinh-do', TrinhDoController::class);
+    Route::resource('trang-thai-hoc-tap', TrangThaiHocTapController::class);
+    Route::resource('phong-hoc', PhongHocController::class);
     Route::resource('monhoc', MonHocController::class);
     Route::resource('monhoctienquyet', MonHocTienQuyetController::class);
     Route::resource('chuongtrinhkhung', ChuongTrinhKhungController::class);
-    Route::resource('trangthaihoctap', TrangThaiHocTapController::class);
-    Route::resource('phonghoc', PhongHocController::class);
 });
 
 
