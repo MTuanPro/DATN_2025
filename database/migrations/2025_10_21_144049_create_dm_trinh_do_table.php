@@ -15,6 +15,7 @@ return new class extends Migration
             $table->id();
             $table->string('ten_trinh_do')->unique();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
