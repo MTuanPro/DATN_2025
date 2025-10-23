@@ -31,8 +31,8 @@
                         <span>Danh mục & CTĐT</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Quản lý Khoa</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Ngành</a></li>
+                        <li class="submenu-item"><a href="{{route('dao-tao.khoa.index')}}">Quản lý Khoa</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.nganh.index') }}">Quản lý Ngành</a></li>
                         <li class="submenu-item"><a href="#">Quản lý Chuyên ngành</a></li>
                         <li class="submenu-item"><a href="#">Quản lý Trình độ</a></li>
                         <li class="submenu-item"><a href="#">Quản lý Môn học</a></li>
