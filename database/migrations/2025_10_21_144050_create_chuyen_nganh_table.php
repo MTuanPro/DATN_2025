@@ -19,6 +19,7 @@ return new class extends Migration
             $table->integer('tong_tin_chi_toi_thieu')->nullable()->comment('Tổng số tín chỉ tối thiểu để tốt nghiệp');
             $table->text('mo_ta')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['ten_chuyen_nganh', 'nganh_id']);
         });

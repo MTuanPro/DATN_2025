@@ -18,6 +18,7 @@ use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardContro
 use App\Http\Controllers\DaoTao\CTDT\ChuongTrinhKhungController;
 use App\Http\Controllers\DaoTao\CTDT\ChuyenNganhController;
 use App\Http\Controllers\DaoTao\CTDT\KhoaController;
+use App\Http\Controllers\DaoTao\CTDT\KhoaHocController;
 use App\Http\Controllers\DaoTao\CTDT\NganhController;
 use App\Http\Controllers\DaoTao\CTDT\MonHocController;
 use App\Http\Controllers\DaoTao\CTDT\MonHocTienQuyetController;
@@ -103,11 +104,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('dao-tao', DaoTaoController::class);
     Route::post('/dao-tao/{daoTao}/assign-user', [DaoTaoController::class, 'assignUser'])->name('dao-tao.assign-user');
     Route::post('/dao-tao/{daoTao}/unassign-user', [DaoTaoController::class, 'unassignUser'])->name('dao-tao.unassign-user');
-
 });
 Route::prefix('dao-tao')->name('dao-tao.')->group(function () {
     Route::resource('khoa', KhoaController::class);
     Route::resource('nganh', NganhController::class);
+    Route::resource('chuyen-nganh', ChuyenNganhController::class);
+    Route::resource('khoa-hoc', KhoaHocController::class);
     Route::resource('chuyennganh', ChuyenNganhController::class);
     Route::resource('trinhdo', TrinhDoController::class);
     Route::resource('monhoc', MonHocController::class);

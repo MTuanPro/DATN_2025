@@ -17,8 +17,10 @@ return new class extends Migration
             $table->integer('nam_bat_dau');
             $table->integer('nam_ket_thuc');
             $table->integer('so_nam_dao_tao')->default(4);
+            $table->enum('trang_thai', ['dang_hoc', 'da_tot_nghiep'])->default('dang_hoc');
             $table->text('mo_ta')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
