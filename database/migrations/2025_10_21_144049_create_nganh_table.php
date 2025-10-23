@@ -18,6 +18,7 @@ return new class extends Migration
             $table->foreignId('khoa_id')->nullable()->constrained('khoa')->onDelete('set null');
             $table->text('mo_ta')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['ten_nganh', 'khoa_id']);
         });
