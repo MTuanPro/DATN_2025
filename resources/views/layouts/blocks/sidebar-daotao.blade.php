@@ -43,8 +43,8 @@
                                 học tập</a></li>
                         <li class="submenu-item"><a href="{{ route('dao-tao.phong-hoc.index') }}">Quản lý Phòng học</a>
                         </li>
-                        <li class="submenu-item"><a href="#">Quản lý Môn học</a></li>
-                        <li class="submenu-item"><a href="#">Môn tiên quyết</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.mon-hoc.index') }}">Quản lý Môn học</a>
+                        </li>
                         <li class="submenu-item"><a href="#">Chương trình khung</a></li>
                     </ul>
                 </li>
