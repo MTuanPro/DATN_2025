@@ -19,6 +19,7 @@ return new class extends Migration
             $table->boolean('dieu_kien_qua_mon')->default(true)->comment('Phải qua môn tiên quyết mới được đăng ký');
             $table->text('ghi_chu')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['mon_hoc_id', 'mon_tien_quyet_id']);
         });

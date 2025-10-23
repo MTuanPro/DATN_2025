@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('ten_trang_thai')->unique()->comment('Đang học, Bảo lưu, Thôi học, Tốt nghiệp');
             $table->text('mo_ta')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
