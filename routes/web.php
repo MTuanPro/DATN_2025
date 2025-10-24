@@ -18,15 +18,12 @@ use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardContro
 use App\Http\Controllers\DaoTao\CTDT\ChuongTrinhKhungController;
 use App\Http\Controllers\DaoTao\CTDT\ChuyenNganhController;
 use App\Http\Controllers\DaoTao\CTDT\KhoaController;
-use App\Http\Controllers\DaoTao\CTDT\KhoaHocController;
 use App\Http\Controllers\DaoTao\CTDT\NganhController;
 use App\Http\Controllers\DaoTao\CTDT\MonHocController;
 use App\Http\Controllers\DaoTao\CTDT\MonHocTienQuyetController;
-use App\Http\Controllers\DaoTao\DanhMuc\PhongHocController;
-use App\Http\Controllers\DaoTao\DanhMuc\TrangThaiHocTapController;
-use App\Http\Controllers\DaoTao\DanhMuc\TrinhDoController;
-use App\Http\Controllers\DaoTao\GiangVienController;
-use App\Http\Controllers\DaoTao\HocKyController;
+use App\Http\Controllers\DaoTao\CTDT\PhongHocController;
+use App\Http\Controllers\DaoTao\CTDT\TrangThaiHocTapController;
+use App\Http\Controllers\DaoTao\CTDT\TrinhDoController;
 
 
 // Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
@@ -81,7 +78,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/users/{user}/login-history', [AdminUserController::class, 'loginHistory'])->name('users.login-history');
     Route::post('/users/{user}/force-logout', [AdminUserController::class, 'forceLogout'])->name('users.force-logout');
 
-    // Vai trò Management (Member 2)
+    // Role Management (Member 2)
     Route::resource('vai-tro', VaiTroController::class);
 
     // Permission Group Management (Member 3)
@@ -106,41 +103,26 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('dao-tao', DaoTaoController::class);
     Route::post('/dao-tao/{daoTao}/assign-user', [DaoTaoController::class, 'assignUser'])->name('dao-tao.assign-user');
     Route::post('/dao-tao/{daoTao}/unassign-user', [DaoTaoController::class, 'unassignUser'])->name('dao-tao.unassign-user');
+
 });
-
-// ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
-Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('dao-tao.')->group(function () {
-    Route::get('/dashboard', [DaoTaoDashboardController::class, 'index'])->name('dashboard');
-
-    // PHASE 1: Danh mục
+Route::prefix('dao-tao')->name('dao-tao.')->group(function () {
     Route::resource('khoa', KhoaController::class);
     Route::resource('nganh', NganhController::class);
-    Route::resource('chuyen-nganh', ChuyenNganhController::class);
-    Route::resource('khoa-hoc', KhoaHocController::class);
-    Route::resource('trinh-do', TrinhDoController::class);
-    Route::resource('trang-thai-hoc-tap', TrangThaiHocTapController::class);
-    Route::resource('phong-hoc', PhongHocController::class);
+    Route::resource('chuyennganh', ChuyenNganhController::class);
+    Route::resource('trinhdo', TrinhDoController::class);
+    Route::resource('monhoc', MonHocController::class);
+    Route::resource('monhoctienquyet', MonHocTienQuyetController::class);
+    Route::resource('chuongtrinhkhung', ChuongTrinhKhungController::class);
+    Route::resource('trangthaihoctap', TrangThaiHocTapController::class);
+    Route::resource('phonghoc', PhongHocController::class);
+});
 
-    // PHASE 2: Giảng viên và Học kỳ
-    Route::resource('giang-vien', GiangVienController::class);
-    Route::get('giang-vien-import', [GiangVienController::class, 'showImportForm'])->name('giang-vien.show-import-form');
-    Route::post('giang-vien-import', [GiangVienController::class, 'import'])->name('giang-vien.import');
-    Route::get('giang-vien-template', [GiangVienController::class, 'downloadTemplate'])->name('giang-vien.download-template');
 
-    Route::resource('hoc-ky', HocKyController::class);
-    Route::post('hoc-ky/{hocKy}/set-hien-tai', [HocKyController::class, 'setHienTai'])->name('hoc-ky.set-hien-tai');
-    Route::post('hoc-ky/{hocKy}/mo-dang-ky', [HocKyController::class, 'moDangKy'])->name('hoc-ky.mo-dang-ky');
-    Route::get('hoc-ky/{hocKy}/kiem-tra-dang-ky', [HocKyController::class, 'kiemTraDangKy'])->name('hoc-ky.kiem-tra-dang-ky');
+// ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
+Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('daotao.')->group(function () {
+    Route::get('/dashboard', [DaoTaoDashboardController::class, 'index'])->name('dashboard');
 
-    // Môn học và môn tiên quyết
-    Route::resource('mon-hoc', MonHocController::class);
-    Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'tienQuyet'])->name('mon-hoc.tien-quyet');
-    Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'storeTienQuyet'])->name('mon-hoc.tien-quyet.store');
-    Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocController::class, 'destroyTienQuyet'])->name('mon-hoc.tien-quyet.destroy');
-
-    // Chương trình khung
-    Route::resource('chuong-trinh-khung', ChuongTrinhKhungController::class);
-    Route::get('chuong-trinh-khung/thong-ke/{chuyenNganhId}', [ChuongTrinhKhungController::class, 'thongKe'])->name('chuong-trinh-khung.thong-ke');
+    // Thêm các route đào tạo khác ở đây
 });
 
 // ========== Giảng viên Routes ==========
