@@ -120,8 +120,9 @@ Route::prefix('dao-tao')->name('dao-tao.')->group(function () {
     Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'storeTienQuyet'])->name('mon-hoc.tien-quyet.store');
     Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocController::class, 'destroyTienQuyet'])->name('mon-hoc.tien-quyet.destroy');
 
-    Route::resource('monhoctienquyet', MonHocTienQuyetController::class);
-    Route::resource('chuongtrinhkhung', ChuongTrinhKhungController::class);
+    // Chương trình khung
+    Route::resource('chuong-trinh-khung', ChuongTrinhKhungController::class);
+    Route::get('chuong-trinh-khung/thong-ke/{chuyenNganhId}', [ChuongTrinhKhungController::class, 'thongKe'])->name('chuong-trinh-khung.thong-ke');
 });
 
 
