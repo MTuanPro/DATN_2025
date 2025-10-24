@@ -141,77 +141,200 @@
 **Actor chính:** Đào tạo (Admin hỗ trợ)  
 **Ưu tiên:** CAO - Nền tảng cho tất cả chức năng
 
-#### Công việc:
+#### **Member 1: CRUD Khoa & Ngành**
 
-1. **CRUD Khoa (Faculty)**
+**Người làm:** [Tên member 1]  
+**Thời gian:** 2-3 ngày
 
-    - [ ] Danh sách khoa
-    - [ ] Thêm/Sửa/Xóa khoa
-    - [ ] Tìm kiếm & phân trang
+**Công việc:**
+
+1. **CRUD Khoa (Faculty) - khoa**
+
+    - [ ] Xem danh sách khoa
+    - [ ] Thêm khoa mới
+    - [ ] Sửa khoa
+    - [ ] Xóa khoa (soft delete)
+    - [ ] Tìm kiếm khoa
+    - [ ] Phân trang
+    - [ ] Validation (tên khoa unique, mã khoa unique)
+
+2. **CRUD Ngành (Major) - nganh**
+    - [ ] Xem danh sách ngành (theo khoa)
+    - [ ] Thêm ngành mới
+    - [ ] Sửa ngành
+    - [ ] Xóa ngành (soft delete)
+    - [ ] Liên kết với khoa (dropdown, foreign key)
+    - [ ] Tìm kiếm ngành
+    - [ ] Phân trang
+    - [ ] Validation (tên ngành unique trong khoa, mã ngành unique)
+
+**Routes:**
+
+-   `/admin/khoa` (index, create, store, edit, update, destroy)
+-   `/admin/nganh` (index, create, store, edit, update, destroy)
+
+---
+
+#### **Member 2: CRUD Chuyên ngành & Khóa học**
+
+**Người làm:** [Tên member 2]  
+**Thời gian:** 2-3 ngày
+
+**Công việc:**
+
+1. **CRUD Chuyên ngành (Specialization) - chuyen_nganh**
+
+    - [ ] Xem danh sách chuyên ngành (theo ngành)
+    - [ ] Thêm chuyên ngành mới
+    - [ ] Sửa chuyên ngành
+    - [ ] Xóa chuyên ngành (soft delete)
+    - [ ] Liên kết với ngành (dropdown, foreign key)
+    - [ ] Thiết lập tổng tín chỉ tối thiểu (tong_tin_chi_toi_thieu)
+    - [ ] Tìm kiếm chuyên ngành
+    - [ ] Phân trang
     - [ ] Validation
 
-2. **CRUD Ngành (Major)**
-
-    - [ ] Danh sách ngành theo khoa
-    - [ ] Thêm/Sửa/Xóa ngành
-    - [ ] Liên kết với khoa (dropdown)
+2. **CRUD Khóa học (Academic Year) - khoa_hoc**
+    - [ ] Xem danh sách khóa học (2021, 2022, 2023...)
+    - [ ] Thêm khóa học mới
+    - [ ] Sửa khóa học
+    - [ ] Xóa khóa học (soft delete)
+    - [ ] Thiết lập năm bắt đầu/kết thúc
+    - [ ] Cập nhật trạng thái (đang học, tốt nghiệp)
     - [ ] Validation
 
-3. **CRUD Chuyên ngành (Specialization)**
+**Routes:**
 
-    - [ ] Danh sách chuyên ngành theo ngành
-    - [ ] Thêm/Sửa/Xóa chuyên ngành
-    - [ ] Liên kết với ngành
-    - [ ] Thiết lập tổng tín chỉ tối thiểu
-    - [ ] Validation
+-   `/admin/chuyen-nganh` (index, create, store, edit, update, destroy)
+-   `/admin/khoa-hoc` (index, create, store, edit, update, destroy)
 
-4. **CRUD Trình độ (dm_trinh_do)** 🆕
+---
+
+#### **Member 3: CRUD Trình độ, Trạng thái học tập & Phòng học**
+
+**Người làm:** [Tên member 3]  
+**Thời gian:** 2-3 ngày
+
+**Công việc:**
+
+1. **CRUD Trình độ (dm_trinh_do)**
 
     - [ ] Xem danh sách trình độ (Cử nhân, Thạc sĩ, Tiến sĩ)
     - [ ] Thêm trình độ mới
     - [ ] Sửa trình độ
-    - [ ] Xóa trình độ
+    - [ ] Xóa trình độ (soft delete)
     - [ ] Validation
 
-5. **CRUD Trạng thái học tập (trang_thai_hoc_tap)** 🆕
+2. **CRUD Trạng thái học tập (trang_thai_hoc_tap)**
 
     - [ ] Xem danh sách trạng thái (Đang học, Bảo lưu, Thôi học, Tốt nghiệp)
     - [ ] Thêm trạng thái mới
     - [ ] Sửa trạng thái
-    - [ ] Xóa trạng thái
+    - [ ] Xóa trạng thái (soft delete)
     - [ ] Validation
 
-6. **CRUD Môn học (Course)**
+3. **CRUD Phòng học (Classroom) - phong_hoc**
+    - [ ] Xem danh sách phòng học
+    - [ ] Thêm phòng học mới
+    - [ ] Sửa phòng học
+    - [ ] Xóa phòng học (soft delete)
+    - [ ] Thiết lập sức chứa
+    - [ ] Thiết lập loại phòng (lý thuyết, thực hành, máy tính)
+    - [ ] Cập nhật trạng thái sử dụng (đang dùng, bảo trì, ngưng sử dụng)
+    - [ ] Validation
 
-    - [ ] Danh sách môn học
-    - [ ] Thêm/Sửa/Xóa môn học
-    - [ ] Thiết lập số tín chỉ (lý thuyết/thực hành)
-    - [ ] Phân loại môn học (đại cương, cơ sở ngành, chuyên ngành...)
-    - [ ] Gán khoa quản lý
+**Routes:**
+
+-   `/admin/trinh-do` (index, create, store, edit, update, destroy)
+-   `/admin/trang-thai-hoc-tap` (index, create, store, edit, update, destroy)
+-   `/admin/phong-hoc` (index, create, store, edit, update, destroy)
+
+---
+
+#### **Member 4: CRUD Môn học & Môn học tiên quyết**
+
+**Người làm:** [Tên member 4]  
+**Thời gian:** 3-4 ngày
+
+**Công việc:**
+
+1. **CRUD Môn học (Course) - mon_hoc**
+
+    - [ ] Xem danh sách môn học
+    - [ ] Thêm môn học mới
+    - [ ] Sửa môn học
+    - [ ] Xóa môn học (soft delete)
+    - [ ] Thiết lập số tín chỉ lý thuyết (so_tin_chi_ly_thuyet)
+    - [ ] Thiết lập số tín chỉ thực hành (so_tin_chi_thuc_hanh)
+    - [ ] Phân loại môn học (đại cương, cơ sở ngành, chuyên ngành, tự chọn)
+    - [ ] Gán khoa quản lý (khoa_id)
     - [ ] Thiết lập hình thức dạy (offline, online, hybrid)
-    - [ ] Import từ Excel
-    - [ ] Xuất danh sách môn học
+    - [ ] Tìm kiếm môn học
+    - [ ] Phân trang
+    - [ ] Import từ Excel (template: mã môn, tên môn, tín chỉ, khoa)
+    - [ ] Xuất danh sách môn học Excel/PDF
     - [ ] Validation
 
-7. **Quản lý Môn học tiên quyết (mon_hoc_tien_quyet)**
-
-    - [ ] Xem môn tiên quyết của môn học
-    - [ ] Thêm môn tiên quyết
-    - [ ] Sửa thông tin (loại tiên quyết, điều kiện qua môn)
+2. **Quản lý Môn học tiên quyết (mon_hoc_tien_quyet)**
+    - [ ] Xem danh sách môn tiên quyết của môn học
+    - [ ] Thêm môn tiên quyết (môn A yêu cầu môn B)
+    - [ ] Sửa thông tin môn tiên quyết
+    - [ ] Thiết lập loại tiên quyết (bắt buộc, khuyến nghị)
+    - [ ] Thiết lập điều kiện qua môn (>= 4.0, >= 5.0)
     - [ ] Xóa môn tiên quyết
-    - [ ] Validation
+    - [ ] Validation (kiểm tra vòng lặp: A → B → C → A)
 
-8. **Chương trình khung (CTĐT - Curriculum)**
+**Routes:**
+
+-   `/admin/mon-hoc` (index, create, store, edit, update, destroy)
+-   `/admin/mon-hoc/{monHoc}/tien-quyet` (index, store, update, destroy)
+-   `/admin/mon-hoc/import` (import Excel)
+-   `/admin/mon-hoc/export` (export Excel/PDF)
+
+---
+
+#### **Member 5: Chương trình khung (CTĐT)**
+
+**Người làm:** [Tên member 5]  
+**Thời gian:** 3-4 ngày
+
+**Công việc:**
+
+1. **Quản lý Chương trình khung (CTĐT - Curriculum) - chuong_trinh_khung**
+
     - [ ] Xem CTĐT theo chuyên ngành
     - [ ] Thêm môn học vào CTĐT
-    - [ ] Sửa thông tin môn trong CTĐT (học kỳ gợi ý, thứ tự học, bắt buộc/tự chọn)
+    - [ ] Sửa thông tin môn trong CTĐT
+        - [ ] Học kỳ gợi ý (hoc_ky_goi_y: 1-8)
+        - [ ] Thứ tự học (thu_tu_hoc: 1, 2, 3...)
+        - [ ] Loại môn (bat_buoc, tu_chon)
     - [ ] Xóa môn khỏi CTĐT
-    - [ ] Sắp xếp thứ tự môn học
-    - [ ] Tổng tín chỉ, tỷ lệ môn bắt buộc/tự chọn
-    - [ ] Import CTĐT từ Excel
-    - [ ] Xuất PDF CTĐT
+    - [ ] Sắp xếp thứ tự môn học (drag & drop hoặc số thứ tự)
+    - [ ] Xem tổng tín chỉ CTĐT
+    - [ ] Xem tỷ lệ môn bắt buộc/tự chọn
+    - [ ] Import CTĐT từ Excel (template: chuyên ngành, mã môn, học kỳ, loại môn, thứ tự)
+    - [ ] Xuất PDF CTĐT (bao gồm: tên chuyên ngành, danh sách môn học phân theo học kỳ, tổng tín chỉ)
+    - [ ] Validation (kiểm tra môn trùng, tín chỉ tối thiểu)
 
-**Output:** Hệ thống danh mục hoàn chỉnh với Trình độ và Trạng thái học tập, sẵn sàng cho đăng ký môn học
+2. **Thống kê CTĐT**
+    - [ ] Tổng số môn học
+    - [ ] Tổng tín chỉ bắt buộc
+    - [ ] Tổng tín chỉ tự chọn
+    - [ ] Tổng tín chỉ toàn khóa
+    - [ ] Phân bố môn theo học kỳ
+
+**Routes:**
+
+-   `/admin/chuong-trinh-khung` (index - xem theo chuyên ngành)
+-   `/admin/chuong-trinh-khung/create` (thêm môn vào CTĐT)
+-   `/admin/chuong-trinh-khung/{id}/edit` (sửa thông tin môn trong CTĐT)
+-   `/admin/chuong-trinh-khung/{id}/destroy` (xóa môn khỏi CTĐT)
+-   `/admin/chuong-trinh-khung/import` (import Excel)
+-   `/admin/chuong-trinh-khung/export-pdf` (export PDF)
+
+---
+
+**Output Phase 1:** Hệ thống danh mục hoàn chỉnh (Khoa, Ngành, Chuyên ngành, Khóa học, Trình độ, Trạng thái học tập, Phòng học, Môn học, Môn tiên quyết, CTĐT), sẵn sàng cho Phase 2
 
 ---
 
@@ -231,26 +354,16 @@
     - [ ] Import từ Excel
     - [ ] Validation email, SĐT
 
-2. **CRUD Khóa học (Academic Year)**
-
-    - [ ] Danh sách khóa học (2021, 2022, 2023...)
-    - [ ] Thêm/Sửa/Xóa khóa học
-    - [ ] Trạng thái (đang học, tốt nghiệp)
-
-3. **CRUD Học kỳ (Semester)**
+2. **CRUD Học kỳ (Semester)**
 
     - [ ] Danh sách học kỳ
     - [ ] Thiết lập học kỳ hiện tại
     - [ ] Thời gian bắt đầu/kết thúc
     - [ ] Mở đăng ký môn học
 
-4. **CRUD Phòng học (Classroom)**
-    - [ ] Danh sách phòng học
-    - [ ] Thêm/Sửa/Xóa phòng học
-    - [ ] Sức chứa, loại phòng (lý thuyết/thực hành)
-    - [ ] Trạng thái sử dụng
-
 **Output:** Dữ liệu nhân sự và thời gian sẵn sàng
+
+**Ghi chú:** CRUD Khóa học và CRUD Phòng học đã được triển khai trong Phase 1
 
 ---
 
@@ -1094,6 +1207,13 @@ git push origin Minhtuan
 
 ## 📝 LỊCH SỬ CẬP NHẬT
 
+### Version 2.1 - 24/10/2025
+
+-   ✅ Loại bỏ các chức năng trùng lặp trong Phase 2
+-   ✅ Xóa phần "Chiến lược triển khai" và "Lưu ý quan trọng" bị lặp ở cuối file
+-   ✅ Xóa phần "Hành động tiếp theo" bị lặp
+-   ✅ Tối ưu hóa cấu trúc tài liệu
+
 ### Version 2.0 - 21/10/2025
 
 -   ✅ Thêm **Phase 0**: Quản trị & Phân quyền (QUAN TRỌNG)
@@ -1120,110 +1240,7 @@ git push origin Minhtuan
 **Ghi chú:** Tài liệu này sẽ được cập nhật liên tục theo tiến độ thực tế. Mỗi Phase hoàn thành sẽ đánh dấu ✅ và ghi chú ngày hoàn thành.
 
 **Ngày tạo:** 21/10/2025  
-**Phiên bản hiện tại:** 2.0  
+**Ngày cập nhật:** 24/10/2025  
+**Phiên bản hiện tại:** 2.1  
 **Người tạo:** Development Team  
 **Ghi chú:** Phase 12 (AI Chatbot) là tùy chọn, có thể bỏ qua nếu thiếu thời gian
-
----
-
-## 🎯 CHIẾN LƯỢC TRIỂN KHAI
-
-### 1. Nguyên tắc phát triển
-
--   ✅ **Từ nền tảng đến nghiệp vụ**: Hoàn thành danh mục trước khi làm chức năng
--   ✅ **Từ đơn giản đến phức tạp**: CRUD trước, logic nghiệp vụ sau
--   ✅ **Từ backend đến frontend**: API + Logic trước, UI sau
--   ✅ **Testing liên tục**: Test sau mỗi feature, không đợi cuối dự án
-
-### 2. Quy trình làm việc mỗi chức năng
-
-1. **Phân tích yêu cầu** → Đọc file CHUC*NANG*\*.md
-2. **Thiết kế database** → Đã có sẵn trong migrations
-3. **Tạo Model & Relationships** → Laravel Eloquent
-4. **Tạo Controller & Routes** → RESTful API
-5. **Tạo Views** → Blade template với Mazer
-6. **Validation & Error Handling** → Form Request
-7. **Testing** → Unit + Feature tests
-8. **Git commit** → Commit từng feature nhỏ
-
-### 3. Ưu tiên tuyệt đối
-
-🔥 **Phase 5 (Đăng ký môn học)** là trái tim của hệ thống  
-→ Tất cả Phase 1-4 phải phục vụ cho Phase 5
-
----
-
-## 💡 LƯU Ý QUAN TRỌNG
-
-### 1. Database đã sẵn sàng ✅
-
--   50 bảng đã được migrate
--   Hỗ trợ đầy đủ tính năng học lại (`qua_mon`, `uu_tien`)
--   Hỗ trợ tính học phí (`so_tin_chi`, `don_gia_tren_tin_chi`)
--   Hỗ trợ môn tiên quyết (`mon_tien_quyet`)
-
-### 2. Laravel 12 Compatibility ✅
-
--   Code 100% Laravel 12 compliant
--   Sử dụng syntax mới nhất
--   Không cần refactor
-
-### 3. Git workflow
-
--   Branch chính: `main` hoặc `master`
--   Branch phát triển: `Minhtuan`
--   Commit thường xuyên với message rõ ràng
--   Merge về main khi hoàn thành mỗi Phase
-
-### 4. Tài khoản test
-
-```
-Admin: admin@smis.edu.vn / 123456
-Trưởng phòng ĐT: truongphong@smis.edu.vn / 123456
-Nhân viên ĐT: nhanvien@smis.edu.vn / 123456
-Giảng viên: giangvien@smis.edu.vn / 123456
-Sinh viên: sinhvien@smis.edu.vn / 123456
-Test email (quên mật khẩu): conjvayba@gmail.com / 123456
-```
-
----
-
-## 📅 HÀNH ĐỘNG TIẾP THEO
-
-### ✨ Bắt đầu ngay với Phase 1:
-
-**Công việc đầu tiên:** CRUD Khoa - Ngành - Chuyên ngành
-
-```bash
-# 1. Tạo Controller
-php artisan make:controller DaoTao/KhoaController --resource
-
-# 2. Tạo Views
-# - resources/views/daotao/khoa/index.blade.php
-# - resources/views/daotao/khoa/create.blade.php
-# - resources/views/daotao/khoa/edit.blade.php
-
-# 3. Thêm routes vào routes/web.php
-
-# 4. Test chức năng
-
-# 5. Commit
-git add .
-git commit -m "feat: CRUD Khoa"
-git push origin Minhtuan
-```
-
----
-
-## 📞 HỖ TRỢ
-
--   **Framework:** Laravel 12 Documentation
--   **Template:** Mazer Admin Template Documentation
-
----
-
-**Ghi chú:** Tài liệu này sẽ được cập nhật liên tục theo tiến độ thực tế. Mỗi Phase hoàn thành sẽ đánh dấu ✅ và ghi chú ngày hoàn thành.
-
-**Ngày tạo:** 21/10/2025  
-**Phiên bản:** 1.0  
-**Người tạo:** Development Team

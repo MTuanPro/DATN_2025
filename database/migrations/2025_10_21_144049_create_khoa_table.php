@@ -18,6 +18,7 @@ return new class extends Migration
             $table->unsignedBigInteger('truong_khoa_id')->nullable();
             $table->text('mo_ta')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 

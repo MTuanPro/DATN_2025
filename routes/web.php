@@ -6,9 +6,28 @@ use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
 use App\Http\Controllers\Admin\DashboardController as AdminDashboardController;
 use App\Http\Controllers\Admin\UserController as AdminUserController;
+use App\Http\Controllers\Admin\VaiTroController;
+use App\Http\Controllers\Admin\NhomQuyenController;
+use App\Http\Controllers\Admin\QuyenController;
+use App\Http\Controllers\Admin\VaiTroQuyenController;
+use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\Admin\DaoTaoController;
 use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController;
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
 use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardController;
+use App\Http\Controllers\DaoTao\CTDT\ChuongTrinhKhungController;
+use App\Http\Controllers\DaoTao\CTDT\ChuyenNganhController;
+use App\Http\Controllers\DaoTao\CTDT\KhoaController;
+use App\Http\Controllers\DaoTao\CTDT\KhoaHocController;
+use App\Http\Controllers\DaoTao\CTDT\NganhController;
+use App\Http\Controllers\DaoTao\CTDT\MonHocController;
+use App\Http\Controllers\DaoTao\CTDT\MonHocTienQuyetController;
+use App\Http\Controllers\DaoTao\DanhMuc\PhongHocController;
+use App\Http\Controllers\DaoTao\DanhMuc\TrangThaiHocTapController;
+use App\Http\Controllers\DaoTao\DanhMuc\TrinhDoController;
+use App\Http\Controllers\DaoTao\GiangVienController;
+use App\Http\Controllers\DaoTao\HocKyController;
+
 
 // Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
 Route::get('/', function () {
@@ -62,15 +81,66 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::get('/users/{user}/login-history', [AdminUserController::class, 'loginHistory'])->name('users.login-history');
     Route::post('/users/{user}/force-logout', [AdminUserController::class, 'forceLogout'])->name('users.force-logout');
 
-    // Vai trò Management
-    Route::resource('vai-tro', \App\Http\Controllers\Admin\VaiTroController::class);
+    // Vai trò Management (Member 2)
+    Route::resource('vai-tro', VaiTroController::class);
+
+    // Permission Group Management (Member 3)
+    Route::resource('nhom-quyen', NhomQuyenController::class);
+
+    // Permission Management (Member 3)
+    Route::resource('quyen', QuyenController::class);
+
+    // Map Vai trò - Quyền (Member 4)
+    Route::get('/vai-tro-quyen', [VaiTroQuyenController::class, 'index'])->name('vai-tro-quyen.index');
+    Route::put('/vai-tro-quyen/update-matrix', [VaiTroQuyenController::class, 'updateMatrix'])->name('vai-tro-quyen.update-matrix');
+    Route::put('/vai-tro-quyen/{vaiTro}', [VaiTroQuyenController::class, 'update'])->name('vai-tro-quyen.update');
+    Route::post('/vai-tro-quyen/{vaiTro}/attach/{quyen}', [VaiTroQuyenController::class, 'attachPermission'])->name('vai-tro-quyen.attach');
+    Route::delete('/vai-tro-quyen/{vaiTro}/detach/{quyen}', [VaiTroQuyenController::class, 'detachPermission'])->name('vai-tro-quyen.detach');
+
+    // Admin Management (Member 5)
+    Route::resource('admin', AdminController::class);
+    Route::post('/admin/{admin}/assign-user', [AdminController::class, 'assignUser'])->name('admin.assign-user');
+    Route::post('/admin/{admin}/unassign-user', [AdminController::class, 'unassignUser'])->name('admin.unassign-user');
+
+    // Dao Tao Management (Member 5)
+    Route::resource('dao-tao', DaoTaoController::class);
+    Route::post('/dao-tao/{daoTao}/assign-user', [DaoTaoController::class, 'assignUser'])->name('dao-tao.assign-user');
+    Route::post('/dao-tao/{daoTao}/unassign-user', [DaoTaoController::class, 'unassignUser'])->name('dao-tao.unassign-user');
 });
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
-Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('daotao.')->group(function () {
+Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('dao-tao.')->group(function () {
     Route::get('/dashboard', [DaoTaoDashboardController::class, 'index'])->name('dashboard');
 
-    // Thêm các route đào tạo khác ở đây
+    // PHASE 1: Danh mục
+    Route::resource('khoa', KhoaController::class);
+    Route::resource('nganh', NganhController::class);
+    Route::resource('chuyen-nganh', ChuyenNganhController::class);
+    Route::resource('khoa-hoc', KhoaHocController::class);
+    Route::resource('trinh-do', TrinhDoController::class);
+    Route::resource('trang-thai-hoc-tap', TrangThaiHocTapController::class);
+    Route::resource('phong-hoc', PhongHocController::class);
+
+    // PHASE 2: Giảng viên và Học kỳ
+    Route::resource('giang-vien', GiangVienController::class);
+    Route::get('giang-vien-import', [GiangVienController::class, 'showImportForm'])->name('giang-vien.show-import-form');
+    Route::post('giang-vien-import', [GiangVienController::class, 'import'])->name('giang-vien.import');
+    Route::get('giang-vien-template', [GiangVienController::class, 'downloadTemplate'])->name('giang-vien.download-template');
+
+    Route::resource('hoc-ky', HocKyController::class);
+    Route::post('hoc-ky/{hocKy}/set-hien-tai', [HocKyController::class, 'setHienTai'])->name('hoc-ky.set-hien-tai');
+    Route::post('hoc-ky/{hocKy}/mo-dang-ky', [HocKyController::class, 'moDangKy'])->name('hoc-ky.mo-dang-ky');
+    Route::get('hoc-ky/{hocKy}/kiem-tra-dang-ky', [HocKyController::class, 'kiemTraDangKy'])->name('hoc-ky.kiem-tra-dang-ky');
+
+    // Môn học và môn tiên quyết
+    Route::resource('mon-hoc', MonHocController::class);
+    Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'tienQuyet'])->name('mon-hoc.tien-quyet');
+    Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'storeTienQuyet'])->name('mon-hoc.tien-quyet.store');
+    Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocController::class, 'destroyTienQuyet'])->name('mon-hoc.tien-quyet.destroy');
+
+    // Chương trình khung
+    Route::resource('chuong-trinh-khung', ChuongTrinhKhungController::class);
+    Route::get('chuong-trinh-khung/thong-ke/{chuyenNganhId}', [ChuongTrinhKhungController::class, 'thongKe'])->name('chuong-trinh-khung.thong-ke');
 });
 
 // ========== Giảng viên Routes ==========
