@@ -354,26 +354,16 @@
     - [ ] Import từ Excel
     - [ ] Validation email, SĐT
 
-2. **CRUD Khóa học (Academic Year)**
-
-    - [ ] Danh sách khóa học (2021, 2022, 2023...)
-    - [ ] Thêm/Sửa/Xóa khóa học
-    - [ ] Trạng thái (đang học, tốt nghiệp)
-
-3. **CRUD Học kỳ (Semester)**
+2. **CRUD Học kỳ (Semester)**
 
     - [ ] Danh sách học kỳ
     - [ ] Thiết lập học kỳ hiện tại
     - [ ] Thời gian bắt đầu/kết thúc
     - [ ] Mở đăng ký môn học
 
-4. **CRUD Phòng học (Classroom)**
-    - [ ] Danh sách phòng học
-    - [ ] Thêm/Sửa/Xóa phòng học
-    - [ ] Sức chứa, loại phòng (lý thuyết/thực hành)
-    - [ ] Trạng thái sử dụng
-
 **Output:** Dữ liệu nhân sự và thời gian sẵn sàng
+
+**Ghi chú:** CRUD Khóa học và CRUD Phòng học đã được triển khai trong Phase 1
 
 ---
 
@@ -1217,6 +1207,13 @@ git push origin Minhtuan
 
 ## 📝 LỊCH SỬ CẬP NHẬT
 
+### Version 2.1 - 24/10/2025
+
+-   ✅ Loại bỏ các chức năng trùng lặp trong Phase 2
+-   ✅ Xóa phần "Chiến lược triển khai" và "Lưu ý quan trọng" bị lặp ở cuối file
+-   ✅ Xóa phần "Hành động tiếp theo" bị lặp
+-   ✅ Tối ưu hóa cấu trúc tài liệu
+
 ### Version 2.0 - 21/10/2025
 
 -   ✅ Thêm **Phase 0**: Quản trị & Phân quyền (QUAN TRỌNG)
@@ -1243,110 +1240,7 @@ git push origin Minhtuan
 **Ghi chú:** Tài liệu này sẽ được cập nhật liên tục theo tiến độ thực tế. Mỗi Phase hoàn thành sẽ đánh dấu ✅ và ghi chú ngày hoàn thành.
 
 **Ngày tạo:** 21/10/2025  
-**Phiên bản hiện tại:** 2.0  
+**Ngày cập nhật:** 24/10/2025  
+**Phiên bản hiện tại:** 2.1  
 **Người tạo:** Development Team  
 **Ghi chú:** Phase 12 (AI Chatbot) là tùy chọn, có thể bỏ qua nếu thiếu thời gian
-
----
-
-## 🎯 CHIẾN LƯỢC TRIỂN KHAI
-
-### 1. Nguyên tắc phát triển
-
--   ✅ **Từ nền tảng đến nghiệp vụ**: Hoàn thành danh mục trước khi làm chức năng
--   ✅ **Từ đơn giản đến phức tạp**: CRUD trước, logic nghiệp vụ sau
--   ✅ **Từ backend đến frontend**: API + Logic trước, UI sau
--   ✅ **Testing liên tục**: Test sau mỗi feature, không đợi cuối dự án
-
-### 2. Quy trình làm việc mỗi chức năng
-
-1. **Phân tích yêu cầu** → Đọc file CHUC*NANG*\*.md
-2. **Thiết kế database** → Đã có sẵn trong migrations
-3. **Tạo Model & Relationships** → Laravel Eloquent
-4. **Tạo Controller & Routes** → RESTful API
-5. **Tạo Views** → Blade template với Mazer
-6. **Validation & Error Handling** → Form Request
-7. **Testing** → Unit + Feature tests
-8. **Git commit** → Commit từng feature nhỏ
-
-### 3. Ưu tiên tuyệt đối
-
-🔥 **Phase 5 (Đăng ký môn học)** là trái tim của hệ thống  
-→ Tất cả Phase 1-4 phải phục vụ cho Phase 5
-
----
-
-## 💡 LƯU Ý QUAN TRỌNG
-
-### 1. Database đã sẵn sàng ✅
-
--   50 bảng đã được migrate
--   Hỗ trợ đầy đủ tính năng học lại (`qua_mon`, `uu_tien`)
--   Hỗ trợ tính học phí (`so_tin_chi`, `don_gia_tren_tin_chi`)
--   Hỗ trợ môn tiên quyết (`mon_tien_quyet`)
-
-### 2. Laravel 12 Compatibility ✅
-
--   Code 100% Laravel 12 compliant
--   Sử dụng syntax mới nhất
--   Không cần refactor
-
-### 3. Git workflow
-
--   Branch chính: `main` hoặc `master`
--   Branch phát triển: `Minhtuan`
--   Commit thường xuyên với message rõ ràng
--   Merge về main khi hoàn thành mỗi Phase
-
-### 4. Tài khoản test
-
-```
-Admin: admin@smis.edu.vn / 123456
-Trưởng phòng ĐT: truongphong@smis.edu.vn / 123456
-Nhân viên ĐT: nhanvien@smis.edu.vn / 123456
-Giảng viên: giangvien@smis.edu.vn / 123456
-Sinh viên: sinhvien@smis.edu.vn / 123456
-Test email (quên mật khẩu): conjvayba@gmail.com / 123456
-```
-
----
-
-## 📅 HÀNH ĐỘNG TIẾP THEO
-
-### ✨ Bắt đầu ngay với Phase 1:
-
-**Công việc đầu tiên:** CRUD Khoa - Ngành - Chuyên ngành
-
-```bash
-# 1. Tạo Controller
-php artisan make:controller DaoTao/KhoaController --resource
-
-# 2. Tạo Views
-# - resources/views/daotao/khoa/index.blade.php
-# - resources/views/daotao/khoa/create.blade.php
-# - resources/views/daotao/khoa/edit.blade.php
-
-# 3. Thêm routes vào routes/web.php
-
-# 4. Test chức năng
-
-# 5. Commit
-git add .
-git commit -m "feat: CRUD Khoa"
-git push origin Minhtuan
-```
-
----
-
-## 📞 HỖ TRỢ
-
--   **Framework:** Laravel 12 Documentation
--   **Template:** Mazer Admin Template Documentation
-
----
-
-**Ghi chú:** Tài liệu này sẽ được cập nhật liên tục theo tiến độ thực tế. Mỗi Phase hoàn thành sẽ đánh dấu ✅ và ghi chú ngày hoàn thành.
-
-**Ngày tạo:** 21/10/2025  
-**Phiên bản:** 1.0  
-**Người tạo:** Development Team

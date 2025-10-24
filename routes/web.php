@@ -105,7 +105,12 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/dao-tao/{daoTao}/assign-user', [DaoTaoController::class, 'assignUser'])->name('dao-tao.assign-user');
     Route::post('/dao-tao/{daoTao}/unassign-user', [DaoTaoController::class, 'unassignUser'])->name('dao-tao.unassign-user');
 });
-Route::prefix('dao-tao')->name('dao-tao.')->group(function () {
+
+// ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
+Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('dao-tao.')->group(function () {
+    Route::get('/dashboard', [DaoTaoDashboardController::class, 'index'])->name('dashboard');
+
+    // PHASE 1: Danh mục
     Route::resource('khoa', KhoaController::class);
     Route::resource('nganh', NganhController::class);
     Route::resource('chuyen-nganh', ChuyenNganhController::class);
