@@ -31,15 +31,21 @@
                         <span>Danh mục & CTĐT</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Quản lý Khoa</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Ngành</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Chuyên ngành</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Trình độ</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Môn học</a></li>
-                        <li class="submenu-item"><a href="#">Môn tiên quyết</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.khoa.index') }}">Quản lý Khoa</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.nganh.index') }}">Quản lý Ngành</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.khoa-hoc.index') }}">Quản lý Khóa học</a>
+                        </li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.chuyen-nganh.index') }}">Quản lý Chuyên
+                                ngành</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.trinh-do.index') }}">Quản lý Trình độ</a>
+                        </li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.trang-thai-hoc-tap.index') }}">Trạng thái
+                                học tập</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.phong-hoc.index') }}">Quản lý Phòng học</a>
+                        </li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.mon-hoc.index') }}">Quản lý Môn học</a>
+                        </li>
                         <li class="submenu-item"><a href="#">Chương trình khung</a></li>
-                        <li class="submenu-item"><a href="#">Trạng thái học tập</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Phòng học</a></li>
                     </ul>
                 </li>
 
@@ -50,7 +56,8 @@
                         <span>Niên khóa & Học kỳ</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Quản lý Khóa học</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.khoa-hoc.index') }}">Quản lý Khóa học</a>
+                        </li>
                         <li class="submenu-item"><a href="#">Quản lý Học kỳ</a></li>
                     </ul>
                 </li>

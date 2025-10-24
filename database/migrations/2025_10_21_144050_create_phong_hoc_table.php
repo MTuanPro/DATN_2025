@@ -21,6 +21,7 @@ return new class extends Migration
             $table->string('trang_thai')->default('Hoạt động')->comment('Hoạt động, Bảo trì, Không sử dụng');
             $table->text('mo_ta')->nullable();
             $table->timestamps();
+            $table->softDeletes();
         });
     }
 
