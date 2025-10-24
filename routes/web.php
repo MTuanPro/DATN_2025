@@ -118,7 +118,13 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::resource('trinh-do', TrinhDoController::class);
     Route::resource('trang-thai-hoc-tap', TrangThaiHocTapController::class);
     Route::resource('phong-hoc', PhongHocController::class);
-    Route::resource('monhoc', MonHocController::class);
+
+    // Môn học và môn tiên quyết
+    Route::resource('mon-hoc', MonHocController::class);
+    Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'tienQuyet'])->name('mon-hoc.tien-quyet');
+    Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'storeTienQuyet'])->name('mon-hoc.tien-quyet.store');
+    Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocController::class, 'destroyTienQuyet'])->name('mon-hoc.tien-quyet.destroy');
+
     Route::resource('monhoctienquyet', MonHocTienQuyetController::class);
     Route::resource('chuongtrinhkhung', ChuongTrinhKhungController::class);
 });
