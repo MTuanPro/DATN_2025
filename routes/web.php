@@ -27,6 +27,8 @@ use App\Http\Controllers\DaoTao\DanhMuc\TrangThaiHocTapController;
 use App\Http\Controllers\DaoTao\DanhMuc\TrinhDoController;
 use App\Http\Controllers\DaoTao\GiangVienController;
 use App\Http\Controllers\DaoTao\HocKyController;
+use App\Http\Controllers\DaoTao\LopHanhChinhController;
+use App\Http\Controllers\DaoTao\SinhVienController;
 
 
 // Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
@@ -39,7 +41,7 @@ Route::get('/', function () {
             return redirect()->route('admin.dashboard');
         }
         if (in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)) {
-            return redirect()->route('daotao.dashboard');
+            return redirect()->route('dao-tao.dashboard');
         }
         if (in_array('giang_vien', $roles)) {
             return redirect()->route('giangvien.dashboard');
@@ -142,6 +144,14 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     // Chương trình khung
     Route::resource('chuong-trinh-khung', ChuongTrinhKhungController::class);
     Route::get('chuong-trinh-khung/thong-ke/{chuyenNganhId}', [ChuongTrinhKhungController::class, 'thongKe'])->name('chuong-trinh-khung.thong-ke');
+
+    // PHASE 3: Lớp hành chính và Sinh viên
+    Route::resource('lop-hanh-chinh', LopHanhChinhController::class);
+
+    Route::resource('sinh-vien', SinhVienController::class);
+    Route::get('sinh-vien-import', [SinhVienController::class, 'showImportForm'])->name('sinh-vien.show-import-form');
+    Route::post('sinh-vien-import', [SinhVienController::class, 'import'])->name('sinh-vien.import');
+    Route::get('sinh-vien-template', [SinhVienController::class, 'downloadTemplate'])->name('sinh-vien.download-template');
 });
 
 // ========== Giảng viên Routes ==========

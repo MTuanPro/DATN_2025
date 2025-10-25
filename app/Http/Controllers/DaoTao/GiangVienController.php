@@ -67,8 +67,11 @@ class GiangVienController extends Controller
         $validated = $request->validate([
             'ma_giang_vien' => ['required', 'string', 'max:50', 'unique:giang_vien,ma_giang_vien'],
             'ho_ten' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'email', 'max:255', 'unique:giang_vien,email', 'unique:users,email'],
+            'email' => ['required', 'email', 'max:255', 'unique:giang_vien,email'],
             'so_dien_thoai' => ['required', 'string', 'max:15'],
+            'ngay_sinh' => ['nullable', 'date'],
+            'gioi_tinh' => ['nullable', 'in:Nam,Nữ,Khác'],
+            'dia_chi' => ['nullable', 'string'],
             'trinh_do_id' => ['required', 'exists:dm_trinh_do,id'],
             'chuyen_mon' => ['required', 'string', 'max:255'],
             'khoa_id' => ['required', 'exists:khoa,id'],
@@ -131,7 +134,7 @@ class GiangVienController extends Controller
             ]);
 
             DB::commit();
-            return redirect()->route('daotao.giang-vien.index')
+            return redirect()->route('dao-tao.giang-vien.index')
                 ->with('success', 'Thêm giảng viên thành công!');
         } catch (\Exception $e) {
             DB::rollback();
@@ -167,11 +170,20 @@ class GiangVienController extends Controller
      */
     public function update(Request $request, GiangVien $giangVien)
     {
+        // Debug log
+        \Log::info('Update giảng viên:', [
+            'id' => $giangVien->id,
+            'data' => $request->all()
+        ]);
+
         $validated = $request->validate([
             'ma_giang_vien' => ['required', 'string', 'max:50', 'unique:giang_vien,ma_giang_vien,' . $giangVien->id],
             'ho_ten' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:giang_vien,email,' . $giangVien->id],
             'so_dien_thoai' => ['required', 'string', 'max:15'],
+            'ngay_sinh' => ['nullable', 'date'],
+            'gioi_tinh' => ['nullable', 'in:Nam,Nữ,Khác'],
+            'dia_chi' => ['nullable', 'string'],
             'trinh_do_id' => ['required', 'exists:dm_trinh_do,id'],
             'chuyen_mon' => ['required', 'string', 'max:255'],
             'khoa_id' => ['required', 'exists:khoa,id'],
@@ -208,7 +220,7 @@ class GiangVienController extends Controller
             }
 
             DB::commit();
-            return redirect()->route('daotao.giang-vien.index')
+            return redirect()->route('dao-tao.giang-vien.index')
                 ->with('success', 'Cập nhật thông tin giảng viên thành công!');
         } catch (\Exception $e) {
             DB::rollback();
@@ -235,7 +247,7 @@ class GiangVienController extends Controller
 
             $giangVien->delete();
 
-            return redirect()->route('daotao.giang-vien.index')
+            return redirect()->route('dao-tao.giang-vien.index')
                 ->with('success', 'Xóa giảng viên thành công!');
         } catch (\Exception $e) {
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
