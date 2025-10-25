@@ -111,9 +111,10 @@
 
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="trinh_do_id" class="form-label">Trình độ</label>
+                                    <label for="trinh_do_id" class="form-label">Trình độ <span
+                                            class="text-danger">*</span></label>
                                     <select class="form-select @error('trinh_do_id') is-invalid @enderror" id="trinh_do_id"
-                                        name="trinh_do_id">
+                                        name="trinh_do_id" required>
                                         <option value="">-- Chọn trình độ --</option>
                                         @foreach ($trinhDos as $trinhDo)
                                             <option value="{{ $trinhDo->id }}"
@@ -123,6 +124,19 @@
                                         @endforeach
                                     </select>
                                     @error('trinh_do_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="chuyen_mon" class="form-label">Chuyên môn <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control @error('chuyen_mon') is-invalid @enderror"
+                                        id="chuyen_mon" name="chuyen_mon"
+                                        value="{{ old('chuyen_mon', $giangVien->chuyen_mon) }}" required>
+                                    @error('chuyen_mon')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -142,6 +156,23 @@
                                 </div>
                             </div>
 
+                            <div class="col-md-6">
+                                <div class="form-group">
+                                    <label for="ngay_vao_truong" class="form-label">Ngày vào trường <span
+                                            class="text-danger">*</span></label>
+                                    <input type="date"
+                                        class="form-control @error('ngay_vao_truong') is-invalid @enderror"
+                                        id="ngay_vao_truong" name="ngay_vao_truong"
+                                        value="{{ old('ngay_vao_truong', $giangVien->ngay_vao_truong?->format('Y-m-d')) }}"
+                                        required>
+                                    @error('ngay_vao_truong')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="gioi_tinh" class="form-label">Giới tính</label>
@@ -180,17 +211,18 @@
                         <div class="row">
                             <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="avatar" class="form-label">Ảnh đại diện</label>
+                                    <label for="anh_dai_dien" class="form-label">Ảnh đại diện</label>
                                     @if ($giangVien->anh_dai_dien)
                                         <div class="mb-2">
                                             <img src="{{ asset('storage/' . $giangVien->anh_dai_dien) }}" alt="Avatar"
                                                 class="img-thumbnail" style="max-width: 150px;">
                                         </div>
                                     @endif
-                                    <input type="file" class="form-control @error('avatar') is-invalid @enderror"
-                                        id="avatar" name="avatar" accept="image/*">
+                                    <input type="file"
+                                        class="form-control @error('anh_dai_dien') is-invalid @enderror"
+                                        id="anh_dai_dien" name="anh_dai_dien" accept="image/*">
                                     <small class="text-muted">Để trống nếu không muốn thay đổi</small>
-                                    @error('avatar')
+                                    @error('anh_dai_dien')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>

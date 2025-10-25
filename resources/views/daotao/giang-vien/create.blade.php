@@ -97,6 +97,44 @@
                                         @enderror
                                     </div>
 
+                                    {{-- Ngày sinh --}}
+                                    <div class="col-md-6 mb-3">
+                                        <label for="ngay_sinh" class="form-label">Ngày sinh</label>
+                                        <input type="date" class="form-control @error('ngay_sinh') is-invalid @enderror"
+                                            id="ngay_sinh" name="ngay_sinh" value="{{ old('ngay_sinh') }}">
+                                        @error('ngay_sinh')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    {{-- Giới tính --}}
+                                    <div class="col-md-6 mb-3">
+                                        <label for="gioi_tinh" class="form-label">Giới tính</label>
+                                        <select class="form-select @error('gioi_tinh') is-invalid @enderror" id="gioi_tinh"
+                                            name="gioi_tinh">
+                                            <option value="">-- Chọn giới tính --</option>
+                                            <option value="Nam" {{ old('gioi_tinh') == 'Nam' ? 'selected' : '' }}>Nam
+                                            </option>
+                                            <option value="Nữ" {{ old('gioi_tinh') == 'Nữ' ? 'selected' : '' }}>Nữ
+                                            </option>
+                                            <option value="Khác" {{ old('gioi_tinh') == 'Khác' ? 'selected' : '' }}>Khác
+                                            </option>
+                                        </select>
+                                        @error('gioi_tinh')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
+                                    {{-- Địa chỉ --}}
+                                    <div class="col-md-12 mb-3">
+                                        <label for="dia_chi" class="form-label">Địa chỉ</label>
+                                        <textarea class="form-control @error('dia_chi') is-invalid @enderror" id="dia_chi" name="dia_chi" rows="2"
+                                            placeholder="Số nhà, đường, phường/xã, quận/huyện, tỉnh/thành">{{ old('dia_chi') }}</textarea>
+                                        @error('dia_chi')
+                                            <div class="invalid-feedback">{{ $message }}</div>
+                                        @enderror
+                                    </div>
+
                                     {{-- Khoa --}}
                                     <div class="col-md-6 mb-3">
                                         <label for="khoa_id" class="form-label">

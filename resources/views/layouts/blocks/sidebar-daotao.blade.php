@@ -68,8 +68,10 @@
                         <span>Lớp HC & Sinh viên</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Quản lý Lớp hành chính</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Sinh viên</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.lop-hanh-chinh.index') }}">Quản lý Lớp hành
+                                chính</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.sinh-vien.index') }}">Quản lý Sinh viên</a>
+                        </li>
                     </ul>
                 </li>
 

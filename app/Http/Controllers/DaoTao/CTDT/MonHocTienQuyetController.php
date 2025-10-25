@@ -194,11 +194,5 @@ class MonHocTienQuyetController extends Controller
 
         // Đệ quy kiểm tra các môn tiên quyết của các môn tiên quyết
         foreach ($cacMonTienQuyet as $monId) {
-            if ($this->detectCircularDependency($monHocId, $monId, $visited)) {
-                return true;
-            }
-        }
-
-        return false;
-    }
+            if ($this->detectCircularDependency($monHocId, $monId, $    }
 }

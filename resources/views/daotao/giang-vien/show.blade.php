@@ -92,6 +92,28 @@
                                 </div>
                             </div>
                             <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Ngày sinh:</div>
+                                <div class="col-md-8">
+                                    {{ $giangVien->ngay_sinh ? $giangVien->ngay_sinh->format('d/m/Y') : 'N/A' }}
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Giới tính:</div>
+                                <div class="col-md-8">
+                                    @if ($giangVien->gioi_tinh == 'Nam')
+                                        <span class="badge bg-info">{{ $giangVien->gioi_tinh }}</span>
+                                    @elseif($giangVien->gioi_tinh == 'Nữ')
+                                        <span class="badge bg-pink">{{ $giangVien->gioi_tinh }}</span>
+                                    @else
+                                        <span class="badge bg-secondary">{{ $giangVien->gioi_tinh ?? 'N/A' }}</span>
+                                    @endif
+                                </div>
+                            </div>
+                            <div class="row mb-3">
+                                <div class="col-md-4 fw-bold">Địa chỉ:</div>
+                                <div class="col-md-8">{{ $giangVien->dia_chi ?? 'N/A' }}</div>
+                            </div>
+                            <div class="row mb-3">
                                 <div class="col-md-4 fw-bold">Trình độ:</div>
                                 <div class="col-md-8">
                                     <span
