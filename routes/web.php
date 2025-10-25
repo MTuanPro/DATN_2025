@@ -134,9 +134,10 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 
     // Môn học và môn tiên quyết
     Route::resource('mon-hoc', MonHocController::class);
-    Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'tienQuyet'])->name('mon-hoc.tien-quyet');
-    Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'storeTienQuyet'])->name('mon-hoc.tien-quyet.store');
-    Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocController::class, 'destroyTienQuyet'])->name('mon-hoc.tien-quyet.destroy');
+    Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocTienQuyetController::class, 'index'])->name('mon-hoc.tien-quyet');
+    Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocTienQuyetController::class, 'store'])->name('mon-hoc.tien-quyet.store');
+    Route::put('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocTienQuyetController::class, 'update'])->name('mon-hoc.tien-quyet.update');
+    Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocTienQuyetController::class, 'destroy'])->name('mon-hoc.tien-quyet.destroy');
 
     // Chương trình khung
     Route::resource('chuong-trinh-khung', ChuongTrinhKhungController::class);
