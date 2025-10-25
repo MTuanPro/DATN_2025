@@ -150,23 +150,57 @@
                                             <td>{{ $tienQuyet->ten_mon }}</td>
                                             <td><span class="badge bg-primary">{{ $tienQuyet->so_tin_chi }} TC</span></td>
                                             <td>
-                                                @if ($tienQuyet->pivot->loai_tien_quyet == 'bat_buoc')
-                                                    <span class="badge bg-danger">Bắt buộc</span>
-                                                @else
-                                                    <span class="badge bg-warning">Khuyến nghị</span>
-                                                @endif
+                                                <form
+                                                    action="{{ route('dao-tao.mon-hoc.tien-quyet.update', [$monHoc->id, $tienQuyet->pivot->id]) }}"
+                                                    method="POST" class="d-inline">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <select name="loai_tien_quyet" class="form-select form-select-sm"
+                                                        onchange="this.form.submit()">
+                                                        <option value="bat_buoc"
+                                                            {{ $tienQuyet->pivot->loai_tien_quyet == 'bat_buoc' ? 'selected' : '' }}>
+                                                            Bắt buộc
+                                                        </option>
+                                                        <option value="khuyen_nghi"
+                                                            {{ $tienQuyet->pivot->loai_tien_quyet == 'khuyen_nghi' ? 'selected' : '' }}>
+                                                            Khuyến nghị
+                                                        </option>
+                                                    </select>
+                                                    <input type="hidden" name="dieu_kien_qua_mon"
+                                                        value="{{ $tienQuyet->pivot->dieu_kien_qua_mon ? '1' : '0' }}">
+                                                    <input type="hidden" name="ghi_chu"
+                                                        value="{{ $tienQuyet->pivot->ghi_chu }}">
+                                                </form>
                                             </td>
-                                            <td>
-                                                @if ($tienQuyet->pivot->dieu_kien_qua_mon)
-                                                    <span class="badge bg-success">Phải qua môn</span>
-                                                @else
-                                                    <span class="badge bg-secondary">Không yêu cầu</span>
-                                                @endif
-                                            </td>
-                                            <td>{{ $tienQuyet->pivot->ghi_chu ?? '-' }}</td>
                                             <td>
                                                 <form
-                                                    action="{{ route('dao-tao.mon-hoc.tien-quyet.destroy', [$monHoc->id, $tienQuyet->id]) }}"
+                                                    action="{{ route('dao-tao.mon-hoc.tien-quyet.update', [$monHoc->id, $tienQuyet->pivot->id]) }}"
+                                                    method="POST" class="d-inline">
+                                                    @csrf
+                                                    @method('PUT')
+                                                    <select name="dieu_kien_qua_mon" class="form-select form-select-sm"
+                                                        onchange="this.form.submit()">
+                                                        <option value="1"
+                                                            {{ $tienQuyet->pivot->dieu_kien_qua_mon ? 'selected' : '' }}>
+                                                            Phải qua môn
+                                                        </option>
+                                                        <option value="0"
+                                                            {{ !$tienQuyet->pivot->dieu_kien_qua_mon ? 'selected' : '' }}>
+                                                            Không yêu cầu
+                                                        </option>
+                                                    </select>
+                                                    <input type="hidden" name="loai_tien_quyet"
+                                                        value="{{ $tienQuyet->pivot->loai_tien_quyet }}">
+                                                    <input type="hidden" name="ghi_chu"
+                                                        value="{{ $tienQuyet->pivot->ghi_chu }}">
+                                                </form>
+                                            </td>
+                                            <td>
+                                                <small class="text-muted">{{ $tienQuyet->pivot->ghi_chu ?? '-' }}</small>
+                                            </td>
+                                            <td>
+                                                <form
+                                                    action="{{ route('dao-tao.mon-hoc.tien-quyet.destroy', [$monHoc->id, $tienQuyet->pivot->id]) }}"
                                                     method="POST"
                                                     onsubmit="return confirm('Bạn có chắc chắn muốn xóa môn tiên quyết này?')">
                                                     @csrf

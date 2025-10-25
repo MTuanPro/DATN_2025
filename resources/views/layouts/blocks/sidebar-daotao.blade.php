@@ -3,7 +3,7 @@
         <div class="sidebar-header">
             <div class="d-flex justify-content-between">
                 <div class="logo">
-                    <a href="{{ route('daotao.dashboard') }}">
+                    <a href="{{ route('dao-tao.dashboard') }}">
                         <h3 class="mb-0" style="color: #435ebe;"><i class="bi bi-mortarboard-fill me-2"></i>S-MIS</h3>
                     </a>
                 </div>
@@ -18,7 +18,7 @@
 
                 <li
                     class="sidebar-item {{ Request::is('dao-tao') || Request::is('dao-tao/dashboard') ? 'active' : '' }}">
-                    <a href="{{ route('daotao.dashboard') }}" class='sidebar-link'>
+                    <a href="{{ route('dao-tao.dashboard') }}" class='sidebar-link'>
                         <i class="bi bi-grid-fill"></i>
                         <span>Dashboard</span>
                     </a>
@@ -33,13 +33,18 @@
                     <ul class="submenu">
                         <li class="submenu-item"><a href="{{route('dao-tao.khoa.index')}}">Quản lý Khoa</a></li>
                         <li class="submenu-item"><a href="{{ route('dao-tao.nganh.index') }}">Quản lý Ngành</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Chuyên ngành</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Trình độ</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Môn học</a></li>
-                        <li class="submenu-item"><a href="#">Môn tiên quyết</a></li>
-                        <li class="submenu-item"><a href="#">Chương trình khung</a></li>
-                        <li class="submenu-item"><a href="#">Trạng thái học tập</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Phòng học</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.chuyen-nganh.index') }}">Quản lý Chuyên
+                                ngành</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.trinh-do.index') }}">Quản lý Trình độ</a>
+                        </li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.trang-thai-hoc-tap.index') }}">Trạng thái
+                                học tập</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.phong-hoc.index') }}">Quản lý Phòng học</a>
+                        </li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.mon-hoc.index') }}">Quản lý Môn học</a>
+                        </li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.chuong-trinh-khung.index') }}">Chương trình
+                                khung</a></li>
                     </ul>
                 </li>
 
@@ -50,8 +55,9 @@
                         <span>Niên khóa & Học kỳ</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Quản lý Khóa học</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Học kỳ</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.khoa-hoc.index') }}">Quản lý Khóa học</a>
+                        </li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.hoc-ky.index') }}">Quản lý Học kỳ</a></li>
                     </ul>
                 </li>
 
@@ -62,14 +68,16 @@
                         <span>Lớp HC & Sinh viên</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Quản lý Lớp hành chính</a></li>
-                        <li class="submenu-item"><a href="#">Quản lý Sinh viên</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.lop-hanh-chinh.index') }}">Quản lý Lớp hành
+                                chính</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.sinh-vien.index') }}">Quản lý Sinh viên</a>
+                        </li>
                     </ul>
                 </li>
 
                 <!-- 4. GIẢNG VIÊN -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('dao-tao/giang-vien*') ? 'active' : '' }}">
+                    <a href="{{ route('dao-tao.giang-vien.index') }}" class='sidebar-link'>
                         <i class="bi bi-person-workspace"></i>
                         <span>Quản lý Giảng viên</span>
                     </a>

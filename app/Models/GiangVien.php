@@ -17,6 +17,9 @@ class GiangVien extends Model
         'ho_ten',
         'email',
         'so_dien_thoai',
+        'ngay_sinh',
+        'gioi_tinh',
+        'dia_chi',
         'trinh_do_id',
         'chuyen_mon',
         'khoa_id',
@@ -26,6 +29,7 @@ class GiangVien extends Model
     ];
 
     protected $casts = [
+        'ngay_sinh' => 'date',
         'ngay_vao_truong' => 'date',
     ];
 
@@ -58,7 +62,7 @@ class GiangVien extends Model
      */
     public function lopHanhChinhChuNhiem()
     {
-        return $this->hasMany(\App\Models\LopHanhChinh::class, 'giang_vien_chu_nhiem_id');
+        return $this->hasMany(\App\Models\DaoTao\LopHanhChinh::class, 'giang_vien_chu_nhiem_id');
     }
 
     /**
