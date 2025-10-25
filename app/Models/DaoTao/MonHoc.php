@@ -48,7 +48,7 @@ class MonHoc extends Model
             'mon_hoc_tien_quyet',
             'mon_hoc_id',
             'mon_tien_quyet_id'
-        )->withPivot('loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
+        )->withPivot('id', 'loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
     }
 
     // Relationship: Các môn học cần môn này làm tiên quyết
@@ -59,6 +59,6 @@ class MonHoc extends Model
             'mon_hoc_tien_quyet',
             'mon_tien_quyet_id',
             'mon_hoc_id'
-        )->withPivot('loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
+        )->withPivot('id', 'loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
     }
 }
