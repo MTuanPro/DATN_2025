@@ -43,7 +43,8 @@
                         </li>
                         <li class="submenu-item"><a href="{{ route('dao-tao.mon-hoc.index') }}">Quản lý Môn học</a>
                         </li>
-                        <li class="submenu-item"><a href="#">Chương trình khung</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.chuong-trinh-khung.index') }}">Chương trình
+                                khung</a></li>
                     </ul>
                 </li>
 
@@ -81,14 +82,14 @@
                 </li>
 
                 <!-- 5. LỚP HỌC PHẦN -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-book"></i>
                         <span>Lớp học phần</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Quản lý Lớp HP</a></li>
-                        <li class="submenu-item"><a href="#">Phân công GV</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp HP</a></li>
+                        <li class="submenu-item"><a href="#">Đăng ký môn học</a></li>
                     </ul>
                 </li>
 
