@@ -30,6 +30,8 @@ use App\Http\Controllers\DaoTao\GiangVienController as DaoTaoGiangVienController
 use App\Http\Controllers\DaoTao\LopHocPhanController;
 use App\Http\Controllers\DaoTao\PhanCongGiangDayController;
 use App\Http\Controllers\DaoTao\CauHinhDauDiemController;
+use App\Http\Controllers\DaoTao\LichHocCoDinhController;
+use App\Http\Controllers\DaoTao\LichHocChiTietController;
 use App\Http\Controllers\DaoTao\LopHanhChinhController;
 use App\Http\Controllers\DaoTao\SinhVienController;
 
@@ -179,6 +181,26 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::put('cau-hinh-diem/{cauHinhDiem}', [CauHinhDauDiemController::class, 'update'])->name('cau-hinh-diem.update');
     Route::delete('cau-hinh-diem/{cauHinhDiem}', [CauHinhDauDiemController::class, 'destroy'])->name('cau-hinh-diem.destroy');
     Route::get('lop-hoc-phan/{lopHocPhan}/ty-le-con-lai', [CauHinhDauDiemController::class, 'getTyLeConLai'])->name('lop-hoc-phan.ty-le-con-lai');
+
+    // Lịch học cố định
+    Route::get('lop-hoc-phan/{lopHocPhan}/lich-co-dinh', [LichHocCoDinhController::class, 'index'])->name('lop-hoc-phan.lich-co-dinh');
+    Route::get('lop-hoc-phan/{lopHocPhan}/lich-co-dinh/create', [LichHocCoDinhController::class, 'create'])->name('lop-hoc-phan.lich-co-dinh.create');
+    Route::post('lop-hoc-phan/{lopHocPhan}/lich-co-dinh', [LichHocCoDinhController::class, 'store'])->name('lop-hoc-phan.lich-co-dinh.store');
+    Route::get('lich-co-dinh/{lichCoDinh}/edit', [LichHocCoDinhController::class, 'edit'])->name('lich-co-dinh.edit');
+    Route::put('lich-co-dinh/{lichCoDinh}', [LichHocCoDinhController::class, 'update'])->name('lich-co-dinh.update');
+    Route::delete('lich-co-dinh/{lichCoDinh}', [LichHocCoDinhController::class, 'destroy'])->name('lich-co-dinh.destroy');
+    Route::post('lich-co-dinh/check-phong-conflict', [LichHocCoDinhController::class, 'checkPhongConflict'])->name('lich-co-dinh.check-phong-conflict');
+    Route::post('lich-co-dinh/check-giang-vien-conflict', [LichHocCoDinhController::class, 'checkGiangVienConflict'])->name('lich-co-dinh.check-giang-vien-conflict');
+
+    // Lịch học chi tiết
+    Route::get('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet', [LichHocChiTietController::class, 'index'])->name('lop-hoc-phan.lich-chi-tiet');
+    Route::post('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet/generate', [LichHocChiTietController::class, 'generate'])->name('lop-hoc-phan.lich-chi-tiet.generate');
+    Route::get('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet/create', [LichHocChiTietController::class, 'create'])->name('lop-hoc-phan.lich-chi-tiet.create');
+    Route::post('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet', [LichHocChiTietController::class, 'store'])->name('lop-hoc-phan.lich-chi-tiet.store');
+    Route::get('lich-chi-tiet/{lichChiTiet}/edit', [LichHocChiTietController::class, 'edit'])->name('lich-chi-tiet.edit');
+    Route::put('lich-chi-tiet/{lichChiTiet}', [LichHocChiTietController::class, 'update'])->name('lich-chi-tiet.update');
+    Route::post('lich-chi-tiet/{lichChiTiet}/cancel', [LichHocChiTietController::class, 'cancel'])->name('lich-chi-tiet.cancel');
+    Route::delete('lich-chi-tiet/{lichChiTiet}', [LichHocChiTietController::class, 'destroy'])->name('lich-chi-tiet.destroy');
 });
 
 // ========== Giảng viên Routes ==========

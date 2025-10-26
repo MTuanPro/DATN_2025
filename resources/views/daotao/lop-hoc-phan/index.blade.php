@@ -149,8 +149,16 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
+                                                <a href="{{ route('dao-tao.lop-hoc-phan.lich-co-dinh', $lhp->id) }}"
+                                                    class="btn btn-sm btn-success" title="Lịch cố định (TKB)">
+                                                    <i class="bi bi-calendar-week"></i>
+                                                </a>
+                                                <a href="{{ route('dao-tao.lop-hoc-phan.lich-chi-tiet', $lhp->id) }}"
+                                                    class="btn btn-sm btn-info" title="Lịch chi tiết">
+                                                    <i class="bi bi-calendar-check"></i>
+                                                </a>
                                                 <a href="{{ route('dao-tao.lop-hoc-phan.phan-cong', $lhp->id) }}"
-                                                    class="btn btn-sm btn-info" title="Phân công GV">
+                                                    class="btn btn-sm btn-secondary" title="Phân công GV">
                                                     <i class="bi bi-person-badge"></i>
                                                 </a>
                                                 <a href="{{ route('dao-tao.lop-hoc-phan.cau-hinh-diem', $lhp->id) }}"

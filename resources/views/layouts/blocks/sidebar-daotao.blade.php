@@ -94,7 +94,8 @@
                 </li>
 
                 {{-- 5. LỚP HỌC PHẦN --}}
-                <li class="sidebar-item has-sub {{ Request::is('dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
+                <li
+                    class="sidebar-item has-sub {{ Request::is('dao-tao/lop-hoc-phan*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-book"></i>
                         <span>Lớp học phần</span>
@@ -106,16 +107,19 @@
                     </ul>
                 </li>
 
-                {{-- 6. LỊCH DẠY --}}
-                <li class="sidebar-item has-sub">
+                {{-- 6. THỜI KHÓA BIỂU --}}
+                <li
+                    class="sidebar-item has-sub {{ Request::is('dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-calendar-check"></i>
-                        <span>Lịch dạy</span>
+                        <span>Thời khóa biểu</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Lịch học cố định (TKB) <!-- Đang cập nhật --></a>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Xem theo Lớp
+                                HP</a></li>
+                        <li class="submenu-item"><a href="#">Lịch theo Phòng học <!-- Đang phát triển --></a></li>
+                        <li class="submenu-item"><a href="#">Lịch theo Giảng viên <!-- Đang phát triển --></a>
                         </li>
-                        <li class="submenu-item"><a href="#">Lịch học chi tiết <!-- Đang cập nhật --></a></li>
                     </ul>
                 </li>
 

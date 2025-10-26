@@ -54,6 +54,10 @@ class DatabaseSeeder extends Seeder
             LopHocPhanSeeder::class,
             LopHocPhanGiangVienSeeder::class,
             CauHinhDauDiemSeeder::class,
+
+            // 11. PHASE 4 - Lịch học (phải sau LopHocPhan, PhongHoc, GiangVien)
+            LichHocCoDinhSeeder::class,
+            LichHocChiTietSeeder::class,
         ]);
     }
 }
