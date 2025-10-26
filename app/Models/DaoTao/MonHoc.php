@@ -4,7 +4,6 @@ namespace App\Models\Daotao;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Daotao\Khoa;
 
 class MonHoc extends Model
 {

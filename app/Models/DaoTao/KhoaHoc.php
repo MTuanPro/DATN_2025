@@ -2,17 +2,17 @@
 
 namespace App\Models\Daotao;
 
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class KhoaHoc extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
     protected $table = 'khoa_hoc';
 
     protected $fillable = [
+        'ma_khoa_hoc',
         'ten_khoa_hoc',
         'nam_bat_dau',
         'nam_ket_thuc',
@@ -21,9 +21,8 @@ class KhoaHoc extends Model
         'mo_ta',
     ];
 
-    protected $casts = [
-        'nam_bat_dau' => 'integer',
-        'nam_ket_thuc' => 'integer',
-        'so_nam_dao_tao' => 'integer',
-    ];
+    public function lopHanhChinhs()
+    {
+        return $this->hasMany(LopHanhChinh::class, 'khoa_hoc_id');
+    }
 }

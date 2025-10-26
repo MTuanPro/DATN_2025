@@ -16,7 +16,7 @@ class ChuongTrinhKhungController extends Controller
      */
     public function index(Request $request)
     {
-        $chuyenNganhs = ChuyenNganh::with('nganh.khoa')->orderBy('ten_chuyen_nganh')->get();
+        $chuyenNganh = ChuyenNganh::with('nganh.khoa')->orderBy('ten_chuyen_nganh')->get();
 
         // Lấy chuyên ngành được chọn
         $selectedChuyenNganhId = $request->get('chuyen_nganh_id');
@@ -53,6 +53,10 @@ class ChuongTrinhKhungController extends Controller
                 'mon_tu_chon' => $allMonHoc->where('bat_buoc', false)->count(),
             ];
         }
+
+        $chuyenNganhs = ChuyenNganh::with('nganh.khoa')
+            ->orderBy('ten_chuyen_nganh')
+            ->get();
 
         return view('daotao.chuong-trinh-khung.index', compact(
             'chuyenNganhs',
