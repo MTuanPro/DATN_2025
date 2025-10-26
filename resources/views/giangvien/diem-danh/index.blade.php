@@ -165,3 +165,168 @@
         </section>
     </div>
 @endsection
+
+<!-- 
+ <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        Danh sách buổi học
+                        <span class="badge bg-primary">{{ $buoiHocList->total() }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if($buoiHocList->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Ngày học</th>
+                                        <th>Tiết</th>
+                                        <th>Lớp HP</th>
+                                        <th>Môn học</th>
+                                        <th>Phòng</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thống kê điểm danh</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($buoiHocList as $index => $buoiHoc)
+                                        <tr>
+                                            <td>{{ $buoiHocList->firstItem() + $index }}</td>
+                                            <td>
+                                                <strong>{{ $buoiHoc->ngay_hoc->format('d/m/Y') }}</strong><br>
+                                                <small class="text-muted">{{ $buoiHoc->ngay_hoc->dayName }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark">
+                                                    {{ $buoiHoc->tiet_bat_dau }}-{{ $buoiHoc->tiet_ket_thuc }}
+                                                </span>
+                                            </td>
+                                            <td>{{ $buoiHoc->lopHocPhan->ma_lop_hp }}</td>
+                                            <td>
+                                                <strong>{{ $buoiHoc->lopHocPhan->monHoc->ten_mon ?? 'N/A' }}</strong>
+                                            </td>
+                                            <td>{{ $buoiHoc->phongHoc->ten_phong ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($buoiHoc->trang_thai == 'chua_day')
+                                                    <span class="badge bg-secondary">Chưa dạy</span>
+                                                @elseif($buoiHoc->trang_thai == 'dang_day')
+                                                    <span class="badge bg-warning">Đang dạy</span>
+                                                @elseif($buoiHoc->trang_thai == 'da_day')
+                                                    <span class="badge bg-success">Đã dạy</span>
+                                                @else
+                                                    <span class="badge bg-danger">Hủy</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($buoiHoc->diem_danh_stats && $buoiHoc->diem_danh_stats->tong > 0)
+                                                    <div class="small">
+                                                        <span class="text-success">✓ {{ $buoiHoc->diem_danh_stats->co_mat }}</span> /
+                                                        <span class="text-danger">✗ {{ $buoiHoc->diem_danh_stats->vang }}</span> /
+                                                        <span class="text-warning">⏱ {{ $buoiHoc->diem_danh_stats->di_tre }}</span> /
+                                                        <span class="text-info">☂ {{ $buoiHoc->diem_danh_stats->nghi_phep }}</span>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        Tổng: {{ $buoiHoc->diem_danh_stats->tong }}
+                                                    </small>
+                                                @else
+                                                    <span class="text-muted">Chưa điểm danh</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <a href="{{ route('giangvien.diem-danh.show', $buoiHoc->id) }}" 
+                                                   class="btn btn-sm btn-primary"
+                                                   title="Điểm danh">
+                                                    <i class="bi bi-clipboard-check"></i> Điểm danh
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div> -->
+
+
+<!-- 
+                          <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        Danh sách buổi học
+                        <span class="badge bg-primary">{{ $buoiHocList->total() }}</span>
+                    </h5>
+                </div>
+                <div class="card-body">
+                    @if($buoiHocList->count() > 0)
+                        <div class="table-responsive">
+                            <table class="table table-hover">
+                                <thead>
+                                    <tr>
+                                        <th>STT</th>
+                                        <th>Ngày học</th>
+                                        <th>Tiết</th>
+                                        <th>Lớp HP</th>
+                                        <th>Môn học</th>
+                                        <th>Phòng</th>
+                                        <th>Trạng thái</th>
+                                        <th>Thống kê điểm danh</th>
+                                        <th>Thao tác</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($buoiHocList as $index => $buoiHoc)
+                                        <tr>
+                                            <td>{{ $buoiHocList->firstItem() + $index }}</td>
+                                            <td>
+                                                <strong>{{ $buoiHoc->ngay_hoc->format('d/m/Y') }}</strong><br>
+                                                <small class="text-muted">{{ $buoiHoc->ngay_hoc->dayName }}</small>
+                                            </td>
+                                            <td>
+                                                <span class="badge bg-light text-dark">
+                                                    {{ $buoiHoc->tiet_bat_dau }}-{{ $buoiHoc->tiet_ket_thuc }}
+                                                </span>
+                                            </td>
+                                            <td>{{ $buoiHoc->lopHocPhan->ma_lop_hp }}</td>
+                                            <td>
+                                                <strong>{{ $buoiHoc->lopHocPhan->monHoc->ten_mon ?? 'N/A' }}</strong>
+                                            </td>
+                                            <td>{{ $buoiHoc->phongHoc->ten_phong ?? 'N/A' }}</td>
+                                            <td>
+                                                @if($buoiHoc->trang_thai == 'chua_day')
+                                                    <span class="badge bg-secondary">Chưa dạy</span>
+                                                @elseif($buoiHoc->trang_thai == 'dang_day')
+                                                    <span class="badge bg-warning">Đang dạy</span>
+                                                @elseif($buoiHoc->trang_thai == 'da_day')
+                                                    <span class="badge bg-success">Đã dạy</span>
+                                                @else
+                                                    <span class="badge bg-danger">Hủy</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                @if($buoiHoc->diem_danh_stats && $buoiHoc->diem_danh_stats->tong > 0)
+                                                    <div class="small">
+                                                        <span class="text-success">✓ {{ $buoiHoc->diem_danh_stats->co_mat }}</span> /
+                                                        <span class="text-danger">✗ {{ $buoiHoc->diem_danh_stats->vang }}</span> /
+                                                        <span class="text-warning">⏱ {{ $buoiHoc->diem_danh_stats->di_tre }}</span> /
+                                                        <span class="text-info">☂ {{ $buoiHoc->diem_danh_stats->nghi_phep }}</span>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        Tổng: {{ $buoiHoc->diem_danh_stats->tong }}
+                                                    </small>
+                                                @else
+                                                    <span class="text-muted">Chưa điểm danh</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <a href="{{ route('giangvien.diem-danh.show', $buoiHoc->id) }}" 
+                                                   class="btn btn-sm btn-primary"
+                                                   title="Điểm danh">
+                                                    <i class="bi bi-clipboard-check"></i> Điểm danh
+                                                </a>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
+                        </div> -->
