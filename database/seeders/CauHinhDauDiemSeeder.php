@@ -51,7 +51,7 @@ class CauHinhDauDiemSeeder extends Seeder
             $daCauHinh = DB::table('cau_hinh_dau_diem')
                 ->where('lop_hoc_phan_id', $lop->id)
                 ->exists();
-            
+
             if ($daCauHinh) {
                 continue;
             }

@@ -130,7 +130,7 @@ class CauHinhDauDiemController extends Controller
     public function destroy($id)
     {
         $cauHinh = CauHinhDauDiem::findOrFail($id);
-        
+
         // TODO: Kiểm tra xem đã có điểm nhập cho đầu điểm này chưa
         // Nếu có thì không cho xóa
 

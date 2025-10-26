@@ -18,6 +18,6 @@ class DashboardController extends Controller
             'warningsTuition' => 0, // TODO: Implement
         ];
 
-        return view('dao-tao.dashboard', $data);
+        return view('daotao.dashboard', $data);
     }
 }

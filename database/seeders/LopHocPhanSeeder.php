@@ -31,16 +31,16 @@ class LopHocPhanSeeder extends Seeder
             foreach ($monHocs as $monHoc) {
                 // Tạo 1-2 lớp cho mỗi môn học
                 $soLop = rand(1, 2);
-                
+
                 for ($nhom = 1; $nhom <= $soLop; $nhom++) {
                     // Mã lớp HP = MaMonHoc.HocKyId.Nhom (VD: DC001.1.01)
                     $maLopHp = $monHoc->ma_mon . '.' . $hocKy->id . '.' . str_pad($nhom, 2, '0', STR_PAD_LEFT);
-                    
+
                     // Kiểm tra trung lặp
                     $exists = DB::table('lop_hoc_phan')
                         ->where('ma_lop_hp', $maLopHp)
                         ->exists();
-                    
+
                     if ($exists) {
                         continue;
                     }
@@ -48,9 +48,9 @@ class LopHocPhanSeeder extends Seeder
                     $sucChua = rand(40, 60);
                     $soLuongDangKy = rand(0, $sucChua);
                     $soLuongToiThieu = rand(10, 20);
-                    
+
                     $hinhThuc = ['offline', 'online', 'hybrid'][rand(0, 2)];
-                    $linkOnline = in_array($hinhThuc, ['online', 'hybrid']) 
+                    $linkOnline = in_array($hinhThuc, ['online', 'hybrid'])
                         ? 'https://meet.google.com/' . substr(md5($maLopHp), 0, 10)
                         : null;
 

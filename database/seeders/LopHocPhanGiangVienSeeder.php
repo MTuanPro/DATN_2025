@@ -35,7 +35,7 @@ class LopHocPhanGiangVienSeeder extends Seeder
             $daPhanCong = DB::table('lop_hoc_phan_giang_vien')
                 ->where('lop_hoc_phan_id', $lop->id)
                 ->exists();
-            
+
             if ($daPhanCong) {
                 continue;
             }
@@ -46,7 +46,7 @@ class LopHocPhanGiangVienSeeder extends Seeder
             // Mỗi lớp có 1 giảng viên chính
             $giangVienChinh = $giangViens->random();
             $daPhanCongIds[] = $giangVienChinh->id;
-            
+
             $phanCongs[] = [
                 'lop_hoc_phan_id' => $lop->id,
                 'giang_vien_id' => $giangVienChinh->id,
@@ -62,7 +62,7 @@ class LopHocPhanGiangVienSeeder extends Seeder
             if (rand(1, 100) <= 30) {
                 $giangVienPhu = $giangViens->whereNotIn('id', $daPhanCongIds)->random();
                 $daPhanCongIds[] = $giangVienPhu->id;
-                
+
                 $phanCongs[] = [
                     'lop_hoc_phan_id' => $lop->id,
                     'giang_vien_id' => $giangVienPhu->id,
@@ -78,7 +78,7 @@ class LopHocPhanGiangVienSeeder extends Seeder
             // 20% lớp có trợ giảng
             if (rand(1, 100) <= 20) {
                 $troGiang = $giangViens->whereNotIn('id', $daPhanCongIds)->random();
-                
+
                 $phanCongs[] = [
                     'lop_hoc_phan_id' => $lop->id,
                     'giang_vien_id' => $troGiang->id,
