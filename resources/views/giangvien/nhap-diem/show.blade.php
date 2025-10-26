@@ -807,3 +807,161 @@
 </script>
 @endpush
 @endsection
+
+
+
+
+
+
+ <!-- <section class="section">
+        <div class="card">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Nhập điểm sinh viên</h5>
+                @if(!$daKhoaDiem && $dangDienRa)
+                <div class="d-flex gap-2">
+                    <a href="{{ route('giangvien.nhap-diem.download-template', $lopHocPhan->id) }}" class="btn btn-sm btn-info">
+                        <i class="bi bi-download"></i> Tải template Excel
+                    </a>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="showImportModal()">
+                        <i class="bi bi-upload"></i> Import Excel
+                    </button>
+                    <button type="button" class="btn btn-sm btn-success" onclick="luuTatCaDiem()">
+                        <i class="bi bi-save"></i> Lưu tất cả
+                    </button>
+                </div>
+                @endif
+            </div>
+            <div class="card-body">
+                @if ($cauHinhs->isEmpty())
+                    <div class="alert alert-warning">
+                        <i class="bi bi-exclamation-triangle"></i> Chưa có cấu hình đầu điểm cho lớp này. Vui lòng liên hệ phòng đào tạo.
+                    </div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-bordered table-hover" id="tableDiem">
+                            <thead class="table-light">
+                                <tr>
+                                    <th width="50" rowspan="2">STT</th>
+                                    <th width="100" rowspan="2">MSSV</th>
+                                    <th width="200" rowspan="2">Họ tên</th>
+                                    @foreach($cauHinhs as $cauHinh)
+                                        <th class="text-center" colspan="{{ $cauHinh->so_cot }}">
+                                            {{ $cauHinh->ten_dau_diem }}<br>
+                                            <small class="text-muted">({{ $cauHinh->ty_le }}%)</small>
+                                        </th>
+                                    @endforeach
+                                    <th width="80" class="text-center" rowspan="2">Điểm TK</th>
+                                    @if(!$daKhoaDiem && $dangDienRa)
+                                    <th width="100" class="text-center" rowspan="2">Thao tác</th>
+                                    @endif
+                                </tr>
+                                <tr>
+                                    @foreach($cauHinhs as $cauHinh)
+                                        @for($cot = 1; $cot <= $cauHinh->so_cot; $cot++)
+                                            <th width="70" class="text-center">
+                                                @if($cauHinh->so_cot > 1)
+                                                    Cột {{ $cot }}
+                                                @else
+                                                    Điểm
+                                                @endif
+                                            </th>
+                                        @endfor
+                                    @endforeach
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach ($sinhViens as $index => $lhpsv)
+                                @php
+                                    // Lấy tất cả điểm đã nhập của sinh viên này
+                                    $diemDaNhap = \App\Models\NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)->get();
+                                    $diemMap = [];
+                                    foreach($diemDaNhap as $diem) {
+                                        $key = $diem->cau_hinh_id . '_' . $diem->cot_diem;
+                                        $diemMap[$key] = $diem->diem_so;
+                                    }
+                                    
+                                    // Lấy điểm tổng kết
+                                    $ketQua = $lhpsv->ketQuaHocTap;
+                                @endphp
+                                <tr data-sv-id="{{ $lhpsv->id }}">
+                                    <td class="text-center">{{ $index + 1 }}</td>
+                                    <td><strong>{{ $lhpsv->sinhVien->ma_sinh_vien }}</strong></td>
+                                    <td>{{ $lhpsv->sinhVien->ho_ten }}</td>
+                                    
+                                    @foreach($cauHinhs as $cauHinh)
+                                        @for($cot = 1; $cot <= $cauHinh->so_cot; $cot++)
+                                            @php
+                                                $key = $cauHinh->id . '_' . $cot;
+                                                $value = $diemMap[$key] ?? '';
+                                            @endphp
+                                            <td class="text-center">
+                                                @if($daKhoaDiem || $daKetThuc)
+                                                    {{ $value !== '' ? number_format($value, 2) : '-' }}
+                                                @else
+                                                    <input type="number" 
+                                                        class="form-control form-control-sm text-center diem-input" 
+                                                        min="0" max="10" step="0.01"
+                                                        data-sv-id="{{ $lhpsv->id }}"
+                                                        data-cau-hinh-id="{{ $cauHinh->id }}"
+                                                        data-cot-diem="{{ $cot }}"
+                                                        value="{{ $value }}"
+                                                        placeholder="-">
+                                                @endif
+                                            </td>
+                                        @endfor
+                                    @endforeach
+                                    
+                                    <td class="text-center">
+                                        <strong class="diem-tk-{{ $lhpsv->id }}">
+                                            @if($ketQua && $ketQua->diem_he_10)
+                                                {{ number_format($ketQua->diem_he_10, 2) }}
+                                            @else
+                                                -
+                                            @endif
+                                        </strong>
+                                    </td>
+                                    
+                                    @if(!$daKhoaDiem && $dangDienRa)
+                                    <td class="text-center">
+                                        <button type="button" class="btn btn-sm btn-primary btn-luu-sv" 
+                                            data-sv-id="{{ $lhpsv->id }}">
+                                            <i class="bi bi-save"></i> Lưu
+                                        </button>
+                                    </td>
+                                    @endif
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <div class="mt-3">
+                        <a href="{{ route('giangvien.nhap-diem.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Quay lại
+                        </a>
+                        @if(!$daKhoaDiem && $dangDienRa)
+                        <button type="button" class="btn btn-success" onclick="luuTatCaDiem()">
+                            <i class="bi bi-save-fill"></i> Lưu tất cả điểm
+                        </button>
+                        @if($laGiangVienChinh)
+                        <button type="button" class="btn btn-primary" onclick="guiDiemChoDaoTao()">
+                            <i class="bi bi-send"></i> 
+                            @if(isset($daDuyetDiem) && $daDuyetDiem)
+                                Gửi lại điểm cho đào tạo
+                            @elseif($lopHocPhan->trang_thai_lop === 'dang_hoc' && $lopHocPhan->ly_do_tra_ve)
+                                Gửi lại điểm cho đào tạo
+                            @else
+                                Gửi điểm cho đào tạo
+                            @endif
+                        </button>
+                        @endif
+                        @endif
+                    </div>
+                @endif
+            </div>
+        </div>
+    </section>
+</div> -->
+
+
+
