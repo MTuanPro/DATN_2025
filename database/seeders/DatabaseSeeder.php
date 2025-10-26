@@ -49,6 +49,11 @@ class DatabaseSeeder extends Seeder
 
             // 9. Giảng viên (phải sau Khoa và TrinhDo)
             GiangVienSeeder::class,
+
+            // 10. PHASE 4 - Member 1: Lớp học phần (phải sau MonHoc, HocKy, GiangVien)
+            LopHocPhanSeeder::class,
+            LopHocPhanGiangVienSeeder::class,
+            CauHinhDauDiemSeeder::class,
         ]);
     }
 }

@@ -10,36 +10,36 @@ use App\Models\DaoTao\Khoa;
 class NganhController extends Controller
 {
     public function index(Request $request)
-    {
-        $query = Nganh::with('khoa');
+{
+    $query = Nganh::with('khoa');
 
-        // 🔍 Tìm kiếm theo mã hoặc tên ngành
-        if ($request->filled('keyword')) {
-            $keyword = $request->keyword;
-            $query->where(function ($q) use ($keyword) {
-                $q->where('ma_nganh', 'like', "%{$keyword}%")
-                    ->orWhere('ten_nganh', 'like', "%{$keyword}%");
-            });
-        }
-
-        // 🧭 Lọc theo Khoa (nếu chọn)
-        if ($request->filled('khoa_id')) {
-            $query->where('khoa_id', $request->khoa_id);
-        }
-
-        // 🔽 Sắp xếp
-        if ($request->filled('sort')) {
-            $query->orderBy($request->sort, $request->get('direction', 'asc'));
-        } else {
-            $query->orderBy('id', 'desc');
-        }
-
-        // 📄 Phân trang
-        $nganhs = $query->paginate(10);
-        $khoas = Khoa::orderBy('ten_khoa')->get();
-
-        return view('daotao.nganh.index', compact('nganhs', 'khoas'));
+    // 🔍 Tìm kiếm theo mã hoặc tên ngành
+    if ($request->filled('keyword')) {
+        $keyword = $request->keyword;
+        $query->where(function ($q) use ($keyword) {
+            $q->where('ma_nganh', 'like', "%{$keyword}%")
+              ->orWhere('ten_nganh', 'like', "%{$keyword}%");
+        });
     }
+
+    // 🧭 Lọc theo Khoa (nếu chọn)
+    if ($request->filled('khoa_id')) {
+        $query->where('khoa_id', $request->khoa_id);
+    }
+
+    // 🔽 Sắp xếp
+    if ($request->filled('sort')) {
+        $query->orderBy($request->sort, $request->get('direction', 'asc'));
+    } else {
+        $query->orderBy('id', 'desc');
+    }
+
+    // 📄 Phân trang
+    $nganhs = $query->paginate(10);
+    $khoas = Khoa::orderBy('ten_khoa')->get();
+
+    return view('daotao.nganh.index', compact('nganhs', 'khoas'));
+}
 
     public function create()
     {
@@ -82,8 +82,7 @@ class NganhController extends Controller
 
     public function destroy($id)
     {
-        $nganh = Nganh::findOrFail($id);
-        $nganh->delete();
+        Nganh::destroy($id);
         return redirect()->route('dao-tao.nganh.index')->with('success', 'Xóa ngành thành công!');
     }
 }

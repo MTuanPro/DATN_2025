@@ -25,8 +25,13 @@ use App\Http\Controllers\DaoTao\CTDT\MonHocTienQuyetController;
 use App\Http\Controllers\DaoTao\DanhMuc\PhongHocController;
 use App\Http\Controllers\DaoTao\DanhMuc\TrangThaiHocTapController;
 use App\Http\Controllers\DaoTao\DanhMuc\TrinhDoController;
-use App\Http\Controllers\DaoTao\GiangVienController;
 use App\Http\Controllers\DaoTao\HocKyController;
+use App\Http\Controllers\DaoTao\GiangVienController as DaoTaoGiangVienController;
+use App\Http\Controllers\DaoTao\LopHocPhanController;
+use App\Http\Controllers\DaoTao\PhanCongGiangDayController;
+use App\Http\Controllers\DaoTao\CauHinhDauDiemController;
+use App\Http\Controllers\DaoTao\LopHanhChinhController;
+use App\Http\Controllers\DaoTao\SinhVienController;
 
 
 // Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
@@ -39,7 +44,7 @@ Route::get('/', function () {
             return redirect()->route('admin.dashboard');
         }
         if (in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)) {
-            return redirect()->route('daotao.dashboard');
+            return redirect()->route('dao-tao.dashboard');
         }
         if (in_array('giang_vien', $roles)) {
             return redirect()->route('giangvien.dashboard');
@@ -112,6 +117,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('dao-tao.')->group(function () {
     Route::get('/dashboard', [DaoTaoDashboardController::class, 'index'])->name('dashboard');
 
+
     // PHASE 1: Danh mục
     Route::resource('khoa', KhoaController::class);
     Route::resource('nganh', NganhController::class);
@@ -121,17 +127,6 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::resource('trang-thai-hoc-tap', TrangThaiHocTapController::class);
     Route::resource('phong-hoc', PhongHocController::class);
 
-    // PHASE 2: Giảng viên và Học kỳ
-    Route::resource('giang-vien', GiangVienController::class);
-    Route::get('giang-vien-import', [GiangVienController::class, 'showImportForm'])->name('giang-vien.show-import-form');
-    Route::post('giang-vien-import', [GiangVienController::class, 'import'])->name('giang-vien.import');
-    Route::get('giang-vien-template', [GiangVienController::class, 'downloadTemplate'])->name('giang-vien.download-template');
-
-    Route::resource('hoc-ky', HocKyController::class);
-    Route::post('hoc-ky/{hocKy}/set-hien-tai', [HocKyController::class, 'setHienTai'])->name('hoc-ky.set-hien-tai');
-    Route::post('hoc-ky/{hocKy}/mo-dang-ky', [HocKyController::class, 'moDangKy'])->name('hoc-ky.mo-dang-ky');
-    Route::get('hoc-ky/{hocKy}/kiem-tra-dang-ky', [HocKyController::class, 'kiemTraDangKy'])->name('hoc-ky.kiem-tra-dang-ky');
-
     // Môn học và môn tiên quyết
     Route::resource('mon-hoc', MonHocController::class);
     Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'tienQuyet'])->name('mon-hoc.tien-quyet');
@@ -139,13 +134,56 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocController::class, 'destroyTienQuyet'])->name('mon-hoc.tien-quyet.destroy');
 
     Route::resource('monhoctienquyet', MonHocTienQuyetController::class);
-    Route::resource('chuongtrinhkhung', ChuongTrinhKhungController::class);
+    Route::resource('chuong-trinh-khung', ChuongTrinhKhungController::class);
+    Route::get('chuong-trinh-khung/thong-ke/{chuyenNganhId}', [ChuongTrinhKhungController::class, 'thongKe'])->name('chuong-trinh-khung.thong-ke');
+
+    // PHASE 2: Học kỳ và Giảng viên
+    Route::resource('hoc-ky', HocKyController::class);
+    Route::post('hoc-ky/{hocKy}/set-hien-tai', [HocKyController::class, 'setHienTai'])
+        ->name('hoc-ky.set-hien-tai');
+    Route::post('hoc-ky/{hocKy}/mo-dang-ky', [HocKyController::class, 'moDangKy'])
+        ->name('hoc-ky.mo-dang-ky');
+
+    Route::resource('giang-vien', DaoTaoGiangVienController::class);
+    Route::get('giang-vien-import', [DaoTaoGiangVienController::class, 'showImportForm'])
+        ->name('giang-vien.show-import-form');
+    Route::post('giang-vien-import', [DaoTaoGiangVienController::class, 'import'])
+        ->name('giang-vien.import');
+
+    // PHASE 3: Lớp hành chính và Sinh viên  
+    Route::get('lop-hanh-chinh', [LopHanhChinhController::class, 'index'])->name('lop-hanh-chinh.index');
+    Route::get('lop-hanh-chinh/create', [LopHanhChinhController::class, 'create'])->name('lop-hanh-chinh.create');
+    Route::post('lop-hanh-chinh', [LopHanhChinhController::class, 'store'])->name('lop-hanh-chinh.store');
+    Route::get('lop-hanh-chinh/{lop_hanh_chinh}', [LopHanhChinhController::class, 'show'])->name('lop-hanh-chinh.show');
+    Route::get('lop-hanh-chinh/{lop_hanh_chinh}/edit', [LopHanhChinhController::class, 'edit'])->name('lop-hanh-chinh.edit');
+    Route::put('lop-hanh-chinh/{lop_hanh_chinh}', [LopHanhChinhController::class, 'update'])->name('lop-hanh-chinh.update');
+    Route::delete('lop-hanh-chinh/{lop_hanh_chinh}', [LopHanhChinhController::class, 'destroy'])->name('lop-hanh-chinh.destroy');
+
+    Route::resource('sinh-vien', SinhVienController::class);
+    Route::get('sinh-vien-import', [SinhVienController::class, 'showImportForm'])->name('sinh-vien.show-import-form');
+    Route::post('sinh-vien-import', [SinhVienController::class, 'import'])->name('sinh-vien.import');
+    Route::get('sinh-vien-template', [SinhVienController::class, 'downloadTemplate'])->name('sinh-vien.download-template');
+
+    // PHASE 4: Lớp học phần & Phân công
+    Route::resource('lop-hoc-phan', LopHocPhanController::class);
+
+    // Phân công giảng dạy
+    Route::get('lop-hoc-phan/{lopHocPhan}/phan-cong', [PhanCongGiangDayController::class, 'index'])->name('lop-hoc-phan.phan-cong');
+    Route::post('lop-hoc-phan/{lopHocPhan}/phan-cong', [PhanCongGiangDayController::class, 'store'])->name('lop-hoc-phan.phan-cong.store');
+    Route::put('phan-cong/{phanCong}', [PhanCongGiangDayController::class, 'update'])->name('phan-cong.update');
+    Route::delete('phan-cong/{phanCong}', [PhanCongGiangDayController::class, 'destroy'])->name('phan-cong.destroy');
+
+    // Cấu hình đầu điểm
+    Route::get('lop-hoc-phan/{lopHocPhan}/cau-hinh-diem', [CauHinhDauDiemController::class, 'index'])->name('lop-hoc-phan.cau-hinh-diem');
+    Route::post('lop-hoc-phan/{lopHocPhan}/cau-hinh-diem', [CauHinhDauDiemController::class, 'store'])->name('lop-hoc-phan.cau-hinh-diem.store');
+    Route::put('cau-hinh-diem/{cauHinhDiem}', [CauHinhDauDiemController::class, 'update'])->name('cau-hinh-diem.update');
+    Route::delete('cau-hinh-diem/{cauHinhDiem}', [CauHinhDauDiemController::class, 'destroy'])->name('cau-hinh-diem.destroy');
+    Route::get('lop-hoc-phan/{lopHocPhan}/ty-le-con-lai', [CauHinhDauDiemController::class, 'getTyLeConLai'])->name('lop-hoc-phan.ty-le-con-lai');
 });
 
 // ========== Giảng viên Routes ==========
 Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('giangvien.')->group(function () {
     Route::get('/dashboard', [GiangVienDashboardController::class, 'index'])->name('dashboard');
-
     // Thêm các route giảng viên khác ở đây
 });
 
