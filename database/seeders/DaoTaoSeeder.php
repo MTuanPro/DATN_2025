@@ -8,9 +8,6 @@ use Illuminate\Support\Facades\Hash;
 
 class DaoTaoSeeder extends Seeder
 {
-    /**
-     * Run the database seeds.
-     */
     public function run(): void
     {
         // Lấy ID vai trò
@@ -19,7 +16,7 @@ class DaoTaoSeeder extends Seeder
         $adminUser = DB::table('users')->where('email', 'admin@smis.edu.vn')->first();
 
         // ========================================
-        // Tạo tài khoản Trưởng phòng Đào tạo
+        // 1️⃣ Tạo tài khoản Trưởng phòng Đào tạo
         // ========================================
         $existingTruongPhong = DB::table('users')->where('email', 'truongphong@smis.edu.vn')->first();
 
@@ -59,11 +56,14 @@ class DaoTaoSeeder extends Seeder
             ]);
         }
 
-        // Tạo record trong bảng dao_tao
+        // Record Trưởng phòng Đào tạo
         $existingTruongPhongDaoTao = DB::table('dao_tao')->where('user_id', $truongPhongId)->first();
 
         if (!$existingTruongPhongDaoTao) {
+            $nextCode = 'DT' . str_pad(DB::table('dao_tao')->count() + 1, 3, '0', STR_PAD_LEFT);
+
             DB::table('dao_tao')->insert([
+                'ma_dao_tao' => $nextCode,
                 'user_id' => $truongPhongId,
                 'ho_ten' => 'Nguyễn Văn Trưởng',
                 'email' => 'truongphong@smis.edu.vn',
@@ -75,7 +75,7 @@ class DaoTaoSeeder extends Seeder
         }
 
         // ========================================
-        // Tạo tài khoản Nhân viên Đào tạo
+        // 2️⃣ Tạo tài khoản Nhân viên Đào tạo
         // ========================================
         $existingNhanVien = DB::table('users')->where('email', 'nhanvien@smis.edu.vn')->first();
 
@@ -115,11 +115,14 @@ class DaoTaoSeeder extends Seeder
             ]);
         }
 
-        // Tạo record trong bảng dao_tao
+        // Record Nhân viên Đào tạo
         $existingNhanVienDaoTao = DB::table('dao_tao')->where('user_id', $nhanVienId)->first();
 
         if (!$existingNhanVienDaoTao) {
+            $nextCode = 'DT' . str_pad(DB::table('dao_tao')->count() + 1, 3, '0', STR_PAD_LEFT);
+
             DB::table('dao_tao')->insert([
+                'ma_dao_tao' => $nextCode,
                 'user_id' => $nhanVienId,
                 'ho_ten' => 'Trần Thị Nhân Viên',
                 'email' => 'nhanvien@smis.edu.vn',
@@ -133,13 +136,8 @@ class DaoTaoSeeder extends Seeder
         $this->command->info('========================================');
         $this->command->info('TÀI KHOẢN ĐÀO TẠO ĐÃ TẠO/CẬP NHẬT:');
         $this->command->info('========================================');
-        $this->command->info('1. Trưởng phòng Đào tạo:');
-        $this->command->info('   Email: truongphong@smis.edu.vn');
-        $this->command->info('   Password: password');
-        $this->command->info('');
-        $this->command->info('2. Nhân viên Đào tạo:');
-        $this->command->info('   Email: nhanvien@smis.edu.vn');
-        $this->command->info('   Password: password');
+        $this->command->info('1. Trưởng phòng Đào tạo: truongphong@smis.edu.vn / password');
+        $this->command->info('2. Nhân viên Đào tạo: nhanvien@smis.edu.vn / password');
         $this->command->info('========================================');
     }
 }
