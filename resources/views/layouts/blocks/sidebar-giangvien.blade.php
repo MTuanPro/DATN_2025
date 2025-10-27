@@ -45,8 +45,8 @@
                 </li>
 
                 <!-- 3. LỊCH DẠY -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('giang-vien/lich-day*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.schedule.index') }}" class='sidebar-link'>
                         <i class="bi bi-calendar-check"></i>
                         <span>Lịch dạy cá nhân</span>
                     </a>
