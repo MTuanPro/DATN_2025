@@ -34,7 +34,13 @@ use App\Http\Controllers\DaoTao\LichHocCoDinhController;
 use App\Http\Controllers\DaoTao\LichHocChiTietController;
 use App\Http\Controllers\DaoTao\LopHanhChinhController;
 use App\Http\Controllers\DaoTao\SinhVienController;
+use App\Http\Controllers\DaoTao\XepLopController;
+use App\Http\Controllers\SinhVien\DangKyMonHocController;
+use App\Http\Controllers\SinhVien\ThoiKhoaBieuController;
 
+
+// Debug route (temporary)
+Route::get('/debug/check-auth', [App\Http\Controllers\DebugController::class, 'checkAuth'])->name('debug.check-auth');
 
 // Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
 Route::get('/', function () {
@@ -151,6 +157,8 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         ->name('giang-vien.show-import-form');
     Route::post('giang-vien-import', [DaoTaoGiangVienController::class, 'import'])
         ->name('giang-vien.import');
+    Route::get('giang-vien-template', [DaoTaoGiangVienController::class, 'downloadTemplate'])
+        ->name('giang-vien.download-template');
 
     // PHASE 3: Lớp hành chính và Sinh viên  
     Route::get('lop-hanh-chinh', [LopHanhChinhController::class, 'index'])->name('lop-hanh-chinh.index');
@@ -201,6 +209,17 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::put('lich-chi-tiet/{lichChiTiet}', [LichHocChiTietController::class, 'update'])->name('lich-chi-tiet.update');
     Route::post('lich-chi-tiet/{lichChiTiet}/cancel', [LichHocChiTietController::class, 'cancel'])->name('lich-chi-tiet.cancel');
     Route::delete('lich-chi-tiet/{lichChiTiet}', [LichHocChiTietController::class, 'destroy'])->name('lich-chi-tiet.destroy');
+
+    // PHASE 5: Xếp lớp tự động
+    Route::prefix('xep-lop')->name('xep-lop.')->group(function () {
+        Route::get('/', [XepLopController::class, 'index'])->name('index');
+        Route::post('/auto-assign', [XepLopController::class, 'autoAssign'])->name('auto-assign');
+        Route::post('/manual-assign', [XepLopController::class, 'manualAssign'])->name('manual-assign');
+        Route::get('/waiting-list', [XepLopController::class, 'waitingList'])->name('waiting-list');
+        Route::get('/danh-sach-lop/{lopHocPhan}', [XepLopController::class, 'danhSachLop'])->name('danh-sach-lop');
+        Route::get('/lop-hoc-phan-by-mon/{monHoc}', [XepLopController::class, 'getLopHocPhanByMonHoc'])->name('lop-hoc-phan-by-mon');
+        Route::delete('/xoa-khoi-lop/{lhpsv}', [XepLopController::class, 'xoaKhoiLop'])->name('xoa-khoi-lop');
+    });
 });
 
 // ========== Giảng viên Routes ==========
@@ -213,5 +232,18 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
 Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvien.')->group(function () {
     Route::get('/dashboard', [SinhVienDashboardController::class, 'index'])->name('dashboard');
 
-    // Thêm các route sinh viên khác ở đây
+    // PHASE 5: Đăng ký môn học
+    Route::middleware('sinhvien.check')->prefix('dang-ky-mon-hoc')->name('dang-ky-mon-hoc.')->group(function () {
+        Route::get('/', [DangKyMonHocController::class, 'index'])->name('index');
+        Route::post('/', [DangKyMonHocController::class, 'store'])->name('store');
+        Route::delete('/{dangKy}', [DangKyMonHocController::class, 'destroy'])->name('destroy');
+        Route::get('/my-registrations', [DangKyMonHocController::class, 'myRegistrations'])->name('my-registrations');
+    });
+
+    // PHASE 5: Thời khóa biểu cá nhân
+    Route::middleware('sinhvien.check')->prefix('thoi-khoa-bieu')->name('thoi-khoa-bieu.')->group(function () {
+        Route::get('/', [ThoiKhoaBieuController::class, 'index'])->name('index');
+        Route::get('/chi-tiet', [ThoiKhoaBieuController::class, 'chiTiet'])->name('chi-tiet');
+        Route::get('/export-pdf', [ThoiKhoaBieuController::class, 'exportPDF'])->name('export-pdf');
+    });
 });

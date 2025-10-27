@@ -50,15 +50,19 @@
                 </li>
 
                 <!-- 3. ĐĂNG KÝ HỌC PHẦN -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/dang-ky-mon-hoc*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-journal-plus"></i>
                         <span>Đăng ký học phần</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Đăng ký HP</a></li>
-                        <li class="submenu-item"><a href="#">Lịch sử đăng ký</a></li>
-                        <li class="submenu-item"><a href="#">Học phần đã đăng ký</a></li>
+                    <ul class="submenu {{ Request::is('sinh-vien/dang-ky-mon-hoc*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
+                        </li>
+                        <li
+                            class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc/my-registrations') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.dang-ky-mon-hoc.my-registrations') }}">Lịch sử đăng ký</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -71,15 +75,21 @@
                 </li>
 
                 <!-- 5. THỜI KHÓA BIỂU & LỊCH THI -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/thoi-khoa-bieu*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-calendar-week"></i>
                         <span>TKB & Lịch thi</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Thời khóa biểu</a></li>
+                    <ul class="submenu {{ Request::is('sinh-vien/thoi-khoa-bieu*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu') && !Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.thoi-khoa-bieu.index') }}">Thời khóa biểu</a>
+                        </li>
+                        <li
+                            class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.thoi-khoa-bieu.chi-tiet') }}">Lịch học chi tiết</a>
+                        </li>
                         <li class="submenu-item"><a href="#">Lịch thi</a></li>
-                        <li class="submenu-item"><a href="#">Xuất lịch (PDF/iCal)</a></li>
                     </ul>
                 </li>
 

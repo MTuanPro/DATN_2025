@@ -50,7 +50,11 @@ class DatabaseSeeder extends Seeder
             // 9. Giảng viên (phải sau Khoa và TrinhDo)
             GiangVienSeeder::class,
 
-            // 10. PHASE 4 - Member 1: Lớp học phần (phải sau MonHoc, HocKy, GiangVien)
+            // 10. Lớp hành chính và Sinh viên (phải sau KhoaHoc, ChuyenNganh)
+            LopHanhChinhSeeder::class,
+            SinhVienSeeder::class,
+
+            // 11. PHASE 4 - Member 1: Lớp học phần (phải sau MonHoc, HocKy, GiangVien)
             LopHocPhanSeeder::class,
             LopHocPhanGiangVienSeeder::class,
             CauHinhDauDiemSeeder::class,
@@ -58,6 +62,10 @@ class DatabaseSeeder extends Seeder
             // 11. PHASE 4 - Lịch học (phải sau LopHocPhan, PhongHoc, GiangVien)
             LichHocCoDinhSeeder::class,
             LichHocChiTietSeeder::class,
+
+            // 12. PHASE 5 - Đăng ký môn học (phải sau SinhVien, LopHocPhan, HocKy)
+            DangKyMonHocTamSeeder::class,
+            LopHocPhanSinhVienSeeder::class,
         ]);
     }
 }

@@ -132,16 +132,19 @@
                 </li>
 
                 {{-- 8. ĐĂNG KÝ & XẾP LỚP --}}
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('dao-tao/xep-lop*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-card-checklist"></i>
                         <span>Đăng ký & Xếp lớp</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Đăng ký môn học tạm <!-- Đang cập nhật --></a></li>
-                        <li class="submenu-item"><a href="#">Quy tắc xếp lớp <!-- Đang cập nhật --></a></li>
-                        <li class="submenu-item"><a href="#">Xếp lớp tự động <!-- Đang cập nhật --></a></li>
-                        <li class="submenu-item"><a href="#">Lịch sử xếp lớp <!-- Đang cập nhật --></a></li>
+                    <ul class="submenu {{ Request::is('dao-tao/xep-lop*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('dao-tao/xep-lop') && !Request::is('dao-tao/xep-lop/waiting-list') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.xep-lop.index') }}">Quản lý xếp lớp</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/xep-lop/waiting-list') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.xep-lop.waiting-list') }}">Danh sách chờ</a>
+                        </li>
                     </ul>
                 </li>
 

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role' => \App\Http\Middleware\CheckRole::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
+            'sinhvien.check' => \App\Http\Middleware\EnsureSinhVienExists::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {

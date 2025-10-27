@@ -219,7 +219,7 @@ Table mon_hoc {
   created_at timestamp
   updated_at timestamp
   deleted_at timestamp [note: 'Soft delete']
-  note: 'Constraint: so_tin_chi = so_tin_chi_ly_thuyet + so_tin_chi_thuc_hanh'
+  note: 'CHECK: so_tin_chi = so_tin_chi_ly_thuyet + so_tin_chi_thuc_hanh; so_tin_chi BETWEEN 1 AND 10'
 }
 
 Table mon_hoc_tien_quyet {
@@ -232,7 +232,7 @@ Table mon_hoc_tien_quyet {
   created_at timestamp
   updated_at timestamp
   indexes { (mon_hoc_id, mon_tien_quyet_id) [unique] }
-  note: 'Môn học tiên quyết - môn phải học trước khi học môn khác'
+  note: 'Môn học tiên quyết - môn phải học trước khi học môn khác. CHECK: Không được tạo vòng lặp (circular dependency)'
 }
 
 Table lop_hoc_phan {
@@ -257,7 +257,7 @@ Table lop_hoc_phan {
   indexes {
     (mon_hoc_id, hoc_ky_id, nhom_lop) [unique]
   }
-  note: 'Constraint: ngay_bat_dau < ngay_ket_thuc; so_luong_dang_ky <= suc_chua; so_luong_toi_thieu <= suc_chua'
+  note: 'CHECK: so_luong_dang_ky <= suc_chua; ngay_ket_thuc > ngay_bat_dau; suc_chua BETWEEN 10 AND 100; so_luong_toi_thieu <= suc_chua'
 }
 
 Table lop_hoc_phan_giang_vien {
@@ -270,7 +270,10 @@ Table lop_hoc_phan_giang_vien {
   nguoi_phan_cong_id int [ref: > dao_tao.id]
   created_at timestamp
   updated_at timestamp
-  indexes { (lop_hoc_phan_id, giang_vien_id) [unique] }
+  indexes { 
+    (lop_hoc_phan_id, giang_vien_id) [unique]
+    (lop_hoc_phan_id, giang_vien_id, vai_tro) [unique, name: 'unique_lhp_gv_role']
+  }
   note: 'Bảng phân công giảng viên dạy lớp học phần'
 }
 
@@ -285,7 +288,11 @@ Table dang_ky_mon_hoc_tam {
   ly_do_that_bai text [note: 'Lý do không xếp được lớp: hết chỗ, thiếu môn tiên quyết, v.v.']
   created_at timestamp
   updated_at timestamp
-  indexes { (sinh_vien_id, mon_hoc_id, hoc_ky_id) [unique] }
+  indexes { 
+    (sinh_vien_id, mon_hoc_id, hoc_ky_id) [unique]
+    trang_thai [name: 'idx_dkmht_trang_thai']
+    (hoc_ky_id, trang_thai) [name: 'idx_dkmht_hk_tt']
+  }
   note: 'Bảng đăng ký môn học tạm - chờ xếp lớp tự động'
 }
 
@@ -303,7 +310,12 @@ Table lop_hoc_phan_sinh_vien {
   ly_do_huy text [note: 'Lý do hủy/bỏ học nếu có']
   created_at timestamp
   updated_at timestamp
-  indexes { (lop_hoc_phan_id, sinh_vien_id) [unique] }
+  indexes { 
+    (lop_hoc_phan_id, sinh_vien_id) [unique]
+    sinh_vien_id [name: 'idx_lhpsv_sinh_vien']
+    trang_thai [name: 'idx_lhpsv_trang_thai']
+    (sinh_vien_id, trang_thai) [name: 'idx_lhpsv_sv_tt']
+  }
   note: 'Bảng đăng ký sinh viên vào lớp học phần sau khi đã xếp lớp'
 }
 
@@ -420,8 +432,12 @@ Table ket_qua_hoc_tap {
   ghi_chu text
   created_at timestamp
   updated_at timestamp
-  indexes { (lop_hoc_phan_sinh_vien_id) [unique] }
-  note: 'Constraint: diem_he_10 BETWEEN 0 AND 10; diem_he_4 BETWEEN 0 AND 4; qua_mon = (diem_he_10 >= 4.0)'
+  indexes { 
+    (lop_hoc_phan_sinh_vien_id) [unique]
+    qua_mon [name: 'idx_kqht_qua_mon']
+    diem_he_10 [name: 'idx_kqht_diem']
+  }
+  note: 'CHECK: diem_he_10 BETWEEN 0 AND 10; diem_he_4 BETWEEN 0 AND 4; qua_mon = (diem_he_10 >= 4.0)'
 }
 
 Table cau_hinh_dau_diem {
@@ -433,7 +449,7 @@ Table cau_hinh_dau_diem {
   created_at timestamp
   updated_at timestamp
   indexes { (lop_hoc_phan_id, ten_dau_diem) [unique] }
-  note: 'Constraint: SUM(ty_le) WHERE lop_hoc_phan_id = X MUST = 100; ty_le > 0 AND ty_le <= 100'
+  note: 'CHECK: SUM(ty_le) per lop_hoc_phan_id = 100; ty_le > 0 AND ty_le <= 100'
 }
 
 Table nhap_diem {
@@ -446,7 +462,7 @@ Table nhap_diem {
   created_at timestamp
   updated_at timestamp
   indexes { (lop_hoc_phan_sinh_vien_id, cau_hinh_id, cot_diem) [unique] }
-  note: 'Constraint: diem_so BETWEEN 0 AND 10'
+  note: 'CHECK: diem_so BETWEEN 0 AND 10'
 }
 
 Table bang_diem {

@@ -134,4 +134,20 @@ class User extends Authenticatable
     {
         return $this->hasOne(\App\Models\DaoTao::class, 'user_id');
     }
+
+    /**
+     * Relationship: User has one SinhVien
+     */
+    public function sinhVien()
+    {
+        return $this->hasOne(\App\Models\SinhVien::class, 'user_id');
+    }
+
+    /**
+     * Relationship: User has one GiangVien
+     */
+    public function giangVien()
+    {
+        return $this->hasOne(\App\Models\GiangVien::class, 'user_id');
+    }
 }

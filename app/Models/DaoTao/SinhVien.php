@@ -90,4 +90,36 @@ class SinhVien extends Model
     {
         return $this->belongsTo(GiangVien::class, 'giang_vien_chu_nhiem_id');
     }
+
+    // Relationship: Đăng ký môn học tạm
+    public function dangKyMonHocTams()
+    {
+        return $this->hasMany(\App\Models\DangKyMonHocTam::class, 'sinh_vien_id');
+    }
+
+    // Relationship: Lớp học phần đã đăng ký
+    public function lopHocPhanSinhViens()
+    {
+        return $this->hasMany(\App\Models\LopHocPhanSinhVien::class, 'sinh_vien_id');
+    }
+
+    // Relationship: Các lớp học phần (through pivot)
+    public function lopHocPhans()
+    {
+        return $this->belongsToMany(
+            \App\Models\LopHocPhan::class,
+            'lop_hoc_phan_sinh_vien',
+            'sinh_vien_id',
+            'lop_hoc_phan_id'
+        )->withPivot([
+            'dang_ky_tam_id',
+            'ngay_dang_ky',
+            'ngay_xep_lop',
+            'nguoi_duyet_id',
+            'ngay_duyet',
+            'phuong_thuc_xep',
+            'trang_thai',
+            'ly_do_huy'
+        ])->withTimestamps();
+    }
 }

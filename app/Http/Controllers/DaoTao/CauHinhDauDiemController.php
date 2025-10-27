@@ -5,20 +5,27 @@ namespace App\Http\Controllers\DaoTao;
 use App\Http\Controllers\Controller;
 use App\Models\LopHocPhan;
 use App\Models\CauHinhDauDiem;
+use App\Services\CauHinhDauDiemService;
 use Illuminate\Http\Request;
 
 class CauHinhDauDiemController extends Controller
 {
+    protected $cauHinhDauDiemService;
+
+    public function __construct(CauHinhDauDiemService $cauHinhDauDiemService)
+    {
+        $this->cauHinhDauDiemService = $cauHinhDauDiemService;
+    }
+
     /**
      * Hiển thị danh sách cấu hình đầu điểm của lớp học phần
      */
     public function index($lopHocPhanId)
     {
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy', 'cauHinhDauDiem'])->findOrFail($lopHocPhanId);
-        $tongTyLe = CauHinhDauDiem::getTongTyLe($lopHocPhanId);
-        $tyLeConLai = 100 - $tongTyLe;
+        $summary = $this->cauHinhDauDiemService->getSummary($lopHocPhanId);
 
-        return view('daotao.cau-hinh-dau-diem.index', compact('lopHocPhan', 'tongTyLe', 'tyLeConLai'));
+        return view('daotao.cau-hinh-dau-diem.index', compact('lopHocPhan', 'summary'));
     }
 
     /**
@@ -28,14 +35,11 @@ class CauHinhDauDiemController extends Controller
     {
         $validated = $request->validate([
             'ten_dau_diem' => 'required|string|max:50',
-            'ma_dau_diem' => 'required|string|max:20',
             'ty_le' => 'required|numeric|min:0.01|max:100',
             'so_cot' => 'required|integer|min:1|max:10',
-            'thu_tu_hien_thi' => 'nullable|integer|min:0',
             'ghi_chu' => 'nullable|string',
         ], [
             'ten_dau_diem.required' => 'Tên đầu điểm là bắt buộc',
-            'ma_dau_diem.required' => 'Mã đầu điểm là bắt buộc',
             'ty_le.required' => 'Tỷ lệ % là bắt buộc',
             'ty_le.min' => 'Tỷ lệ % phải lớn hơn 0',
             'ty_le.max' => 'Tỷ lệ % không được vượt quá 100',
@@ -44,30 +48,25 @@ class CauHinhDauDiemController extends Controller
             'so_cot.max' => 'Số cột điểm không được vượt quá 10',
         ]);
 
-        // Kiểm tra mã đầu điểm đã tồn tại chưa
-        $exists = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhanId)
-            ->where('ma_dau_diem', $validated['ma_dau_diem'])
-            ->exists();
+        // Sử dụng Service để validate
+        $validation = $this->cauHinhDauDiemService->validateCauHinh(
+            $lopHocPhanId,
+            $validated['ten_dau_diem'],
+            $validated['ty_le'],
+            $validated['so_cot']
+        );
 
-        if ($exists) {
+        if (!$validation['passed']) {
             return redirect()->back()
-                ->with('error', 'Mã đầu điểm đã tồn tại trong lớp học phần này!');
-        }
-
-        // Kiểm tra tổng tỷ lệ có vượt quá 100% không
-        if (!CauHinhDauDiem::kiemTraTongTyLe($lopHocPhanId, $validated['ty_le'])) {
-            $tyLeConLai = CauHinhDauDiem::getTyLeConLai($lopHocPhanId);
-            return redirect()->back()
-                ->with('error', "Tổng tỷ lệ % vượt quá 100%! Còn lại: {$tyLeConLai}%");
+                ->withErrors($validation['errors'])
+                ->withInput();
         }
 
         CauHinhDauDiem::create([
             'lop_hoc_phan_id' => $lopHocPhanId,
             'ten_dau_diem' => $validated['ten_dau_diem'],
-            'ma_dau_diem' => $validated['ma_dau_diem'],
             'ty_le' => $validated['ty_le'],
             'so_cot' => $validated['so_cot'],
-            'thu_tu_hien_thi' => $validated['thu_tu_hien_thi'] ?? 0,
             'ghi_chu' => $validated['ghi_chu'] ?? null,
         ]);
 
