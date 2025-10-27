@@ -2,14 +2,12 @@
 
 namespace App\Models\Daotao;
 
-use App\Models\DaoTao\Nganh;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 
 class ChuyenNganh extends Model
 {
-    use HasFactory, SoftDeletes;
+    use SoftDeletes;
 
     protected $table = 'chuyen_nganh';
 
@@ -21,9 +19,13 @@ class ChuyenNganh extends Model
         'mo_ta',
     ];
 
-    // Chuyên ngành thuộc về 1 ngành
     public function nganh()
     {
         return $this->belongsTo(Nganh::class, 'nganh_id');
+    }
+
+    public function chuongTrinhKhung()
+    {
+        return $this->hasMany(ChuongTrinhKhung::class, 'chuyen_nganh_id');
     }
 }

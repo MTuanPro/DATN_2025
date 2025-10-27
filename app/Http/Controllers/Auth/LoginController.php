@@ -80,7 +80,7 @@ class LoginController extends Controller
         }
 
         if (in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)) {
-            return redirect()->route('daotao.dashboard');
+            return redirect()->route('dao-tao.dashboard');
         }
 
         if (in_array('giang_vien', $roles)) {
