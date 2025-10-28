@@ -64,9 +64,13 @@ class AdminSeeder extends Seeder
         $existingAdminRecord = DB::table('admin')->where('user_id', $adminId)->first();
 
         if (!$existingAdminRecord) {
+            // Tự động sinh mã admin dạng AD001, AD002, ...
+            $nextCode = 'AD' . str_pad(DB::table('admin')->count() + 1, 3, '0', STR_PAD_LEFT);
+
             // Tạo record trong bảng admin
             DB::table('admin')->insert([
                 'user_id' => $adminId,
+                'ma_admin' => $nextCode,
                 'ho_ten' => 'Admin System',
                 'email' => 'admin@smis.edu.vn',
                 'so_dien_thoai' => '0123456789',

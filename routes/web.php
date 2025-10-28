@@ -14,6 +14,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\DaoTaoController;
 use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController;
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
+use App\Http\Controllers\GiangVien\ScheduleController;
 use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardController;
 use App\Http\Controllers\DaoTao\CTDT\ChuongTrinhKhungController;
 use App\Http\Controllers\DaoTao\CTDT\ChuyenNganhController;
@@ -226,6 +227,9 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('giangvien.')->group(function () {
     Route::get('/dashboard', [GiangVienDashboardController::class, 'index'])->name('dashboard');
     // Thêm các route giảng viên khác ở đây
+    // Lịch dạy cá nhân
+    Route::get('/lich-day', [ScheduleController::class, 'index'])->name('schedule.index');
+    Route::get('/lich-day/export', [ScheduleController::class, 'export'])->name('schedule.export');
 });
 
 // ========== Sinh viên Routes ==========
