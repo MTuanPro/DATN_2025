@@ -316,7 +316,7 @@
 
                     $('#modalXepLop').modal('show');
                 });
-
+                //  test code
                 // Xác nhận xếp lớp thủ công
                 $('#btnXacNhanXepLop').click(function() {
                     const lopHocPhanId = $('#selectLopHocPhan').val();

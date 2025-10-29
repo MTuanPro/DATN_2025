@@ -78,7 +78,7 @@
                             </table>
                         </div>
                     </div>
-
+       <!-- //  test code -->
                     <!-- Danh sách sinh viên -->
                     @if ($lopHanhChinh->sinhVien->count() > 0)
                         <hr>
