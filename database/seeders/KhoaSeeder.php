@@ -26,12 +26,12 @@ class KhoaSeeder extends Seeder
 
         foreach ($data as $item) {
     DB::table('khoa')->updateOrInsert(
-        ['ma_khoa' => $item['ma_khoa']],
-        array_merge($item, [
-            'updated_at' => now(),
-            'created_at' => now(),
-        ])
-    );
+    ['ma_khoa' => $item['ma_khoa']], // Điều kiện kiểm tra bản ghi đã tồn tại
+    array_merge($item, [
+        'updated_at' => now(),
+        'created_at' => now(),
+    ])
+);
 }
     }
 }

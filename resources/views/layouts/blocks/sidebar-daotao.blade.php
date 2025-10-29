@@ -119,9 +119,7 @@
                         class="submenu {{ Request::is('dao-tao/lop-hoc-phan*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*') ? 'active' : '' }}">
                         <li
                             class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan*') && Request::segment(3) !== 'xem-lich' ? 'active' : '' }}">
-                            <a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học
-                                phần</a></li>
-                        <li class="submenu-item"><a href="#">Đăng ký môn học <!-- Đang cập nhật --></a></li>
+                            <a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học phần</a></li>
                     </ul>
                 </li>
 
@@ -134,9 +132,6 @@
                     </a>
                     <ul
                         class="submenu {{ Request::is('dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan*') ? 'active' : '' }}"><a
-                                href="{{ route('dao-tao.lop-hoc-phan.index') }}">Xem theo Lớp
-                                HP</a></li>
                         <li class="submenu-item"><a href="#">Lịch theo Phòng học <!-- Đang phát triển --></a></li>
                         <li class="submenu-item"><a href="#">Lịch theo Giảng viên <!-- Đang phát triển --></a>
                         </li>
