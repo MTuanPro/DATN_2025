@@ -34,12 +34,19 @@
                                 {{ $lopHocPhan->hocKy->nam_hoc }}</p>
                         </div>
                         <div class="col-md-4 text-end">
+
                             <h4>Tổng tỷ lệ:
                                 <span class="badge {{ $summary['total_percentage'] == 100 ? 'bg-success' : 'bg-warning' }}">
                                     {{ $summary['total_percentage'] }}%
                                 </span>
                             </h4>
                             <p class="text-muted">Còn lại: {{ $summary['remaining_percentage'] }}%</p>
+
+                            <h4>Tổng tỷ lệ: <span
+                                    class="badge {{ $tongTyLe == 100 ? 'bg-success' : 'bg-warning' }}">{{ $tongTyLe }}%</span>
+                            </h4>
+                            <p class="text-muted">Còn lại: {{ $tyLeConLai }}%</p>
+
                         </div>
                     </div>
                 </div>
@@ -65,7 +72,11 @@
                         </div>
                     @endif
 
+
                     @if ($summary['remaining_percentage'] > 0)
+
+                    @if ($tyLeConLai > 0)
+
                         <form action="{{ route('dao-tao.lop-hoc-phan.cau-hinh-diem.store', $lopHocPhan->id) }}"
                             method="POST">
                             @csrf
@@ -175,6 +186,7 @@
                                     <tr class="table-primary">
                                         <th colspan="2" class="text-end">TỔNG:</th>
                                         <th><span
+
                                                 class="badge bg-{{ $summary['total_percentage'] == 100 ? 'success' : 'warning' }}">
                                                 {{ $summary['total_percentage'] }}%
                                             </span>
@@ -182,6 +194,12 @@
                                         </th>
                                         <th colspan="3">
                                             @if ($summary['is_complete'])
+
+                                                class="badge bg-{{ $tongTyLe == 100 ? 'success' : 'warning' }}">{{ $tongTyLe }}%</span>
+                                        </th>
+                                        <th colspan="3">
+                                            @if ($tongTyLe == 100)
+
                                                 <span class="text-success"><i class="bi bi-check-circle"></i> Đã đủ
                                                     100%</span>
                                             @else

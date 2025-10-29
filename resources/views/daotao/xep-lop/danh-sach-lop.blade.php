@@ -1,4 +1,8 @@
+
 @extends('layouts.layout-daotao')
+
+@extends('layouts.app-daotao')
+
 
 @section('title', 'Danh sách sinh viên lớp học phần')
 

@@ -6,7 +6,10 @@ use App\Models\DaoTao\SinhVien;
 use App\Models\DaoTao\LopHanhChinh;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+
 use Illuminate\Support\Facades\DB;
+
+
 use Illuminate\Support\Facades\Hash;
 
 class SinhVienSeeder extends Seeder
@@ -16,6 +19,7 @@ class SinhVienSeeder extends Seeder
      */
     public function run(): void
     {
+
         // ========================================
         // TẠO TÀI KHOẢN SINH VIÊN TEST
         // ========================================
@@ -24,6 +28,8 @@ class SinhVienSeeder extends Seeder
         // ========================================
         // TẠO SINH VIÊN CHO CÁC LỚP HÀNH CHÍNH
         // ========================================
+
+
         $lopHanhChinhs = LopHanhChinh::with(['khoaHoc', 'nganh'])->get();
 
         if ($lopHanhChinhs->isEmpty()) {
@@ -267,6 +273,7 @@ class SinhVienSeeder extends Seeder
     {
         return str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT);
     }
+<<<<<<< HEAD
 
     /**
      * Tạo tài khoản sinh viên test cố định
@@ -364,4 +371,6 @@ class SinhVienSeeder extends Seeder
             $this->command->info('Sinh viên test đã có record trong bảng sinh_vien.');
         }
     }
+=======
+>>>>>>> 3ce5bf463aba81437bc908d45799f550b6b5f94d
 }

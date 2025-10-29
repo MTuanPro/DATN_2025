@@ -34,7 +34,11 @@ class DebugController extends Controller
                 ->where('user_id', $user->id)
                 ->first();
         }
+<<<<<<< HEAD
         // Sửa code
+=======
+
+>>>>>>> 3ce5bf463aba81437bc908d45799f550b6b5f94d
         // Kiểm tra xem có users nào khác có sinh viên không
         $sampleUserWithSinhVien = DB::table('sinh_vien')
             ->join('users', 'sinh_vien.user_id', '=', 'users.id')

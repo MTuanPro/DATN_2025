@@ -86,7 +86,11 @@ class GiangVienSeeder extends Seeder
             $userId = DB::table('users')->insertGetId([
                 'name' => $gv['ho_ten'],
                 'email' => $gv['email'],
+
                 'password' => Hash::make('password'),
+
+                'password' => Hash::make('123456'),
+
                 'trang_thai' => 'hoat_dong',
                 'email_verified_at' => now(),
                 'created_at' => now(),

@@ -14,6 +14,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
+
             // ========================================
             // PHASE 1: Hệ thống phân quyền
             // ========================================
@@ -76,6 +77,60 @@ class DatabaseSeeder extends Seeder
             // ========================================
             DangKyMonHocTamSeeder::class,  // 26. Đăng ký môn học tạm
             LopHocPhanSinhVienSeeder::class, // 27. Sinh viên đã đăng ký lớp học phần
+
+            // 1. Vai trò (bắt buộc chạy đầu tiên)
+            VaiTroSeeder::class,
+
+            // 2. Nhóm quyền và Quyền
+            NhomQuyenSeeder::class,
+            QuyenSeeder::class,
+
+            // 3. Users (tài khoản test)
+            UserSeeder::class,
+
+            // 4. Map Vai trò - Quyền (sau khi có VaiTro và Quyen)
+            VaiTroQuyenSeeder::class,
+
+            // 5. Admin và Đào tạo
+            AdminDaoTaoSeeder::class,
+
+            // 6. Danh mục cơ bản
+            KhoaSeeder::class,
+            NganhSeeder::class,
+            ChuyenNganhSeeder::class,
+            KhoaHocSeeder::class,
+            TrinhDoSeeder::class,
+            TrangThaiHocTapSeeder::class,
+            PhongHocSeeder::class,
+
+            // 7. Môn học và CTĐT
+            MonHocSeeder::class,
+            MonHocTienQuyetSeeder::class,
+            ChuongTrinhKhungSeeder::class,
+
+            // 8. Học kỳ
+            HocKySeeder::class,
+
+            // 9. Giảng viên (phải sau Khoa và TrinhDo)
+            GiangVienSeeder::class,
+
+            // 10. Lớp hành chính và Sinh viên (phải sau KhoaHoc, ChuyenNganh)
+            LopHanhChinhSeeder::class,
+            SinhVienSeeder::class,
+
+            // 11. PHASE 4 - Member 1: Lớp học phần (phải sau MonHoc, HocKy, GiangVien)
+            LopHocPhanSeeder::class,
+            LopHocPhanGiangVienSeeder::class,
+            CauHinhDauDiemSeeder::class,
+
+            // 11. PHASE 4 - Lịch học (phải sau LopHocPhan, PhongHoc, GiangVien)
+            LichHocCoDinhSeeder::class,
+            LichHocChiTietSeeder::class,
+
+            // 12. PHASE 5 - Đăng ký môn học (phải sau SinhVien, LopHocPhan, HocKy)
+            DangKyMonHocTamSeeder::class,
+            LopHocPhanSinhVienSeeder::class,
+
         ]);
     }
 }

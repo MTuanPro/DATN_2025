@@ -52,6 +52,7 @@
                                 <i class="bi bi-person"></i>
                             </div>
                             @error('email')
+
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
@@ -59,11 +60,23 @@
                         </div>
                         <div class="form-group position-relative has-icon-left mb-4">
                             <input type="password" name="password" id="password"
+
+
+                                <small class="text-danger d-block mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
+                                </small>
+
+                            @enderror
+                        </div>
+                        <div class="form-group position-relative has-icon-left mb-4">
+                            <input type="password" name="password"
+
                                 class="form-control form-control-xl @error('password') is-invalid @enderror"
                                 placeholder="Mật khẩu" required>
                             <div class="form-control-icon">
                                 <i class="bi bi-shield-lock"></i>
                             </div>
+
                             <button type="button"
                                 class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
                                 style="z-index: 10; padding-right: 15px;" onclick="togglePassword()">
@@ -73,6 +86,14 @@
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
+
+                            @error('password')
+
+                                <small class="text-danger d-block mt-1">
+                                    <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
+                                </small>
+
+
                             @enderror
                         </div>
                         <div class="form-check form-check-lg d-flex align-items-end">
@@ -96,6 +117,7 @@
         </div>
     </div>
 
+
     <script>
         function togglePassword() {
             const passwordInput = document.getElementById('password');
@@ -112,6 +134,8 @@
             }
         }
     </script>
+
+
 </body>
 
 </html>

@@ -138,7 +138,11 @@ class CauHinhDauDiemController extends Controller
         return redirect()->back()
             ->with('success', 'Xóa cấu hình đầu điểm thành công!');
     }
+<<<<<<< HEAD
     // Sửa code
+=======
+
+>>>>>>> 3ce5bf463aba81437bc908d45799f550b6b5f94d
     /**
      * API: Lấy tỷ lệ % còn lại
      */
