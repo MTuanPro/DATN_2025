@@ -21,7 +21,7 @@
             <ul class="menu">
 
                 <li class="sidebar-title">ĐÀO TẠO - QUẢN LÝ NGHIỆP VỤ</li>
-
+<!-- sửa code -->
                 {{-- Dashboard --}}
                 <li
                     class="sidebar-item {{ Request::is('dao-tao') || Request::is('dao-tao/dashboard') ? 'active' : '' }}">

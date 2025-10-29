@@ -37,6 +37,7 @@
                 </div>
                 <div class="card-body">
                     <!-- Tìm kiếm và lọc -->
+                     <!-- sửa code -->
                     <form method="GET" action="{{ route('dao-tao.phong-hoc.index') }}" class="mb-3">
                         <div class="row">
                             <div class="col-md-5">
