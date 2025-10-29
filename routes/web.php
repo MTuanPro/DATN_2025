@@ -234,8 +234,9 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
 
     // PHASE 5: Đăng ký môn học
     Route::middleware('sinhvien.check')->prefix('dang-ky-mon-hoc')->name('dang-ky-mon-hoc.')->group(function () {
-        Route::get('/', [DangKyMonHocController::class, 'index'])->name('index');
-        Route::post('/', [DangKyMonHocController::class, 'store'])->name('store');
+    Route::get('/', [DangKyMonHocController::class, 'index'])->name('index');
+    Route::get('/create', [DangKyMonHocController::class, 'create'])->name('create');
+    Route::post('/', [DangKyMonHocController::class, 'store'])->name('store');
         Route::delete('/{dangKy}', [DangKyMonHocController::class, 'destroy'])->name('destroy');
         Route::get('/my-registrations', [DangKyMonHocController::class, 'myRegistrations'])->name('my-registrations');
     });
