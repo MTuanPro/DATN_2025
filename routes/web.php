@@ -120,6 +120,14 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 
     // Thong Bao Management
     Route::resource('thong-bao', ThongBaoController::class);
+
+    // Reports & Statistics
+    Route::prefix('reports')->name('reports.')->group(function () {
+        Route::get('/', [App\Http\Controllers\Admin\ReportController::class, 'index'])->name('index');
+        Route::get('/users', [App\Http\Controllers\Admin\ReportController::class, 'users'])->name('users');
+        Route::get('/permissions', [App\Http\Controllers\Admin\ReportController::class, 'permissions'])->name('permissions');
+        Route::get('/export', [App\Http\Controllers\Admin\ReportController::class, 'export'])->name('export');
+    });
 });
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========

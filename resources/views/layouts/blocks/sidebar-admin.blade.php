@@ -101,11 +101,26 @@
                 </li>
 
                 <!-- 6. BÁO CÁO & THỐNG KÊ -->
-                <li class="sidebar-item">
+                <li class="sidebar-item has-sub {{ Request::is('admin/reports*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-graph-up"></i>
                         <span>Báo cáo & Thống kê</span>
                     </a>
+                    <ul class="submenu {{ Request::is('admin/reports*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('admin/reports') && !Request::is('admin/reports/*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.index') }}">Tổng quan</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('admin/reports/users') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.users') }}">Báo cáo Người dùng</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('admin/reports/permissions') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.permissions') }}">Báo cáo Phân quyền</a>
+                        </li>
+                        <li class="submenu-item">
+                            <a href="{{ route('admin.reports.export') }}">Export Excel</a>
+                        </li>
+                    </ul>
                 </li>
 
                 <!-- 7. CÀI ĐẶT & VẬN HÀNH -->
