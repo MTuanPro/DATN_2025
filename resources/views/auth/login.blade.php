@@ -52,26 +52,27 @@
                                 <i class="bi bi-person"></i>
                             </div>
                             @error('email')
-
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
-
                             @enderror
                         </div>
                         <div class="form-group position-relative has-icon-left mb-4">
-                            <input type="password" name="password"
+                            <input type="password" name="password" id="password"
                                 class="form-control form-control-xl @error('password') is-invalid @enderror"
                                 placeholder="Mật khẩu" required>
                             <div class="form-control-icon">
                                 <i class="bi bi-shield-lock"></i>
                             </div>
+                            <button type="button"
+                                class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
+                                style="z-index: 10; padding-right: 15px;" onclick="togglePassword()">
+                                <i class="bi bi-eye" id="toggleIcon"></i>
+                            </button>
                             @error('password')
-
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
-
                             @enderror
                         </div>
                         <div class="form-check form-check-lg d-flex align-items-end">
@@ -94,6 +95,23 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function togglePassword() {
+            const passwordInput = document.getElementById('password');
+            const toggleIcon = document.getElementById('toggleIcon');
+
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            }
+        }
+    </script>
 </body>
 
 </html>

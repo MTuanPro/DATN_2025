@@ -46,6 +46,24 @@
             transform: translate(8%, -35%);
         }
 
+        /* Notification dropdown styles */
+        .dropdown-menu {
+            border: 1px solid rgba(0, 0, 0, .08);
+        }
+
+        .dropdown-item:hover {
+            background-color: #f8f9fa;
+        }
+
+        .dropdown-item.bg-light {
+            background-color: #e8f4fd !important;
+            border-left: 3px solid #435ebe;
+        }
+
+        .dropdown-divider {
+            margin: 0;
+        }
+
         #main {
             margin-left: 300px;
             padding-top: calc(2rem + var(--header-height));

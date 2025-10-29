@@ -1,4 +1,4 @@
-@extends('layouts.app-daotao')
+@extends('layouts.layout-daotao')
 
 @section('title', 'Xếp lớp tự động')
 

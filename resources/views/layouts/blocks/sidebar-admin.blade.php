@@ -71,14 +71,15 @@
                 </li>
 
                 <!-- 3. THÔNG BÁO HỆ THỐNG -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('admin/thong-bao*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-megaphone-fill"></i>
                         <span>Thông báo hệ thống</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item">
-                            <a href="#">Quản lý Thông báo</a>
+                        <li
+                            class="submenu-item {{ Request::is('admin/thong-bao') || Request::is('admin/thong-bao/create') || Request::is('admin/thong-bao/*/edit') ? 'active' : '' }}">
+                            <a href="{{ route('admin.thong-bao.index') }}">Quản lý Thông báo</a>
                         </li>
                         <li class="submenu-item">
                             <a href="#">Người nhận</a>

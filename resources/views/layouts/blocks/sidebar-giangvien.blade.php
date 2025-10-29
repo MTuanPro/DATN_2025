@@ -126,15 +126,11 @@
                 </li>
 
                 <!-- 11. THÔNG BÁO -->
-                <li class="sidebar-item has-sub">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('giang-vien/thong-bao*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.thong-bao.index') }}" class='sidebar-link'>
                         <i class="bi bi-bell"></i>
                         <span>Thông báo</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Nhận thông báo</a></li>
-                        <li class="submenu-item"><a href="#">Gửi thông báo</a></li>
-                    </ul>
                 </li>
 
                 <!-- 12. BÁO CÁO -->
