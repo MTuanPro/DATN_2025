@@ -260,7 +260,7 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
 
 });
-
+// sửa code
 // ========== Sinh viên Routes ==========
 Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvien.')->group(function () {
     Route::get('/dashboard', [SinhVienDashboardController::class, 'index'])->name('dashboard');

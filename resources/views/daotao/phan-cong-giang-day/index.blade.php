@@ -22,7 +22,7 @@
                 </div>
             </div>
         </div>
-
+<!-- sửa code -->
         <section class="section">
             <!-- Thông tin lớp học phần -->
             <div class="card">

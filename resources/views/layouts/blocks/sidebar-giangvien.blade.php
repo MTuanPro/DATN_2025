@@ -23,7 +23,7 @@
                         <span>Dashboard</span>
                     </a>
                 </li>
-
+<!-- sửa code -->
                 <!-- 1. THÔNG TIN CÁ NHÂN -->
                 <li class="sidebar-item">
                     <a href="#" class='sidebar-link'>
