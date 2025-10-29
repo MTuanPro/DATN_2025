@@ -12,7 +12,6 @@ use App\Http\Controllers\Admin\QuyenController;
 use App\Http\Controllers\Admin\VaiTroQuyenController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\Admin\DaoTaoController;
-use App\Http\Controllers\Admin\ThongBaoController;
 use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController;
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
 use App\Http\Controllers\GiangVien\ScheduleController;
@@ -39,7 +38,6 @@ use App\Http\Controllers\DaoTao\SinhVienController;
 use App\Http\Controllers\DaoTao\XepLopController;
 use App\Http\Controllers\SinhVien\DangKyMonHocController;
 use App\Http\Controllers\SinhVien\ThoiKhoaBieuController;
-use App\Http\Controllers\Api\NotificationController;
 
 
 // Debug route (temporary)
@@ -122,9 +120,6 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::resource('dao-tao', DaoTaoController::class);
     Route::post('/dao-tao/{daoTao}/assign-user', [DaoTaoController::class, 'assignUser'])->name('dao-tao.assign-user');
     Route::post('/dao-tao/{daoTao}/unassign-user', [DaoTaoController::class, 'unassignUser'])->name('dao-tao.unassign-user');
-
-    // Thong Bao Management
-    Route::resource('thong-bao', ThongBaoController::class);
 });
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
@@ -226,10 +221,6 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::get('/lop-hoc-phan-by-mon/{monHoc}', [XepLopController::class, 'getLopHocPhanByMonHoc'])->name('lop-hoc-phan-by-mon');
         Route::delete('/xoa-khoi-lop/{lhpsv}', [XepLopController::class, 'xoaKhoiLop'])->name('xoa-khoi-lop');
     });
-
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
 });
 
 // ========== Giảng viên Routes ==========
@@ -239,10 +230,6 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     // Lịch dạy cá nhân
     Route::get('/lich-day', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/lich-day/export', [ScheduleController::class, 'export'])->name('schedule.export');
-
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
 });
 
 // ========== Sinh viên Routes ==========
@@ -263,8 +250,4 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
         Route::get('/chi-tiet', [ThoiKhoaBieuController::class, 'chiTiet'])->name('chi-tiet');
         Route::get('/export-pdf', [ThoiKhoaBieuController::class, 'exportPDF'])->name('export-pdf');
     });
-
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
 });
