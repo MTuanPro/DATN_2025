@@ -88,7 +88,7 @@ Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->midd
 // ========== Admin Routes ==========
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
     Route::get('/dashboard', [AdminDashboardController::class, 'index'])->name('dashboard');
-
+    // sửa code
     // User Management
     Route::resource('users', AdminUserController::class);
     Route::post('/users/{user}/toggle-status', [AdminUserController::class, 'toggleStatus'])->name('users.toggle-status');

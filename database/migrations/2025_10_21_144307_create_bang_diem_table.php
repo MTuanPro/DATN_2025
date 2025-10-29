@@ -27,6 +27,8 @@ return new class extends Migration
     /**
      * Reverse the migrations.
      */
+
+    // Đăng ký môn học và thời khóa biểu 
     public function down(): void
     {
         Schema::dropIfExists('bang_diem');

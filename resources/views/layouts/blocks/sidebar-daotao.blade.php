@@ -124,7 +124,7 @@
                         <li class="submenu-item"><a href="#">Đăng ký môn học <!-- Đang cập nhật --></a></li>
                     </ul>
                 </li>
-
+                    <!-- // Sửa code -->
                 {{-- 6. THỜI KHÓA BIỂU --}}
                 <li
                     class="sidebar-item has-sub {{ Request::is('dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">

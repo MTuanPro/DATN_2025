@@ -70,7 +70,7 @@
                 <label for="mo_ta" class="form-label">Mô tả</label>
                 <textarea name="mo_ta" id="mo_ta" class="form-control" rows="4">{{ old('mo_ta', $khoaHoc->mo_ta) }}</textarea>
             </div>
-
+          <!-- // Sửa code -->
             <div class="mb-3">
                 <button type="submit" class="btn btn-success">Cập nhật</button>
                 <a href="{{ route('dao-tao.khoa-hoc.index') }}" class="btn btn-secondary">Hủy</a>
