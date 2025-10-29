@@ -101,20 +101,27 @@
                                 {{-- Vai trò --}}
                                 <div class="form-group mb-4">
                                     <label class="form-label">Vai trò</label>
+                                    <p class="text-muted small">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Lưu ý:</strong> Sinh viên và Giảng viên được tạo từ "Quản lý Sinh viên" và
+                                        "Quản lý Giảng viên"
+                                    </p>
                                     <div class="card">
                                         <div class="card-body">
                                             @foreach ($vaiTros as $vaiTro)
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox" name="vai_tro[]"
-                                                        value="{{ $vaiTro->id }}" id="role_{{ $vaiTro->id }}"
-                                                        {{ in_array($vaiTro->id, old('vai_tro', $userVaiTroIds)) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="role_{{ $vaiTro->id }}">
-                                                        <strong>{{ $vaiTro->ten_vai_tro }}</strong>
-                                                        @if ($vaiTro->mo_ta)
-                                                            <br><small class="text-muted">{{ $vaiTro->mo_ta }}</small>
-                                                        @endif
-                                                    </label>
-                                                </div>
+                                                @if (!in_array($vaiTro->ma_vai_tro, ['sinh_vien', 'giang_vien']))
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input" type="checkbox" name="vai_tro[]"
+                                                            value="{{ $vaiTro->id }}" id="role_{{ $vaiTro->id }}"
+                                                            {{ in_array($vaiTro->id, old('vai_tro', $userVaiTroIds)) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="role_{{ $vaiTro->id }}">
+                                                            <strong>{{ $vaiTro->ten_vai_tro }}</strong>
+                                                            @if ($vaiTro->mo_ta)
+                                                                <br><small class="text-muted">{{ $vaiTro->mo_ta }}</small>
+                                                            @endif
+                                                        </label>
+                                                    </div>
+                                                @endif
                                             @endforeach
                                         </div>
                                     </div>

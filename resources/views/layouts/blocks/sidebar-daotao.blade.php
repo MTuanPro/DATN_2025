@@ -119,7 +119,8 @@
                         class="submenu {{ Request::is('dao-tao/lop-hoc-phan*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*') ? 'active' : '' }}">
                         <li
                             class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan*') && Request::segment(3) !== 'xem-lich' ? 'active' : '' }}">
-                            <a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học phần</a></li>
+                            <a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học phần</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -195,15 +196,7 @@
                     </a>
                 </li>
 
-                {{-- 12. THÔNG BÁO --}}
-                <li class="sidebar-item {{ Request::is('dao-tao/thong-bao*') ? 'active' : '' }}">
-                    <a href="{{ route('dao-tao.thong-bao.index') }}" class="sidebar-link">
-                        <i class="bi bi-bell"></i>
-                        <span>Thông báo</span>
-                    </a>
-                </li>
-
-                {{-- 13. BÁO CÁO & THỐNG KÊ --}}
+                {{-- 12. BÁO CÁO & THỐNG KÊ --}}
                 <li class="sidebar-item has-sub">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-graph-up"></i>

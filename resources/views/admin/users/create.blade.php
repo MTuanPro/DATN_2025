@@ -116,26 +116,90 @@
                                 {{-- Vai trò --}}
                                 <div class="form-group mb-4">
                                     <label class="form-label">Vai trò</label>
+                                    <p class="text-muted small">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Lưu ý:</strong> Sinh viên và Giảng viên được tạo từ "Quản lý Sinh viên" và
+                                        "Quản lý Giảng viên"
+                                    </p>
                                     <div class="card">
                                         <div class="card-body">
                                             @foreach ($vaiTros as $vaiTro)
-                                                <div class="form-check mb-2">
-                                                    <input class="form-check-input" type="checkbox" name="vai_tro[]"
-                                                        value="{{ $vaiTro->id }}" id="role_{{ $vaiTro->id }}"
-                                                        {{ in_array($vaiTro->id, old('vai_tro', [])) ? 'checked' : '' }}>
-                                                    <label class="form-check-label" for="role_{{ $vaiTro->id }}">
-                                                        <strong>{{ $vaiTro->ten_vai_tro }}</strong>
-                                                        @if ($vaiTro->mo_ta)
-                                                            <br><small class="text-muted">{{ $vaiTro->mo_ta }}</small>
-                                                        @endif
-                                                    </label>
-                                                </div>
+                                                @if (!in_array($vaiTro->ma_vai_tro, ['sinh_vien', 'giang_vien']))
+                                                    <div class="form-check mb-2">
+                                                        <input class="form-check-input" type="checkbox" name="vai_tro[]"
+                                                            value="{{ $vaiTro->id }}" id="role_{{ $vaiTro->id }}"
+                                                            {{ in_array($vaiTro->id, old('vai_tro', [])) ? 'checked' : '' }}>
+                                                        <label class="form-check-label" for="role_{{ $vaiTro->id }}">
+                                                            <strong>{{ $vaiTro->ten_vai_tro }}</strong>
+                                                            @if ($vaiTro->mo_ta)
+                                                                <br><small class="text-muted">{{ $vaiTro->mo_ta }}</small>
+                                                            @endif
+                                                        </label>
+                                                    </div>
+                                                @endif
                                             @endforeach
                                         </div>
                                     </div>
                                     @error('vai_tro')
                                         <div class="text-danger small mt-1">{{ $message }}</div>
                                     @enderror
+                                </div>
+
+                                {{-- Form động cho Admin/Đào tạo --}}
+                                <div id="additional-fields" style="display: none;">
+                                    <hr class="my-4">
+                                    <h5 class="mb-3">Thông tin bổ sung</h5>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-3">
+                                                <label for="so_dien_thoai" class="form-label">Số điện thoại</label>
+                                                <input type="text" class="form-control" id="so_dien_thoai"
+                                                    name="so_dien_thoai" value="{{ old('so_dien_thoai') }}">
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-3">
+                                                <label for="ngay_sinh" class="form-label">Ngày sinh</label>
+                                                <input type="date" class="form-control" id="ngay_sinh"
+                                                    name="ngay_sinh" value="{{ old('ngay_sinh') }}">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="row">
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-3">
+                                                <label for="gioi_tinh" class="form-label">Giới tính</label>
+                                                <select class="form-select" id="gioi_tinh" name="gioi_tinh">
+                                                    <option value="">-- Chọn giới tính --</option>
+                                                    <option value="Nam"
+                                                        {{ old('gioi_tinh') == 'Nam' ? 'selected' : '' }}>Nam</option>
+                                                    <option value="Nữ"
+                                                        {{ old('gioi_tinh') == 'Nữ' ? 'selected' : '' }}>Nữ</option>
+                                                    <option value="Khác"
+                                                        {{ old('gioi_tinh') == 'Khác' ? 'selected' : '' }}>Khác</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div class="col-md-6">
+                                            <div class="form-group mb-3">
+                                                <label for="anh_dai_dien" class="form-label">Ảnh đại diện</label>
+                                                <input type="file" class="form-control" id="anh_dai_dien"
+                                                    name="anh_dai_dien" accept="image/*">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label for="dia_chi" class="form-label">Địa chỉ</label>
+                                        <textarea class="form-control" id="dia_chi" name="dia_chi" rows="2">{{ old('dia_chi') }}</textarea>
+                                    </div>
+
+                                    <div class="form-group mb-3">
+                                        <label for="ghi_chu" class="form-label">Ghi chú</label>
+                                        <textarea class="form-control" id="ghi_chu" name="ghi_chu" rows="2">{{ old('ghi_chu') }}</textarea>
+                                    </div>
                                 </div>
 
                                 {{-- Buttons --}}

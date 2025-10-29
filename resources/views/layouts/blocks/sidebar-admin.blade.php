@@ -53,23 +53,6 @@
                     </ul>
                 </li>
 
-                <!-- 2. NHÂN SỰ HỆ THỐNG -->
-                <li
-                    class="sidebar-item has-sub {{ Request::is('admin/admin*') || Request::is('admin/dao-tao*') ? 'active' : '' }}">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-people-fill"></i>
-                        <span>Nhân sự hệ thống</span>
-                    </a>
-                    <ul class="submenu">
-                        <li class="submenu-item {{ Request::is('admin/admin*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.admin.index') }}">Quản lý Admin</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('admin/dao-tao*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.dao-tao.index') }}">Quản lý Đào tạo</a>
-                        </li>
-                    </ul>
-                </li>
-
                 <!-- 3. THÔNG BÁO HỆ THỐNG -->
                 <li class="sidebar-item has-sub {{ Request::is('admin/thong-bao*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>

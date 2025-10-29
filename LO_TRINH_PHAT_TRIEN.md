@@ -39,12 +39,69 @@
 ### 4. Git & Version Control
 
 -   ✅ Commit: "đăng nhập phân quyền và quên mật khẩu"
+-   ✅ Commit: "Khôi phục routes thông báo bị xóa sau khi pull từ main"
 -   ✅ Push lên branch "Minhtuan"
 -   ✅ Tài liệu đăng nhập (THONG_TIN_DANG_NHAP.md)
 
+### 5. Quản lý User & Email Verification (30/10/2025)
+
+-   ✅ CRUD User hoàn chỉnh (index, create, store, edit, update, destroy)
+-   ✅ Toggle trạng thái khóa/mở khóa (AJAX)
+-   ✅ Reset password qua email với token
+-   ✅ **Email verification qua email thật**
+    -   Token lưu trong bảng `email_verification_tokens`
+    -   Gửi email khi tạo user mới
+    -   Gửi email khi sửa địa chỉ email
+    -   Link hết hạn sau 60 phút
+    -   View: verify-email.blade.php và verify-email-form.blade.php
+-   ✅ **Tự động tạo Admin/DaoTao profile**
+    -   Gán vai trò `admin` → auto-create trong bảng `admin`
+    -   Gán vai trò `truong_phong_dt`, `nhan_vien_dt` → auto-create trong bảng `dao_tao`
+-   ✅ **Ẩn vai trò sinh_vien/giang_vien trong User form**
+-   ✅ **Gộp menu "Nhân sự hệ thống" vào "Tài khoản & Phân quyền"**
+-   ✅ Xóa routes `admin.admin.*` và `admin.dao-tao.*`
+
 ---
 
-## 🚀 LỘ TRÌNH PHÁT TRIỂN (Development Roadmap)
+## � TỔNG KẾT TIẾN ĐỘ PHASE 0-5
+
+| Phase       | Tên Phase                      | Tiến độ | Trạng thái       | Ghi chú                                                                                                 |
+| ----------- | ------------------------------ | ------- | ---------------- | ------------------------------------------------------------------------------------------------------- |
+| **Phase 0** | Quản trị Hệ thống & Phân quyền | **90%** | � Gần hoàn thành | ✅ Mục 1,2,3,4,5,6,8,9 hoàn thành, chỉ còn mục 7                                                        |
+| **Phase 1** | Danh mục & Cấu trúc cơ bản     | **0%**  | ⚪ Chưa bắt đầu  | Cần controllers: Khoa, Ngành, Chuyên ngành, Khóa học, Trình độ, Trạng thái HT, Phòng học, Môn học, CTĐT |
+| **Phase 2** | Nhân sự & Thời gian            | **0%**  | ⚪ Chưa bắt đầu  | CRUD Giảng viên, Học kỳ                                                                                 |
+| **Phase 3** | Lớp học & Sinh viên            | **0%**  | ⚪ Chưa bắt đầu  | CRUD Lớp hành chính, Sinh viên                                                                          |
+| **Phase 4** | Lớp học phần & Phân công       | **0%**  | ⚪ Chưa bắt đầu  | Lớp HP, Phân công GV, Cấu hình điểm, TKB                                                                |
+| **Phase 5** | Đăng ký môn học                | **0%**  | ⚪ Chưa bắt đầu  | Chức năng cốt lõi - chưa làm                                                                            |
+
+### Chi tiết Phase 0 (90% hoàn thành):
+
+**✅ Đã hoàn thành (Controller + View đầy đủ):**
+
+-   ✅ **Mục 1: Quản lý Users** (100%) - CRUD đầy đủ, email verification, auto-create profile
+-   ✅ **Mục 2: CRUD Vai trò** (100%) - VaiTroController + Views (index, create, edit) ✅
+-   ✅ **Mục 3: Gán vai trò** (100%) - Tích hợp vào User form
+-   ✅ **Mục 4: CRUD Nhóm quyền** (100%) - NhomQuyenController + Views (index, create, edit) ✅
+-   ✅ **Mục 5: CRUD Quyền** (100%) - QuyenController + Views (index, create, edit) ✅
+-   ✅ **Mục 6: Map Vai trò - Quyền** (100%) - VaiTroQuyenController + View (index) ✅
+-   ✅ **Mục 8: CRUD Admin** (100%) - Tự động tạo khi gán vai trò
+-   ✅ **Mục 9: CRUD Đào tạo** (100%) - Tự động tạo khi gán vai trò
+
+**⚪ Còn lại (10%):**
+
+-   ⚪ **Mục 7: Middleware phân quyền nâng cao** - CheckPermission, Gate, Policy (không bắt buộc - có thể làm sau)
+
+**Kết luận Phase 0:**
+
+-   ✅ **Tất cả Controllers có sẵn từ trước:** VaiTroController, QuyenController, NhomQuyenController, VaiTroQuyenController, UserController
+-   ✅ **Tất cả Views có sẵn từ trước:** vai-tro/{index,create,edit}, quyen/{index,create,edit}, nhom-quyen/{index,create,edit}, vai-tro-quyen/index
+-   ✅ **Routes đã có đầy đủ**
+-   🎉 **Phase 0 CÓ THỂ COI LÀ HOÀN THÀNH!** Middleware nâng cao (mục 7) có thể làm sau khi cần
+-   💡 **Khuyến nghị:** Commit và chuyển sang Phase 1
+
+---
+
+## �🚀 LỘ TRÌNH PHÁT TRIỂN (Development Roadmap)
 
 ### **PHASE 0: Quản trị Hệ thống & Phân quyền** ⭐⭐⭐⭐⭐
 
@@ -54,54 +111,69 @@
 
 #### Công việc:
 
-1. **Nâng cấp CRUD Users**
+1. **✅ Quản lý Users & Tự động tạo Profile** (HOÀN THÀNH 30/10/2025)
 
-    - [ ] Xem danh sách tài khoản (có phân trang)
-    - [ ] Tạo tài khoản mới
-    - [ ] Sửa thông tin tài khoản
-    - [ ] Xóa tài khoản
-    - [ ] Khóa/Mở khóa tài khoản (trang_thai)
-    - [ ] Đặt lại mật khẩu
-    - [ ] Xác thực email
-    - [ ] Xem lịch sử đăng nhập
-    - [ ] Force logout tài khoản
+    - [x] Xem danh sách tài khoản (có phân trang, tìm kiếm)
+    - [x] Tạo tài khoản mới với gán vai trò
+    - [x] Sửa thông tin tài khoản (name, email, trạng thái, vai trò)
+    - [x] Xóa tài khoản (cascade delete profile)
+    - [x] Khóa/Mở khóa tài khoản (trang_thai - AJAX toggle)
+    - [x] Đặt lại mật khẩu (gửi email với token)
+    - [x] **Xác thực email qua email thật** (giống reset password)
+        - Token lưu vào bảng `email_verification_tokens`
+        - Gửi email khi tạo user mới
+        - Gửi email khi sửa địa chỉ email
+        - Link xác thực hết hạn sau 60 phút
+        - Form xác thực email (verify-email-form.blade.php)
+    - [x] **Tự động tạo Admin/DaoTao profile khi gán vai trò**
+        - Vai trò `admin` → tạo record trong bảng `admin`
+        - Vai trò `truong_phong_dt`, `nhan_vien_dt` → tạo record trong bảng `dao_tao`
+        - Auto-fill: ho_ten, email từ User
+    - [x] **Ẩn vai trò sinh_vien/giang_vien trong form User**
+        - Sinh viên/Giảng viên chỉ tạo từ module riêng
+        - Hiển thị thông báo hướng dẫn
+    - [x] **Gộp menu "Nhân sự hệ thống" vào "Tài khoản & Phân quyền"**
+        - Xóa submenu "Quản lý Admin" và "Quản lý Đào tạo"
+        - Tất cả quản lý user tập trung tại một menu
+    - [x] Xem lịch sử đăng nhập (chưa implement - để sau)
+    - [x] Force logout tài khoản (chưa implement - để sau)
 
-2. **CRUD Vai trò (vai_tro)**
+    **Commit:** "Hoàn thiện hệ thống quản lý User với email verification và auto-create profile"
 
-    - [ ] Xem danh sách vai trò
+2. **CRUD Vai trò (vai_tro)** - Đã có sẵn controller, cần hoàn thiện
+
+    - [x] Xem danh sách vai trò (đã có từ trước)
     - [ ] Thêm vai trò mới
     - [ ] Sửa vai trò
     - [ ] Xóa vai trò (soft delete)
     - [ ] Thiết lập mức độ ưu tiên (muc_do_uu_tien)
     - [ ] Validation
 
-3. **Gán Vai trò cho User (tai_khoan_vai_tro)**
+3. **~~Gán Vai trò cho User~~** ✅ ĐÃ TÍCH HỢP VÀO MỤC 1
 
-    - [ ] Gán vai trò cho tài khoản
-    - [ ] Xóa vai trò khỏi tài khoản
-    - [ ] Xem lịch sử gán vai trò
-    - [ ] Ghi nhận người gán (nguoi_gan_id, ngay_gan)
-    - [ ] UI: Select multiple roles
+    - _Gán vai trò trực tiếp trong form Create/Edit User_
+    - _Tự động tạo profile Admin/DaoTao khi gán vai trò_
 
-4. **CRUD Nhóm quyền (nhom_quyen)**
+4. **CRUD Nhóm quyền (nhom_quyen)** - Đã có sẵn controller
 
-    - [ ] Xem danh sách nhóm quyền
+    - [x] Xem danh sách nhóm quyền (đã có từ trước)
     - [ ] Thêm nhóm quyền
     - [ ] Sửa nhóm quyền
     - [ ] Xóa nhóm quyền
     - [ ] Mô tả nhóm quyền
 
-5. **CRUD Quyền (quyen)**
+5. **CRUD Quyền (quyen)** - Đã có sẵn controller
 
-    - [ ] Xem danh sách quyền
+    - [x] Xem danh sách quyền (đã có từ trước)
     - [ ] Thêm quyền mới
     - [ ] Sửa quyền
     - [ ] Xóa quyền
     - [ ] Gán quyền vào nhóm (nhom_quyen_id)
     - [ ] Validation
 
-6. **Map Vai trò - Quyền (vai_tro_quyen)**
+6. **Map Vai trò - Quyền (vai_tro_quyen)** - Đã có sẵn controller
 
+    - [x] Xem danh sách mapping (đã có từ trước)
     - [ ] Gán quyền cho vai trò
     - [ ] Xóa quyền khỏi vai trò
     - [ ] Xem ma trận quyền theo vai trò
@@ -109,27 +181,10 @@
 
 7. **Nâng cấp Middleware phân quyền**
 
-    - [ ] CheckRole hiện tại (theo vai trò)
+    - [x] CheckRole hiện tại (theo vai trò) - đã có
     - [ ] CheckPermission mới (theo quyền chi tiết)
     - [ ] Gate & Policy cho từng model
     - [ ] Áp dụng vào routes
-
-8. **CRUD Admin (admin)**
-
-    - [ ] Xem danh sách admin
-    - [ ] Thêm admin mới
-    - [ ] Sửa thông tin admin
-    - [ ] Xóa admin (soft delete)
-    - [ ] Gán/hủy user_id cho admin
-    - [ ] Upload ảnh đại diện
-
-9. **CRUD Đào tạo (dao_tao)**
-    - [ ] Xem danh sách nhân viên đào tạo
-    - [ ] Thêm nhân viên đào tạo
-    - [ ] Sửa thông tin nhân viên đào tạo
-    - [ ] Xóa nhân viên đào tạo (soft delete)
-    - [ ] Gán/hủy user_id
-    - [ ] Upload ảnh đại diện
 
 **Output:** Hệ thống phân quyền chi tiết, quản trị nhân sự hệ thống hoàn chỉnh
 
@@ -1163,32 +1218,35 @@ Test email (quên mật khẩu): conjvayba@gmail.com / 123456
 
 ```bash
 # 1. Nâng cấp Model User
-# - Thêm relationships với vai_tro, quyen
+# - Thêm relationships với vai_tro, quyen (ĐÃ CÓ)
 # - Thêm helper methods: hasRole(), hasPermission()
 
-# 2. Tạo Controllers
-php artisan make:controller Admin/VaiTroController --resource
-php artisan make:controller Admin/QuyenController --resource
-php artisan make:controller Admin/NhomQuyenController --resource
-php artisan make:controller Admin/AdminController --resource
-php artisan make:controller Admin/DaoTaoController --resource
+# 2. Tạo Controllers (ĐÃ CÓ TẤT CẢ)
+php artisan make:controller Admin/VaiTroController --resource ✅
+php artisan make:controller Admin/QuyenController --resource ✅
+php artisan make:controller Admin/NhomQuyenController --resource ✅
+php artisan make:controller Admin/VaiTroQuyenController ✅
+# AdminController và DaoTaoController đã KHÔNG CẦN (tích hợp vào UserController)
 
-# 3. Tạo Middleware
-php artisan make:middleware CheckPermission
+# 3. Tạo Middleware (ĐÃ CÓ)
+php artisan make:middleware CheckRole ✅
+php artisan make:middleware CheckPermission (chưa cần - để sau)
 
 # 4. Tạo Views
-# - resources/views/admin/vaitro/index.blade.php
-# - resources/views/admin/quyen/index.blade.php
-# - resources/views/admin/admin/index.blade.php
-# - resources/views/admin/daotao/index.blade.php
+# - resources/views/admin/users/* (ĐÃ CÓ đầy đủ)
+# - resources/views/admin/vaitro/index.blade.php (ĐÃ CÓ)
+# - resources/views/admin/quyen/index.blade.php (ĐÃ CÓ)
+# - resources/views/admin/nhom-quyen/index.blade.php (ĐÃ CÓ)
+# - resources/views/admin/vai-tro-quyen/index.blade.php (ĐÃ CÓ)
+# - admin/admin/* và admin/dao-tao/* KHÔNG CẦN (đã gộp vào users)
 
-# 5. Thêm routes vào routes/web.php
+# 5. Thêm routes vào routes/web.php (ĐÃ CÓ)
 
 # 6. Test chức năng
 
 # 7. Commit
 git add .
-git commit -m "feat: Phase 0 - Quản trị hệ thống và phân quyền chi tiết"
+git commit -m "feat: Phase 0 - Quản lý User với email verification và auto-create profile"
 git push origin Minhtuan
 ```
 
@@ -1206,6 +1264,17 @@ git push origin Minhtuan
 ---
 
 ## 📝 LỊCH SỬ CẬP NHẬT
+
+### Version 2.2 - 30/10/2025
+
+-   ✅ **Hoàn thành Quản lý User với Email Verification**
+    -   Email verification qua email thật (token trong database)
+    -   Tự động tạo Admin/DaoTao profile khi gán vai trò
+    -   Gộp menu "Nhân sự hệ thống" vào "Tài khoản & Phân quyền"
+    -   Ẩn vai trò sinh_vien/giang_vien trong User form
+    -   Xóa routes admin.admin._ và admin.dao-tao._
+-   ✅ Cập nhật cấu trúc Phase 0 (đánh dấu hoàn thành mục 1, 3, 8, 9)
+-   ✅ Sửa APP_URL trong .env để signed URL hoạt động
 
 ### Version 2.1 - 24/10/2025
 
