@@ -120,7 +120,9 @@
                         <li class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan*') && Request::segment(3) !== 'xem-lich' ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học
                                 phần</a></li>
-                        <li class="submenu-item"><a href="#">Đăng ký môn học <!-- Đang cập nhật --></a></li>
+                            <li class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc*') ? 'active' : '' }}">
+                                <a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
+                            </li>
                     </ul>
                 </li>
 
