@@ -25,7 +25,7 @@
                 </div>
             </div>
         </div>
-
+         <!-- test code -->
         <!-- Thông tin lớp học phần -->
         <div class="card mb-3">
             <div class="card-body">

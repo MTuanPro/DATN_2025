@@ -84,7 +84,7 @@
                         <span>Cấu hình điểm</span>
                     </a>
                 </li>
-
+<!-- test code -->
                 <!-- 7. NHẬP ĐIỂM -->
                 <li class="sidebar-item has-sub">
                     <a href="#" class='sidebar-link'>

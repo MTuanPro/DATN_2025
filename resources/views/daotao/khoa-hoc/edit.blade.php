@@ -50,7 +50,7 @@
                     @enderror
                 </div>
             </div>
-
+<!-- test code -->
             <div class="mb-3">
                 <label for="trang_thai" class="form-label">Trạng thái <span class="text-danger">*</span></label>
                 <select name="trang_thai" id="trang_thai" class="form-select @error('trang_thai') is-invalid @enderror"

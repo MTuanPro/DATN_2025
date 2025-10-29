@@ -121,7 +121,7 @@
                                     @enderror
                                 </div>
                             </div>
-
+<!-- test code -->
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label class="form-label">Sĩ số hiện tại</label>

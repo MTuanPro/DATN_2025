@@ -79,6 +79,7 @@
                         </div>
                     </div>
        <!-- //  test code -->
+        <!-- test code -->
                     <!-- Danh sách sinh viên -->
                     @if ($lopHanhChinh->sinhVien->count() > 0)
                         <hr>
