@@ -16,6 +16,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class SinhVienController extends Controller
 {
@@ -130,6 +131,7 @@ class SinhVienController extends Controller
 
             // Tạo tài khoản User
             $user = User::create([
+                'name' => $validated['ho_ten'], // Thêm trường name
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['ma_sinh_vien']), // Mật khẩu mặc định là MSSV
                 'trang_thai' => 'hoat_dong',
@@ -140,7 +142,7 @@ class SinhVienController extends Controller
             $vaiTroSinhVien = VaiTro::where('ma_vai_tro', 'sinh_vien')->first();
             if ($vaiTroSinhVien) {
                 $user->vaiTro()->attach($vaiTroSinhVien->id, [
-                    'nguoi_gan_id' => auth()->id(),
+                    'nguoi_gan_id' => auth()->check() ? auth()->id() : null,
                     'ngay_gan' => now(),
                 ]);
             }
@@ -165,6 +167,8 @@ class SinhVienController extends Controller
                 ->with('success', 'Thêm sinh viên thành công! Mật khẩu mặc định là MSSV.');
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Lỗi tạo sinh viên: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return back()->withInput()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
     }

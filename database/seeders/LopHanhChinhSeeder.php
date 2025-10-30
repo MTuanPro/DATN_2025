@@ -15,7 +15,7 @@ class LopHanhChinhSeeder extends Seeder
     public function run(): void
     {
         // Lấy các khóa học và ngành
-        $khoaHocs = KhoaHoc::all();
+        $khoaHocs = KhoaHoc::orderBy('nam_bat_dau', 'desc')->get();
         $chuyenNganhs = ChuyenNganh::all();
 
         if ($khoaHocs->isEmpty() || $chuyenNganhs->isEmpty()) {
@@ -25,50 +25,36 @@ class LopHanhChinhSeeder extends Seeder
 
         $lopHanhChinhs = [];
 
-        // Tạo lớp hành chính cho từng chuyên ngành
-        foreach ($chuyenNganhs as $chuyenNganh) {
-            // Lấy khóa học gần nhất
-            $khoaHoc = $khoaHocs->sortByDesc('nam_bat_dau')->first();
+        // Tạo lớp cho mỗi chuyên ngành trong 3 khóa học gần nhất
+        foreach ($chuyenNganhs->take(5) as $chuyenNganh) { // Lấy 5 chuyên ngành đầu
+            foreach ($khoaHocs->take(3) as $khoaHoc) { // 3 khóa gần nhất
+                // Tạo 2-3 lớp cho mỗi chuyên ngành mỗi khóa
+                $soLop = rand(2, 3);
 
-            // Tạo 2-3 lớp cho mỗi chuyên ngành
-            $soLop = rand(2, 3);
+                for ($i = 1; $i <= $soLop; $i++) {
+                    $maLop = $this->generateMaLop($chuyenNganh, $khoaHoc, $i);
 
-            for ($i = 1; $i <= $soLop; $i++) {
-                $maLop = $this->generateMaLop($chuyenNganh, $khoaHoc, $i);
-
-                $lopHanhChinhs[] = [
-                    'ma_lop' => $maLop,
-                    'ten_lop' => "Lớp {$maLop}",
-                    'nganh_id' => $chuyenNganh->nganh_id, // Sử dụng nganh_id từ chuyên ngành
-                    'khoa_hoc_id' => $khoaHoc->id,
-                    'si_so' => rand(30, 45),
-                    'giang_vien_chu_nhiem_id' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
-                ];
+                    $lopHanhChinhs[] = [
+                        'ma_lop' => $maLop,
+                        'ten_lop' => "Lớp {$maLop}",
+                        'nganh_id' => $chuyenNganh->nganh_id,
+                        'khoa_hoc_id' => $khoaHoc->id,
+                        'si_so' => rand(35, 45),
+                        'giang_vien_chu_nhiem_id' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                }
             }
         }
 
-        // Thêm một số lớp cho khóa cũ hơn (đã tốt nghiệp hoặc sắp tốt nghiệp)
-        if ($khoaHocs->count() > 1) {
-            $khoaHocCu = $khoaHocs->sortByDesc('nam_bat_dau')->skip(1)->first();
-            $chuyenNganhMau = $chuyenNganhs->random();
-
-            $maLop = $this->generateMaLop($chuyenNganhMau, $khoaHocCu, 1);
-
-            $lopHanhChinhs[] = [
-                'ma_lop' => $maLop,
-                'ten_lop' => "Lớp {$maLop}",
-                'nganh_id' => $chuyenNganhMau->nganh_id,
-                'khoa_hoc_id' => $khoaHocCu->id,
-                'si_so' => 40,
-                'giang_vien_chu_nhiem_id' => null,
-                'created_at' => now(),
-                'updated_at' => now(),
-            ];
+        // Insert từng batch để tránh duplicate
+        foreach ($lopHanhChinhs as $lop) {
+            LopHanhChinh::updateOrInsert(
+                ['ma_lop' => $lop['ma_lop']],
+                $lop
+            );
         }
-
-        LopHanhChinh::insert($lopHanhChinhs);
 
         $this->command->info('✓ Đã tạo ' . count($lopHanhChinhs) . ' lớp hành chính');
     }

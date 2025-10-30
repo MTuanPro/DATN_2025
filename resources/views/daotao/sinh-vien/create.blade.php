@@ -27,6 +27,25 @@
                     <h5 class="mb-0">Thông tin sinh viên</h5>
                 </div>
                 <div class="card-body">
+                    @if ($errors->any())
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            <h5 class="alert-heading">Có lỗi xảy ra!</h5>
+                            <ul class="mb-0">
+                                @foreach ($errors->all() as $error)
+                                    <li>{{ $error }}</li>
+                                @endforeach
+                            </ul>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
+                    @if (session('error'))
+                        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                            {{ session('error') }}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
                     <form action="{{ route('dao-tao.sinh-vien.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
@@ -106,10 +125,61 @@
                                 <div class="mb-3">
                                     <label for="so_dien_thoai" class="form-label">SĐT <span
                                             class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('so_dien_thoai') is-invalid @enderror"
+                                    <input type="text"
+                                        class="form-control @error('so_dien_thoai') is-invalid @enderror"
                                         id="so_dien_thoai" name="so_dien_thoai" value="{{ old('so_dien_thoai') }}"
                                         required>
                                     @error('so_dien_thoai')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Địa chỉ -->
+                        <h6 class="mb-3 mt-4 text-primary"><i class="bi bi-geo-alt-fill"></i> Địa chỉ</h6>
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="so_nha_duong" class="form-label">Số nhà, đường</label>
+                                    <input type="text" class="form-control @error('so_nha_duong') is-invalid @enderror"
+                                        id="so_nha_duong" name="so_nha_duong" value="{{ old('so_nha_duong') }}">
+                                    @error('so_nha_duong')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="phuong_xa" class="form-label">Phường/Xã</label>
+                                    <input type="text" class="form-control @error('phuong_xa') is-invalid @enderror"
+                                        id="phuong_xa" name="phuong_xa" value="{{ old('phuong_xa') }}">
+                                    @error('phuong_xa')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="quan_huyen" class="form-label">Quận/Huyện</label>
+                                    <input type="text" class="form-control @error('quan_huyen') is-invalid @enderror"
+                                        id="quan_huyen" name="quan_huyen" value="{{ old('quan_huyen') }}">
+                                    @error('quan_huyen')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="tinh_thanh" class="form-label">Tỉnh/Thành phố</label>
+                                    <input type="text" class="form-control @error('tinh_thanh') is-invalid @enderror"
+                                        id="tinh_thanh" name="tinh_thanh" value="{{ old('tinh_thanh') }}">
+                                    @error('tinh_thanh')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -148,9 +218,27 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label for="noi_cap_cccd" class="form-label">Nơi cấp</label>
-                                    <input type="text" class="form-control @error('noi_cap_cccd') is-invalid @enderror"
+                                    <input type="text"
+                                        class="form-control @error('noi_cap_cccd') is-invalid @enderror"
                                         id="noi_cap_cccd" name="noi_cap_cccd" value="{{ old('noi_cap_cccd') }}">
                                     @error('noi_cap_cccd')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Ảnh đại diện -->
+                        <h6 class="mb-3 mt-4 text-primary"><i class="bi bi-image-fill"></i> Ảnh đại diện</h6>
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="mb-3">
+                                    <label for="anh_dai_dien" class="form-label">Chọn ảnh</label>
+                                    <input type="file"
+                                        class="form-control @error('anh_dai_dien') is-invalid @enderror"
+                                        id="anh_dai_dien" name="anh_dai_dien" accept="image/jpeg,image/png,image/jpg">
+                                    <small class="text-muted">Định dạng: JPG, PNG. Kích thước tối đa: 2MB</small>
+                                    @error('anh_dai_dien')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -160,26 +248,6 @@
                         <!-- Thông tin học vụ -->
                         <h6 class="mb-3 mt-4 text-primary"><i class="bi bi-book-fill"></i> Thông tin học vụ</h6>
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="mb-3">
-                                    <label for="lop_hanh_chinh_id" class="form-label">Lớp hành chính <span
-                                            class="text-danger">*</span></label>
-                                    <select class="form-select @error('lop_hanh_chinh_id') is-invalid @enderror"
-                                        id="lop_hanh_chinh_id" name="lop_hanh_chinh_id" required>
-                                        <option value="">-- Chọn lớp --</option>
-                                        @foreach ($lopHanhChinhs as $lop)
-                                            <option value="{{ $lop->id }}"
-                                                {{ old('lop_hanh_chinh_id') == $lop->id ? 'selected' : '' }}>
-                                                {{ $lop->ma_lop }} - {{ $lop->ten_lop }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                    @error('lop_hanh_chinh_id')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-                            </div>
-
                             <div class="col-md-6">
                                 <div class="mb-3">
                                     <label for="khoa_hoc_id" class="form-label">Khóa học <span
@@ -195,6 +263,27 @@
                                         @endforeach
                                     </select>
                                     @error('khoa_hoc_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label for="lop_hanh_chinh_id" class="form-label">Lớp hành chính <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select @error('lop_hanh_chinh_id') is-invalid @enderror"
+                                        id="lop_hanh_chinh_id" name="lop_hanh_chinh_id" required disabled>
+                                        <option value="">-- Chọn khóa học và ngành trước --</option>
+                                        @foreach ($lopHanhChinhs as $lop)
+                                            <option value="{{ $lop->id }}" data-nganh-id="{{ $lop->nganh_id }}"
+                                                data-khoa-hoc-id="{{ $lop->khoa_hoc_id }}"
+                                                {{ old('lop_hanh_chinh_id') == $lop->id ? 'selected' : '' }}>
+                                                {{ $lop->ma_lop }} - {{ $lop->ten_lop }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('lop_hanh_chinh_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -226,10 +315,10 @@
                                 <div class="mb-3">
                                     <label for="chuyen_nganh_id" class="form-label">Chuyên ngành</label>
                                     <select class="form-select @error('chuyen_nganh_id') is-invalid @enderror"
-                                        id="chuyen_nganh_id" name="chuyen_nganh_id">
-                                        <option value="">-- Chưa chọn --</option>
+                                        id="chuyen_nganh_id" name="chuyen_nganh_id" disabled>
+                                        <option value="">-- Vui lòng chọn ngành trước --</option>
                                         @foreach ($chuyenNganhs as $cn)
-                                            <option value="{{ $cn->id }}"
+                                            <option value="{{ $cn->id }}" data-nganh-id="{{ $cn->nganh_id }}"
                                                 {{ old('chuyen_nganh_id') == $cn->id ? 'selected' : '' }}>
                                                 {{ $cn->ma_chuyen_nganh }} - {{ $cn->ten_chuyen_nganh }}
                                             </option>
@@ -302,3 +391,121 @@
         </section>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nganhSelect = document.getElementById('nganh_id');
+            const chuyenNganhSelect = document.getElementById('chuyen_nganh_id');
+            const khoaHocSelect = document.getElementById('khoa_hoc_id');
+            const lopHanhChinhSelect = document.getElementById('lop_hanh_chinh_id');
+
+            const allChuyenNganhs = Array.from(chuyenNganhSelect.options).slice(1); // Bỏ qua option đầu tiên
+            const allLopHanhChinhs = Array.from(lopHanhChinhSelect.options).slice(1); // Bỏ qua option đầu tiên
+
+            // Hàm lọc chuyên ngành theo ngành
+            function filterChuyenNganh(nganhId) {
+                chuyenNganhSelect.innerHTML = '';
+
+                if (!nganhId) {
+                    chuyenNganhSelect.disabled = true;
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Vui lòng chọn ngành trước --';
+                    chuyenNganhSelect.appendChild(defaultOption);
+                } else {
+                    chuyenNganhSelect.disabled = false;
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Chọn chuyên ngành --';
+                    chuyenNganhSelect.appendChild(defaultOption);
+
+                    allChuyenNganhs.forEach(option => {
+                        if (option.dataset.nganhId == nganhId) {
+                            chuyenNganhSelect.appendChild(option.cloneNode(true));
+                        }
+                    });
+
+                    if (chuyenNganhSelect.options.length === 1) {
+                        const noDataOption = document.createElement('option');
+                        noDataOption.value = '';
+                        noDataOption.textContent = '-- Không có chuyên ngành --';
+                        chuyenNganhSelect.appendChild(noDataOption);
+                    }
+                }
+            }
+
+            // Hàm lọc lớp hành chính theo ngành và khóa học
+            function filterLopHanhChinh() {
+                const nganhId = nganhSelect.value;
+                const khoaHocId = khoaHocSelect.value;
+
+                lopHanhChinhSelect.innerHTML = '';
+
+                if (!nganhId || !khoaHocId) {
+                    lopHanhChinhSelect.disabled = true;
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Chọn khóa học và ngành trước --';
+                    lopHanhChinhSelect.appendChild(defaultOption);
+                } else {
+                    lopHanhChinhSelect.disabled = false;
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Chọn lớp hành chính --';
+                    lopHanhChinhSelect.appendChild(defaultOption);
+
+                    // Lọc lớp theo cả ngành và khóa học
+                    allLopHanhChinhs.forEach(option => {
+                        if (option.dataset.nganhId == nganhId && option.dataset.khoaHocId == khoaHocId) {
+                            lopHanhChinhSelect.appendChild(option.cloneNode(true));
+                        }
+                    });
+
+                    if (lopHanhChinhSelect.options.length === 1) {
+                        const noDataOption = document.createElement('option');
+                        noDataOption.value = '';
+                        noDataOption.textContent = '-- Không có lớp phù hợp --';
+                        lopHanhChinhSelect.appendChild(noDataOption);
+                    }
+                }
+            }
+
+            // Lắng nghe sự kiện thay đổi ngành
+            nganhSelect.addEventListener('change', function() {
+                filterChuyenNganh(this.value);
+                filterLopHanhChinh(); // Cập nhật lớp hành chính khi đổi ngành
+            });
+
+            // Lắng nghe sự kiện thay đổi khóa học
+            khoaHocSelect.addEventListener('change', function() {
+                filterLopHanhChinh(); // Cập nhật lớp hành chính khi đổi khóa học
+            });
+
+            // Khởi tạo trạng thái ban đầu
+            const initialNganhId = nganhSelect.value || '{{ old('nganh_id') }}';
+            const initialKhoaHocId = khoaHocSelect.value || '{{ old('khoa_hoc_id') }}';
+
+            if (initialNganhId) {
+                filterChuyenNganh(initialNganhId);
+
+                // Khôi phục giá trị chuyên ngành đã chọn nếu có
+                const oldChuyenNganhId = '{{ old('chuyen_nganh_id') }}';
+                if (oldChuyenNganhId) {
+                    chuyenNganhSelect.value = oldChuyenNganhId;
+                }
+            }
+
+            // Khởi tạo lọc lớp hành chính
+            if (initialNganhId && initialKhoaHocId) {
+                filterLopHanhChinh();
+
+                // Khôi phục giá trị lớp đã chọn nếu có
+                const oldLopHanhChinhId = '{{ old('lop_hanh_chinh_id') }}';
+                if (oldLopHanhChinhId) {
+                    lopHanhChinhSelect.value = oldLopHanhChinhId;
+                }
+            }
+        });
+    </script>
+@endpush

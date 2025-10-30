@@ -326,9 +326,10 @@ class SinhVienSeeder extends Seeder
             $lopHanhChinh = LopHanhChinh::first();
             $khoaHoc = \App\Models\DaoTao\KhoaHoc::first();
             $nganh = \App\Models\DaoTao\Nganh::first();
+            $chuyenNganh = \App\Models\DaoTao\ChuyenNganh::where('nganh_id', $nganh->id)->first();
             $trangThaiHocTap = \App\Models\DaoTao\TrangThaiHocTap::where('ten_trang_thai', 'Đang học')->first();
 
-            if ($lopHanhChinh && $khoaHoc && $nganh && $trangThaiHocTap) {
+            if ($lopHanhChinh && $khoaHoc && $nganh && $chuyenNganh && $trangThaiHocTap) {
                 // Tạo record sinh_vien
                 SinhVien::create([
                     'user_id' => $userId,
@@ -348,6 +349,7 @@ class SinhVienSeeder extends Seeder
                     'khoa_hoc_id' => $khoaHoc->id,
                     'lop_hanh_chinh_id' => $lopHanhChinh->id,
                     'nganh_id' => $nganh->id,
+                    'chuyen_nganh_id' => $chuyenNganh->id,
                     'ky_hien_tai' => 1,
                     'trang_thai_hoc_tap_id' => $trangThaiHocTap->id,
                 ]);

@@ -202,6 +202,27 @@
                                     @enderror
                                 </div>
 
+                                {{-- Trạng thái --}}
+                                <div class="mb-3">
+                                    <label for="trang_thai" class="form-label">Trạng thái <span
+                                            class="text-danger">*</span></label>
+                                    <select class="form-select @error('trang_thai') is-invalid @enderror" id="trang_thai"
+                                        name="trang_thai" required>
+                                        <option value="cong_khai"
+                                            {{ old('trang_thai', $thongBao->trang_thai) == 'cong_khai' ? 'selected' : '' }}>
+                                            Công khai</option>
+                                        <option value="nhap"
+                                            {{ old('trang_thai', $thongBao->trang_thai) == 'nhap' ? 'selected' : '' }}>
+                                            Nháp</option>
+                                        <option value="da_xoa"
+                                            {{ old('trang_thai', $thongBao->trang_thai) == 'da_xoa' ? 'selected' : '' }}>
+                                            Đã xóa</option>
+                                    </select>
+                                    @error('trang_thai')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
                                 {{-- Ghim đầu trang --}}
                                 <div class="mb-3">
                                     <div class="form-check">
@@ -255,7 +276,7 @@
                         <div class="row mt-3">
                             <div class="col-12">
                                 <button type="submit" class="btn btn-primary">
-                                    <i class="bi bi-send"></i> Gửi thông báo
+                                    <i class="bi bi-check-circle"></i> Cập nhật thông báo
                                 </button>
                                 <a href="{{ route('admin.thong-bao.index') }}" class="btn btn-secondary">
                                     <i class="bi bi-x-circle"></i> Hủy

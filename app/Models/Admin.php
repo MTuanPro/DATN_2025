@@ -13,10 +13,15 @@ class Admin extends Model
 
     protected $fillable = [
         'user_id',
+        'ma_admin',
         'ho_ten',
+        'ngay_sinh',
+        'gioi_tinh',
         'email',
         'so_dien_thoai',
+        'dia_chi',
         'anh_dai_dien',
+        'ghi_chu',
     ];
 
     protected $casts = [

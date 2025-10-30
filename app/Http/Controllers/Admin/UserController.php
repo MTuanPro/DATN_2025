@@ -101,27 +101,51 @@ class UserController extends Controller
                 // Tự động tạo Admin profile nếu gán vai trò admin
                 $adminRole = VaiTro::where('ma_vai_tro', 'admin')->first();
                 if ($adminRole && in_array($adminRole->id, $validated['vai_tro'])) {
-                    Admin::firstOrCreate(
-                        ['user_id' => $user->id],
-                        [
+                    // Kiểm tra xem đã có profile chưa
+                    $existingAdmin = Admin::where('user_id', $user->id)->first();
+
+                    if (!$existingAdmin) {
+                        // Tạo mã admin tự động: AD + năm + số thứ tự
+                        $year = date('Y');
+                        $lastAdmin = Admin::whereYear('created_at', $year)
+                            ->orderBy('id', 'desc')
+                            ->first();
+
+                        $sequence = $lastAdmin ? (int)substr($lastAdmin->ma_admin, -4) + 1 : 1;
+                        $maAdmin = 'AD' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+                        Admin::create([
+                            'user_id' => $user->id,
+                            'ma_admin' => $maAdmin,
                             'ho_ten' => $user->name,
                             'email' => $user->email,
-                            'trang_thai' => 'hoat_dong',
-                        ]
-                    );
+                        ]);
+                    }
                 }
 
                 // Tự động tạo DaoTao profile nếu gán vai trò truong_phong_dt hoặc nhan_vien_dt
                 $daoTaoRoles = VaiTro::whereIn('ma_vai_tro', ['truong_phong_dt', 'nhan_vien_dt'])->pluck('id')->toArray();
                 if (!empty(array_intersect($daoTaoRoles, $validated['vai_tro']))) {
-                    DaoTao::firstOrCreate(
-                        ['user_id' => $user->id],
-                        [
+                    // Kiểm tra xem đã có profile chưa
+                    $existingDaoTao = DaoTao::where('user_id', $user->id)->first();
+
+                    if (!$existingDaoTao) {
+                        // Tạo mã đào tạo tự động: DT + năm + số thứ tự
+                        $year = date('Y');
+                        $lastDaoTao = DaoTao::whereYear('created_at', $year)
+                            ->orderBy('id', 'desc')
+                            ->first();
+
+                        $sequence = $lastDaoTao ? (int)substr($lastDaoTao->ma_dao_tao, -4) + 1 : 1;
+                        $maDaoTao = 'DT' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+                        DaoTao::create([
+                            'user_id' => $user->id,
+                            'ma_dao_tao' => $maDaoTao,
                             'ho_ten' => $user->name,
                             'email' => $user->email,
-                            'trang_thai' => 'hoat_dong',
-                        ]
-                    );
+                        ]);
+                    }
                 }
             }
 
@@ -232,14 +256,26 @@ class UserController extends Controller
                 // Tự động tạo Admin profile nếu gán vai trò admin
                 $adminRole = VaiTro::where('ma_vai_tro', 'admin')->first();
                 if ($adminRole && in_array($adminRole->id, $validated['vai_tro'])) {
-                    Admin::firstOrCreate(
-                        ['user_id' => $user->id],
-                        [
+                    // Kiểm tra xem đã có profile chưa
+                    $existingAdmin = Admin::where('user_id', $user->id)->first();
+
+                    if (!$existingAdmin) {
+                        // Tạo mã admin tự động: AD + năm + số thứ tự
+                        $year = date('Y');
+                        $lastAdmin = Admin::whereYear('created_at', $year)
+                            ->orderBy('id', 'desc')
+                            ->first();
+
+                        $sequence = $lastAdmin ? (int)substr($lastAdmin->ma_admin, -4) + 1 : 1;
+                        $maAdmin = 'AD' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+                        Admin::create([
+                            'user_id' => $user->id,
+                            'ma_admin' => $maAdmin,
                             'ho_ten' => $user->name,
                             'email' => $user->email,
-                            'trang_thai' => 'hoat_dong',
-                        ]
-                    );
+                        ]);
+                    }
                 } else {
                     // Xóa Admin profile nếu bỏ vai trò admin
                     Admin::where('user_id', $user->id)->delete();
@@ -248,14 +284,26 @@ class UserController extends Controller
                 // Tự động tạo DaoTao profile nếu gán vai trò truong_phong_dt hoặc nhan_vien_dt
                 $daoTaoRoles = VaiTro::whereIn('ma_vai_tro', ['truong_phong_dt', 'nhan_vien_dt'])->pluck('id')->toArray();
                 if (!empty(array_intersect($daoTaoRoles, $validated['vai_tro']))) {
-                    DaoTao::firstOrCreate(
-                        ['user_id' => $user->id],
-                        [
+                    // Kiểm tra xem đã có profile chưa
+                    $existingDaoTao = DaoTao::where('user_id', $user->id)->first();
+
+                    if (!$existingDaoTao) {
+                        // Tạo mã đào tạo tự động: DT + năm + số thứ tự
+                        $year = date('Y');
+                        $lastDaoTao = DaoTao::whereYear('created_at', $year)
+                            ->orderBy('id', 'desc')
+                            ->first();
+
+                        $sequence = $lastDaoTao ? (int)substr($lastDaoTao->ma_dao_tao, -4) + 1 : 1;
+                        $maDaoTao = 'DT' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+                        DaoTao::create([
+                            'user_id' => $user->id,
+                            'ma_dao_tao' => $maDaoTao,
                             'ho_ten' => $user->name,
                             'email' => $user->email,
-                            'trang_thai' => 'hoat_dong',
-                        ]
-                    );
+                        ]);
+                    }
                 } else {
                     // Xóa DaoTao profile nếu bỏ vai trò đào tạo
                     DaoTao::where('user_id', $user->id)->delete();

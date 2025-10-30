@@ -37,8 +37,8 @@ class LopHocPhanController extends Controller
         if ($request->has('search') && $request->search != '') {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
-                $q->where('ma_lop_hoc_phan', 'like', "%{$search}%")
-                    ->orWhere('ten_lop_hoc_phan', 'like', "%{$search}%");
+                $q->where('ma_lop_hp', 'like', "%{$search}%")
+                    ->orWhere('ten_lop_hp', 'like', "%{$search}%");
             });
         }
 
