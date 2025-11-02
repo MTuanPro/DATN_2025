@@ -173,7 +173,91 @@ class BaoCaoController extends Controller
     }
 
     /**
-     * Báo cáo Sinh viên theo khoa/ngành/khóa/lớp
+     * Báo cáo tổng hợp về sinh viên theo khoa/ngành/khóa/lớp
+     *
+     * Function này cung cấp báo cáo chi tiết và thống kê tổng quan
+     * về sinh viên trong toàn trường, hỗ trợ filters nhiều chiều
+     * và analytics theo các metrics khác nhau.
+     *
+     * Workflow:
+     * 1. Lấy master data cho filters:
+     *    - khoas: Tất cả khoa
+     *    - nganhs: Tất cả ngành
+     *    - khoaHocs: Các khóa học (DESC theo năm)
+     * 2. Khởi tạo query với eager loading:
+     *    - SinhVien::with relationships:
+     *      + khoaHoc
+     *      + chuyenNganh.nganh.khoa (nested)
+     *      + trangThaiHocTap
+     *      + lopHanhChinh
+     * 3. Áp dụng filters theo request:
+     *    a. khoa_id:
+     *       - whereHas chuyenNganh.nganh
+     *       - Filter theo khoa_id
+     *    b. nganh_id:
+     *       - whereHas chuyenNganh
+     *       - Filter theo nganh_id
+     *    c. khoa_hoc_id:
+     *       - Direct where khoa_hoc_id
+     *    d. lop (tên lớp):
+     *       - whereHas lopHanhChinh
+     *       - LIKE search ten_lop
+     * 4. Paginate: 50 sinh viên/page
+     * 5. Tính thống kê tổng quan:
+     *    - total: Tổng số sinh viên
+     *    - hoc: Số đang học
+     *    - bao_luu: Số bảo lưu
+     *    - thoi_hoc: Số thôi học
+     * 6. Tính thống kê theo khoa:
+     *    - Join tables: sinh_vien, chuyen_nganh, nganh, khoa, trang_thai_hoc_tap
+     *    - GROUP BY khoa
+     *    - SELECT:
+     *      + ten_khoa
+     *      + COUNT(*) as total
+     *      + SUM(CASE...) cho từng trạng thái
+     * 7. Return view với full data
+     *
+     * Thông tin hiển thị:
+     * - Filter panel:
+     *   + Dropdown khoa
+     *   + Dropdown ngành (cascade với khoa)
+     *   + Dropdown khóa học
+     *   + Input tìm kiếm lớp
+     * - Summary cards:
+     *   + Tổng sinh viên (blue)
+     *   + Đang học (green)
+     *   + Bảo lưu (yellow)
+     *   + Thôi học (red)
+     * - Bảng sinh viên:
+     *   + Mã SV, Họ tên, Lớp
+     *   + Khoa, Ngành, Khóa
+     *   + Trạng thái học tập (badge)
+     *   + Actions: View detail
+     * - Thống kê theo khoa (table/chart):
+     *   + Tên khoa
+     *   + Tổng SV
+     *   + Đang học, Bảo lưu, Thôi học
+     *   + Bar chart phân bố
+     * - Export buttons:
+     *   + Xuất Excel
+     *   + Xuất PDF
+     *
+     * Analytics features:
+     * - Pie chart: Phân bố trạng thái học tập
+     * - Bar chart: Sinh viên theo khoa
+     * - Line chart: Xu hướng theo khóa học
+     * - Drill-down: Click khoa => filter theo khoa
+     *
+     * @param Request $request Filters:
+     *   - khoa_id: ID khoa
+     *   - nganh_id: ID ngành
+     *   - khoa_hoc_id: ID khóa học
+     *   - lop: Tên lớp (search)
+     * @return \Illuminate\View\View Báo cáo sinh viên với:
+     *   - sinhViens: Paginated collection
+     *   - khoas, nganhs, khoaHocs: Filter options
+     *   - statistics: Tổng hợp
+     *   - statsByKhoa: Theo khoa
      */
     public function sinhVien(Request $request)
     {
@@ -239,7 +323,81 @@ class BaoCaoController extends Controller
     }
 
     /**
-     * Báo cáo Kết quả học tập
+     * Báo cáo kết quả học tập với phân bố điểm và GPA analytics
+     *
+     * Function này cung cấp báo cáo chi tiết về kết quả học tập,
+     * bao gồm phân bố điểm, GPA, tỷ lệ qua môn, và analytics
+     * theo nhiều chiều khác nhau.
+     *
+     * Workflow:
+     * 1. Lấy master data cho filters:
+     *    - hocKys: Học kỳ (DESC theo năm)
+     *    - khoaHocs: Khóa học (DESC)
+     * 2. Khởi tạo query KetQuaHocTap:
+     *    - with eager loading:
+     *      + lopHocPhanSinhVien.lopHocPhan.monHoc
+     *      + Load nested relationships
+     * 3. Áp dụng filters (chưa implement full trong code hiện tại):
+     *    - hoc_ky_id: Filter theo học kỳ
+     *    - khoa_hoc_id: Filter theo khóa
+     *    - lop_hoc_phan_id: Filter theo lớp học phần
+     * 4. Tính analytics:
+     *    a. Phân bố điểm chữ:
+     *       - GROUP BY diem_chu
+     *       - COUNT cho mỗi loại (A+, A, B+, ...)
+     *    b. Phân bố GPA:
+     *       - Ranges: 3.6-4.0, 3.2-3.59, 2.5-3.19, ...
+     *    c. Tỷ lệ qua môn:
+     *       - COUNT(qua_mon = true) / COUNT(*)
+     *    d. Điểm trung bình:
+     *       - AVG(diem_he_10)
+     *       - AVG(diem_he_4)
+     * 5. Return view với statistics
+     *
+     * Metrics tính toán:
+     * - Tổng số kết quả
+     * - Phân bố điểm chữ:
+     *   + A+: >= 9.5 (4.0)
+     *   + A: 8.5-9.4 (3.7-3.9)
+     *   + B+: 8.0-8.4 (3.5-3.6)
+     *   + B: 7.0-7.9 (3.0-3.4)
+     *   + C+: 6.5-6.9 (2.5-2.9)
+     *   + C: 5.5-6.4 (2.0-2.4)
+     *   + D+: 5.0-5.4 (1.5-1.9)
+     *   + D: 4.0-4.9 (1.0-1.4)
+     *   + F: < 4.0 (< 1.0)
+     * - Tỷ lệ qua môn (%)
+     * - Tỷ lệ rớt (%)
+     * - Điểm TB hệ 10 và hệ 4
+     * - Phân loại học lực:
+     *   + Xuất sắc: GPA >= 3.6
+     *   + Giỏi: GPA 3.2-3.59
+     *   + Khá: GPA 2.5-3.19
+     *   + Trung bình: GPA 2.0-2.49
+     *   + Yếu: GPA < 2.0
+     *
+     * Charts hiển thị:
+     * - Column chart: Phân bố điểm chữ
+     * - Pie chart: Tỷ lệ qua/rớt
+     * - Histogram: Phân bố GPA
+     * - Box plot: Phân tích điểm (min, Q1, median, Q3, max)
+     *
+     * Filters:
+     * - Học kỳ dropdown
+     * - Khóa học dropdown
+     * - Lớp học phần search
+     * - Ngành/Khoa cascading
+     *
+     * Export options:
+     * - Excel: Full data với charts
+     * - PDF: Professional report
+     * - CSV: Raw data
+     *
+     * @param Request $request Filters:
+     *   - hoc_ky_id: Học kỳ
+     *   - khoa_hoc_id: Khóa học
+     *   - lop_hoc_phan_id: Lớp học phần
+     * @return \Illuminate\View\View Báo cáo kết quả
      */
     public function ketQua(Request $request)
     {
