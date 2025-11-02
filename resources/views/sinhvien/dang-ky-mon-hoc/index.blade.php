@@ -156,8 +156,14 @@
                                                         <i class="bi bi-plus-circle"></i> Đăng ký
                                                     </button>
                                                 @elseif($daDangKy)
+                                                    @php
+                                                        $dangKyId = $dangKyCollection->firstWhere(
+                                                            'mon_hoc_id',
+                                                            $monHoc->id,
+                                                        )?->id;
+                                                    @endphp
                                                     <button type="button" class="btn btn-sm btn-danger btn-huy-dang-ky"
-                                                        data-dang-ky-id="{{ $monDaDangKy->firstWhere('mon_hoc_id', $monHoc->id) }}">
+                                                        data-dang-ky-id="{{ $dangKyId }}">
                                                         <i class="bi bi-x-circle"></i> Hủy
                                                     </button>
                                                 @endif

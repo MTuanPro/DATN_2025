@@ -6,6 +6,7 @@ use App\Models\DaoTao\SinhVien;
 use App\Models\DaoTao\LopHanhChinh;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 
 class SinhVienSeeder extends Seeder
@@ -15,6 +16,14 @@ class SinhVienSeeder extends Seeder
      */
     public function run(): void
     {
+        // ========================================
+        // TẠO TÀI KHOẢN SINH VIÊN TEST
+        // ========================================
+        $this->createTestStudent();
+
+        // ========================================
+        // TẠO SINH VIÊN CHO CÁC LỚP HÀNH CHÍNH
+        // ========================================
         $lopHanhChinhs = LopHanhChinh::with(['khoaHoc', 'nganh'])->get();
 
         if ($lopHanhChinhs->isEmpty()) {
@@ -257,5 +266,104 @@ class SinhVienSeeder extends Seeder
     private function generateCCCD(): string
     {
         return str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT);
+    }
+
+    /**
+     * Tạo tài khoản sinh viên test cố định
+     */
+    private function createTestStudent(): void
+    {
+        // Kiểm tra tài khoản đã tồn tại chưa
+        $existingUser = User::where('email', 'sinhvien@smis.edu.vn')->first();
+
+        if ($existingUser) {
+            $this->command->warn('Tài khoản sinhvien@smis.edu.vn đã tồn tại!');
+
+            // Cập nhật password
+            $existingUser->update([
+                'password' => Hash::make('password'),
+            ]);
+
+            $userId = $existingUser->id;
+        } else {
+            // Tạo user mới
+            $user = User::create([
+                'name' => 'Sinh Viên Test',
+                'email' => 'sinhvien@smis.edu.vn',
+                'password' => Hash::make('password'),
+                'trang_thai' => 'hoat_dong',
+                'email_verified_at' => now(),
+            ]);
+
+            $userId = $user->id;
+        }
+
+        // Gán vai trò sinh viên
+        $vaiTroSinhVien = \App\Models\VaiTro::where('ma_vai_tro', 'sinh_vien')->first();
+        if ($vaiTroSinhVien) {
+            $hasRole = DB::table('tai_khoan_vai_tro')
+                ->where('tai_khoan_id', $userId)
+                ->where('vai_tro_id', $vaiTroSinhVien->id)
+                ->exists();
+
+            if (!$hasRole) {
+                DB::table('tai_khoan_vai_tro')->insert([
+                    'tai_khoan_id' => $userId,
+                    'vai_tro_id' => $vaiTroSinhVien->id,
+                    'ngay_gan' => now(),
+                    'nguoi_gan_id' => 1, // Admin
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+
+        // Kiểm tra record sinh_vien đã tồn tại chưa
+        $existingSinhVien = SinhVien::where('user_id', $userId)->first();
+
+        if (!$existingSinhVien) {
+            // Lấy dữ liệu cần thiết
+            $lopHanhChinh = LopHanhChinh::first();
+            $khoaHoc = \App\Models\DaoTao\KhoaHoc::first();
+            $nganh = \App\Models\DaoTao\Nganh::first();
+            $chuyenNganh = \App\Models\DaoTao\ChuyenNganh::where('nganh_id', $nganh->id)->first();
+            $trangThaiHocTap = \App\Models\DaoTao\TrangThaiHocTap::where('ten_trang_thai', 'Đang học')->first();
+
+            if ($lopHanhChinh && $khoaHoc && $nganh && $chuyenNganh && $trangThaiHocTap) {
+                // Tạo record sinh_vien
+                SinhVien::create([
+                    'user_id' => $userId,
+                    'ma_sinh_vien' => 'SV2025001',
+                    'ho_ten' => 'Nguyễn Văn Sinh Viên',
+                    'email' => 'sinhvien@smis.edu.vn',
+                    'ngay_sinh' => '2003-01-15',
+                    'gioi_tinh' => 'nam',
+                    'so_dien_thoai' => '0987654321',
+                    'so_nha_duong' => '123 Nguyễn Huệ',
+                    'phuong_xa' => 'Phường Bến Nghé',
+                    'quan_huyen' => 'Quận 1',
+                    'tinh_thanh' => 'TP. Hồ Chí Minh',
+                    'can_cuoc_cong_dan' => '001203012345',
+                    'ngay_cap_cccd' => now()->subYears(2),
+                    'noi_cap_cccd' => 'Công an TP. Hồ Chí Minh',
+                    'khoa_hoc_id' => $khoaHoc->id,
+                    'lop_hanh_chinh_id' => $lopHanhChinh->id,
+                    'nganh_id' => $nganh->id,
+                    'chuyen_nganh_id' => $chuyenNganh->id,
+                    'ky_hien_tai' => 1,
+                    'trang_thai_hoc_tap_id' => $trangThaiHocTap->id,
+                ]);
+
+                $this->command->info('========================================');
+                $this->command->info('TÀI KHOẢN SINH VIÊN TEST ĐÃ TẠO/CẬP NHẬT:');
+                $this->command->info('========================================');
+                $this->command->info('Email: sinhvien@smis.edu.vn');
+                $this->command->info('Password: password');
+                $this->command->info('Mã SV: SV2025001');
+                $this->command->info('========================================');
+            }
+        } else {
+            $this->command->info('Sinh viên test đã có record trong bảng sinh_vien.');
+        }
     }
 }

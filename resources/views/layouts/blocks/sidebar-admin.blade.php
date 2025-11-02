@@ -53,32 +53,16 @@
                     </ul>
                 </li>
 
-                <!-- 2. NHÂN SỰ HỆ THỐNG -->
-                <li
-                    class="sidebar-item has-sub {{ Request::is('admin/admin*') || Request::is('admin/dao-tao*') ? 'active' : '' }}">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-people-fill"></i>
-                        <span>Nhân sự hệ thống</span>
-                    </a>
-                    <ul class="submenu">
-                        <li class="submenu-item {{ Request::is('admin/admin*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.admin.index') }}">Quản lý Admin</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('admin/dao-tao*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.dao-tao.index') }}">Quản lý Đào tạo</a>
-                        </li>
-                    </ul>
-                </li>
-
                 <!-- 3. THÔNG BÁO HỆ THỐNG -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('admin/thong-bao*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-megaphone-fill"></i>
                         <span>Thông báo hệ thống</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item">
-                            <a href="#">Quản lý Thông báo</a>
+                        <li
+                            class="submenu-item {{ Request::is('admin/thong-bao') || Request::is('admin/thong-bao/create') || Request::is('admin/thong-bao/*/edit') ? 'active' : '' }}">
+                            <a href="{{ route('admin.thong-bao.index') }}">Quản lý Thông báo</a>
                         </li>
                         <li class="submenu-item">
                             <a href="#">Người nhận</a>
@@ -117,11 +101,26 @@
                 </li>
 
                 <!-- 6. BÁO CÁO & THỐNG KÊ -->
-                <li class="sidebar-item">
+                <li class="sidebar-item has-sub {{ Request::is('admin/reports*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-graph-up"></i>
                         <span>Báo cáo & Thống kê</span>
                     </a>
+                    <ul class="submenu {{ Request::is('admin/reports*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('admin/reports') && !Request::is('admin/reports/*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.index') }}">Tổng quan</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('admin/reports/users') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.users') }}">Báo cáo Người dùng</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('admin/reports/permissions') ? 'active' : '' }}">
+                            <a href="{{ route('admin.reports.permissions') }}">Báo cáo Phân quyền</a>
+                        </li>
+                        <li class="submenu-item">
+                            <a href="{{ route('admin.reports.export') }}">Export Excel</a>
+                        </li>
+                    </ul>
                 </li>
 
                 <!-- 7. CÀI ĐẶT & VẬN HÀNH -->

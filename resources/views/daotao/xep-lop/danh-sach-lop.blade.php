@@ -1,4 +1,4 @@
-@extends('layouts.app-daotao')
+@extends('layouts.layout-daotao')
 
 @section('title', 'Danh sách sinh viên lớp học phần')
 

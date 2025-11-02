@@ -46,7 +46,7 @@ class CheckRole
         }
 
         if (in_array('truong_phong_dt', $userRoles) || in_array('nhan_vien_dt', $userRoles)) {
-            return redirect()->route('daotao.dashboard')->with('error', 'Bạn không có quyền truy cập trang này');
+            return redirect()->route('dao-tao.dashboard')->with('error', 'Bạn không có quyền truy cập trang này');
         }
 
         if (in_array('giang_vien', $userRoles)) {

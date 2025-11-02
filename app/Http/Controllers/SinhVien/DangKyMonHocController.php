@@ -48,16 +48,19 @@ class DangKyMonHocController extends Controller
             ]);
         }
 
-        // Lấy chương trình khung của sinh viên
+        // Lấy chương trình khung của sinh viên (sắp xếp theo học kỳ và thứ tự)
         $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
             ->with(['monHoc.khoa'])
+            ->orderBy('hoc_ky_goi_y', 'asc')
+            ->orderBy('thu_tu_hoc', 'asc')
             ->get();
 
-        // Lấy các môn đã đăng ký trong học kỳ này
-        $monDaDangKy = DangKyMonHocTam::where('sinh_vien_id', $sinhVien->id)
+        // Lấy các môn đã đăng ký trong học kỳ này (lấy full collection để có ID)
+        $dangKyCollection = DangKyMonHocTam::where('sinh_vien_id', $sinhVien->id)
             ->where('hoc_ky_id', $hocKy->id)
-            ->pluck('mon_hoc_id')
-            ->toArray();
+            ->get();
+
+        $monDaDangKy = $dangKyCollection->pluck('mon_hoc_id')->toArray();
 
         // Lấy các môn đã học (có kết quả)
         $monDaHoc = DB::table('lop_hoc_phan_sinh_vien')
@@ -94,6 +97,7 @@ class DangKyMonHocController extends Controller
         return view('sinhvien.dang-ky-mon-hoc.index', compact(
             'hocKy',
             'chuongTrinhKhung',
+            'dangKyCollection',
             'monDaDangKy',
             'monDaHoc',
             'monDaQua',

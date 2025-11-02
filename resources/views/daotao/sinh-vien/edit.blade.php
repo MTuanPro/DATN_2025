@@ -107,16 +107,87 @@
                                 <h6 class="text-primary">Giấy tờ tùy thân</h6>
                                 <hr>
                             </div>
-                            <div class="col-md-6 mb-3">
-                                <label for="can_cuoc_cong_dan" class="form-label">CCCD</label>
+                            <div class="col-md-4 mb-3">
+                                <label for="can_cuoc_cong_dan" class="form-label">CCCD <span
+                                        class="text-danger">*</span></label>
                                 <input type="text" class="form-control @error('can_cuoc_cong_dan') is-invalid @enderror"
                                     id="can_cuoc_cong_dan" name="can_cuoc_cong_dan"
-                                    value="{{ old('can_cuoc_cong_dan', $sinhVien->can_cuoc_cong_dan) }}">
+                                    value="{{ old('can_cuoc_cong_dan', $sinhVien->can_cuoc_cong_dan) }}" required>
                                 @error('can_cuoc_cong_dan')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="ngay_cap_cccd" class="form-label">Ngày cấp</label>
+                                <input type="date" class="form-control @error('ngay_cap_cccd') is-invalid @enderror"
+                                    id="ngay_cap_cccd" name="ngay_cap_cccd"
+                                    value="{{ old('ngay_cap_cccd', $sinhVien->ngay_cap_cccd ? $sinhVien->ngay_cap_cccd->format('Y-m-d') : '') }}">
+                                @error('ngay_cap_cccd')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-4 mb-3">
+                                <label for="noi_cap_cccd" class="form-label">Nơi cấp</label>
+                                <input type="text" class="form-control @error('noi_cap_cccd') is-invalid @enderror"
+                                    id="noi_cap_cccd" name="noi_cap_cccd"
+                                    value="{{ old('noi_cap_cccd', $sinhVien->noi_cap_cccd) }}">
+                                @error('noi_cap_cccd')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Địa chỉ -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary">Địa chỉ</h6>
+                                <hr>
+                            </div>
                             <div class="col-md-6 mb-3">
+                                <label for="so_nha_duong" class="form-label">Số nhà, đường</label>
+                                <input type="text" class="form-control @error('so_nha_duong') is-invalid @enderror"
+                                    id="so_nha_duong" name="so_nha_duong"
+                                    value="{{ old('so_nha_duong', $sinhVien->so_nha_duong) }}">
+                                @error('so_nha_duong')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="phuong_xa" class="form-label">Phường/Xã</label>
+                                <input type="text" class="form-control @error('phuong_xa') is-invalid @enderror"
+                                    id="phuong_xa" name="phuong_xa"
+                                    value="{{ old('phuong_xa', $sinhVien->phuong_xa) }}">
+                                @error('phuong_xa')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="quan_huyen" class="form-label">Quận/Huyện</label>
+                                <input type="text" class="form-control @error('quan_huyen') is-invalid @enderror"
+                                    id="quan_huyen" name="quan_huyen"
+                                    value="{{ old('quan_huyen', $sinhVien->quan_huyen) }}">
+                                @error('quan_huyen')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                            <div class="col-md-6 mb-3">
+                                <label for="tinh_thanh" class="form-label">Tỉnh/Thành phố</label>
+                                <input type="text" class="form-control @error('tinh_thanh') is-invalid @enderror"
+                                    id="tinh_thanh" name="tinh_thanh"
+                                    value="{{ old('tinh_thanh', $sinhVien->tinh_thanh) }}">
+                                @error('tinh_thanh')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Ảnh đại diện -->
+                        <div class="row mb-4">
+                            <div class="col-12">
+                                <h6 class="text-primary">Ảnh đại diện</h6>
+                                <hr>
+                            </div>
+                            <div class="col-md-12 mb-3">
                                 <label for="anh_dai_dien" class="form-label">Ảnh đại diện</label>
                                 @if ($sinhVien->anh_dai_dien)
                                     <div class="mb-2">
@@ -126,8 +197,9 @@
                                     </div>
                                 @endif
                                 <input type="file" class="form-control @error('anh_dai_dien') is-invalid @enderror"
-                                    id="anh_dai_dien" name="anh_dai_dien" accept="image/*">
-                                <small class="text-muted">Chọn file mới để thay đổi ảnh</small>
+                                    id="anh_dai_dien" name="anh_dai_dien" accept="image/jpeg,image/png,image/jpg">
+                                <small class="text-muted">Chọn file mới để thay đổi ảnh. Định dạng: JPG, PNG. Kích thước
+                                    tối đa: 2MB</small>
                                 @error('anh_dai_dien')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -164,7 +236,8 @@
                                     id="lop_hanh_chinh_id" name="lop_hanh_chinh_id" required>
                                     <option value="">-- Chọn lớp --</option>
                                     @foreach ($lopHanhChinhs as $lop)
-                                        <option value="{{ $lop->id }}"
+                                        <option value="{{ $lop->id }}" data-nganh-id="{{ $lop->nganh_id }}"
+                                            data-khoa-hoc-id="{{ $lop->khoa_hoc_id }}"
                                             {{ old('lop_hanh_chinh_id', $sinhVien->lop_hanh_chinh_id) == $lop->id ? 'selected' : '' }}>
                                             {{ $lop->ma_lop }} - {{ $lop->ten_lop }}
                                         </option>
@@ -197,7 +270,7 @@
                                     id="chuyen_nganh_id" name="chuyen_nganh_id">
                                     <option value="">-- Chọn chuyên ngành (nếu có) --</option>
                                     @foreach ($chuyenNganhs as $cn)
-                                        <option value="{{ $cn->id }}"
+                                        <option value="{{ $cn->id }}" data-nganh-id="{{ $cn->nganh_id }}"
                                             {{ old('chuyen_nganh_id', $sinhVien->chuyen_nganh_id) == $cn->id ? 'selected' : '' }}>
                                             {{ $cn->ma_chuyen_nganh }} - {{ $cn->ten_chuyen_nganh }}
                                         </option>
@@ -250,3 +323,131 @@
         </section>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const nganhSelect = document.getElementById('nganh_id');
+            const chuyenNganhSelect = document.getElementById('chuyen_nganh_id');
+            const khoaHocSelect = document.getElementById('khoa_hoc_id');
+            const lopHanhChinhSelect = document.getElementById('lop_hanh_chinh_id');
+
+            const allChuyenNganhs = Array.from(chuyenNganhSelect.options).slice(1);
+            const allLopHanhChinhs = Array.from(lopHanhChinhSelect.options).slice(1);
+
+            const currentChuyenNganhId = '{{ old('chuyen_nganh_id', $sinhVien->chuyen_nganh_id) }}';
+            const currentLopHanhChinhId = '{{ old('lop_hanh_chinh_id', $sinhVien->lop_hanh_chinh_id) }}';
+
+            // Hàm lọc chuyên ngành theo ngành
+            function filterChuyenNganh(nganhId) {
+                chuyenNganhSelect.innerHTML = '';
+
+                if (!nganhId) {
+                    chuyenNganhSelect.disabled = true;
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Vui lòng chọn ngành trước --';
+                    chuyenNganhSelect.appendChild(defaultOption);
+                } else {
+                    chuyenNganhSelect.disabled = false;
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Chọn chuyên ngành (nếu có) --';
+                    chuyenNganhSelect.appendChild(defaultOption);
+
+                    let hasOptions = false;
+                    allChuyenNganhs.forEach(option => {
+                        if (option.dataset.nganhId == nganhId) {
+                            const newOption = option.cloneNode(true);
+                            chuyenNganhSelect.appendChild(newOption);
+                            hasOptions = true;
+                        }
+                    });
+
+                    if (!hasOptions) {
+                        const noDataOption = document.createElement('option');
+                        noDataOption.value = '';
+                        noDataOption.textContent = '-- Không có chuyên ngành --';
+                        chuyenNganhSelect.appendChild(noDataOption);
+                    }
+                }
+            }
+
+            // Hàm lọc lớp hành chính theo ngành và khóa học
+            function filterLopHanhChinh() {
+                const nganhId = nganhSelect.value;
+                const khoaHocId = khoaHocSelect.value;
+
+                // Lưu giá trị hiện tại trước khi xóa
+                const currentValue = lopHanhChinhSelect.value;
+                lopHanhChinhSelect.innerHTML = '';
+
+                if (!nganhId || !khoaHocId) {
+                    lopHanhChinhSelect.disabled = true;
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Chọn khóa học và ngành trước --';
+                    lopHanhChinhSelect.appendChild(defaultOption);
+                } else {
+                    lopHanhChinhSelect.disabled = false;
+                    const defaultOption = document.createElement('option');
+                    defaultOption.value = '';
+                    defaultOption.textContent = '-- Chọn lớp hành chính --';
+                    lopHanhChinhSelect.appendChild(defaultOption);
+
+                    let hasOptions = false;
+                    allLopHanhChinhs.forEach(option => {
+                        if (option.dataset.nganhId == nganhId && option.dataset.khoaHocId == khoaHocId) {
+                            lopHanhChinhSelect.appendChild(option.cloneNode(true));
+                            hasOptions = true;
+                        }
+                    });
+
+                    if (!hasOptions) {
+                        const noDataOption = document.createElement('option');
+                        noDataOption.value = '';
+                        noDataOption.textContent = '-- Không có lớp phù hợp --';
+                        lopHanhChinhSelect.appendChild(noDataOption);
+                    }
+                }
+
+                // Khôi phục giá trị đã chọn nếu còn tồn tại
+                if (currentValue) {
+                    lopHanhChinhSelect.value = currentValue;
+                }
+            }
+
+            // Lắng nghe sự kiện thay đổi ngành
+            nganhSelect.addEventListener('change', function() {
+                filterChuyenNganh(this.value);
+                filterLopHanhChinh();
+            });
+
+            // Lắng nghe sự kiện thay đổi khóa học
+            khoaHocSelect.addEventListener('change', function() {
+                filterLopHanhChinh();
+            });
+
+            // Khởi tạo trạng thái ban đầu
+            const initialNganhId = nganhSelect.value;
+            const initialKhoaHocId = khoaHocSelect.value;
+
+            if (initialNganhId) {
+                filterChuyenNganh(initialNganhId);
+                if (currentChuyenNganhId) {
+                    chuyenNganhSelect.value = currentChuyenNganhId;
+                }
+            } else {
+                filterChuyenNganh(null);
+            }
+
+            // Khởi tạo lọc lớp hành chính
+            if (initialNganhId && initialKhoaHocId) {
+                filterLopHanhChinh();
+                if (currentLopHanhChinhId) {
+                    lopHanhChinhSelect.value = currentLopHanhChinhId;
+                }
+            }
+        });
+    </script>
+@endpush

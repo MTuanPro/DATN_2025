@@ -40,8 +40,8 @@
                     </a>
                     <ul
                         class="submenu {{ Request::is('dao-tao/khoa', 'dao-tao/khoa/*', 'dao-tao/nganh*', 'dao-tao/chuyen-nganh*', 'dao-tao/mon-hoc*', 'dao-tao/chuong-trinh-khung*', 'dao-tao/trinh-do*', 'dao-tao/trang-thai-hoc-tap*', 'dao-tao/phong-hoc*') ? 'active' : '' }}">
-            <li class="submenu-item {{ Request::is('dao-tao/khoa', 'dao-tao/khoa/*') ? 'active' : '' }}"><a
-                href="{{ route('dao-tao.khoa.index') }}">Quản lý Khoa</a></li>
+                        <li class="submenu-item {{ Request::is('dao-tao/khoa', 'dao-tao/khoa/*') ? 'active' : '' }}"><a
+                                href="{{ route('dao-tao.khoa.index') }}">Quản lý Khoa</a></li>
                         <li class="submenu-item {{ Request::is('dao-tao/nganh*') ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.nganh.index') }}">Quản lý Ngành</a></li>
                         <li class="submenu-item {{ Request::is('dao-tao/chuyen-nganh*') ? 'active' : '' }}"><a
@@ -117,12 +117,10 @@
                     </a>
                     <ul
                         class="submenu {{ Request::is('dao-tao/lop-hoc-phan*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan*') && Request::segment(3) !== 'xem-lich' ? 'active' : '' }}"><a
-                                href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học
-                                phần</a></li>
-                            <li class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc*') ? 'active' : '' }}">
-                                <a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
-                            </li>
+                        <li
+                            class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan*') && Request::segment(3) !== 'xem-lich' ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học phần</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -135,9 +133,6 @@
                     </a>
                     <ul
                         class="submenu {{ Request::is('dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan*') ? 'active' : '' }}"><a
-                                href="{{ route('dao-tao.lop-hoc-phan.index') }}">Xem theo Lớp
-                                HP</a></li>
                         <li class="submenu-item"><a href="#">Lịch theo Phòng học <!-- Đang phát triển --></a></li>
                         <li class="submenu-item"><a href="#">Lịch theo Giảng viên <!-- Đang phát triển --></a>
                         </li>
@@ -209,15 +204,7 @@
                     </a>
                 </li>
 
-                {{-- 12. THÔNG BÁO --}}
-                <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
-                        <i class="bi bi-bell"></i>
-                        <span>Thông báo <!-- Đang cập nhật --></span>
-                    </a>
-                </li>
-
-                {{-- 13. BÁO CÁO & THỐNG KÊ --}}
+                {{-- 12. BÁO CÁO & THỐNG KÊ --}}
                 <li class="sidebar-item has-sub">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-graph-up"></i>
