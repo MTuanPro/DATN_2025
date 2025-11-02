@@ -102,6 +102,48 @@
                     </div>
                 </div>
 
+<!-- 
+                <section class="section">
+            <div class="row">
+                <div class="col-md-8">
+                    <div class="card">
+                        <div class="card-header">
+                            <h4>Thông tin sinh viên</h4>
+                        </div>
+                        <div class="card-body">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td width="200"><strong>MSSV:</strong></td>
+                                    <td>{{ $hocPhi->sinhVien->ma_sinh_vien }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Họ tên:</strong></td>
+                                    <td>{{ $hocPhi->sinhVien->ho_ten }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Học kỳ:</strong></td>
+                                    <td>{{ $hocPhi->hocKy->ten_hoc_ky }} - {{ $hocPhi->hocKy->nam_hoc }}</td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Hạn đóng:</strong></td>
+                                    <td><span class="badge bg-warning">{{ $hocPhi->han_dong->format('d/m/Y') }}</span></td>
+                                </tr>
+                                <tr>
+                                    <td><strong>Trạng thái:</strong></td>
+                                    <td>
+                                        @if ($hocPhi->trang_thai == 'da_nop_du')
+                                            <span class="badge bg-success">Đã nộp đủ</span>
+                                        @elseif ($hocPhi->trang_thai == 'qua_han')
+                                            <span class="badge bg-danger">Quá hạn</span>
+                                        @else
+                                            <span class="badge bg-warning">Chưa nộp đủ</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div> -->
+
                 <div class="col-md-4">
                     <div class="card">
                         <div class="card-header bg-primary text-white">
