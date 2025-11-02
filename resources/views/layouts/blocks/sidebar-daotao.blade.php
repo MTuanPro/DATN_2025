@@ -145,11 +145,19 @@
                 </li>
 
                 {{-- 7. LỊCH THI --}}
-                <li class="sidebar-item">
+                <li class="sidebar-item has-sub {{ Request::is('dao-tao/lich-thi*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-pencil-square"></i>
-                        <span>Quản lý Lịch thi <!-- Đang cập nhật --></span>
+                        <span>Quản lý Lịch thi</span>
                     </a>
+                    <ul class="submenu {{ Request::is('dao-tao/lich-thi*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('dao-tao/lich-thi') && !Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.lich-thi.index') }}">Danh sách Lịch thi</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.lich-thi.create') }}">Tạo Lịch thi mới</a>
+                        </li>
+                    </ul>
                 </li>
 
                 {{-- 8. ĐĂNG KÝ & XẾP LỚP --}}

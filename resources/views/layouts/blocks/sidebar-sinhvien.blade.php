@@ -75,12 +75,12 @@
                 </li>
 
                 <!-- 5. THỜI KHÓA BIỂU & LỊCH THI -->
-                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/thoi-khoa-bieu*') ? 'active' : '' }}">
+                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/thoi-khoa-bieu*', 'sinh-vien/lich-thi*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-calendar-week"></i>
                         <span>TKB & Lịch thi</span>
                     </a>
-                    <ul class="submenu {{ Request::is('sinh-vien/thoi-khoa-bieu*') ? 'active' : '' }}">
+                    <ul class="submenu {{ Request::is('sinh-vien/thoi-khoa-bieu*', 'sinh-vien/lich-thi*') ? 'active' : '' }}">
                         <li
                             class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu') && !Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
                             <a href="{{ route('sinhvien.thoi-khoa-bieu.index') }}">Thời khóa biểu</a>
@@ -89,7 +89,9 @@
                             class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
                             <a href="{{ route('sinhvien.thoi-khoa-bieu.chi-tiet') }}">Lịch học chi tiết</a>
                         </li>
-                        <li class="submenu-item"><a href="#">Lịch thi</a></li>
+                        <li class="submenu-item {{ Request::is('sinh-vien/lich-thi*') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.lich-thi.index') }}">Lịch thi</a>
+                        </li>
                     </ul>
                 </li>
 

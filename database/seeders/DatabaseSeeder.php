@@ -66,6 +66,9 @@ class DatabaseSeeder extends Seeder
             // 12. PHASE 5 - Đăng ký môn học (phải sau SinhVien, LopHocPhan, HocKy)
             DangKyMonHocTamSeeder::class,
             LopHocPhanSinhVienSeeder::class,
+
+            // 13. PHASE 7.5 - Lịch thi (phải sau LopHocPhan, PhongHoc, GiangVien)
+            LichThiSeeder::class,
         ]);
     }
 }

@@ -106,14 +106,18 @@
                 </li>
 
                 <!-- 9. THI & ĐỀ THI -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('giang-vien/lich-thi*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-file-earmark-text"></i>
                         <span>Thi & Đề thi</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Lịch thi</a></li>
-                        <li class="submenu-item"><a href="#">Đề thi & Đáp án</a></li>
+                    <ul class="submenu {{ Request::is('giang-vien/lich-thi*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('giang-vien/lich-thi') && !Request::is('giang-vien/lich-thi/lich-coi-thi') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.lich-thi.index') }}">Lịch thi</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('giang-vien/lich-thi/lich-coi-thi') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.lich-thi.lich-coi-thi') }}">Lịch coi thi</a>
+                        </li>
                     </ul>
                 </li>
 

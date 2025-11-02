@@ -220,12 +220,26 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::get('/lop-hoc-phan-by-mon/{monHoc}', [XepLopController::class, 'getLopHocPhanByMonHoc'])->name('lop-hoc-phan-by-mon');
         Route::delete('/xoa-khoi-lop/{lhpsv}', [XepLopController::class, 'xoaKhoiLop'])->name('xoa-khoi-lop');
     });
+
+    // PHASE 7.5: Quản lý Lịch thi
+    Route::resource('lich-thi', \App\Http\Controllers\DaoTao\LichThiController::class);
+    Route::post('lich-thi/{lichThi}/gui-thong-bao', [\App\Http\Controllers\DaoTao\LichThiController::class, 'guiThongBao'])->name('lich-thi.gui-thong-bao');
+    Route::get('lich-thi-export', [\App\Http\Controllers\DaoTao\LichThiController::class, 'export'])->name('lich-thi.export');
 });
 
 // ========== Giảng viên Routes ==========
 Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('giangvien.')->group(function () {
     Route::get('/dashboard', [GiangVienDashboardController::class, 'index'])->name('dashboard');
-    // Thêm các route giảng viên khác ở đây
+    
+    // PHASE 7.5: Lịch thi
+    Route::get('lich-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'index'])->name('lich-thi.index');
+    Route::get('lich-thi/{lichThi}', [\App\Http\Controllers\GiangVien\LichThiController::class, 'show'])->name('lich-thi.show');
+    Route::get('lich-coi-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'lichCoiThi'])->name('lich-coi-thi');
+    Route::post('lich-thi/{lichThi}/upload-de-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'uploadDeThi'])->name('lich-thi.upload-de-thi');
+    Route::post('lich-thi/{lichThi}/upload-dap-an', [\App\Http\Controllers\GiangVien\LichThiController::class, 'uploadDapAn'])->name('lich-thi.upload-dap-an');
+    Route::post('lich-thi/{lichThi}/xac-nhan-coi-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'xacNhanCoiThi'])->name('lich-thi.xac-nhan-coi-thi');
+    Route::get('lich-thi/{lichThi}/download-de-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'downloadDeThi'])->name('lich-thi.download-de-thi');
+    Route::get('lich-thi/{lichThi}/download-dap-an', [\App\Http\Controllers\GiangVien\LichThiController::class, 'downloadDapAn'])->name('lich-thi.download-dap-an');
 });
 
 // ========== Sinh viên Routes ==========
@@ -246,5 +260,13 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
         Route::get('/', [ThoiKhoaBieuController::class, 'index'])->name('index');
         Route::get('/chi-tiet', [ThoiKhoaBieuController::class, 'chiTiet'])->name('chi-tiet');
         Route::get('/export-pdf', [ThoiKhoaBieuController::class, 'exportPDF'])->name('export-pdf');
+    });
+
+    // PHASE 7.5: Lịch thi cá nhân
+    Route::middleware('sinhvien.check')->prefix('lich-thi')->name('lich-thi.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\LichThiController::class, 'index'])->name('index');
+        Route::get('/calendar', [\App\Http\Controllers\SinhVien\LichThiController::class, 'calendar'])->name('calendar');
+        Route::get('/export-pdf', [\App\Http\Controllers\SinhVien\LichThiController::class, 'exportPdf'])->name('export-pdf');
+        Route::get('/{lichThi}', [\App\Http\Controllers\SinhVien\LichThiController::class, 'show'])->name('show');
     });
 });
