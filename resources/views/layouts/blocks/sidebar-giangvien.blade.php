@@ -118,8 +118,8 @@
                 </li>
 
                 <!-- 10. LỚP CHỦ NHIỆM -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.lop-chu-nhiem.index') }}" class='sidebar-link'>
                         <i class="bi bi-house-door"></i>
                         <span>Lớp chủ nhiệm</span>
                     </a>
