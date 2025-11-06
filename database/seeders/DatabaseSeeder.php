@@ -76,6 +76,11 @@ class DatabaseSeeder extends Seeder
             // ========================================
             DangKyMonHocTamSeeder::class,  // 26. Đăng ký môn học tạm
             LopHocPhanSinhVienSeeder::class, // 27. Sinh viên đã đăng ký lớp học phần
+
+            // ========================================
+            // PHASE 10: Lịch thi
+            // ========================================
+            LichThiSeeder::class,          // 28. Lịch thi
         ]);
     }
 }
