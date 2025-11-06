@@ -13,9 +13,9 @@ return new class extends Migration
     {
         Schema::create('dang_ky_mon_hocs', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('sinh_vien_id')->constrained('sinh_viens')->onDelete('cascade');
-            $table->foreignId('lop_hoc_phan_id')->constrained('lop_hoc_phans')->onDelete('cascade');
-            $table->foreignId('hoc_ky_id')->constrained('hoc_kys')->onDelete('cascade');
+            $table->foreignId('sinh_vien_id')->constrained('sinh_vien')->onDelete('cascade');
+            $table->foreignId('lop_hoc_phan_id')->constrained('lop_hoc_phan')->onDelete('cascade');
+            $table->foreignId('hoc_ky_id')->constrained('hoc_ky')->onDelete('cascade');
             $table->enum('trang_thai', ['cho_duyet', 'da_duyet', 'tu_choi', 'da_huy'])->default('cho_duyet');
             $table->text('ghi_chu')->nullable();
             $table->timestamp('thoi_gian_dang_ky');
