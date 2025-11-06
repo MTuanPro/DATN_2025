@@ -176,13 +176,15 @@ class LichThiController extends Controller
 
         try {
             // Xóa file cũ nếu có
-            if ($lichThi->de_thi) {
-                Storage::disk('public')->delete($lichThi->de_thi);
+            if ($lichThi->de_thi_file) {
+                Storage::disk('public')->delete($lichThi->de_thi_file);
             }
 
-            // Upload file mới
-            $path = $request->file('de_thi')->store('de-thi', 'public');
-            $lichThi->update(['de_thi' => $path]);
+            // Upload file mới (giữ tên gốc)
+            $file = $request->file('de_thi');
+            $originalName = $file->getClientOriginalName();
+            $path = $file->storeAs('de-thi', $originalName, 'public');
+            $lichThi->update(['de_thi_file' => $path]);
 
             return redirect()->back()
                 ->with('success', 'Upload đề thi thành công!');
@@ -221,13 +223,15 @@ class LichThiController extends Controller
 
         try {
             // Xóa file cũ nếu có
-            if ($lichThi->dap_an) {
-                Storage::disk('public')->delete($lichThi->dap_an);
+            if ($lichThi->dap_an_file) {
+                Storage::disk('public')->delete($lichThi->dap_an_file);
             }
 
-            // Upload file mới
-            $path = $request->file('dap_an')->store('dap-an', 'public');
-            $lichThi->update(['dap_an' => $path]);
+            // Upload file mới (giữ tên gốc)
+            $file = $request->file('dap_an');
+            $originalName = $file->getClientOriginalName();
+            $path = $file->storeAs('dap-an', $originalName, 'public');
+            $lichThi->update(['dap_an_file' => $path]);
 
             return redirect()->back()
                 ->with('success', 'Upload đáp án thành công!');

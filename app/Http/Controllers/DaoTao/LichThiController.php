@@ -210,14 +210,18 @@ class LichThiController extends Controller
 
             $data = $request->validated();
 
-            // Xử lý upload file đề thi
+            // Xử lý upload file đề thi (giữ tên gốc)
             if ($request->hasFile('de_thi_file')) {
-                $data['de_thi_file'] = $request->file('de_thi_file')->store('de-thi', 'public');
+                $file = $request->file('de_thi_file');
+                $originalName = $file->getClientOriginalName();
+                $data['de_thi_file'] = $file->storeAs('de-thi', $originalName, 'public');
             }
 
-            // Xử lý upload file đáp án
+            // Xử lý upload file đáp án (giữ tên gốc)
             if ($request->hasFile('dap_an_file')) {
-                $data['dap_an_file'] = $request->file('dap_an_file')->store('dap-an', 'public');
+                $file = $request->file('dap_an_file');
+                $originalName = $file->getClientOriginalName();
+                $data['dap_an_file'] = $file->storeAs('dap-an', $originalName, 'public');
             }
 
             // Tự động tính số sinh viên dự thi nếu không nhập
@@ -399,22 +403,26 @@ class LichThiController extends Controller
 
             $data = $request->validated();
 
-            // Xử lý upload file đề thi
+            // Xử lý upload file đề thi (giữ tên gốc)
             if ($request->hasFile('de_thi_file')) {
                 // Xóa file cũ
                 if ($lichThi->de_thi_file) {
                     Storage::disk('public')->delete($lichThi->de_thi_file);
                 }
-                $data['de_thi_file'] = $request->file('de_thi_file')->store('de-thi', 'public');
+                $file = $request->file('de_thi_file');
+                $originalName = $file->getClientOriginalName();
+                $data['de_thi_file'] = $file->storeAs('de-thi', $originalName, 'public');
             }
 
-            // Xử lý upload file đáp án
+            // Xử lý upload file đáp án (giữ tên gốc)
             if ($request->hasFile('dap_an_file')) {
                 // Xóa file cũ
                 if ($lichThi->dap_an_file) {
                     Storage::disk('public')->delete($lichThi->dap_an_file);
                 }
-                $data['dap_an_file'] = $request->file('dap_an_file')->store('dap-an', 'public');
+                $file = $request->file('dap_an_file');
+                $originalName = $file->getClientOriginalName();
+                $data['dap_an_file'] = $file->storeAs('dap-an', $originalName, 'public');
             }
 
             // Tự động tính số sinh viên dự thi nếu không nhập
