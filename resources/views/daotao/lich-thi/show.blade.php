@@ -99,19 +99,19 @@
                             <tr>
                                 <th>Hình thức thi:</th>
                                 <td>
-                                    @if($lichThi->hinh_thuc_thi == 'offline')
+                                    @if($lichThi->hinh_thuc == 'offline')
                                         <span class="badge bg-secondary">Thi tại trường</span>
-                                    @elseif($lichThi->hinh_thuc_thi == 'online')
+                                    @elseif($lichThi->hinh_thuc == 'online')
                                         <span class="badge bg-primary">Thi trực tuyến</span>
                                     @else
                                         <span class="badge bg-success">Kết hợp</span>
                                     @endif
                                 </td>
                             </tr>
-                            @if($lichThi->link_thi_online)
+                            @if($lichThi->link_online)
                             <tr>
                                 <th>Link thi online:</th>
-                                <td><a href="{{ $lichThi->link_thi_online }}" target="_blank">{{ $lichThi->link_thi_online }}</a></td>
+                                <td><a href="{{ $lichThi->link_online }}" target="_blank">{{ $lichThi->link_online }}</a></td>
                             </tr>
                             @endif
                         </table>

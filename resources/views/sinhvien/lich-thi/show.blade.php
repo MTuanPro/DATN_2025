@@ -100,9 +100,9 @@
                             <tr>
                                 <th>Hình thức thi:</th>
                                 <td>
-                                    @if($lichThi->hinh_thuc_thi == 'offline')
+                                    @if($lichThi->hinh_thuc == 'offline')
                                         <span class="badge bg-secondary">Thi tại trường</span>
-                                    @elseif($lichThi->hinh_thuc_thi == 'online')
+                                    @elseif($lichThi->hinh_thuc == 'online')
                                         <span class="badge bg-primary">Thi trực tuyến</span>
                                     @else
                                         <span class="badge bg-success">Kết hợp</span>
@@ -132,7 +132,7 @@
         </div>
 
         <!-- Link thi online -->
-        @if($lichThi->link_thi_online)
+        @if($lichThi->link_online)
         <div class="card border-primary">
             <div class="card-header bg-primary text-white">
                 <h5 class="card-title text-white mb-0">
@@ -143,11 +143,11 @@
                 <div class="alert alert-info mb-0">
                     <strong>Link thi:</strong>
                     <br>
-                    <a href="{{ $lichThi->link_thi_online }}" target="_blank" class="btn btn-primary mt-2">
+                    <a href="{{ $lichThi->link_online }}" target="_blank" class="btn btn-primary mt-2">
                         <i class="bi bi-box-arrow-up-right"></i> Vào phòng thi
                     </a>
                     <br>
-                    <small class="text-muted">{{ $lichThi->link_thi_online }}</small>
+                    <small class="text-muted">{{ $lichThi->link_online }}</small>
                 </div>
             </div>
         </div>
