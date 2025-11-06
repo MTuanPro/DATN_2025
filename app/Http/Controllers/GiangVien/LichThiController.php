@@ -28,7 +28,14 @@ class LichThiController extends Controller
             ->pluck('lop_hoc_phan_id')
             ->unique();
 
-        $query = LichThi::with(['lopHocPhan.monHoc', 'phongHoc', 'giamThi1', 'giamThi2', 'hocKy'])
+        $query = LichThi::with([
+            'lopHocPhan.monHoc', 
+            'lopHocPhan.hocKy',
+            'phongHoc', 
+            'giamThi1', 
+            'giamThi2', 
+            'hocKy'
+        ])
             ->whereIn('lop_hoc_phan_id', $lopHocPhanIds);
 
         // Lọc theo loại thi
@@ -69,7 +76,14 @@ class LichThiController extends Controller
                 ->with('error', 'Không tìm thấy thông tin giảng viên!');
         }
 
-        $query = LichThi::with(['lopHocPhan.monHoc', 'phongHoc', 'giamThi1', 'giamThi2', 'hocKy'])
+        $query = LichThi::with([
+            'lopHocPhan.monHoc', 
+            'lopHocPhan.hocKy',
+            'phongHoc', 
+            'giamThi1', 
+            'giamThi2', 
+            'hocKy'
+        ])
             ->where(function($q) use ($giangVien) {
                 $q->where('giam_thi_1_id', $giangVien->id)
                   ->orWhere('giam_thi_2_id', $giangVien->id);
@@ -121,7 +135,15 @@ class LichThiController extends Controller
                 ->with('error', 'Bạn không có quyền xem lịch thi này!');
         }
 
-        $lichThi->load(['lopHocPhan.monHoc', 'lopHocPhan.lopHocPhanSinhViens.sinhVien', 'phongHoc', 'giamThi1', 'giamThi2', 'hocKy']);
+        $lichThi->load([
+            'lopHocPhan.monHoc', 
+            'lopHocPhan.hocKy',
+            'lopHocPhan.lopHocPhanSinhViens.sinhVien', 
+            'phongThi', 
+            'giamThi1', 
+            'giamThi2', 
+            'hocKy'
+        ]);
 
         return view('giangvien.lich-thi.show', compact('lichThi', 'isGiamThi'));
     }
