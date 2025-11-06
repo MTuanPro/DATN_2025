@@ -254,4 +254,33 @@
         </div>
     </section>
 </div>
+
+@push('scripts')
+<script>
+    // Ẩn/hiện link online dựa vào hình thức thi
+    document.getElementById('hinh_thuc').addEventListener('change', function() {
+        const linkOnlineDiv = document.getElementById('link_online').closest('.col-md-6');
+        const linkOnlineInput = document.getElementById('link_online');
+        
+        if (this.value === 'offline') {
+            linkOnlineDiv.style.display = 'none';
+            linkOnlineInput.value = ''; // Xóa giá trị khi ẩn
+            linkOnlineInput.removeAttribute('required');
+        } else {
+            linkOnlineDiv.style.display = 'block';
+            if (this.value === 'online') {
+                linkOnlineInput.setAttribute('required', 'required');
+            } else {
+                linkOnlineInput.removeAttribute('required');
+            }
+        }
+    });
+    
+    // Trigger khi load trang
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('hinh_thuc').dispatchEvent(new Event('change'));
+    });
+</script>
+@endpush
+
 @endsection
