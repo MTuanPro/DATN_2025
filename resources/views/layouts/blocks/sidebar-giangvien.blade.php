@@ -64,7 +64,7 @@
                 <li class="sidebar-item has-sub">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-clipboard-check"></i>
-<span>Điểm danh</span>
+                        <span>Điểm danh</span>
                     </a>
                     <ul class="submenu">
                         <li class="submenu-item"><a href="#">Điểm danh sinh viên</a></li>
@@ -114,19 +114,19 @@
                 </li>
 
                 <!-- 10. LỚP CHỦ NHIỆM -->
-                <li class="sidebar-item {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
-                    <a href="{{ route('giangvien.lop-chu-nhiem.index') }}" class='sidebar-link'>
+                <li class="sidebar-item">
+                    <a href="#" class='sidebar-link'>
                         <i class="bi bi-house-door"></i>
                         <span>Lớp chủ nhiệm</span>
                     </a>
                 </li>
 
                 <!-- 11. THÔNG BÁO -->
-                <li class="sidebar-item {{ Request::is('giang-vien/thong-bao*') ? 'active' : '' }}">
-                    <a href="{{ route('giangvien.thong-bao.index') }}" class='sidebar-link'>
+                <li class="sidebar-item">
+                    <a href="#" class='sidebar-link'>
                         <i class="bi bi-bell"></i>
                         <span>Thông báo</span>
-</a>
+                    </a>
                 </li>
 
                 <!-- 12. BÁO CÁO -->
