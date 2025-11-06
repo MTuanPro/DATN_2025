@@ -109,6 +109,17 @@ class DangKyMonHocController extends Controller
     }
 
     /**
+     * Form tạo đăng ký (phiên bản fallback)
+     */
+    public function create()
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
+        $monHocs = MonHoc::orderBy('ma_mon')->limit(200)->get();
+
+        return view('sinhvien.dang-ky-mon-hoc.create', compact('hocKys', 'monHocs'));
+    }
+
+    /**
      * Đăng ký môn học
      */
     public function store(Request $request)

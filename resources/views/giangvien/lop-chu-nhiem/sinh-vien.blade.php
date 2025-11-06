@@ -101,174 +101,140 @@
                         @endif
                     </div>
 
-                    <!-- Bảng danh sách -->
-                    <div class="table-responsive">
-                        <table class="table table-striped table-hover">
-                            <thead>
-                                <tr>
-                                    <th width="50">STT</th>
-                                    <th>Mã SV</th>
-                                    <th>Họ tên</th>
-                                    <th>Ngày sinh</th>
-                                    <th>Giới tính</th>
-                                    <th>Email</th>
-                                    <th>SĐT</th>
-                                    <th class="text-center">Kỳ hiện tại</th>
-                                    <th>Chuyên ngành</th>
-                                    <th>Trạng thái</th>
-                                    <th class="text-center">Thao tác</th>
-                                </tr>
-                            </thead>
-                            <tbody>
-                                @forelse($sinhViens as $index => $sv)
-                                    <tr>
-                                        <td>{{ $sinhViens->firstItem() + $index }}</td>
-                                        <td><strong>{{ $sv->ma_sinh_vien }}</strong></td>
-                                        <td>{{ $sv->ho_ten }}</td>
-                                        <td>{{ $sv->ngay_sinh ? $sv->ngay_sinh->format('d/m/Y') : 'N/A' }}</td>
-                                        <td>
-                                            @if ($sv->gioi_tinh == 'nam')
-                                                <span class="badge bg-light-info">Nam</span>
-                                            @elseif($sv->gioi_tinh == 'nu')
-                                                <span class="badge bg-light-danger">Nữ</span>
-                                            @else
-                                                <span class="badge bg-light-secondary">Khác</span>
-                                            @endif
-                                        </td>
-                                        <td>{{ $sv->email }}</td>
-                                        <td>{{ $sv->so_dien_thoai }}</td>
-                                        <td class="text-center">
-                                            <span class="badge bg-light-primary">Kỳ {{ $sv->ky_hien_tai }}</span>
-                                        </td>
-                                        <td>{{ $sv->chuyenNganh->ten_chuyen_nganh ?? 'Chưa chọn' }}</td>
-                                        <td>
-                                            @if ($sv->trangThaiHocTap)
-                                                @if ($sv->trangThaiHocTap->ten_trang_thai == 'Đang học')
-                                                    <span
-                                                        class="badge bg-success">{{ $sv->trangThaiHocTap->ten_trang_thai }}</span>
-                                                @elseif($sv->trangThaiHocTap->ten_trang_thai == 'Bảo lưu')
-                                                    <span
-                                                        class="badge bg-warning">{{ $sv->trangThaiHocTap->ten_trang_thai }}</span>
-                                                @elseif($sv->trangThaiHocTap->ten_trang_thai == 'Thôi học')
-                                                    <span
-                                                        class="badge bg-danger">{{ $sv->trangThaiHocTap->ten_trang_thai }}</span>
-                                                @else
-                                                    <span
-                                                        class="badge bg-info">{{ $sv->trangThaiHocTap->ten_trang_thai }}</span>
-                                                @endif
-                                            @else
-                                                <span class="badge bg-secondary">N/A</span>
-                                            @endif
-                                        </td>
-                                        <td class="text-center">
-                                            <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
-                                                data-bs-target="#modalChiTiet{{ $sv->id }}">
-                                                <i class="bi bi-eye"></i>
-                                            </button>
-                                        </td>
-                                    </tr>
+                    <!-- Danh sách sinh viên -->
+                    <div class="list-group">
+                        @forelse($sinhViens as $index => $sv)
+                            <div
+                                class="list-group-item list-group-item-action d-flex align-items-center justify-content-between">
+                                <div class="d-flex align-items-center flex-grow-1">
+                                    <div class="badge bg-info me-3" style="min-width: 40px;">
+                                        {{ $sinhViens->firstItem() + $index }}</div>
+                                    <div class="flex-grow-1">
+                                        <div class="d-flex align-items-center">
+                                            <strong class="me-2">{{ $sv->ma_sinh_vien }}</strong>
+                                            <span>{{ $sv->ho_ten }}</span>
+                                        </div>
+                                        <small class="text-muted">{{ explode('@', $sv->email)[1] ?? $sv->email }}</small>
+                                    </div>
+                                </div>
+                                <div class="d-flex align-items-center gap-2">
+                                    <span class="badge bg-primary">Kỳ {{ $sv->ky_hien_tai }}</span>
+                                    @if ($sv->trangThaiHocTap)
+                                        @if ($sv->trangThaiHocTap->ten_trang_thai == 'Đang học')
+                                            <span class="badge bg-success">Đang học</span>
+                                        @elseif($sv->trangThaiHocTap->ten_trang_thai == 'Bảo lưu')
+                                            <span class="badge bg-warning">Bảo lưu</span>
+                                        @elseif($sv->trangThaiHocTap->ten_trang_thai == 'Thôi học')
+                                            <span class="badge bg-danger">Thôi học</span>
+                                        @else
+                                            <span class="badge bg-info">{{ $sv->trangThaiHocTap->ten_trang_thai }}</span>
+                                        @endif
+                                    @else
+                                        <span class="badge bg-secondary">N/A</span>
+                                    @endif
+                                    <button type="button" class="btn btn-sm btn-info" data-bs-toggle="modal"
+                                        data-bs-target="#modalChiTiet{{ $sv->id }}" title="Xem chi tiết">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
+                                </div>
+                            </div>
 
-                                    <!-- Modal Chi tiết -->
-                                    <div class="modal fade" id="modalChiTiet{{ $sv->id }}" tabindex="-1">
-                                        <div class="modal-dialog modal-lg">
-                                            <div class="modal-content">
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title">Chi tiết sinh viên: {{ $sv->ho_ten }}</h5>
-                                                    <button type="button" class="btn-close"
-                                                        data-bs-dismiss="modal"></button>
+                            <!-- Modal Chi tiết -->
+                            <div class="modal fade" id="modalChiTiet{{ $sv->id }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <div class="modal-content">
+                                        <div class="modal-header">
+                                            <h5 class="modal-title">Chi tiết sinh viên: {{ $sv->ho_ten }}</h5>
+                                            <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                        </div>
+                                        <div class="modal-body">
+                                            <div class="row">
+                                                <div class="col-md-6">
+                                                    <h6 class="text-primary">Thông tin cá nhân</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <td width="40%"><strong>Mã SV:</strong></td>
+                                                            <td>{{ $sv->ma_sinh_vien }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Họ tên:</strong></td>
+                                                            <td>{{ $sv->ho_ten }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Ngày sinh:</strong></td>
+                                                            <td>{{ $sv->ngay_sinh ? $sv->ngay_sinh->format('d/m/Y') : 'N/A' }}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Giới tính:</strong></td>
+                                                            <td>{{ ucfirst($sv->gioi_tinh) }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Email:</strong></td>
+                                                            <td>{{ $sv->email }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>SĐT:</strong></td>
+                                                            <td>{{ $sv->so_dien_thoai }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>CCCD:</strong></td>
+                                                            <td>{{ $sv->can_cuoc_cong_dan }}</td>
+                                                        </tr>
+                                                    </table>
                                                 </div>
-                                                <div class="modal-body">
-                                                    <div class="row">
-                                                        <div class="col-md-6">
-                                                            <h6 class="text-primary">Thông tin cá nhân</h6>
-                                                            <table class="table table-sm">
-                                                                <tr>
-                                                                    <td width="40%"><strong>Mã SV:</strong></td>
-                                                                    <td>{{ $sv->ma_sinh_vien }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Họ tên:</strong></td>
-                                                                    <td>{{ $sv->ho_ten }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Ngày sinh:</strong></td>
-                                                                    <td>{{ $sv->ngay_sinh ? $sv->ngay_sinh->format('d/m/Y') : 'N/A' }}
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Giới tính:</strong></td>
-                                                                    <td>{{ ucfirst($sv->gioi_tinh) }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Email:</strong></td>
-                                                                    <td>{{ $sv->email }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>SĐT:</strong></td>
-                                                                    <td>{{ $sv->so_dien_thoai }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>CCCD:</strong></td>
-                                                                    <td>{{ $sv->can_cuoc_cong_dan }}</td>
-                                                                </tr>
-                                                            </table>
-                                                        </div>
-                                                        <div class="col-md-6">
-                                                            <h6 class="text-primary">Thông tin học tập</h6>
-                                                            <table class="table table-sm">
-                                                                <tr>
-                                                                    <td width="40%"><strong>Lớp:</strong></td>
-                                                                    <td>{{ $lop->ma_lop }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Khóa học:</strong></td>
-                                                                    <td>{{ $sv->khoaHoc->ten_khoa_hoc ?? 'N/A' }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Ngành:</strong></td>
-                                                                    <td>{{ $sv->nganh->ten_nganh ?? 'N/A' }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Chuyên ngành:</strong></td>
-                                                                    <td>{{ $sv->chuyenNganh->ten_chuyen_nganh ?? 'Chưa chọn' }}
-                                                                    </td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Kỳ hiện tại:</strong></td>
-                                                                    <td>Kỳ {{ $sv->ky_hien_tai }}</td>
-                                                                </tr>
-                                                                <tr>
-                                                                    <td><strong>Trạng thái:</strong></td>
-                                                                    <td>{{ $sv->trangThaiHocTap->ten_trang_thai ?? 'N/A' }}
-                                                                    </td>
-                                                                </tr>
-                                                            </table>
-                                                        </div>
-                                                    </div>
-                                                    <hr>
-                                                    <h6 class="text-primary">Địa chỉ</h6>
-                                                    <p>
-                                                        {{ implode(', ', array_filter([$sv->so_nha_duong, $sv->phuong_xa, $sv->quan_huyen, $sv->tinh_thanh])) ?:
-                                                            'Chưa cập nhật' }}
-                                                    </p>
-                                                </div>
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary"
-                                                        data-bs-dismiss="modal">Đóng</button>
+                                                <div class="col-md-6">
+                                                    <h6 class="text-primary">Thông tin học tập</h6>
+                                                    <table class="table table-sm">
+                                                        <tr>
+                                                            <td width="40%"><strong>Lớp:</strong></td>
+                                                            <td>{{ $lop->ma_lop }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Khóa học:</strong></td>
+                                                            <td>{{ $sv->khoaHoc->ten_khoa_hoc ?? 'N/A' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Ngành:</strong></td>
+                                                            <td>{{ $sv->nganh->ten_nganh ?? 'N/A' }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Chuyên ngành:</strong></td>
+                                                            <td>{{ $sv->chuyenNganh->ten_chuyen_nganh ?? 'Chưa chọn' }}
+                                                            </td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Kỳ hiện tại:</strong></td>
+                                                            <td>Kỳ {{ $sv->ky_hien_tai }}</td>
+                                                        </tr>
+                                                        <tr>
+                                                            <td><strong>Trạng thái:</strong></td>
+                                                            <td>{{ $sv->trangThaiHocTap->ten_trang_thai ?? 'N/A' }}
+                                                            </td>
+                                                        </tr>
+                                                    </table>
                                                 </div>
                                             </div>
+                                            <hr>
+                                            <h6 class="text-primary">Địa chỉ</h6>
+                                            <p>
+                                                {{ implode(', ', array_filter([$sv->so_nha_duong, $sv->phuong_xa, $sv->quan_huyen, $sv->tinh_thanh])) ?:
+                                                    'Chưa cập nhật' }}
+                                            </p>
+                                        </div>
+                                        <div class="modal-footer">
+                                            <button type="button" class="btn btn-secondary"
+                                                data-bs-dismiss="modal">Đóng</button>
                                         </div>
                                     </div>
-                                @empty
-                                    <tr>
-                                        <td colspan="11" class="text-center py-4">
-                                            <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
-                                            <p class="text-muted mt-2">Không tìm thấy sinh viên nào</p>
-                                        </td>
-                                    </tr>
-                                @endforelse
-                            </tbody>
-                        </table>
+                                </div>
+                            </div>
+                        @empty
+                            <div class="list-group-item text-center py-4">
+                                <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
+                                <p class="text-muted mt-2">Không tìm thấy sinh viên nào</p>
+                            </div>
+                        @endforelse
                     </div>
 
                     <!-- Pagination -->
