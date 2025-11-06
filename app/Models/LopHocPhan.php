@@ -72,6 +72,24 @@ class LopHocPhan extends Model
     }
 
     /**
+     * Quan hệ với LopHocPhanSinhVien (Sinh viên trong lớp)
+     */
+    public function lopHocPhanSinhViens()
+    {
+        return $this->hasMany(LopHocPhanSinhVien::class, 'lop_hoc_phan_id');
+    }
+
+    /**
+     * Quan hệ với SinhVien thông qua LopHocPhanSinhVien
+     */
+    public function sinhViens()
+    {
+        return $this->belongsToMany(SinhVien::class, 'lop_hoc_phan_sinh_vien', 'lop_hoc_phan_id', 'sinh_vien_id')
+            ->withPivot('trang_thai', 'ngay_dang_ky')
+            ->withTimestamps();
+    }
+
+    /**
      * Quan hệ với CauHinhDauDiem
      */
     public function cauHinhDauDiem()
