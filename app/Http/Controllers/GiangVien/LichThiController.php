@@ -180,10 +180,12 @@ class LichThiController extends Controller
                 Storage::disk('public')->delete($lichThi->de_thi_file);
             }
 
-            // Upload file mới (giữ tên gốc)
+            // Upload file mới (timestamp + tên gốc)
             $file = $request->file('de_thi');
-            $originalName = $file->getClientOriginalName();
-            $path = $file->storeAs('de-thi', $originalName, 'public');
+            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = $file->getClientOriginalExtension();
+            $fileName = time() . '_' . \Illuminate\Support\Str::slug($originalName) . '.' . $extension;
+            $path = $file->storeAs('de-thi', $fileName, 'public');
             $lichThi->update(['de_thi_file' => $path]);
 
             return redirect()->back()
@@ -227,10 +229,12 @@ class LichThiController extends Controller
                 Storage::disk('public')->delete($lichThi->dap_an_file);
             }
 
-            // Upload file mới (giữ tên gốc)
+            // Upload file mới (timestamp + tên gốc)
             $file = $request->file('dap_an');
-            $originalName = $file->getClientOriginalName();
-            $path = $file->storeAs('dap-an', $originalName, 'public');
+            $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $extension = $file->getClientOriginalExtension();
+            $fileName = time() . '_' . \Illuminate\Support\Str::slug($originalName) . '.' . $extension;
+            $path = $file->storeAs('dap-an', $fileName, 'public');
             $lichThi->update(['dap_an_file' => $path]);
 
             return redirect()->back()
