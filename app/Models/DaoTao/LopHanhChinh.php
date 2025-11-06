@@ -6,7 +6,10 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\DaoTao\KhoaHoc;
 use App\Models\DaoTao\Nganh;
+use App\Models\DaoTao\Khoa;
+
 use App\Models\GiangVien;
+
 use App\Models\DaoTao\SinhVien;
 
 class LopHanhChinh extends Model
@@ -50,5 +53,17 @@ class LopHanhChinh extends Model
     public function sinhVien()
     {
         return $this->hasMany(SinhVien::class, 'lop_hanh_chinh_id');
+    }
+
+    public function khoa()
+    {
+        return $this->hasOneThrough(
+            Khoa::class,
+            Nganh::class,
+            'id',           // Foreign key on Nganh table
+            'id',           // Foreign key on Khoa table
+            'nganh_id',     // Local key on LopHanhChinh table
+            'khoa_id'       // Local key on Nganh table
+        );
     }
 }

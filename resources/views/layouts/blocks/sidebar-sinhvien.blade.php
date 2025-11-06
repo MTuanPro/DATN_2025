@@ -102,16 +102,18 @@
                 </li>
 
                 <!-- 7. KẾT QUẢ HỌC TẬP -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/diem*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-trophy"></i>
                         <span>Kết quả học tập</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Điểm từng học kỳ</a></li>
-                        <li class="submenu-item"><a href="#">Điểm tổng kết</a></li>
-                        <li class="submenu-item"><a href="#">Xếp loại học tập</a></li>
-                        <li class="submenu-item"><a href="#">Xuất bảng điểm</a></li>
+                    <ul class="submenu {{ Request::is('sinh-vien/diem*') ? 'active' : '' }}">
+                        class="submenu-item {{ Request::is('sinh-vien/diem') && !Request::is('sinh-vien/diem/*') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.diem.index') }}">Điểm từng học kỳ</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('sinh-vien/diem/bang-diem') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.diem.bang-diem') }}">Bảng điểm tổng hợp</a>
+                        </li>
                     </ul>
                 </li>
 

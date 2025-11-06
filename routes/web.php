@@ -41,6 +41,9 @@ use App\Http\Controllers\DaoTao\SinhVienController;
 use App\Http\Controllers\DaoTao\XepLopController;
 use App\Http\Controllers\SinhVien\DangKyMonHocController;
 use App\Http\Controllers\SinhVien\ThoiKhoaBieuController;
+use App\Http\Controllers\GiangVien\NhapDiemController;
+use App\Http\Controllers\DaoTao\DuyetDiemController;
+use App\Http\Controllers\SinhVien\XemDiemController;
 
 
 // Debug route (temporary)
@@ -230,6 +233,13 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::get('/lop-hoc-phan-by-mon/{monHoc}', [XepLopController::class, 'getLopHocPhanByMonHoc'])->name('lop-hoc-phan-by-mon');
         Route::delete('/xoa-khoi-lop/{lhpsv}', [XepLopController::class, 'xoaKhoiLop'])->name('xoa-khoi-lop');
     });
+    // PHASE 7: Duyệt điểm
+    Route::prefix('duyet-diem')->name('duyet-diem.')->group(function () {
+        Route::get('/', [DuyetDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [DuyetDiemController::class, 'show'])->name('show');
+        Route::post('/{lopHocPhan}/duyet', [DuyetDiemController::class, 'duyetDiem'])->name('duyet');
+    });
+
 
     // Thông báo (chỉ xem)
     Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
@@ -243,6 +253,14 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     // Lịch dạy cá nhân
     Route::get('/lich-day', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/lich-day/export', [ScheduleController::class, 'export'])->name('schedule.export');
+    // Nhập điểm
+    Route::prefix('nhap-diem')->name('nhap-diem.')->group(function () {
+        Route::get('/', [NhapDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [NhapDiemController::class, 'show'])->name('show');
+        Route::post('/store', [NhapDiemController::class, 'nhapDiem'])->name('store');
+        Route::post('/{lopHocPhan}/khoa', [NhapDiemController::class, 'khoaDiem'])->name('khoa');
+        Route::post('/{lopHocPhan}/mo-khoa', [NhapDiemController::class, 'moKhoaDiem'])->name('mo-khoa');
+    });
 
     // Thông báo (chỉ xem)
     Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
@@ -266,6 +284,13 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
         Route::get('/', [ThoiKhoaBieuController::class, 'index'])->name('index');
         Route::get('/chi-tiet', [ThoiKhoaBieuController::class, 'chiTiet'])->name('chi-tiet');
         Route::get('/export-pdf', [ThoiKhoaBieuController::class, 'exportPDF'])->name('export-pdf');
+    });
+    // PHASE 7: Xem điểm
+    Route::middleware('sinhvien.check')->prefix('diem')->name('diem.')->group(function () {
+        Route::get('/', [XemDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [XemDiemController::class, 'show'])->name('show');
+        Route::get('/bang-diem/tong-hop', [XemDiemController::class, 'bangDiem'])->name('bang-diem');
+        Route::get('/bang-diem/export-pdf', [XemDiemController::class, 'exportPDF'])->name('export-pdf');
     });
 
     // Thông báo (chỉ xem)

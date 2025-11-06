@@ -173,6 +173,12 @@
                 </li>
 
                 {{-- 10. HỌC PHÍ --}}
+                <li class="sidebar-item {{ Request::is('dao-tao/duyet-diem*') ? 'active' : '' }}">
+                    <a href="{{ route('dao-tao.duyet-diem.index') }}" class="sidebar-link">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Duyệt điểm</span>
+                    </a>
+                </li>
                 <li class="sidebar-item has-sub">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-cash-coin"></i>

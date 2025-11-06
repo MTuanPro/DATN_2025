@@ -64,7 +64,7 @@
                 <li class="sidebar-item has-sub">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-clipboard-check"></i>
-                        <span>Điểm danh</span>
+<span>Điểm danh</span>
                     </a>
                     <ul class="submenu">
                         <li class="submenu-item"><a href="#">Điểm danh sinh viên</a></li>
@@ -81,15 +81,11 @@
                 </li>
 
                 <!-- 7. NHẬP ĐIỂM -->
-                <li class="sidebar-item has-sub">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('giang-vien/nhap-diem*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.nhap-diem.index') }}" class='sidebar-link'>
                         <i class="bi bi-pencil-square"></i>
                         <span>Nhập điểm</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Nhập điểm thành phần</a></li>
-                        <li class="submenu-item"><a href="#">Kiểm tra nhập điểm</a></li>
-                    </ul>
                 </li>
 
                 <!-- 8. KẾT QUẢ HỌC TẬP -->
@@ -118,8 +114,8 @@
                 </li>
 
                 <!-- 10. LỚP CHỦ NHIỆM -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.lop-chu-nhiem.index') }}" class='sidebar-link'>
                         <i class="bi bi-house-door"></i>
                         <span>Lớp chủ nhiệm</span>
                     </a>
@@ -130,7 +126,7 @@
                     <a href="{{ route('giangvien.thong-bao.index') }}" class='sidebar-link'>
                         <i class="bi bi-bell"></i>
                         <span>Thông báo</span>
-                    </a>
+</a>
                 </li>
 
                 <!-- 12. BÁO CÁO -->
