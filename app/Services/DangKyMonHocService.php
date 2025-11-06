@@ -2,13 +2,14 @@
 
 namespace App\Services;
 
-use App\Models\MonHocTienQuyet;
-use App\Models\MonHoc;
+use App\Models\DaoTao\MonHocTienQuyet;
+use App\Models\DaoTao\MonHoc;
 use App\Models\KetQuaHocTap;
 use App\Models\DangKyMonHocTam;
 use App\Models\LichHocCoDinh;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\LopHocPhan;
+use App\Models\DaoTao\HocKy;
 
 class DangKyMonHocService
 {

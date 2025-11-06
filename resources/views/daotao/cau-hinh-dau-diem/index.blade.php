@@ -34,11 +34,15 @@
                                 {{ $lopHocPhan->hocKy->nam_hoc }}</p>
                         </div>
                         <div class="col-md-4 text-end">
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
                             <h4>Tổng tỷ lệ:
                                 <span class="badge {{ $summary['total_percentage'] == 100 ? 'bg-success' : 'bg-warning' }}">
                                     {{ $summary['total_percentage'] }}%
                                 </span>
+<<<<<<< HEAD
                             </h4>
                             <p class="text-muted">Còn lại: {{ $summary['remaining_percentage'] }}%</p>
 
@@ -47,6 +51,10 @@
                             </h4>
                             <p class="text-muted">Còn lại: {{ $tyLeConLai }}%</p>
 
+=======
+                            </h4>
+                            <p class="text-muted">Còn lại: {{ $summary['remaining_percentage'] }}%</p>
+>>>>>>> origin/main
                         </div>
                     </div>
                 </div>
@@ -72,11 +80,15 @@
                         </div>
                     @endif
 
+<<<<<<< HEAD
 
                     @if ($summary['remaining_percentage'] > 0)
 
                     @if ($tyLeConLai > 0)
 
+=======
+                    @if ($summary['remaining_percentage'] > 0)
+>>>>>>> origin/main
                         <form action="{{ route('dao-tao.lop-hoc-phan.cau-hinh-diem.store', $lopHocPhan->id) }}"
                             method="POST">
                             @csrf
@@ -186,11 +198,15 @@
                                     <tr class="table-primary">
                                         <th colspan="2" class="text-end">TỔNG:</th>
                                         <th><span
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
                                                 class="badge bg-{{ $summary['total_percentage'] == 100 ? 'success' : 'warning' }}">
                                                 {{ $summary['total_percentage'] }}%
                                             </span>
 
+<<<<<<< HEAD
                                         </th>
                                         <th colspan="3">
                                             @if ($summary['is_complete'])
@@ -200,6 +216,11 @@
                                         <th colspan="3">
                                             @if ($tongTyLe == 100)
 
+=======
+                                        </th>
+                                        <th colspan="3">
+                                            @if ($summary['is_complete'])
+>>>>>>> origin/main
                                                 <span class="text-success"><i class="bi bi-check-circle"></i> Đã đủ
                                                     100%</span>
                                             @else

@@ -93,8 +93,13 @@
                             @if ($thongBao->file_dinh_kem)
                                 <div class="mb-4">
                                     <h6>File đính kèm:</h6>
+<<<<<<< HEAD
                                     <a href="{{ asset('storage/' . $thongBao->file_dinh_kem) }}" class="btn btn-info btn-sm"
                                         download>
+=======
+                                    <a href="{{ route('admin.thong-bao.download', $thongBao) }}"
+                                        class="btn btn-info btn-sm">
+>>>>>>> origin/main
                                         <i class="bi bi-download"></i> Tải xuống file
                                         ({{ basename($thongBao->file_dinh_kem) }})
                                     </a>

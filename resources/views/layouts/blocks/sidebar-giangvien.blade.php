@@ -45,6 +45,7 @@
                 </li>
 
                 <!-- 3. LỊCH DẠY -->
+<<<<<<< HEAD
 
                 <li class="sidebar-item {{ Request::is('giang-vien/lich-day*') ? 'active' : '' }}">
                     <a href="{{ route('giangvien.schedule.index') }}" class='sidebar-link'>
@@ -52,6 +53,10 @@
                 <li class="sidebar-item">
                     <a href="#" class='sidebar-link'>
 
+=======
+                <li class="sidebar-item {{ Request::is('giang-vien/lich-day*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.schedule.index') }}" class='sidebar-link'>
+>>>>>>> origin/main
                         <i class="bi bi-calendar-check"></i>
                         <span>Lịch dạy cá nhân</span>
                     </a>
@@ -123,14 +128,15 @@
                 </li>
 
                 <!-- 10. LỚP CHỦ NHIỆM -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.lop-chu-nhiem.index') }}" class='sidebar-link'>
                         <i class="bi bi-house-door"></i>
                         <span>Lớp chủ nhiệm</span>
                     </a>
                 </li>
 
                 <!-- 11. THÔNG BÁO -->
+<<<<<<< HEAD
 
                 <li class="sidebar-item {{ Request::is('giang-vien/thong-bao*') ? 'active' : '' }}">
                     <a href="{{ route('giangvien.thong-bao.index') }}" class='sidebar-link'>
@@ -147,6 +153,14 @@
                         <li class="submenu-item"><a href="#">Nhận thông báo</a></li>
                         <li class="submenu-item"><a href="#">Gửi thông báo</a></li>
                     </ul>
+=======
+                <li class="sidebar-item {{ Request::is('giang-vien/thong-bao*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.thong-bao.index') }}" class='sidebar-link'>
+                        <i class="bi bi-bell"></i>
+                        <span>Thông báo</span>
+                    </a>
+                </li>
+>>>>>>> origin/main
 
                 </li>
  <!-- //  test code -->

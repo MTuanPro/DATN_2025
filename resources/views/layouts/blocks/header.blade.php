@@ -16,7 +16,10 @@
             <i class="bi bi-moon"></i>
         </button>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
         <!-- Notification Bell Dropdown -->
         <div class="dropdown me-2">
             <button class="btn btn-link position-relative text-muted" id="notificationDropdown"
@@ -112,12 +115,15 @@
             </ul>
         </div>
 
+<<<<<<< HEAD
 
         <button class="btn btn-link position-relative text-muted me-2" title="Notifications">
             <i class="bi bi-bell"></i>
             <span class="position-absolute top-0 start-100 translate-middle badge rounded-pill bg-danger">3</span>
         </button>
 
+=======
+>>>>>>> origin/main
         <div class="dropdown">
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown"
                 data-bs-toggle="dropdown" aria-expanded="false">

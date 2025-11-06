@@ -6,10 +6,14 @@ use App\Models\DaoTao\SinhVien;
 use App\Models\DaoTao\LopHanhChinh;
 use App\Models\User;
 use Illuminate\Database\Seeder;
+<<<<<<< HEAD
 
 use Illuminate\Support\Facades\DB;
 
 
+=======
+use Illuminate\Support\Facades\DB;
+>>>>>>> origin/main
 use Illuminate\Support\Facades\Hash;
 
 class SinhVienSeeder extends Seeder
@@ -19,7 +23,10 @@ class SinhVienSeeder extends Seeder
      */
     public function run(): void
     {
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
         // ========================================
         // TẠO TÀI KHOẢN SINH VIÊN TEST
         // ========================================
@@ -28,8 +35,11 @@ class SinhVienSeeder extends Seeder
         // ========================================
         // TẠO SINH VIÊN CHO CÁC LỚP HÀNH CHÍNH
         // ========================================
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> origin/main
         $lopHanhChinhs = LopHanhChinh::with(['khoaHoc', 'nganh'])->get();
 
         if ($lopHanhChinhs->isEmpty()) {
@@ -274,6 +284,9 @@ class SinhVienSeeder extends Seeder
         return str_pad(rand(0, 999999999999), 12, '0', STR_PAD_LEFT);
     }
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> origin/main
 
     /**
      * Tạo tài khoản sinh viên test cố định
@@ -333,9 +346,16 @@ class SinhVienSeeder extends Seeder
             $lopHanhChinh = LopHanhChinh::first();
             $khoaHoc = \App\Models\DaoTao\KhoaHoc::first();
             $nganh = \App\Models\DaoTao\Nganh::first();
+<<<<<<< HEAD
             $trangThaiHocTap = \App\Models\DaoTao\TrangThaiHocTap::where('ten_trang_thai', 'Đang học')->first();
 
             if ($lopHanhChinh && $khoaHoc && $nganh && $trangThaiHocTap) {
+=======
+            $chuyenNganh = \App\Models\DaoTao\ChuyenNganh::where('nganh_id', $nganh->id)->first();
+            $trangThaiHocTap = \App\Models\DaoTao\TrangThaiHocTap::where('ten_trang_thai', 'Đang học')->first();
+
+            if ($lopHanhChinh && $khoaHoc && $nganh && $chuyenNganh && $trangThaiHocTap) {
+>>>>>>> origin/main
                 // Tạo record sinh_vien
                 SinhVien::create([
                     'user_id' => $userId,
@@ -355,6 +375,10 @@ class SinhVienSeeder extends Seeder
                     'khoa_hoc_id' => $khoaHoc->id,
                     'lop_hanh_chinh_id' => $lopHanhChinh->id,
                     'nganh_id' => $nganh->id,
+<<<<<<< HEAD
+=======
+                    'chuyen_nganh_id' => $chuyenNganh->id,
+>>>>>>> origin/main
                     'ky_hien_tai' => 1,
                     'trang_thai_hoc_tap_id' => $trangThaiHocTap->id,
                 ]);
@@ -371,6 +395,9 @@ class SinhVienSeeder extends Seeder
             $this->command->info('Sinh viên test đã có record trong bảng sinh_vien.');
         }
     }
+<<<<<<< HEAD
 =======
 >>>>>>> 3ce5bf463aba81437bc908d45799f550b6b5f94d
+=======
+>>>>>>> origin/main
 }

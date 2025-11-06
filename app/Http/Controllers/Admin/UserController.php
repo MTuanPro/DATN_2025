@@ -5,6 +5,9 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Models\VaiTro;
+use App\Models\Admin;
+use App\Models\DaoTao;
+use App\Mail\VerifyEmailMail;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -67,7 +70,7 @@ class UserController extends Controller
         $validated = $request->validate([
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'confirmed', Password::min(8)],
+            'password' => ['required', 'confirmed', PasswordRule::min(8)],
             'trang_thai' => ['required', 'in:hoat_dong,khoa,ngung_hoat_dong'],
             'vai_tro' => ['nullable', 'array'],
             'vai_tro.*' => ['exists:vai_tro,id'],
@@ -94,11 +97,82 @@ class UserController extends Controller
             // Gán vai trò nếu có
             if (!empty($validated['vai_tro'])) {
                 $user->vaiTro()->attach($validated['vai_tro']);
+
+                // Tự động tạo Admin profile nếu gán vai trò admin
+                $adminRole = VaiTro::where('ma_vai_tro', 'admin')->first();
+                if ($adminRole && in_array($adminRole->id, $validated['vai_tro'])) {
+                    // Kiểm tra xem đã có profile chưa
+                    $existingAdmin = Admin::where('user_id', $user->id)->first();
+
+                    if (!$existingAdmin) {
+                        // Tạo mã admin tự động: AD + năm + số thứ tự
+                        $year = date('Y');
+                        $lastAdmin = Admin::whereYear('created_at', $year)
+                            ->orderBy('id', 'desc')
+                            ->first();
+
+                        $sequence = $lastAdmin ? (int)substr($lastAdmin->ma_admin, -4) + 1 : 1;
+                        $maAdmin = 'AD' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+                        Admin::create([
+                            'user_id' => $user->id,
+                            'ma_admin' => $maAdmin,
+                            'ho_ten' => $user->name,
+                            'email' => $user->email,
+                        ]);
+                    }
+                }
+
+                // Tự động tạo DaoTao profile nếu gán vai trò truong_phong_dt hoặc nhan_vien_dt
+                $daoTaoRoles = VaiTro::whereIn('ma_vai_tro', ['truong_phong_dt', 'nhan_vien_dt'])->pluck('id')->toArray();
+                if (!empty(array_intersect($daoTaoRoles, $validated['vai_tro']))) {
+                    // Kiểm tra xem đã có profile chưa
+                    $existingDaoTao = DaoTao::where('user_id', $user->id)->first();
+
+                    if (!$existingDaoTao) {
+                        // Tạo mã đào tạo tự động: DT + năm + số thứ tự
+                        $year = date('Y');
+                        $lastDaoTao = DaoTao::whereYear('created_at', $year)
+                            ->orderBy('id', 'desc')
+                            ->first();
+
+                        $sequence = $lastDaoTao ? (int)substr($lastDaoTao->ma_dao_tao, -4) + 1 : 1;
+                        $maDaoTao = 'DT' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+                        DaoTao::create([
+                            'user_id' => $user->id,
+                            'ma_dao_tao' => $maDaoTao,
+                            'ho_ten' => $user->name,
+                            'email' => $user->email,
+                        ]);
+                    }
+                }
             }
+
+            // Tạo token xác thực email
+            $token = Str::random(64);
+
+            // Xóa token cũ nếu có
+            DB::table('email_verification_tokens')
+                ->where('email', $user->email)
+                ->delete();
+
+            // Tạo token mới
+            DB::table('email_verification_tokens')->insert([
+                'email' => $user->email,
+                'token' => Hash::make($token),
+                'created_at' => now()
+            ]);
+
+            // Tạo URL xác thực
+            $verificationUrl = url('/email/verify/' . $token . '?email=' . urlencode($user->email));
+
+            // Gửi email xác thực
+            Mail::to($user->email)->send(new VerifyEmailMail($user, $verificationUrl));
 
             DB::commit();
             return redirect()->route('admin.users.index')
-                ->with('success', 'Tạo tài khoản thành công!');
+                ->with('success', 'Tạo tài khoản thành công! Email xác thực đã được gửi đến ' . $user->email);
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withInput()
@@ -138,22 +212,118 @@ class UserController extends Controller
 
         DB::beginTransaction();
         try {
+            // Kiểm tra xem email có thay đổi không (trước khi update)
+            $oldEmail = $user->getOriginal('email');
+            $emailChanged = $oldEmail !== $validated['email'];
+
             $user->update([
                 'name' => $validated['name'],
                 'email' => $validated['email'],
                 'trang_thai' => $validated['trang_thai'],
             ]);
 
+            // Nếu email thay đổi → reset email_verified_at và gửi email xác thực mới
+            if ($emailChanged) {
+                $user->email_verified_at = null;
+                $user->save();
+
+                // Tạo token xác thực email
+                $token = Str::random(64);
+
+                // Xóa token cũ nếu có
+                DB::table('email_verification_tokens')
+                    ->where('email', $user->email)
+                    ->delete();
+
+                // Tạo token mới
+                DB::table('email_verification_tokens')->insert([
+                    'email' => $user->email,
+                    'token' => Hash::make($token),
+                    'created_at' => now()
+                ]);
+
+                // Tạo URL xác thực
+                $verificationUrl = url('/email/verify/' . $token . '?email=' . urlencode($user->email));
+
+                // Gửi email xác thực
+                Mail::to($user->email)->send(new VerifyEmailMail($user, $verificationUrl));
+            }
+
             // Cập nhật vai trò
             if (isset($validated['vai_tro'])) {
                 $user->vaiTro()->sync($validated['vai_tro']);
+
+                // Tự động tạo Admin profile nếu gán vai trò admin
+                $adminRole = VaiTro::where('ma_vai_tro', 'admin')->first();
+                if ($adminRole && in_array($adminRole->id, $validated['vai_tro'])) {
+                    // Kiểm tra xem đã có profile chưa
+                    $existingAdmin = Admin::where('user_id', $user->id)->first();
+
+                    if (!$existingAdmin) {
+                        // Tạo mã admin tự động: AD + năm + số thứ tự
+                        $year = date('Y');
+                        $lastAdmin = Admin::whereYear('created_at', $year)
+                            ->orderBy('id', 'desc')
+                            ->first();
+
+                        $sequence = $lastAdmin ? (int)substr($lastAdmin->ma_admin, -4) + 1 : 1;
+                        $maAdmin = 'AD' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+                        Admin::create([
+                            'user_id' => $user->id,
+                            'ma_admin' => $maAdmin,
+                            'ho_ten' => $user->name,
+                            'email' => $user->email,
+                        ]);
+                    }
+                } else {
+                    // Xóa Admin profile nếu bỏ vai trò admin
+                    Admin::where('user_id', $user->id)->delete();
+                }
+
+                // Tự động tạo DaoTao profile nếu gán vai trò truong_phong_dt hoặc nhan_vien_dt
+                $daoTaoRoles = VaiTro::whereIn('ma_vai_tro', ['truong_phong_dt', 'nhan_vien_dt'])->pluck('id')->toArray();
+                if (!empty(array_intersect($daoTaoRoles, $validated['vai_tro']))) {
+                    // Kiểm tra xem đã có profile chưa
+                    $existingDaoTao = DaoTao::where('user_id', $user->id)->first();
+
+                    if (!$existingDaoTao) {
+                        // Tạo mã đào tạo tự động: DT + năm + số thứ tự
+                        $year = date('Y');
+                        $lastDaoTao = DaoTao::whereYear('created_at', $year)
+                            ->orderBy('id', 'desc')
+                            ->first();
+
+                        $sequence = $lastDaoTao ? (int)substr($lastDaoTao->ma_dao_tao, -4) + 1 : 1;
+                        $maDaoTao = 'DT' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+
+                        DaoTao::create([
+                            'user_id' => $user->id,
+                            'ma_dao_tao' => $maDaoTao,
+                            'ho_ten' => $user->name,
+                            'email' => $user->email,
+                        ]);
+                    }
+                } else {
+                    // Xóa DaoTao profile nếu bỏ vai trò đào tạo
+                    DaoTao::where('user_id', $user->id)->delete();
+                }
             } else {
                 $user->vaiTro()->detach();
+                // Xóa cả Admin và DaoTao profile nếu bỏ hết vai trò
+                Admin::where('user_id', $user->id)->delete();
+                DaoTao::where('user_id', $user->id)->delete();
             }
 
             DB::commit();
+
+            $message = 'Cập nhật thông tin thành công!';
+            if ($emailChanged) {
+                $message .= ' Email xác thực đã được gửi đến ' . $user->email;
+            }
+
             return redirect()->route('admin.users.index')
-                ->with('success', 'Cập nhật thông tin thành công!');
+                ->with('success', $message);
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withInput()
@@ -343,5 +513,67 @@ class UserController extends Controller
         } catch (\Exception $e) {
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
+    }
+
+    /**
+     * Hiển thị form xác thực email
+     */
+    public function showVerifyForm($token, Request $request)
+    {
+        $email = $request->query('email');
+
+        if (!$email) {
+            return redirect()->route('login')->with('error', 'Link xác thực không hợp lệ!');
+        }
+
+        return view('auth.verify-email-form', compact('token', 'email'));
+    }
+
+    /**
+     * Xử lý xác thực email
+     */
+    public function processVerify(Request $request)
+    {
+        $request->validate([
+            'token' => 'required',
+            'email' => 'required|email|exists:users,email',
+        ]);
+
+        // Tìm token trong database
+        $tokenData = DB::table('email_verification_tokens')
+            ->where('email', $request->email)
+            ->first();
+
+        // Kiểm tra token tồn tại
+        if (!$tokenData) {
+            return back()->withErrors([
+                'email' => 'Token xác thực không tồn tại hoặc đã hết hạn!',
+            ])->withInput();
+        }
+
+        // Kiểm tra token đã quá 60 phút chưa
+        if (now()->diffInMinutes($tokenData->created_at) > 60) {
+            DB::table('email_verification_tokens')->where('email', $request->email)->delete();
+            return back()->withErrors([
+                'email' => 'Link xác thực đã hết hạn! Vui lòng liên hệ admin để gửi lại.',
+            ])->withInput();
+        }
+
+        // Kiểm tra token có khớp không
+        if (!Hash::check($request->token, $tokenData->token)) {
+            return back()->withErrors([
+                'email' => 'Token xác thực không hợp lệ!',
+            ])->withInput();
+        }
+
+        // Cập nhật email_verified_at cho user
+        $user = User::where('email', $request->email)->first();
+        $user->email_verified_at = now();
+        $user->save();
+
+        // Xóa token đã sử dụng
+        DB::table('email_verification_tokens')->where('email', $request->email)->delete();
+
+        return redirect()->route('login')->with('success', 'Email đã được xác thực thành công! Bạn có thể đăng nhập ngay.');
     }
 }

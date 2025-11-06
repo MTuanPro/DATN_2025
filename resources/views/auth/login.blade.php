@@ -6,6 +6,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Đăng nhập - S-MIS</title>
 
+    {{-- Ngăn cache trang đăng nhập --}}
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+
     <link href="https://fonts.googleapis.com/css2?family=Nunito:wght@300;400;600;700;800&display=swap" rel="stylesheet">
     <link rel="stylesheet" href="{{ asset('assets/css/bootstrap.css') }}">
     <link rel="stylesheet" href="{{ asset('assets/vendors/bootstrap-icons/bootstrap-icons.css') }}">
@@ -52,10 +57,10 @@
                                 <i class="bi bi-person"></i>
                             </div>
                             @error('email')
-
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
+<<<<<<< HEAD
                             @enderror
                         </div>
                         <div class="form-group position-relative has-icon-left mb-4">
@@ -71,29 +76,43 @@
                         <div class="form-group position-relative has-icon-left mb-4">
                             <input type="password" name="password"
 
+=======
+                            @enderror
+                        </div>
+                        <div class="form-group position-relative has-icon-left mb-4">
+                            <input type="password" name="password" id="password"
+>>>>>>> origin/main
                                 class="form-control form-control-xl @error('password') is-invalid @enderror"
                                 placeholder="Mật khẩu" required>
                             <div class="form-control-icon">
                                 <i class="bi bi-shield-lock"></i>
                             </div>
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
                             <button type="button"
                                 class="btn position-absolute top-50 end-0 translate-middle-y border-0 bg-transparent"
                                 style="z-index: 10; padding-right: 15px;" onclick="togglePassword()">
                                 <i class="bi bi-eye" id="toggleIcon"></i>
                             </button>
+<<<<<<< HEAD
                             @error('password')
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
 
+=======
+>>>>>>> origin/main
                             @error('password')
-
                                 <small class="text-danger d-block mt-1">
                                     <i class="bi bi-exclamation-circle me-1"></i>{{ $message }}
                                 </small>
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> origin/main
                             @enderror
                         </div>
                         <div class="form-check form-check-lg d-flex align-items-end">
@@ -117,7 +136,10 @@
         </div>
     </div>
 
+<<<<<<< HEAD
 
+=======
+>>>>>>> origin/main
     <script>
         function togglePassword() {
             const passwordInput = document.getElementById('password');
@@ -134,8 +156,11 @@
             }
         }
     </script>
+<<<<<<< HEAD
 
 
+=======
+>>>>>>> origin/main
 </body>
 
 </html>

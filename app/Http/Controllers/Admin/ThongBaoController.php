@@ -238,6 +238,24 @@ class ThongBaoController extends Controller
     }
 
     /**
+<<<<<<< HEAD
+=======
+     * Download file đính kèm
+     */
+    public function download(ThongBao $thongBao)
+    {
+        if (!$thongBao->file_dinh_kem || !Storage::disk('public')->exists($thongBao->file_dinh_kem)) {
+            abort(404, 'File không tồn tại');
+        }
+
+        $filePath = storage_path('app/public/' . $thongBao->file_dinh_kem);
+        $fileName = basename($thongBao->file_dinh_kem);
+
+        return response()->download($filePath, $fileName);
+    }
+
+    /**
+>>>>>>> origin/main
      * Tạo bản ghi người nhận dựa vào đối tượng
      */
     private function taoNguoiNhan(ThongBao $thongBao)

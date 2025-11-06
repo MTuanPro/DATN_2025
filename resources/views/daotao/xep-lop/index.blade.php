@@ -1,7 +1,11 @@
+<<<<<<< HEAD
 
 @extends('layouts.layout-daotao')
 
 @extends('layouts.app-daotao')
+=======
+@extends('layouts.layout-daotao')
+>>>>>>> origin/main
 
 
 @section('title', 'Xếp lớp tự động')

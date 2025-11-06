@@ -137,6 +137,7 @@
                 </li>
 
                 <!-- 10. THÔNG BÁO -->
+<<<<<<< HEAD
 
                 <li class="sidebar-item {{ Request::is('sinh-vien/thong-bao*') ? 'active' : '' }}">
                     <a href="{{ route('sinhvien.thong-bao.index') }}" class='sidebar-link'>
@@ -155,6 +156,13 @@
                         <li class="submenu-item"><a href="#">Thông báo cá nhân</a></li>
                     </ul>
 
+=======
+                <li class="sidebar-item {{ Request::is('sinh-vien/thong-bao*') ? 'active' : '' }}">
+                    <a href="{{ route('sinhvien.thong-bao.index') }}" class='sidebar-link'>
+                        <i class="bi bi-bell"></i>
+                        <span>Thông báo</span>
+                    </a>
+>>>>>>> origin/main
                 </li>
 
                 <!-- 11. AI CHATBOT -->

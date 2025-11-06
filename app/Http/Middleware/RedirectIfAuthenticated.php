@@ -44,10 +44,14 @@ class RedirectIfAuthenticated
 
         if (in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)) {
 <<<<<<< HEAD
+<<<<<<< HEAD
             return redirect()->route('dao-tao.dashboard');
 =======
             return redirect()->route('daotao.dashboard');
 >>>>>>> 3ce5bf463aba81437bc908d45799f550b6b5f94d
+=======
+            return redirect()->route('dao-tao.dashboard');
+>>>>>>> origin/main
         }
 
         if (in_array('giang_vien', $roles)) {

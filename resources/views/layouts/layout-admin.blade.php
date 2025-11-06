@@ -47,6 +47,9 @@
         }
 
 <<<<<<< HEAD
+<<<<<<< HEAD
+=======
+>>>>>>> origin/main
         /* Notification dropdown styles */
         .dropdown-menu {
             border: 1px solid rgba(0, 0, 0, .08);
@@ -65,8 +68,11 @@
             margin: 0;
         }
 
+<<<<<<< HEAD
 =======
 >>>>>>> 3ce5bf463aba81437bc908d45799f550b6b5f94d
+=======
+>>>>>>> origin/main
         #main {
             margin-left: 300px;
             padding-top: calc(2rem + var(--header-height));

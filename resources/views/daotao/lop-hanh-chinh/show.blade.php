@@ -108,11 +108,15 @@
                                                 @if ($sv->gioi_tinh == 'nam')
                                                     <span class="badge bg-info">Nam</span>
                                                 @elseif($sv->gioi_tinh == 'nu')
+<<<<<<< HEAD
 
                                                     <span class="badge bg-warning">Nữ</span>
 
                                                     <span class="badge bg-pink">Nữ</span>
 
+=======
+                                                    <span class="badge bg-warning">Nữ</span>
+>>>>>>> origin/main
                                                 @else
                                                     <span class="badge bg-secondary">Khác</span>
                                                 @endif

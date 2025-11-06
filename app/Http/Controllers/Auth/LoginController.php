@@ -15,6 +15,11 @@ class LoginController extends Controller
      */
     public function showLoginForm()
     {
+        // Nếu đã đăng nhập, redirect về dashboard tương ứng
+        if (Auth::check()) {
+            return $this->redirectToDashboard(Auth::user());
+        }
+
         return view('auth.login');
     }
 
@@ -26,12 +31,11 @@ class LoginController extends Controller
         // Validate input
         $request->validate([
             'email' => 'required|email',
-            'password' => 'required|min:6',
+            'password' => 'required',
         ], [
             'email.required' => 'Email không được để trống',
             'email.email' => 'Email không đúng định dạng',
             'password.required' => 'Mật khẩu không được để trống',
-            'password.min' => 'Mật khẩu phải có ít nhất 6 ký tự',
         ]);
 
         // Lấy thông tin đăng nhập
