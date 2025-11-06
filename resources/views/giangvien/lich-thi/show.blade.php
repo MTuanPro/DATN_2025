@@ -123,6 +123,9 @@
                                     <a href="{{ route('giangvien.lich-thi.download-de-thi', $lichThi) }}" class="btn btn-sm btn-outline-primary ms-2">
                                         <i class="bi bi-download"></i> Tải xuống
                                     </a>
+                                    <div class="text-muted small mt-1">
+                                        <i class="bi bi-file-earmark-pdf"></i> {{ basename($lichThi->de_thi_file) }}
+                                    </div>
                                 </div>
                             @else
                                 <div class="mt-2">
@@ -152,6 +155,9 @@
                                     <a href="{{ route('giangvien.lich-thi.download-dap-an', $lichThi) }}" class="btn btn-sm btn-outline-primary ms-2">
                                         <i class="bi bi-download"></i> Tải xuống
                                     </a>
+                                    <div class="text-muted small mt-1">
+                                        <i class="bi bi-file-earmark-pdf"></i> {{ basename($lichThi->dap_an_file) }}
+                                    </div>
                                 </div>
                             @else
                                 <div class="mt-2">

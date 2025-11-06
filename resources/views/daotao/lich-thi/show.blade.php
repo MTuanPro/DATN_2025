@@ -137,9 +137,14 @@
                     <div class="col-md-6">
                         <strong>Đề thi:</strong> 
                         @if($lichThi->de_thi_file)
-                            <a href="{{ route('dao-tao.lich-thi.download-de-thi', $lichThi) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-download"></i> Tải xuống
-                            </a>
+                            <div class="mt-2">
+                                <a href="{{ route('dao-tao.lich-thi.download-de-thi', $lichThi) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download"></i> Tải xuống
+                                </a>
+                                <div class="text-muted small mt-1">
+                                    <i class="bi bi-file-earmark-pdf"></i> {{ basename($lichThi->de_thi_file) }}
+                                </div>
+                            </div>
                         @else
                             <span class="text-muted">Chưa upload</span>
                         @endif
@@ -147,9 +152,14 @@
                     <div class="col-md-6">
                         <strong>Đáp án:</strong> 
                         @if($lichThi->dap_an_file)
-                            <a href="{{ route('dao-tao.lich-thi.download-dap-an', $lichThi) }}" class="btn btn-sm btn-outline-primary">
-                                <i class="bi bi-download"></i> Tải xuống
-                            </a>
+                            <div class="mt-2">
+                                <a href="{{ route('dao-tao.lich-thi.download-dap-an', $lichThi) }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="bi bi-download"></i> Tải xuống
+                                </a>
+                                <div class="text-muted small mt-1">
+                                    <i class="bi bi-file-earmark-pdf"></i> {{ basename($lichThi->dap_an_file) }}
+                                </div>
+                            </div>
                         @else
                             <span class="text-muted">Chưa upload</span>
                         @endif
