@@ -100,7 +100,7 @@
                     </div>
                 </div>
 
-                @if($lichThi->link_online)
+                @if($lichThi->link_online && $lichThi->hinh_thuc != 'offline')
                 <div class="alert alert-info">
                     <strong>Link thi online:</strong> <a href="{{ $lichThi->link_online }}" target="_blank">{{ $lichThi->link_online }}</a>
                 </div>

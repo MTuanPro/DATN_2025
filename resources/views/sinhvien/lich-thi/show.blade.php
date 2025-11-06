@@ -132,7 +132,7 @@
         </div>
 
         <!-- Link thi online -->
-        @if($lichThi->link_online)
+        @if($lichThi->link_online && $lichThi->hinh_thuc != 'offline')
         <div class="card border-primary">
             <div class="card-header bg-primary text-white">
                 <h5 class="card-title text-white mb-0">

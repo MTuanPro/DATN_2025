@@ -108,7 +108,7 @@
                                     @endif
                                 </td>
                             </tr>
-                            @if($lichThi->link_online)
+                            @if($lichThi->link_online && $lichThi->hinh_thuc != 'offline')
                             <tr>
                                 <th>Link thi online:</th>
                                 <td><a href="{{ $lichThi->link_online }}" target="_blank">{{ $lichThi->link_online }}</a></td>
