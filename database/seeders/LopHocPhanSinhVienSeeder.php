@@ -74,7 +74,8 @@ class LopHocPhanSinhVienSeeder extends Seeder
                 // Kiểm tra lớp còn chỗ không (soft check, cho phép over capacity một chút để test)
                 $soLuongHienTai = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)->count();
 
-                if ($soLuongHienTai >= $lopHocPhan->suc_chua + 5) {
+                // Không vượt quá sức chứa (tôn trọng ràng buộc DB)
+                if ($soLuongHienTai >= $lopHocPhan->suc_chua) {
                     continue;
                 }
 
@@ -126,6 +127,13 @@ class LopHocPhanSinhVienSeeder extends Seeder
                 $totalAssigned++;
 
                 // Update capacity - Sửa tên cột đúng
+                // Cập nhật số lượng đăng ký trong DB, kiểm tra trực tiếp giá trị hiện tại để tránh vi phạm ràng buộc
+                $currentRegistered = DB::table('lop_hoc_phan')->where('id', $lopHocPhan->id)->value('so_luong_dang_ky');
+                if ($currentRegistered >= $lopHocPhan->suc_chua) {
+                    // nếu DB đã đầy (có thể do dữ liệu cũ), bỏ qua
+                    continue;
+                }
+
                 DB::table('lop_hoc_phan')
                     ->where('id', $lopHocPhan->id)
                     ->increment('so_luong_dang_ky');
