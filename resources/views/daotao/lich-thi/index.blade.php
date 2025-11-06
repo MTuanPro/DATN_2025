@@ -145,7 +145,12 @@
                                 <td>{{ $lichThi->ngay_thi->format('d/m/Y') }}</td>
                                 <td>{{ $lichThi->gio_bat_dau }} - {{ $lichThi->gio_ket_thuc }}</td>
                                 <td>{{ $lichThi->phongThi->ten_phong ?? 'Chưa phân phòng' }}</td>
-                                <td>{{ $lichThi->so_sinh_vien_du_thi ?? 'N/A' }}</td>
+                                <td>
+                                    <strong>{{ $lichThi->lopHocPhan->lopHocPhanSinhViens->count() }}</strong>
+                                    @if($lichThi->so_sinh_vien_du_thi && $lichThi->so_sinh_vien_du_thi != $lichThi->lopHocPhan->lopHocPhanSinhViens->count())
+                                        <br><small class="text-muted">(Dự kiến: {{ $lichThi->so_sinh_vien_du_thi }})</small>
+                                    @endif
+                                </td>
                                 <td>
                                     @if($lichThi->giamThi1)
                                         <small>1. {{ $lichThi->giamThi1->ho_ten }}</small><br>

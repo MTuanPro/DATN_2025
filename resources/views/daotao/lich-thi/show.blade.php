@@ -89,7 +89,12 @@
                             </tr>
                             <tr>
                                 <th>Số SV dự thi:</th>
-                                <td>{{ $lichThi->so_sinh_vien_du_thi ?? 'Chưa cập nhật' }}</td>
+                                <td>
+                                    <strong>{{ $lichThi->lopHocPhan->lopHocPhanSinhViens->count() }} sinh viên</strong>
+                                    @if($lichThi->so_sinh_vien_du_thi && $lichThi->so_sinh_vien_du_thi != $lichThi->lopHocPhan->lopHocPhanSinhViens->count())
+                                        <br><small class="text-muted">(Dự kiến: {{ $lichThi->so_sinh_vien_du_thi }})</small>
+                                    @endif
+                                </td>
                             </tr>
                             <tr>
                                 <th>Hình thức thi:</th>
