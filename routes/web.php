@@ -236,6 +236,8 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::resource('lich-thi', \App\Http\Controllers\DaoTao\LichThiController::class);
     Route::post('lich-thi/{lichThi}/gui-thong-bao', [\App\Http\Controllers\DaoTao\LichThiController::class, 'guiThongBao'])->name('lich-thi.gui-thong-bao');
     Route::get('lich-thi-export', [\App\Http\Controllers\DaoTao\LichThiController::class, 'export'])->name('lich-thi.export');
+    Route::get('lich-thi/{lichThi}/download-de-thi', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadDeThi'])->name('lich-thi.download-de-thi');
+    Route::get('lich-thi/{lichThi}/download-dap-an', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadDapAn'])->name('lich-thi.download-dap-an');
 
     // Thông báo (chỉ xem)
     Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');

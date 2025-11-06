@@ -491,4 +491,44 @@ class LichThiController extends Controller
         return redirect()->back()
             ->with('info', 'Chức năng xuất file đang được phát triển!');
     }
+
+    /**
+     * Tải đề thi
+     */
+    public function downloadDeThi(LichThi $lichThi)
+    {
+        if (!$lichThi->de_thi_file) {
+            return redirect()->back()
+                ->with('error', 'Chưa có đề thi!');
+        }
+
+        $path = storage_path('app/public/' . $lichThi->de_thi_file);
+        
+        if (!file_exists($path)) {
+            return redirect()->back()
+                ->with('error', 'File không tồn tại!');
+        }
+
+        return response()->download($path);
+    }
+
+    /**
+     * Tải đáp án
+     */
+    public function downloadDapAn(LichThi $lichThi)
+    {
+        if (!$lichThi->dap_an_file) {
+            return redirect()->back()
+                ->with('error', 'Chưa có đáp án!');
+        }
+
+        $path = storage_path('app/public/' . $lichThi->dap_an_file);
+        
+        if (!file_exists($path)) {
+            return redirect()->back()
+                ->with('error', 'File không tồn tại!');
+        }
+
+        return response()->download($path);
+    }
 }

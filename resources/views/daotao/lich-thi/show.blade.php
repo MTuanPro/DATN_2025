@@ -137,7 +137,7 @@
                     <div class="col-md-6">
                         <strong>Đề thi:</strong> 
                         @if($lichThi->de_thi_file)
-                            <a href="{{ Storage::url($lichThi->de_thi_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('dao-tao.lich-thi.download-de-thi', $lichThi) }}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-download"></i> Tải xuống
                             </a>
                         @else
@@ -147,7 +147,7 @@
                     <div class="col-md-6">
                         <strong>Đáp án:</strong> 
                         @if($lichThi->dap_an_file)
-                            <a href="{{ Storage::url($lichThi->dap_an_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                            <a href="{{ route('dao-tao.lich-thi.download-dap-an', $lichThi) }}" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-download"></i> Tải xuống
                             </a>
                         @else
