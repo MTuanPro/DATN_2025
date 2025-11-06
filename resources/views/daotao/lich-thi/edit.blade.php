@@ -93,7 +93,7 @@
                             <div class="form-group">
                                 <label for="gio_bat_dau">Giờ bắt đầu <span class="text-danger">*</span></label>
                                 <input type="time" name="gio_bat_dau" id="gio_bat_dau" class="form-control @error('gio_bat_dau') is-invalid @enderror" 
-                                       value="{{ old('gio_bat_dau') ?? $lichThi->gio_bat_dau }}" required>
+                                       value="{{ old('gio_bat_dau') ?? substr($lichThi->gio_bat_dau, 0, 5) }}" required>
                                 @error('gio_bat_dau')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -104,7 +104,7 @@
                             <div class="form-group">
                                 <label for="gio_ket_thuc">Giờ kết thúc <span class="text-danger">*</span></label>
                                 <input type="time" name="gio_ket_thuc" id="gio_ket_thuc" class="form-control @error('gio_ket_thuc') is-invalid @enderror" 
-                                       value="{{ old('gio_ket_thuc') ?? $lichThi->gio_ket_thuc }}" required>
+                                       value="{{ old('gio_ket_thuc') ?? substr($lichThi->gio_ket_thuc, 0, 5) }}" required>
                                 @error('gio_ket_thuc')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
