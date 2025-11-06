@@ -66,15 +66,15 @@ class LichThiController extends Controller
      */
     public function create()
     {
+        // Load tất cả lớp học phần (sắp xếp theo học kỳ mới nhất)
         $lopHocPhans = LopHocPhan::with('monHoc', 'hocKy')
-            ->whereHas('hocKy', function($q) {
-                $q->where('la_hoc_ky_hien_tai', true);
-            })
+            ->whereHas('hocKy')
+            ->orderBy('hoc_ky_id', 'desc')
             ->get();
 
         $phongHocs = PhongHoc::all();
         $giangViens = GiangVien::with('user')->get();
-        $hocKys = HocKy::where('la_hoc_ky_hien_tai', true)->get();
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
 
         return view('daotao.lich-thi.create', compact('lopHocPhans', 'phongHocs', 'giangViens', 'hocKys'));
     }
@@ -87,8 +87,27 @@ class LichThiController extends Controller
         try {
             DB::beginTransaction();
 
-            // Kiểm tra trùng phòng thi
-            $trungPhong = LichThi::where('phong_thi_id', $request->phong_thi_id)
+            // 1. Kiểm tra lớp học phần hợp lệ
+            $lopHocPhan = LopHocPhan::with(['hocKy', 'lopHocPhanSinhViens'])->findOrFail($request->lop_hoc_phan_id);
+
+            // 2. Kiểm tra ngày thi trong phạm vi học kỳ
+            $hocKy = $lopHocPhan->hocKy;
+            $ngayThi = \Carbon\Carbon::parse($request->ngay_thi);
+            
+            if ($ngayThi->lt($hocKy->ngay_bat_dau) || $ngayThi->gt($hocKy->ngay_ket_thuc)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
+                           $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' . 
+                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')');
+            }
+
+            // 3. Kiểm tra trùng lịch thi sinh viên (sinh viên không được thi 2 môn cùng lúc)
+            $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id');
+            
+            $trungLichSinhVien = LichThi::whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
+                    $q->whereIn('sinh_vien_id', $sinhVienIds);
+                })
                 ->where('ngay_thi', $request->ngay_thi)
                 ->where(function ($query) use ($request) {
                     $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
@@ -100,10 +119,86 @@ class LichThiController extends Controller
                 })
                 ->exists();
 
-            if ($trungPhong) {
+            if ($trungLichSinhVien) {
                 return redirect()->back()
                     ->withInput()
-                    ->with('error', 'Phòng thi đã có lịch thi trùng thời gian!');
+                    ->with('error', 'Có sinh viên trong lớp đã có lịch thi trùng giờ!');
+            }
+
+            // 4. Kiểm tra trùng phòng thi
+            if ($request->phong_thi_id) {
+                $trungPhong = LichThi::where('phong_thi_id', $request->phong_thi_id)
+                    ->where('ngay_thi', $request->ngay_thi)
+                    ->where(function ($query) use ($request) {
+                        $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
+                              ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
+                              ->orWhere(function ($q) use ($request) {
+                                  $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
+                                    ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
+                              });
+                    })
+                    ->exists();
+
+                if ($trungPhong) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Phòng thi đã có lịch thi trùng thời gian!');
+                }
+
+                // 5. Kiểm tra sức chứa phòng
+                $phongHoc = PhongHoc::find($request->phong_thi_id);
+                $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
+                
+                if ($soSinhVienDuThi > $phongHoc->suc_chua) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!');
+                }
+            }
+
+            // 6. Kiểm tra trùng lịch giám thị
+            $giamThiIds = array_filter([$request->giam_thi_1_id, $request->giam_thi_2_id]);
+            
+            if (!empty($giamThiIds)) {
+                $trungGiamThi = LichThi::where('ngay_thi', $request->ngay_thi)
+                    ->where(function($q) use ($giamThiIds) {
+                        $q->whereIn('giam_thi_1_id', $giamThiIds)
+                          ->orWhereIn('giam_thi_2_id', $giamThiIds);
+                    })
+                    ->where(function ($query) use ($request) {
+                        $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
+                              ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
+                              ->orWhere(function ($q) use ($request) {
+                                  $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
+                                    ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
+                              });
+                    })
+                    ->exists();
+
+                if ($trungGiamThi) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Giảng viên giám thị đã có lịch coi thi trùng giờ!');
+                }
+            }
+
+            // 7. Giới hạn số lịch thi theo loại (ví dụ: 1 giữa kỳ, 1 cuối kỳ, tối đa 2 thi lại)
+            $soLichThiCungLoai = LichThi::where('lop_hoc_phan_id', $request->lop_hoc_phan_id)
+                ->where('loai_thi', $request->loai_thi)
+                ->count();
+
+            $gioiHan = [
+                'giua_ky' => 1,
+                'cuoi_ky' => 1,
+                'thi_lai' => 2
+            ];
+
+            if ($soLichThiCungLoai >= ($gioiHan[$request->loai_thi] ?? 1)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Lớp học phần đã đạt giới hạn số lần thi ' . 
+                           ($request->loai_thi == 'giua_ky' ? 'giữa kỳ' : 
+                           ($request->loai_thi == 'cuoi_ky' ? 'cuối kỳ' : 'thi lại')) . '!');
             }
 
             $data = $request->validated();
@@ -116,6 +211,11 @@ class LichThiController extends Controller
             // Xử lý upload file đáp án
             if ($request->hasFile('dap_an_file')) {
                 $data['dap_an_file'] = $request->file('dap_an_file')->store('dap-an', 'public');
+            }
+
+            // Tự động tính số sinh viên dự thi nếu không nhập
+            if (!isset($data['so_sinh_vien_du_thi'])) {
+                $data['so_sinh_vien_du_thi'] = $lopHocPhan->lopHocPhanSinhViens->count();
             }
 
             $lichThi = LichThi::create($data);
@@ -164,9 +264,28 @@ class LichThiController extends Controller
         try {
             DB::beginTransaction();
 
-            // Kiểm tra trùng phòng thi (loại trừ bản ghi hiện tại)
-            $trungPhong = LichThi::where('id', '!=', $lichThi->id)
-                ->where('phong_thi_id', $request->phong_thi_id)
+            // 1. Kiểm tra lớp học phần hợp lệ
+            $lopHocPhan = LopHocPhan::with(['hocKy', 'lopHocPhanSinhViens'])->findOrFail($request->lop_hoc_phan_id);
+
+            // 2. Kiểm tra ngày thi trong phạm vi học kỳ
+            $hocKy = $lopHocPhan->hocKy;
+            $ngayThi = \Carbon\Carbon::parse($request->ngay_thi);
+            
+            if ($ngayThi->lt($hocKy->ngay_bat_dau) || $ngayThi->gt($hocKy->ngay_ket_thuc)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
+                           $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' . 
+                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')');
+            }
+
+            // 3. Kiểm tra trùng lịch thi sinh viên
+            $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id');
+            
+            $trungLichSinhVien = LichThi::where('id', '!=', $lichThi->id)
+                ->whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
+                    $q->whereIn('sinh_vien_id', $sinhVienIds);
+                })
                 ->where('ngay_thi', $request->ngay_thi)
                 ->where(function ($query) use ($request) {
                     $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
@@ -178,10 +297,89 @@ class LichThiController extends Controller
                 })
                 ->exists();
 
-            if ($trungPhong) {
+            if ($trungLichSinhVien) {
                 return redirect()->back()
                     ->withInput()
-                    ->with('error', 'Phòng thi đã có lịch thi trùng thời gian!');
+                    ->with('error', 'Có sinh viên trong lớp đã có lịch thi trùng giờ!');
+            }
+
+            // 4. Kiểm tra trùng phòng thi (loại trừ bản ghi hiện tại)
+            if ($request->phong_thi_id) {
+                $trungPhong = LichThi::where('id', '!=', $lichThi->id)
+                    ->where('phong_thi_id', $request->phong_thi_id)
+                    ->where('ngay_thi', $request->ngay_thi)
+                    ->where(function ($query) use ($request) {
+                        $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
+                              ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
+                              ->orWhere(function ($q) use ($request) {
+                                  $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
+                                    ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
+                              });
+                    })
+                    ->exists();
+
+                if ($trungPhong) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Phòng thi đã có lịch thi trùng thời gian!');
+                }
+
+                // 5. Kiểm tra sức chứa phòng
+                $phongHoc = PhongHoc::find($request->phong_thi_id);
+                $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
+                
+                if ($soSinhVienDuThi > $phongHoc->suc_chua) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!');
+                }
+            }
+
+            // 6. Kiểm tra trùng lịch giám thị
+            $giamThiIds = array_filter([$request->giam_thi_1_id, $request->giam_thi_2_id]);
+            
+            if (!empty($giamThiIds)) {
+                $trungGiamThi = LichThi::where('id', '!=', $lichThi->id)
+                    ->where('ngay_thi', $request->ngay_thi)
+                    ->where(function($q) use ($giamThiIds) {
+                        $q->whereIn('giam_thi_1_id', $giamThiIds)
+                          ->orWhereIn('giam_thi_2_id', $giamThiIds);
+                    })
+                    ->where(function ($query) use ($request) {
+                        $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
+                              ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
+                              ->orWhere(function ($q) use ($request) {
+                                  $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
+                                    ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
+                              });
+                    })
+                    ->exists();
+
+                if ($trungGiamThi) {
+                    return redirect()->back()
+                        ->withInput()
+                        ->with('error', 'Giảng viên giám thị đã có lịch coi thi trùng giờ!');
+                }
+            }
+
+            // 7. Giới hạn số lịch thi theo loại (loại trừ bản ghi hiện tại)
+            $soLichThiCungLoai = LichThi::where('id', '!=', $lichThi->id)
+                ->where('lop_hoc_phan_id', $request->lop_hoc_phan_id)
+                ->where('loai_thi', $request->loai_thi)
+                ->count();
+
+            $gioiHan = [
+                'giua_ky' => 1,
+                'cuoi_ky' => 1,
+                'thi_lai' => 2
+            ];
+
+            if ($soLichThiCungLoai >= ($gioiHan[$request->loai_thi] ?? 1)) {
+                return redirect()->back()
+                    ->withInput()
+                    ->with('error', 'Lớp học phần đã đạt giới hạn số lần thi ' . 
+                           ($request->loai_thi == 'giua_ky' ? 'giữa kỳ' : 
+                           ($request->loai_thi == 'cuoi_ky' ? 'cuối kỳ' : 'thi lại')) . '!');
             }
 
             $data = $request->validated();
@@ -202,6 +400,11 @@ class LichThiController extends Controller
                     Storage::disk('public')->delete($lichThi->dap_an_file);
                 }
                 $data['dap_an_file'] = $request->file('dap_an_file')->store('dap-an', 'public');
+            }
+
+            // Tự động tính số sinh viên dự thi nếu không nhập
+            if (!isset($data['so_sinh_vien_du_thi'])) {
+                $data['so_sinh_vien_du_thi'] = $lopHocPhan->lopHocPhanSinhViens->count();
             }
 
             $lichThi->update($data);

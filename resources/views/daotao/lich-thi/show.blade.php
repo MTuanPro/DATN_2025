@@ -45,7 +45,7 @@
                         <table class="table table-borderless">
                             <tr>
                                 <th width="200">Lớp học phần:</th>
-                                <td><strong>{{ $lichThi->lopHocPhan->ma_lop }}</strong></td>
+                                <td><strong>{{ $lichThi->lopHocPhan->ma_lop_hp }}</strong></td>
                             </tr>
                             <tr>
                                 <th>Môn học:</th>

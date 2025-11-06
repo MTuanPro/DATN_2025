@@ -58,7 +58,7 @@
                                     <option value="">-- Chọn lớp học phần --</option>
                                     @foreach($lopHocPhans as $lhp)
                                         <option value="{{ $lhp->id }}" {{ old('lop_hoc_phan_id') == $lhp->id ? 'selected' : '' }}>
-                                            {{ $lhp->ma_lop }} - {{ $lhp->monHoc->ten_mon }} ({{ $lhp->hocKy->ten_hoc_ky }})
+                                            {{ $lhp->ma_lop_hp }} - {{ $lhp->monHoc->ten_mon }} ({{ $lhp->hocKy->ten_hoc_ky }})
                                         </option>
                                     @endforeach
                                 </select>

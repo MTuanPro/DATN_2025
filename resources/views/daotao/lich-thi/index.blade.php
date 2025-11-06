@@ -128,7 +128,7 @@
                             @forelse($lichThis as $index => $lichThi)
                             <tr>
                                 <td>{{ $lichThis->firstItem() + $index }}</td>
-                                <td><strong>{{ $lichThi->lopHocPhan->ma_lop }}</strong></td>
+                                <td><strong>{{ $lichThi->lopHocPhan->ma_lop_hp }}</strong></td>
                                 <td>
                                     {{ $lichThi->lopHocPhan->monHoc->ten_mon }}
                                     <br><small class="text-muted">{{ $lichThi->lopHocPhan->monHoc->ma_mon }}</small>
