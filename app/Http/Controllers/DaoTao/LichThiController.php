@@ -21,7 +21,14 @@ class LichThiController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LichThi::with(['lopHocPhan.monHoc', 'phongThi', 'giamThi1', 'giamThi2']);
+        $query = LichThi::with([
+            'lopHocPhan.monHoc', 
+            'lopHocPhan.hocKy',
+            'phongThi', 
+            'giamThi1', 
+            'giamThi2',
+            'hocKy'
+        ]);
 
         // Lọc theo học kỳ (thông qua lop_hoc_phan)
         if ($request->filled('hoc_ky_id')) {
@@ -238,7 +245,15 @@ class LichThiController extends Controller
      */
     public function show(LichThi $lichThi)
     {
-        $lichThi->load(['lopHocPhan.monHoc', 'lopHocPhan.lopHocPhanSinhViens.sinhVien', 'phongThi', 'giamThi1', 'giamThi2']);
+        $lichThi->load([
+            'lopHocPhan.monHoc', 
+            'lopHocPhan.hocKy',
+            'lopHocPhan.lopHocPhanSinhViens.sinhVien', 
+            'hocKy',
+            'phongThi', 
+            'giamThi1', 
+            'giamThi2'
+        ]);
         
         return view('daotao.lich-thi.show', compact('lichThi'));
     }
