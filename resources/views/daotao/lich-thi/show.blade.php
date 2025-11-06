@@ -136,8 +136,8 @@
                 <div class="row">
                     <div class="col-md-6">
                         <strong>Đề thi:</strong> 
-                        @if($lichThi->de_thi)
-                            <a href="{{ Storage::url($lichThi->de_thi) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        @if($lichThi->de_thi_file)
+                            <a href="{{ Storage::url($lichThi->de_thi_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-download"></i> Tải xuống
                             </a>
                         @else
@@ -146,8 +146,8 @@
                     </div>
                     <div class="col-md-6">
                         <strong>Đáp án:</strong> 
-                        @if($lichThi->dap_an)
-                            <a href="{{ Storage::url($lichThi->dap_an) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        @if($lichThi->dap_an_file)
+                            <a href="{{ Storage::url($lichThi->dap_an_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-download"></i> Tải xuống
                             </a>
                         @else

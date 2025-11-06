@@ -117,7 +117,7 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <strong>Đề thi:</strong>
-                            @if($lichThi->de_thi)
+                            @if($lichThi->de_thi_file)
                                 <div class="mt-2">
                                     <span class="badge bg-success">Đã upload</span>
                                     <a href="{{ route('giangvien.lich-thi.download-de-thi', $lichThi) }}" class="btn btn-sm btn-outline-primary ms-2">
@@ -146,7 +146,7 @@
                     <div class="col-md-6">
                         <div class="mb-3">
                             <strong>Đáp án:</strong>
-                            @if($lichThi->dap_an)
+                            @if($lichThi->dap_an_file)
                                 <div class="mt-2">
                                     <span class="badge bg-success">Đã upload</span>
                                     <a href="{{ route('giangvien.lich-thi.download-dap-an', $lichThi) }}" class="btn btn-sm btn-outline-primary ms-2">
