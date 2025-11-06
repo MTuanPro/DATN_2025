@@ -189,14 +189,14 @@
                     <div class="row">
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="hinh_thuc">Hình thức thi <span class="text-danger">*</span></label>
-                                <select name="hinh_thuc" id="hinh_thuc" class="form-select @error('hinh_thuc') is-invalid @enderror" required>
+                                <label for="hinh_thuc_thi">Hình thức thi <span class="text-danger">*</span></label>
+                                <select name="hinh_thuc_thi" id="hinh_thuc_thi" class="form-select @error('hinh_thuc_thi') is-invalid @enderror" required>
                                     <option value="">-- Chọn hình thức --</option>
-                                    <option value="offline" {{ old('hinh_thuc') == 'offline' ? 'selected' : '' }}>Thi tại trường</option>
-                                    <option value="online" {{ old('hinh_thuc') == 'online' ? 'selected' : '' }}>Thi trực tuyến</option>
-                                    <option value="hybrid" {{ old('hinh_thuc') == 'hybrid' ? 'selected' : '' }}>Kết hợp</option>
+                                    <option value="offline" {{ old('hinh_thuc_thi') == 'offline' ? 'selected' : '' }}>Thi tại trường</option>
+                                    <option value="online" {{ old('hinh_thuc_thi') == 'online' ? 'selected' : '' }}>Thi trực tuyến</option>
+                                    <option value="hybrid" {{ old('hinh_thuc_thi') == 'hybrid' ? 'selected' : '' }}>Kết hợp</option>
                                 </select>
-                                @error('hinh_thuc')
+                                @error('hinh_thuc_thi')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -204,11 +204,11 @@
 
                         <div class="col-md-6">
                             <div class="form-group">
-                                <label for="link_online">Link thi online</label>
-                                <input type="url" name="link_online" id="link_online" 
-                                       class="form-control @error('link_online') is-invalid @enderror" 
-                                       value="{{ old('link_online') }}" placeholder="https://...">
-                                @error('link_online')
+                                <label for="link_thi_online">Link thi online</label>
+                                <input type="url" name="link_thi_online" id="link_thi_online" 
+                                       class="form-control @error('link_thi_online') is-invalid @enderror" 
+                                       value="{{ old('link_thi_online') }}" placeholder="https://...">
+                                @error('link_thi_online')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
