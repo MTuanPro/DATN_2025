@@ -537,7 +537,7 @@
     - [ ] Cập nhật nội dung giảng dạy (noi_dung_giang_day)
     - [ ] Đính kèm tài liệu (tai_lieu_dinh_kem)
     - [ ] Cập nhật trạng thái buổi học (chưa dạy, đang dạy, đã dạy, hủy)
-    - [ ] Xem lịch sử các buổi đã dạy
+    - [ ] Xem lịch sử các buổi đã dạy   
 
 4. **Điểm danh (Attendance)**
 
