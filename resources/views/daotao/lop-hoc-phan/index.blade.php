@@ -104,14 +104,14 @@
                             <thead>
                                 <tr>
                                     <th>#</th>
-                                    <th>Mã lớp HP</th>
-                                    <th>Tên lớp HP</th>
-                                    <th>Môn học</th>
-                                    <th>Học kỳ</th>
-                                    <th>Sĩ số</th>
-                                    <th>Hình thức</th>
-                                    <th>Trạng thái</th>
-                                    <th>Thao tác</th>
+                                    <th style="text-align: center;">Mã lớp HP</th>
+                                    <th style="text-align: center;">Tên lớp HP</th>
+                                    <th style="text-align: center;">Môn học</th>
+                                    <th style="text-align: center;">Học kỳ</th>
+                                    <th style="text-align: center;">Sĩ số</th>
+                                    <th style="text-align: center;">Hình thức</th>
+                                    <th style="text-align: center;">Trạng thái</th>
+                                    <th style="text-align: center;">Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>

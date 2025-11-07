@@ -180,67 +180,95 @@
     </div>
 
     @push('scripts')
+        <!-- Modal for registration confirmation -->
+        <div class="modal fade" id="dangKyModal" tabindex="-1" aria-hidden="true">
+            <div class="modal-dialog modal-dialog-centered">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title">Xác nhận đăng ký môn học</h5>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body">
+                        <p id="modal-mon-ten" class="fw-bold"></p>
+                        <p> Tín chỉ: <span id="modal-mon-tc"></span> </p>
+                        <div id="modal-error" class="alert alert-danger d-none"></div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                        <button type="button" id="confirm-dang-ky" class="btn btn-primary">Đăng ký</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <script>
-            $(document).ready(function() {
-                // Đăng ký môn học
-                $('.btn-dang-ky').click(function() {
-                    const monHocId = $(this).data('mon-hoc-id');
+            $(function() {
+                let selectedMonId = null;
+                let selectedTinChi = 0;
+
+                function showError(text) {
+                    $('#modal-error').removeClass('d-none').text(text);
+                }
+
+                function clearError() {
+                    $('#modal-error').addClass('d-none').text('');
+                }
+
+                // Open modal when clicking Đăng ký
+                $('.btn-dang-ky').on('click', function() {
+                    selectedMonId = $(this).data('mon-hoc-id');
                     const tenMon = $(this).data('ten-mon');
-                    const tinChi = $(this).data('tin-chi');
+                    selectedTinChi = parseInt($(this).data('tin-chi')) || 0;
                     const tongTinChi = {{ $tongTinChiDaDangKy }};
                     const tinChiToiDa = {{ $tinChiToiDa }};
 
-                    if ((tongTinChi + tinChi) > tinChiToiDa) {
+                    if ((tongTinChi + selectedTinChi) > tinChiToiDa) {
                         Swal.fire({
                             icon: 'error',
                             title: 'Vượt quá số tín chỉ!',
-                            text: `Bạn đã đăng ký ${tongTinChi} TC. Môn này có ${tinChi} TC sẽ vượt quá giới hạn ${tinChiToiDa} TC.`
+                            text: `Bạn đã đăng ký ${tongTinChi} TC. Môn này có ${selectedTinChi} TC sẽ vượt quá giới hạn ${tinChiToiDa} TC.`
                         });
                         return;
                     }
 
-                    Swal.fire({
-                        title: 'Xác nhận đăng ký',
-                        text: `Bạn muốn đăng ký môn: ${tenMon} (${tinChi} TC)?`,
-                        icon: 'question',
-                        showCancelButton: true,
-                        confirmButtonText: 'Đăng ký',
-                        cancelButtonText: 'Hủy'
-                    }).then((result) => {
-                        if (result.isConfirmed) {
-                            $.ajax({
-                                url: '{{ route('sinhvien.dang-ky-mon-hoc.store') }}',
-                                method: 'POST',
-                                data: {
-                                    _token: '{{ csrf_token() }}',
-                                    mon_hoc_id: monHocId,
-                                    hoc_ky_id: {{ $hocKy->id }}
-                                },
-                                success: function(response) {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Thành công!',
-                                        text: response.message
-                                    }).then(() => {
-                                        location.reload();
-                                    });
-                                },
-                                error: function(xhr) {
-                                    const message = xhr.responseJSON?.message ||
-                                        'Có lỗi xảy ra!';
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Lỗi',
-                                        text: message
-                                    });
-                                }
-                            });
+                    clearError();
+                    $('#modal-mon-ten').text(tenMon);
+                    $('#modal-mon-tc').text(selectedTinChi + ' TC');
+                    const modal = new bootstrap.Modal(document.getElementById('dangKyModal'));
+                    modal.show();
+                });
+
+                // Confirm from modal
+                $('#confirm-dang-ky').on('click', function() {
+                    if (!selectedMonId) return;
+
+                    const $btn = $(this);
+                    $btn.prop('disabled', true).text('Đang xử lý...');
+
+                    $.ajax({
+                        url: '{{ route('sinhvien.dang-ky-mon-hoc.store') }}',
+                        method: 'POST',
+                        data: {
+                            _token: '{{ csrf_token() }}',
+                            mon_hoc_id: selectedMonId,
+                            hoc_ky_id: {{ $hocKy->id }}
                         }
+                    }).done(function(response) {
+                        Swal.fire({
+                            icon: 'success',
+                            title: 'Thành công',
+                            text: response.message
+                        }).then(() => location.reload());
+                    }).fail(function(xhr) {
+                        const message = xhr.responseJSON?.message || 'Có lỗi xảy ra!';
+                        showError(message);
+                    }).always(function() {
+                        $btn.prop('disabled', false).text('Đăng ký');
                     });
                 });
 
-                // Hủy đăng ký
-                $('.btn-huy-dang-ky').click(function() {
+                // Hủy đăng ký (keeps existing behaviour)
+                $('.btn-huy-dang-ky').on('click', function() {
                     const dangKyId = $(this).data('dang-ky-id');
 
                     Swal.fire({
@@ -256,27 +284,13 @@
                             $.ajax({
                                 url: `/sinh-vien/dang-ky-mon-hoc/${dangKyId}`,
                                 method: 'DELETE',
-                                data: {
-                                    _token: '{{ csrf_token() }}'
-                                },
-                                success: function(response) {
-                                    Swal.fire({
-                                        icon: 'success',
-                                        title: 'Đã hủy!',
-                                        text: response.message
-                                    }).then(() => {
-                                        location.reload();
-                                    });
-                                },
-                                error: function(xhr) {
-                                    const message = xhr.responseJSON?.message ||
-                                        'Có lỗi xảy ra!';
-                                    Swal.fire({
-                                        icon: 'error',
-                                        title: 'Lỗi',
-                                        text: message
-                                    });
-                                }
+                                data: { _token: '{{ csrf_token() }}' }
+                            }).done(function(response) {
+                                Swal.fire({ icon: 'success', title: 'Đã hủy!', text: response.message })
+                                    .then(() => location.reload());
+                            }).fail(function(xhr) {
+                                const message = xhr.responseJSON?.message || 'Có lỗi xảy ra!';
+                                Swal.fire({ icon: 'error', title: 'Lỗi', text: message });
                             });
                         }
                     });
