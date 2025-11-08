@@ -57,7 +57,7 @@
                     </a>
                     <ul class="submenu {{ Request::is('sinh-vien/dang-ky-mon-hoc*') ? 'active' : '' }}">
                         <li class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc') ? 'active' : '' }}">
-<a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
+                            <a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
                         </li>
                         <li
                             class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc/my-registrations') ? 'active' : '' }}">
@@ -75,12 +75,14 @@
                 </li>
 
                 <!-- 5. THỜI KHÓA BIỂU & LỊCH THI -->
-                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/thoi-khoa-bieu*', 'sinh-vien/lich-thi*') ? 'active' : '' }}">
+                <li
+                    class="sidebar-item has-sub {{ Request::is('sinh-vien/thoi-khoa-bieu*', 'sinh-vien/lich-thi*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-calendar-week"></i>
                         <span>TKB & Lịch thi</span>
                     </a>
-                    <ul class="submenu {{ Request::is('sinh-vien/thoi-khoa-bieu*', 'sinh-vien/lich-thi*') ? 'active' : '' }}">
+                    <ul
+                        class="submenu {{ Request::is('sinh-vien/thoi-khoa-bieu*', 'sinh-vien/lich-thi*') ? 'active' : '' }}">
                         <li
                             class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu') && !Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
                             <a href="{{ route('sinhvien.thoi-khoa-bieu.index') }}">Thời khóa biểu</a>
@@ -110,80 +112,83 @@
                         <span>Kết quả học tập</span>
                     </a>
                     <ul class="submenu {{ Request::is('sinh-vien/diem*') ? 'active' : '' }}">
-class="submenu-item {{ Request::is('sinh-vien/diem') && !Request::is('sinh-vien/diem/*') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.diem.index') }}">Điểm từng học kỳ</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('sinh-vien/diem/bang-diem') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.diem.bang-diem') }}">Bảng điểm tổng hợp</a>
-                        </li>
-                    </ul>
+                        class="submenu-item {{ Request::is('sinh-vien/diem') && !Request::is('sinh-vien/diem/*') ? 'active' : '' }}">
+                        <a href="{{ route('sinhvien.diem.index') }}">Điểm từng học kỳ</a>
                 </li>
+                <li class="submenu-item {{ Request::is('sinh-vien/diem/bang-diem') ? 'active' : '' }}">
+                    <a href="{{ route('sinhvien.diem.bang-diem') }}">Bảng điểm tổng hợp</a>
+                </li>
+            </ul>
+            </li>
 
-                <!-- 8. HỌC PHÍ -->
-                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/hoc-phi*') ? 'active' : '' }}">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-cash-stack"></i>
-                        <span>Học phí</span>
-                    </a>
-                    <ul class="submenu {{ Request::is('sinh-vien/hoc-phi*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('sinh-vien/hoc-phi') && !Request::is('sinh-vien/hoc-phi/*') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.hoc-phi.index') }}">Công nợ học phí</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('sinh-vien/hoc-phi/huong-dan') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.hoc-phi.huong-dan') }}">Hướng dẫn nộp học phí</a>
-                        </li>
-                    </ul>
-                </li>
+            <!-- 8. HỌC PHÍ -->
+            <li class="sidebar-item has-sub {{ Request::is('sinh-vien/hoc-phi*') ? 'active' : '' }}">
+                <a href="#" class='sidebar-link'>
+                    <i class="bi bi-cash-stack"></i>
+                    <span>Học phí</span>
+                </a>
+                <ul class="submenu {{ Request::is('sinh-vien/hoc-phi*') ? 'active' : '' }}">
+                    <li
+                        class="submenu-item {{ Request::is('sinh-vien/hoc-phi') && !Request::is('sinh-vien/hoc-phi/*') ? 'active' : '' }}">
+                        <a href="{{ route('sinhvien.hoc-phi.index') }}">Công nợ học phí</a>
+                    </li>
+                    <li class="submenu-item {{ Request::is('sinh-vien/hoc-phi/huong-dan') ? 'active' : '' }}">
+                        <a href="{{ route('sinhvien.hoc-phi.huong-dan') }}">Hướng dẫn nộp học phí</a>
+                    </li>
+                </ul>
+            </li>
 
-                <!-- 9. CẢNH BÁO HỌC VỤ -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <span>Cảnh báo học vụ</span>
-                    </a>
-                </li>
+            <!-- 9. CẢNH BÁO HỌC VỤ -->
+            <li class="sidebar-item">
+                <a href="#" class='sidebar-link'>
+                    <i class="bi bi-exclamation-triangle"></i>
+                    <span>Cảnh báo học vụ</span>
+                </a>
+            </li>
 
-                <!-- 10. THÔNG BÁO -->
-                <li class="sidebar-item {{ Request::is('sinh-vien/thong-bao*') ? 'active' : '' }}">
-                    <a href="{{ route('sinhvien.thong-bao.index') }}" class='sidebar-link'>
-                        <i class="bi bi-bell"></i>
-                        <span>Thông báo</span>
-                    </a>
-                </li>
+            <!-- PHASE 10: THÔNG BÁO -->
+            <li class="sidebar-item {{ Request::is('sinh-vien/thong-bao*') ? 'active' : '' }}">
+                <a href="{{ route('sinhvien.thong-bao.index') }}" class='sidebar-link'>
+                    <i class="bi bi-bell-fill"></i>
+                    <span>Thông báo</span>
+                    <span class="badge bg-danger ms-auto" id="notification-badge" style="display: none;">0</span>
+                </a>
+                </a>
+            </li>
 
-                <!-- 11. AI CHATBOT -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-robot"></i>
-                        <span>AI Trợ lý ảo</span>
-                    </a>
-                </li>
+            <!-- 11. AI CHATBOT -->
+            <li class="sidebar-item">
+                <a href="#" class='sidebar-link'>
+                    <i class="bi bi-robot"></i>
+                    <span>AI Trợ lý ảo</span>
+                </a>
+            </li>
 
-                <!-- 12. TRA CỨU -->
-                <li class="sidebar-item has-sub">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-search"></i>
-                        <span>Tra cứu</span>
-                    </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Tra học phần</a></li>
-<li class="submenu-item"><a href="#">Tra giảng viên</a></li>
-                        <li class="submenu-item"><a href="#">Tra phòng học</a></li>
-                    </ul>
-                </li>
+            <!-- 12. TRA CỨU -->
+            <li class="sidebar-item has-sub">
+                <a href="#" class='sidebar-link'>
+                    <i class="bi bi-search"></i>
+                    <span>Tra cứu</span>
+                </a>
+                <ul class="submenu">
+                    <li class="submenu-item"><a href="#">Tra học phần</a></li>
+                    <li class="submenu-item"><a href="#">Tra giảng viên</a></li>
+                    <li class="submenu-item"><a href="#">Tra phòng học</a></li>
+                </ul>
+            </li>
 
-                <!-- 13. XUẤT DỮ LIỆU -->
-                <li class="sidebar-item has-sub">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-download"></i>
-                        <span>Xuất dữ liệu</span>
-                    </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Xuất bảng điểm</a></li>
-                        <li class="submenu-item"><a href="#">Xuất TKB</a></li>
-                        <li class="submenu-item"><a href="#">Giấy xác nhận SV</a></li>
-                    </ul>
-                </li>
+            <!-- 13. XUẤT DỮ LIỆU -->
+            <li class="sidebar-item has-sub">
+                <a href="#" class='sidebar-link'>
+                    <i class="bi bi-download"></i>
+                    <span>Xuất dữ liệu</span>
+                </a>
+                <ul class="submenu">
+                    <li class="submenu-item"><a href="#">Xuất bảng điểm</a></li>
+                    <li class="submenu-item"><a href="#">Xuất TKB</a></li>
+                    <li class="submenu-item"><a href="#">Giấy xác nhận SV</a></li>
+                </ul>
+            </li>
 
             </ul>
         </div>

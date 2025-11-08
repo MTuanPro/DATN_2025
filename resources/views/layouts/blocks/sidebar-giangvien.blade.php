@@ -142,11 +142,12 @@
                     </ul>
                 </li>
 
-                <!-- 11. THÔNG BÁO -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-bell"></i>
+                <!-- PHASE 10: THÔNG BÁO -->
+                <li class="sidebar-item {{ Request::is('giang-vien/thong-bao*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.thong-bao.index') }}" class='sidebar-link'>
+                        <i class="bi bi-bell-fill"></i>
                         <span>Thông báo</span>
+                        <span class="badge bg-danger ms-auto" id="notification-badge" style="display: none;">0</span>
                     </a>
                 </li>
 

@@ -48,7 +48,7 @@
                                 href="{{ route('dao-tao.chuyen-nganh.index') }}">Quản lý Chuyên
                                 ngành</a></li>
                         <li class="submenu-item {{ Request::is('dao-tao/trinh-do*') ? 'active' : '' }}"><a
-href="{{ route('dao-tao.trinh-do.index') }}">Quản lý Trình độ</a>
+                                href="{{ route('dao-tao.trinh-do.index') }}">Quản lý Trình độ</a>
                         </li>
                         <li class="submenu-item {{ Request::is('dao-tao/trang-thai-hoc-tap*') ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.trang-thai-hoc-tap.index') }}">Trạng thái
@@ -92,7 +92,7 @@ href="{{ route('dao-tao.trinh-do.index') }}">Quản lý Trình độ</a>
                         class="submenu {{ Request::is('dao-tao/lop-hanh-chinh*', 'dao-tao/sinh-vien*') ? 'active' : '' }}">
                         <li class="submenu-item {{ Request::is('dao-tao/lop-hanh-chinh*') ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.lop-hanh-chinh.index') }}">Quản lý Lớp hành
-chính</a></li>
+                                chính</a></li>
                         <li class="submenu-item {{ Request::is('dao-tao/sinh-vien*') ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.sinh-vien.index') }}">Quản lý Sinh viên</a>
                         </li>
@@ -143,10 +143,11 @@ chính</a></li>
                 <li class="sidebar-item has-sub {{ Request::is('dao-tao/lich-thi*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-pencil-square"></i>
-<span>Quản lý Lịch thi</span>
+                        <span>Quản lý Lịch thi</span>
                     </a>
                     <ul class="submenu {{ Request::is('dao-tao/lich-thi*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('dao-tao/lich-thi') && !Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('dao-tao/lich-thi') && !Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.lich-thi.index') }}">Danh sách Lịch thi</a>
                         </li>
                         <li class="submenu-item {{ Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
@@ -193,10 +194,11 @@ chính</a></li>
                         <span>Học phí</span>
                     </a>
                     <ul class="submenu {{ Request::is('dao-tao/hoc-phi*') ? 'active' : '' }}">
-<li class="submenu-item {{ Request::is('dao-tao/hoc-phi/cau-hinh*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('dao-tao/hoc-phi/cau-hinh*') ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.hoc-phi.cau-hinh.index') }}">Cấu hình học phí</a>
                         </li>
-                        <li class="submenu-item {{ Request::is('dao-tao/hoc-phi') && !Request::is('dao-tao/hoc-phi/cau-hinh*', 'dao-tao/hoc-phi/statistics', 'dao-tao/hoc-phi/overdue') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('dao-tao/hoc-phi') && !Request::is('dao-tao/hoc-phi/cau-hinh*', 'dao-tao/hoc-phi/statistics', 'dao-tao/hoc-phi/overdue') ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.hoc-phi.index') }}">Quản lý học phí</a>
                         </li>
                         <li class="submenu-item {{ Request::is('dao-tao/hoc-phi/statistics') ? 'active' : '' }}">
@@ -213,6 +215,14 @@ chính</a></li>
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-exclamation-triangle"></i>
                         <span>Cảnh báo học vụ <!-- Đang cập nhật --></span>
+                    </a>
+                </li>
+
+                {{-- PHASE 10: QUẢN LÝ THÔNG BÁO --}}
+                <li class="sidebar-item {{ Request::is('dao-tao/thong-bao*') ? 'active' : '' }}">
+                    <a href="{{ route('dao-tao.thong-bao.index') }}" class="sidebar-link">
+                        <i class="bi bi-bell-fill"></i>
+                        <span>Quản lý Thông báo</span>
                     </a>
                 </li>
 

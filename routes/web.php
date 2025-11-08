@@ -45,6 +45,9 @@ use App\Http\Controllers\SinhVien\ThoiKhoaBieuController;
 use App\Http\Controllers\GiangVien\NhapDiemController;
 use App\Http\Controllers\DaoTao\DuyetDiemController;
 use App\Http\Controllers\SinhVien\XemDiemController;
+use App\Http\Controllers\DaoTao\ThongBaoController as DaoTaoThongBaoController;
+use App\Http\Controllers\GiangVien\ThongBaoController as GiangVienThongBaoController;
+use App\Http\Controllers\SinhVien\ThongBaoController as SinhVienThongBaoController;
 
 
 // Debug route (temporary)
@@ -246,6 +249,9 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::post('lich-thi/{lichThi}/gui-thong-bao', [\App\Http\Controllers\DaoTao\LichThiController::class, 'guiThongBao'])->name('lich-thi.gui-thong-bao');
     Route::get('lich-thi-export', [\App\Http\Controllers\DaoTao\LichThiController::class, 'export'])->name('lich-thi.export');
 
+    // PHASE 10: Quản lý Thông báo (CRUD full)
+    Route::resource('thong-bao', DaoTaoThongBaoController::class);
+
     // PHASE 8: Quản lý Học phí
     // Cấu hình học phí
     Route::prefix('hoc-phi')->name('hoc-phi.')->group(function () {
@@ -327,9 +333,14 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
         Route::post('/{lopHocPhan}/mo-khoa', [NhapDiemController::class, 'moKhoaDiem'])->name('mo-khoa');
     });
 
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
+    // PHASE 10: Thông báo (chỉ xem)
+    Route::prefix('thong-bao')->name('thong-bao.')->group(function () {
+        Route::get('/', [GiangVienThongBaoController::class, 'index'])->name('index');
+        Route::get('/{thongBao}', [GiangVienThongBaoController::class, 'show'])->name('show');
+        Route::post('/{thongBao}/mark-read', [GiangVienThongBaoController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-all-read', [GiangVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::get('/unread/count', [GiangVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
+    });
 });
 
 // ========== Sinh viên Routes ==========
@@ -376,7 +387,12 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
         Route::get('/{id}/pdf', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'exportPdf'])->name('pdf');
     });
 
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
+    // PHASE 10: Thông báo (chỉ xem)
+    Route::middleware('sinhvien.check')->prefix('thong-bao')->name('thong-bao.')->group(function () {
+        Route::get('/', [SinhVienThongBaoController::class, 'index'])->name('index');
+        Route::get('/{thongBao}', [SinhVienThongBaoController::class, 'show'])->name('show');
+        Route::post('/{thongBao}/mark-read', [SinhVienThongBaoController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-all-read', [SinhVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::get('/unread/count', [SinhVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
+    });
 });
