@@ -55,7 +55,8 @@
                         <span>Quản lý buổi học</span>
                     </a>
                     <ul class="submenu {{ Request::is('giang-vien/buoi-hoc*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('giang-vien/buoi-hoc') && !Request::is('giang-vien/buoi-hoc/lich-su') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('giang-vien/buoi-hoc') && !Request::is('giang-vien/buoi-hoc/lich-su') ? 'active' : '' }}">
                             <a href="{{ route('giangvien.buoi-hoc.index') }}">Danh sách buổi học</a>
                         </li>
                         <li class="submenu-item {{ Request::is('giang-vien/buoi-hoc/lich-su') ? 'active' : '' }}">
@@ -71,7 +72,8 @@
                         <span>Điểm danh</span>
                     </a>
                     <ul class="submenu {{ Request::is('giang-vien/diem-danh*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('giang-vien/diem-danh') && !Request::is('giang-vien/diem-danh/bao-cao') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('giang-vien/diem-danh') && !Request::is('giang-vien/diem-danh/bao-cao') ? 'active' : '' }}">
                             <a href="{{ route('giangvien.diem-danh.index') }}">Điểm danh sinh viên</a>
                         </li>
                         <li class="submenu-item {{ Request::is('giang-vien/diem-danh/bao-cao') ? 'active' : '' }}">
@@ -116,7 +118,8 @@
                         <span>Thi & Đề thi</span>
                     </a>
                     <ul class="submenu {{ Request::is('giang-vien/lich-thi*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('giang-vien/lich-thi') && !Request::is('giang-vien/lich-thi/lich-coi-thi') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('giang-vien/lich-thi') && !Request::is('giang-vien/lich-thi/lich-coi-thi') ? 'active' : '' }}">
                             <a href="{{ route('giangvien.lich-thi.index') }}">Lịch thi</a>
                         </li>
                         <li class="submenu-item {{ Request::is('giang-vien/lich-thi/lich-coi-thi') ? 'active' : '' }}">
@@ -126,11 +129,17 @@
                 </li>
 
                 <!-- 10. LỚP CHỦ NHIỆM -->
-                <li class="sidebar-item">
+                <li class="sidebar-item has-sub {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-house-door"></i>
                         <span>Lớp chủ nhiệm</span>
                     </a>
+                    <ul class="submenu {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('giang-vien/lop-chu-nhiem') && !Request::is('giang-vien/lop-chu-nhiem/*') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.lop-chu-nhiem.index') }}">Danh sách lớp</a>
+                        </li>
+                    </ul>
                 </li>
 
                 <!-- 11. THÔNG BÁO -->

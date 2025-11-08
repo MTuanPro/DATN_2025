@@ -188,7 +188,7 @@
                                     <th>Học kỳ</th>
                                     <th>
                                         <a
-                                            href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', array_merge(request()->all(), ['sort_by' => 'tong_tin_chi_dang_ky', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">
+                                            href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', array_merge(['id' => $lop->id], request()->all(), ['sort_by' => 'tong_tin_chi_dang_ky', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">
                                             TC đăng ký
                                             @if (request('sort_by') == 'tong_tin_chi_dang_ky')
                                                 <i
@@ -198,7 +198,7 @@
                                     </th>
                                     <th>
                                         <a
-                                            href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', array_merge(request()->all(), ['sort_by' => 'tong_tin_chi_dat', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">
+                                            href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', array_merge(['id' => $lop->id], request()->all(), ['sort_by' => 'tong_tin_chi_dat', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">
                                             TC đạt
                                             @if (request('sort_by') == 'tong_tin_chi_dat')
                                                 <i
@@ -208,7 +208,7 @@
                                     </th>
                                     <th>
                                         <a
-                                            href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', array_merge(request()->all(), ['sort_by' => 'diem_trung_binh_he_10', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">
+                                            href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', array_merge(['id' => $lop->id], request()->all(), ['sort_by' => 'diem_trung_binh_he_10', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">
                                             ĐTB Hệ 10
                                             @if (request('sort_by') == 'diem_trung_binh_he_10')
                                                 <i
@@ -218,7 +218,7 @@
                                     </th>
                                     <th>
                                         <a
-                                            href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', array_merge(request()->all(), ['sort_by' => 'diem_trung_binh_he_4', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">
+                                            href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', array_merge(['id' => $lop->id], request()->all(), ['sort_by' => 'diem_trung_binh_he_4', 'sort_order' => request('sort_order') == 'asc' ? 'desc' : 'asc'])) }}">
                                             ĐTB Hệ 4 (GPA)
                                             @if (request('sort_by') == 'diem_trung_binh_he_4')
                                                 <i
