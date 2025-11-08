@@ -112,7 +112,7 @@
                             <a href="{{ route('giangvien.lich-thi.index') }}">Lịch thi</a>
                         </li>
                         <li class="submenu-item {{ Request::is('giang-vien/lich-thi/lich-coi-thi') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.lich-thi.lich-coi-thi') }}">Lịch coi thi</a>
+                            <a href="{{ route('giangvien.lich-coi-thi') }}">Lịch coi thi</a>
                         </li>
                     </ul>
                 </li>
