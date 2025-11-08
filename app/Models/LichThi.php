@@ -46,10 +46,17 @@ class LichThi extends Model
         return $this->belongsTo(LopHocPhan::class, 'lop_hoc_phan_id');
     }
 
-    // Lịch thi thuộc về một học kỳ
+    // Lịch thi thuộc về một học kỳ (thông qua lớp học phần)
     public function hocKy()
     {
-        return $this->belongsTo(HocKy::class, 'hoc_ky_id');
+        return $this->hasOneThrough(
+            HocKy::class,
+            LopHocPhan::class,
+            'id',           // Foreign key on lop_hoc_phan table
+            'id',           // Foreign key on hoc_ky table
+            'lop_hoc_phan_id', // Local key on lich_thi table
+            'hoc_ky_id'     // Local key on lop_hoc_phan table
+        );
     }
 
     // Lịch thi tại một phòng thi
@@ -80,10 +87,12 @@ class LichThi extends Model
      * Scopes
      */
 
-    // Lọc theo học kỳ
+    // Lọc theo học kỳ (thông qua lớp học phần)
     public function scopeByHocKy($query, $hocKyId)
     {
-        return $query->where('hoc_ky_id', $hocKyId);
+        return $query->whereHas('lopHocPhan', function($q) use ($hocKyId) {
+            $q->where('hoc_ky_id', $hocKyId);
+        });
     }
 
     // Lọc theo loại thi

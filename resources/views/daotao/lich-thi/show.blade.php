@@ -89,7 +89,12 @@
                             </tr>
                             <tr>
                                 <th>Số SV dự thi:</th>
-                                <td>{{ $lichThi->so_sinh_vien_du_thi ?? 'Chưa cập nhật' }}</td>
+                                <td>
+                                    <strong>{{ $lichThi->lopHocPhan->lopHocPhanSinhViens->count() }} sinh viên</strong>
+                                    @if($lichThi->so_sinh_vien_du_thi && $lichThi->so_sinh_vien_du_thi != $lichThi->lopHocPhan->lopHocPhanSinhViens->count())
+                                        <br><small class="text-muted">(Dự kiến: {{ $lichThi->so_sinh_vien_du_thi }})</small>
+                                    @endif
+                                </td>
                             </tr>
                             <tr>
                                 <th>Hình thức thi:</th>
@@ -131,8 +136,8 @@
                 <div class="row">
                     <div class="col-md-6">
                         <strong>Đề thi:</strong> 
-                        @if($lichThi->de_thi)
-                            <a href="{{ Storage::url($lichThi->de_thi) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        @if($lichThi->de_thi_file)
+                            <a href="{{ Storage::url($lichThi->de_thi_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-download"></i> Tải xuống
                             </a>
                         @else
@@ -141,8 +146,8 @@
                     </div>
                     <div class="col-md-6">
                         <strong>Đáp án:</strong> 
-                        @if($lichThi->dap_an)
-                            <a href="{{ Storage::url($lichThi->dap_an) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                        @if($lichThi->dap_an_file)
+                            <a href="{{ Storage::url($lichThi->dap_an_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                 <i class="bi bi-download"></i> Tải xuống
                             </a>
                         @else
