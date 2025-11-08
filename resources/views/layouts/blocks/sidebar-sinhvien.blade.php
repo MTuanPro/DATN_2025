@@ -57,7 +57,7 @@
                     </a>
                     <ul class="submenu {{ Request::is('sinh-vien/dang-ky-mon-hoc*') ? 'active' : '' }}">
                         <li class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
+<a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
                         </li>
                         <li
                             class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc/my-registrations') ? 'active' : '' }}">
@@ -110,7 +110,7 @@
                         <span>Kết quả học tập</span>
                     </a>
                     <ul class="submenu {{ Request::is('sinh-vien/diem*') ? 'active' : '' }}">
-                        class="submenu-item {{ Request::is('sinh-vien/diem') && !Request::is('sinh-vien/diem/*') ? 'active' : '' }}">
+class="submenu-item {{ Request::is('sinh-vien/diem') && !Request::is('sinh-vien/diem/*') ? 'active' : '' }}">
                             <a href="{{ route('sinhvien.diem.index') }}">Điểm từng học kỳ</a>
                         </li>
                         <li class="submenu-item {{ Request::is('sinh-vien/diem/bang-diem') ? 'active' : '' }}">
@@ -120,15 +120,18 @@
                 </li>
 
                 <!-- 8. HỌC PHÍ -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/hoc-phi*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-cash-stack"></i>
                         <span>Học phí</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Công nợ học phí</a></li>
-                        <li class="submenu-item"><a href="#">Lịch sử thanh toán</a></li>
-                        <li class="submenu-item"><a href="#">Miễn giảm học phí</a></li>
+                    <ul class="submenu {{ Request::is('sinh-vien/hoc-phi*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('sinh-vien/hoc-phi') && !Request::is('sinh-vien/hoc-phi/*') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.hoc-phi.index') }}">Công nợ học phí</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('sinh-vien/hoc-phi/huong-dan') ? 'active' : '' }}">
+                            <a href="{{ route('sinhvien.hoc-phi.huong-dan') }}">Hướng dẫn nộp học phí</a>
+                        </li>
                     </ul>
                 </li>
 
@@ -164,7 +167,7 @@
                     </a>
                     <ul class="submenu">
                         <li class="submenu-item"><a href="#">Tra học phần</a></li>
-                        <li class="submenu-item"><a href="#">Tra giảng viên</a></li>
+<li class="submenu-item"><a href="#">Tra giảng viên</a></li>
                         <li class="submenu-item"><a href="#">Tra phòng học</a></li>
                     </ul>
                 </li>

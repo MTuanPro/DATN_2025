@@ -18,12 +18,15 @@ class ChiTietHocPhiMon extends Model
         'so_tin_chi',
         'don_gia_tin_chi',
         'thanh_tien',
+        'ngay_tinh',
+        'trang_thai',
     ];
 
     protected $casts = [
         'so_tin_chi' => 'integer',
         'don_gia_tin_chi' => 'float',
         'thanh_tien' => 'float',
+        'ngay_tinh' => 'datetime',
     ];
 
     /**

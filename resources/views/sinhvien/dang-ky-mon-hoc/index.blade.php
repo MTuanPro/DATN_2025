@@ -62,7 +62,7 @@
                             <p class="mb-0">
                                 <strong>Đã đăng ký:</strong> {{ $tongTinChiDaDangKy }} TC<br>
                                 <strong>Tối đa:</strong> {{ $tinChiToiDa }} TC
-                            </p>
+</p>
                             <div class="progress mt-2" style="height: 8px;">
                                 <div class="progress-bar {{ $tongTinChiDaDangKy >= $tinChiToiDa ? 'bg-danger' : 'bg-primary' }}"
                                     style="width: {{ ($tongTinChiDaDangKy / $tinChiToiDa) * 100 }}%"></div>
@@ -117,7 +117,7 @@
                                             $daDangKy = in_array($monHoc->id, $monDaDangKy);
                                             $daHoc = in_array($monHoc->id, $monDaHoc);
                                             $daQua = in_array($monHoc->id, $monDaQua);
-                                            $lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
+$lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
                                         @endphp
                                         <tr>
                                             <td><code>{{ $monHoc->ma_mon }}</code></td>
@@ -157,7 +157,7 @@
                                                     </button>
                                                 @elseif($daDangKy)
                                                     @php
-                                                        $dangKyId = $dangKyCollection->firstWhere(
+$dangKyId = $dangKyCollection->firstWhere(
                                                             'mon_hoc_id',
                                                             $monHoc->id,
                                                         )?->id;
@@ -218,7 +218,7 @@
                 $('.btn-dang-ky').on('click', function() {
                     selectedMonId = $(this).data('mon-hoc-id');
                     const tenMon = $(this).data('ten-mon');
-                    selectedTinChi = parseInt($(this).data('tin-chi')) || 0;
+selectedTinChi = parseInt($(this).data('tin-chi')) || 0;
                     const tongTinChi = {{ $tongTinChiDaDangKy }};
                     const tinChiToiDa = {{ $tinChiToiDa }};
 
@@ -282,7 +282,7 @@
                     }).then((result) => {
                         if (result.isConfirmed) {
                             $.ajax({
-                                url: `/sinh-vien/dang-ky-mon-hoc/${dangKyId}`,
+url: `/sinh-vien/dang-ky-mon-hoc/${dangKyId}`,
                                 method: 'DELETE',
                                 data: { _token: '{{ csrf_token() }}' }
                             }).done(function(response) {

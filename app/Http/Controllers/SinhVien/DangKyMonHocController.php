@@ -41,12 +41,32 @@ class DangKyMonHocController extends Controller
             ->where('ngay_ket_thuc_dang_ky', '>=', now())
             ->first();
 
-        if (!$hocKy) {
-            return view('sinhvien.dang-ky-mon-hoc.index', [
-                'hocKy' => null,
-                'message' => 'Hiện tại không có học kỳ nào mở đăng ký môn học.'
-            ]);
-        }
+      if (!$hocKy) {
+    $hocKy = (object)[
+        'id' => null,
+        'ten_hoc_ky' => 'Không có học kỳ mở đăng ký',
+        'nam_hoc' => '', // ✅ thêm dòng này
+        'ngay_bat_dau_dang_ky' => now(),
+        'ngay_ket_thuc_dang_ky' => now(),
+    ];
+
+
+    return view('sinhvien.dang-ky-mon-hoc.index', [
+        'hocKy' => $hocKy,
+        'message' => 'Hiện tại không có học kỳ nào mở đăng ký môn học.',
+        'tongTinChiDaDangKy' => 0,
+        'tinChiToiDa' => 24,
+        'chuongTrinhKhung' => collect(),
+        'dangKyCollection' => collect(),
+        'monDaDangKy' => [],
+        'monDaHoc' => [],
+        'monDaQua' => [],
+        'lopHocPhans' => collect(),
+        'sinhVien' => Auth::user()->sinhVien,
+    ]);
+}
+
+
 
         // Lấy chương trình khung của sinh viên (sắp xếp theo học kỳ và thứ tự)
         $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
@@ -75,7 +95,7 @@ class DangKyMonHocController extends Controller
             ->join('lop_hoc_phan', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
             ->where('lop_hoc_phan_sinh_vien.sinh_vien_id', $sinhVien->id)
             ->where('ket_qua_hoc_tap.qua_mon', true)
-            ->pluck('lop_hoc_phan.mon_hoc_id')
+->pluck('lop_hoc_phan.mon_hoc_id')
             ->toArray();
 
         // Lấy danh sách lớp học phần đang mở
@@ -165,8 +185,7 @@ class DangKyMonHocController extends Controller
 
         // Tính độ ưu tiên
         $uuTien = 0;
-
-        // Sinh viên năm cuối (kỳ >= 7) có độ ưu tiên cao
+// Sinh viên năm cuối (kỳ >= 7) có độ ưu tiên cao
         if ($sinhVien->ky_hien_tai >= 7) {
             $uuTien += 100;
         }
@@ -257,7 +276,7 @@ class DangKyMonHocController extends Controller
         }
 
         $query = DangKyMonHocTam::where('sinh_vien_id', $sinhVien->id)
-            ->with(['monHoc', 'hocKy', 'lopHocPhanSinhVien.lopHocPhan']);
+->with(['monHoc', 'hocKy', 'lopHocPhanSinhVien.lopHocPhan']);
 
         // Lọc theo học kỳ
         if ($request->filled('hoc_ky_id')) {

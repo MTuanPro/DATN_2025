@@ -19,8 +19,12 @@ use Illuminate\Support\Collection;
  */
 class XepLopHocPhanService 
 {
-    public function __construct()
-    {}
+    protected $hocPhiService;
+
+    public function __construct(HocPhiService $hocPhiService)
+    {
+        $this->hocPhiService = $hocPhiService;
+    }
 
     /**
      * Xếp lớp tự động cho sinh viên
@@ -101,7 +105,7 @@ class XepLopHocPhanService
     {
         // 1. Lấy các lớp có thể xếp
         $dsLop = LopHocPhan::where('mon_hoc_id', $dangKy->getAttribute('mon_hoc_id'))
-            ->where('hoc_ky_id', $dangKy->getAttribute('hoc_ky_id'))
+->where('hoc_ky_id', $dangKy->getAttribute('hoc_ky_id'))
             ->where('trang_thai_lop', 'mo_dang_ky')
             ->whereColumn('so_luong_dang_ky', '<', 'suc_chua')
             ->get();
@@ -193,9 +197,8 @@ class XepLopHocPhanService
     {
         try {
             DB::beginTransaction();
-            
-            // 1. Tạo bản ghi lớp học phần sinh viên
-            LopHocPhanSinhVien::create([
+// 1. Tạo bản ghi lớp học phần sinh viên
+            $lopHocPhanSinhVien = LopHocPhanSinhVien::create([
                 'sinh_vien_id' => $dangKy->sinh_vien_id,
                 'lop_hoc_phan_id' => $lop->id,
                 'dang_ky_tam_id' => $dangKy->id,
@@ -212,6 +215,19 @@ class XepLopHocPhanService
             // 3. Cập nhật trạng thái đăng ký tạm
             $dangKy->trang_thai = 'da_xep_lop';
             $dangKy->save();
+
+            // 4. PHASE 8: Tính học phí tự động khi xếp lớp thành công
+            try {
+                $this->hocPhiService->tinhHocPhiKhiDangKy(
+                    $dangKy->sinh_vien_id,
+                    $lop->hoc_ky_id,
+                    [$lopHocPhanSinhVien->id] // Pass as array
+                );
+                Log::info("Đã tính học phí cho sinh viên {$dangKy->sinh_vien_id} môn {$lop->mon_hoc_id}");
+            } catch (\Exception $e) {
+                // Log lỗi nhưng không rollback vì xếp lớp đã thành công
+                Log::error("Lỗi tính học phí: " . $e->getMessage());
+            }
 
             DB::commit();
         } catch (QueryException $e) {
