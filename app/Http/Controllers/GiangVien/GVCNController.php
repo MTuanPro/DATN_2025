@@ -7,6 +7,9 @@ use Illuminate\Http\Request;
 use App\Models\DaoTao\LopHanhChinh;
 use App\Models\DaoTao\SinhVien;
 use App\Models\GiangVien;
+use App\Models\BangDiem;
+use App\Models\CanhBaoHocVu;
+use App\Models\HocKy;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use PhpOffice\PhpSpreadsheet\Spreadsheet;
@@ -299,5 +302,183 @@ class GVCNController extends Controller
         $fileName = 'Danh_sach_sinh_vien_' . $lop->ma_lop . '_' . date('Ymd') . '.pdf';
 
         return $pdf->download($fileName);
+    }
+
+    /**
+     * Xem kết quả học tập sinh viên trong lớp
+     */
+    public function xemKetQuaHocTap(Request $request, $id)
+    {
+        $giangVien = Auth::user()->giangVien;
+
+        if (!$giangVien) {
+            return redirect()->route('giangvien.dashboard')
+                ->with('error', 'Không tìm thấy thông tin giảng viên!');
+        }
+
+        // Kiểm tra quyền truy cập
+        $lop = LopHanhChinh::where('id', $id)
+            ->where('giang_vien_chu_nhiem_id', $giangVien->id)
+            ->with(['khoaHoc', 'nganh'])
+            ->firstOrFail();
+
+        // Lấy danh sách học kỳ
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')
+            ->orderBy('ten_hoc_ky', 'desc')
+            ->get();
+
+        // Lọc theo học kỳ
+        $hocKyId = $request->get('hoc_ky_id');
+
+        // Query bảng điểm
+        $query = BangDiem::whereHas('sinhVien', function ($q) use ($id) {
+            $q->where('lop_hanh_chinh_id', $id);
+        })->with(['sinhVien', 'hocKy']);
+
+        if ($hocKyId) {
+            $query->where('hoc_ky_id', $hocKyId);
+        }
+
+        // Lọc theo xếp loại
+        if ($request->has('xep_loai') && $request->xep_loai != '') {
+            $query->where('xep_loai_hoc_tap', $request->xep_loai);
+        }
+
+        // Lọc theo trạng thái công bố
+        if ($request->has('da_cong_bo') && $request->da_cong_bo != '') {
+            $query->where('da_cong_bo', $request->da_cong_bo);
+        }
+
+        // Tìm kiếm sinh viên
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->whereHas('sinhVien', function ($q) use ($search) {
+                $q->where('ma_sinh_vien', 'like', '%' . $search . '%')
+                    ->orWhere('ho_ten', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Sắp xếp
+        $sortBy = $request->get('sort_by', 'diem_trung_binh_he_4');
+        $sortOrder = $request->get('sort_order', 'desc');
+        $query->orderBy($sortBy, $sortOrder);
+
+        // Phân trang
+        $bangDiems = $query->paginate(20)->appends($request->all());
+
+        // Thống kê tổng quan
+        $thongKe = [
+            'tong_sinh_vien' => $lop->sinhVien->count(),
+            'diem_tb_lop' => number_format($bangDiems->avg('diem_trung_binh_he_4'), 2),
+            'xuat_sac' => $bangDiems->where('xep_loai_hoc_tap', 'xuat_sac')->count(),
+            'gioi' => $bangDiems->where('xep_loai_hoc_tap', 'gioi')->count(),
+            'kha' => $bangDiems->where('xep_loai_hoc_tap', 'kha')->count(),
+            'trung_binh' => $bangDiems->where('xep_loai_hoc_tap', 'trung_binh')->count(),
+            'yeu' => $bangDiems->where('xep_loai_hoc_tap', 'yeu')->count(),
+            'kem' => $bangDiems->where('xep_loai_hoc_tap', 'kem')->count(),
+        ];
+
+        return view('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', compact(
+            'lop',
+            'bangDiems',
+            'hocKys',
+            'giangVien',
+            'thongKe',
+            'hocKyId'
+        ));
+    }
+
+    /**
+     * Xem cảnh báo học vụ sinh viên trong lớp
+     */
+    public function xemCanhBaoHocVu(Request $request, $id)
+    {
+        $giangVien = Auth::user()->giangVien;
+
+        if (!$giangVien) {
+            return redirect()->route('giangvien.dashboard')
+                ->with('error', 'Không tìm thấy thông tin giảng viên!');
+        }
+
+        // Kiểm tra quyền truy cập
+        $lop = LopHanhChinh::where('id', $id)
+            ->where('giang_vien_chu_nhiem_id', $giangVien->id)
+            ->with(['khoaHoc', 'nganh'])
+            ->firstOrFail();
+
+        // Lấy danh sách học kỳ
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')
+            ->orderBy('ten_hoc_ky', 'desc')
+            ->get();
+
+        // Query cảnh báo học vụ
+        $query = CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
+            $q->where('lop_hanh_chinh_id', $id);
+        })->with(['sinhVien', 'hocKy', 'nguoiCanhBao']);
+
+        // Lọc theo học kỳ
+        if ($request->has('hoc_ky_id') && $request->hoc_ky_id != '') {
+            $query->where('hoc_ky_id', $request->hoc_ky_id);
+        }
+
+        // Lọc theo mức độ
+        if ($request->has('muc_do') && $request->muc_do != '') {
+            $query->where('muc_do', $request->muc_do);
+        }
+
+        // Lọc theo loại cảnh báo
+        if ($request->has('loai_canh_bao') && $request->loai_canh_bao != '') {
+            $query->where('loai_canh_bao', $request->loai_canh_bao);
+        }
+
+        // Lọc theo trạng thái xử lý
+        if ($request->has('da_xu_ly') && $request->da_xu_ly != '') {
+            $query->where('da_xu_ly', $request->da_xu_ly);
+        }
+
+        // Tìm kiếm sinh viên
+        if ($request->has('search') && $request->search != '') {
+            $search = $request->search;
+            $query->whereHas('sinhVien', function ($q) use ($search) {
+                $q->where('ma_sinh_vien', 'like', '%' . $search . '%')
+                    ->orWhere('ho_ten', 'like', '%' . $search . '%');
+            });
+        }
+
+        // Sắp xếp
+        $query->orderBy('ngay_canh_bao', 'desc');
+
+        // Phân trang
+        $canhBaos = $query->paginate(20)->appends($request->all());
+
+        // Thống kê
+        $thongKe = [
+            'tong_canh_bao' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
+                $q->where('lop_hanh_chinh_id', $id);
+            })->count(),
+            'chua_xu_ly' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
+                $q->where('lop_hanh_chinh_id', $id);
+            })->chuaXuLy()->count(),
+            'da_xu_ly' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
+                $q->where('lop_hanh_chinh_id', $id);
+            })->daXuLy()->count(),
+            'canh_cao' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
+                $q->where('lop_hanh_chinh_id', $id);
+            })->mucDo('canh_cao')->count(),
+            'dinh_chi' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
+                $q->where('lop_hanh_chinh_id', $id);
+            })->mucDo('dinh_chi')->count(),
+            'buoc_thoi_hoc' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
+                $q->where('lop_hanh_chinh_id', $id);
+            })->mucDo('buoc_thoi_hoc')->count(),
+        ];
+
+        return view('giangvien.lop-chu-nhiem.canh-bao-hoc-vu', compact(
+            'lop',
+            'canhBaos',
+            'hocKys',
+            'giangVien',
+            'thongKe'
+        ));
     }
 }
