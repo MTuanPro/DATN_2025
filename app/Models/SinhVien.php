@@ -108,11 +108,26 @@ class SinhVien extends Model
     }
 
     /**
-     * Relationship: SinhVien has many KetQuaHocTap (academic results)
+     * Relationship: SinhVien has many KetQuaHocTap (academic results through lop_hoc_phan_sinh_vien)
      */
     public function ketQuaHocTap()
     {
-        return $this->hasMany(KetQuaHocTap::class, 'sinh_vien_id');
+        return $this->hasManyThrough(
+            KetQuaHocTap::class,
+            LopHocPhanSinhVien::class,
+            'sinh_vien_id', // Foreign key on lop_hoc_phan_sinh_vien table
+            'lop_hoc_phan_sinh_vien_id', // Foreign key on ket_qua_hoc_tap table
+            'id', // Local key on sinh_vien table
+            'id' // Local key on lop_hoc_phan_sinh_vien table
+        );
+    }
+
+    /**
+     * Alias for ketQuaHocTap (with 's' for consistency)
+     */
+    public function ketQuaHocTaps()
+    {
+        return $this->ketQuaHocTap();
     }
 
     /**
@@ -136,6 +151,21 @@ class SinhVien extends Model
      */
     public function diemDanh()
     {
-        return $this->hasMany(DiemDanh::class, 'sinh_vien_id');
+        return $this->hasManyThrough(
+            DiemDanh::class,
+            LopHocPhanSinhVien::class,
+            'sinh_vien_id', // Foreign key on lop_hoc_phan_sinh_vien table
+            'lop_hoc_phan_sinh_vien_id', // Foreign key on diem_danh table
+            'id', // Local key on sinh_vien table
+            'id' // Local key on lop_hoc_phan_sinh_vien table
+        );
+    }
+
+    /**
+     * Relationship: SinhVien has many CanhBaoHocVu (academic warnings)
+     */
+    public function canhBaoHocVu()
+    {
+        return $this->hasMany(CanhBaoHocVu::class, 'sinh_vien_id');
     }
 }

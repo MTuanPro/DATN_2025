@@ -13,7 +13,7 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
                             <li class="breadcrumb-item active">Kết quả học tập</li>
                         </ol>
                     </nav>
@@ -74,7 +74,7 @@
             {{-- Chọn học kỳ --}}
             <div class="card">
                 <div class="card-body">
-                    <form method="GET" action="{{ route('sinhvien.diem.index') }}">
+                    <form method="GET" action="{{ route('sinh-vien.diem.index') }}">
                         <div class="row align-items-end">
                             <div class="col-md-6">
                                 <div class="form-group">
@@ -90,7 +90,7 @@
                                 </div>
                             </div>
                             <div class="col-md-6">
-                                <a href="{{ route('sinhvien.diem.bang-diem') }}" class="btn btn-primary">
+                                <a href="{{ route('sinh-vien.diem.bang-diem') }}" class="btn btn-primary">
                                     <i class="bi bi-file-earmark-text"></i> Xem bảng điểm tổng hợp
                                 </a>
                             </div>
@@ -184,7 +184,7 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <a href="{{ route('sinhvien.diem.show', $item->lopHocPhan->id) }}"
+                                            <a href="{{ route('sinh-vien.diem.show', $item->lopHocPhan->id) }}"
                                                 class="btn btn-sm btn-info">
                                                 <i class="bi bi-eye"></i> Chi tiết
                                             </a>

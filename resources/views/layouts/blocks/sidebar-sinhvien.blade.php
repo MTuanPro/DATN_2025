@@ -3,7 +3,7 @@
         <div class="sidebar-header">
             <div class="d-flex justify-content-between">
                 <div class="logo">
-                    <a href="{{ route('sinhvien.dashboard') }}">
+                    <a href="{{ route('sinh-vien.dashboard') }}">
                         <h3 class="mb-0" style="color: #435ebe;"><i class="bi bi-mortarboard-fill me-2"></i>S-MIS</h3>
                     </a>
                 </div>
@@ -18,7 +18,7 @@
 
                 <li
                     class="sidebar-item {{ Request::is('sinh-vien') || Request::is('sinh-vien/dashboard') ? 'active' : '' }}">
-                    <a href="{{ route('sinhvien.dashboard') }}" class='sidebar-link'>
+                    <a href="{{ route('sinh-vien.dashboard') }}" class='sidebar-link'>
                         <i class="bi bi-grid-fill"></i>
                         <span>Dashboard</span>
                     </a>
@@ -57,11 +57,11 @@
                     </a>
                     <ul class="submenu {{ Request::is('sinh-vien/dang-ky-mon-hoc*') ? 'active' : '' }}">
                         <li class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
+                            <a href="{{ route('sinh-vien.dang-ky-mon-hoc.index') }}">Đăng ký môn học</a>
                         </li>
                         <li
                             class="submenu-item {{ Request::is('sinh-vien/dang-ky-mon-hoc/my-registrations') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.dang-ky-mon-hoc.my-registrations') }}">Lịch sử đăng ký</a>
+                            <a href="{{ route('sinh-vien.dang-ky-mon-hoc.my-registrations') }}">Lịch sử đăng ký</a>
                         </li>
                     </ul>
                 </li>
@@ -85,14 +85,14 @@
                         class="submenu {{ Request::is('sinh-vien/thoi-khoa-bieu*', 'sinh-vien/lich-thi*') ? 'active' : '' }}">
                         <li
                             class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu') && !Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.thoi-khoa-bieu.index') }}">Thời khóa biểu</a>
+                            <a href="{{ route('sinh-vien.thoi-khoa-bieu.index') }}">Thời khóa biểu</a>
                         </li>
                         <li
                             class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.thoi-khoa-bieu.chi-tiet') }}">Lịch học chi tiết</a>
+                            <a href="{{ route('sinh-vien.thoi-khoa-bieu.chi-tiet') }}">Lịch học chi tiết</a>
                         </li>
                         <li class="submenu-item {{ Request::is('sinh-vien/lich-thi*') ? 'active' : '' }}">
-                            <a href="{{ route('sinhvien.lich-thi.index') }}">Lịch thi</a>
+                            <a href="{{ route('sinh-vien.lich-thi.index') }}">Lịch thi</a>
                         </li>
                     </ul>
                 </li>
@@ -113,10 +113,10 @@
                     </a>
                     <ul class="submenu {{ Request::is('sinh-vien/diem*') ? 'active' : '' }}">
                         class="submenu-item {{ Request::is('sinh-vien/diem') && !Request::is('sinh-vien/diem/*') ? 'active' : '' }}">
-                        <a href="{{ route('sinhvien.diem.index') }}">Điểm từng học kỳ</a>
+                        <a href="{{ route('sinh-vien.diem.index') }}">Điểm từng học kỳ</a>
                 </li>
                 <li class="submenu-item {{ Request::is('sinh-vien/diem/bang-diem') ? 'active' : '' }}">
-                    <a href="{{ route('sinhvien.diem.bang-diem') }}">Bảng điểm tổng hợp</a>
+                    <a href="{{ route('sinh-vien.diem.bang-diem') }}">Bảng điểm tổng hợp</a>
                 </li>
             </ul>
             </li>
@@ -130,25 +130,35 @@
                 <ul class="submenu {{ Request::is('sinh-vien/hoc-phi*') ? 'active' : '' }}">
                     <li
                         class="submenu-item {{ Request::is('sinh-vien/hoc-phi') && !Request::is('sinh-vien/hoc-phi/*') ? 'active' : '' }}">
-                        <a href="{{ route('sinhvien.hoc-phi.index') }}">Công nợ học phí</a>
+                        <a href="{{ route('sinh-vien.hoc-phi.index') }}">Công nợ học phí</a>
                     </li>
                     <li class="submenu-item {{ Request::is('sinh-vien/hoc-phi/huong-dan') ? 'active' : '' }}">
-                        <a href="{{ route('sinhvien.hoc-phi.huong-dan') }}">Hướng dẫn nộp học phí</a>
+                        <a href="{{ route('sinh-vien.hoc-phi.huong-dan') }}">Hướng dẫn nộp học phí</a>
                     </li>
                 </ul>
             </li>
 
-            <!-- 9. CẢNH BÁO HỌC VỤ -->
-            <li class="sidebar-item">
-                <a href="#" class='sidebar-link'>
-                    <i class="bi bi-exclamation-triangle"></i>
+            <!-- PHASE 8.5: CẢNH BÁO HỌC VỤ -->
+            <li class="sidebar-item {{ Request::is('sinh-vien/canh-bao-hoc-vu*') ? 'active' : '' }}">
+                <a href="{{ route('sinh-vien.canh-bao-hoc-vu.index') }}" class='sidebar-link'>
+                    <i class="bi bi-exclamation-triangle-fill text-warning"></i>
                     <span>Cảnh báo học vụ</span>
+                    @php
+                        $user = auth()->user();
+                        $sinhVienData = $user->sinhVien ?? \App\Models\DaoTao\SinhVien::where('user_id', $user->id)->first();
+                        $soCanhBao = $sinhVienData ? \App\Models\CanhBaoHocVu::where('sinh_vien_id', $sinhVienData->id)
+                            ->where('trang_thai', 'chua_xu_ly')
+                            ->count() : 0;
+                    @endphp
+                    @if($soCanhBao > 0)
+                        <span class="badge bg-danger ms-auto">{{ $soCanhBao }}</span>
+                    @endif
                 </a>
             </li>
 
             <!-- PHASE 10: THÔNG BÁO -->
             <li class="sidebar-item {{ Request::is('sinh-vien/thong-bao*') ? 'active' : '' }}">
-                <a href="{{ route('sinhvien.thong-bao.index') }}" class='sidebar-link'>
+                <a href="{{ route('sinh-vien.thong-bao.index') }}" class='sidebar-link'>
                     <i class="bi bi-bell-fill"></i>
                     <span>Thông báo</span>
                     <span class="badge bg-danger ms-auto" id="notification-badge" style="display: none;">0</span>

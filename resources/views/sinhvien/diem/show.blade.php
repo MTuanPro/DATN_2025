@@ -13,8 +13,8 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.diem.index') }}">Kết quả học tập</a>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.diem.index') }}">Kết quả học tập</a>
                             </li>
                             <li class="breadcrumb-item active">Chi tiết</li>
                         </ol>
@@ -188,7 +188,7 @@
 
             {{-- Nút quay lại --}}
             <div class="text-center">
-                <a href="{{ route('sinhvien.diem.index') }}" class="btn btn-secondary">
+                <a href="{{ route('sinh-vien.diem.index') }}" class="btn btn-secondary">
                     <i class="bi bi-arrow-left"></i> Quay lại
                 </a>
             </div>

@@ -23,7 +23,7 @@ class EnsureSinhVienExists
         $sinhVien = $user->sinhVien;
 
         if (!$sinhVien) {
-            return redirect()->route('sinhvien.dashboard')
+            return redirect()->route('sinh-vien.dashboard')
                 ->with('error', 'Không tìm thấy thông tin sinh viên! Vui lòng liên hệ phòng đào tạo.');
         }
 

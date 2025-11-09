@@ -122,4 +122,48 @@ class SinhVien extends Model
             'ly_do_huy'
         ])->withTimestamps();
     }
+
+    // Relationship: Kết quả học tập (through lop_hoc_phan_sinh_vien)
+    public function ketQuaHocTap()
+    {
+        return $this->hasManyThrough(
+            \App\Models\KetQuaHocTap::class,
+            \App\Models\LopHocPhanSinhVien::class,
+            'sinh_vien_id', // Foreign key on lop_hoc_phan_sinh_vien table
+            'lop_hoc_phan_sinh_vien_id', // Foreign key on ket_qua_hoc_tap table
+            'id', // Local key on sinh_vien table
+            'id' // Local key on lop_hoc_phan_sinh_vien table
+        );
+    }
+
+    // Alias for ketQuaHocTap (with 's' for consistency)
+    public function ketQuaHocTaps()
+    {
+        return $this->ketQuaHocTap();
+    }
+
+    // Relationship: Điểm danh
+    public function diemDanh()
+    {
+        return $this->hasManyThrough(
+            \App\Models\DiemDanh::class,
+            \App\Models\LopHocPhanSinhVien::class,
+            'sinh_vien_id', // Foreign key on lop_hoc_phan_sinh_vien table
+            'lop_hoc_phan_sinh_vien_id', // Foreign key on diem_danh table
+            'id', // Local key on sinh_vien table
+            'id' // Local key on lop_hoc_phan_sinh_vien table
+        );
+    }
+
+    // Relationship: Học phí học kỳ
+    public function hocPhiHocKy()
+    {
+        return $this->hasMany(\App\Models\HocPhiHocKy::class, 'sinh_vien_id');
+    }
+
+    // Relationship: Cảnh báo học vụ
+    public function canhBaoHocVu()
+    {
+        return $this->hasMany(\App\Models\CanhBaoHocVu::class, 'sinh_vien_id');
+    }
 }

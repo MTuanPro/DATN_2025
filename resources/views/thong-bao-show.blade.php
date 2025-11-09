@@ -21,14 +21,14 @@
                                         ? 'dao-tao.dashboard'
                                         : (in_array('giang_vien', $roles)
                                             ? 'giangvien.dashboard'
-                                            : 'sinhvien.dashboard'));
+                                            : 'sinh-vien.dashboard'));
                                 $indexRoute = in_array('admin', $roles)
                                     ? 'admin.thong-bao.index'
                                     : (in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)
                                         ? 'dao-tao.thong-bao.index'
                                         : (in_array('giang_vien', $roles)
                                             ? 'giangvien.thong-bao.index'
-                                            : 'sinhvien.thong-bao.index'));
+                                            : 'sinh-vien.thong-bao.index'));
                             @endphp
                             <li class="breadcrumb-item"><a href="{{ route($dashboardRoute) }}">Dashboard</a></li>
                             <li class="breadcrumb-item"><a href="{{ route($indexRoute) }}">Thông báo</a></li>
@@ -54,7 +54,7 @@
                                         ? 'dao-tao.thong-bao.index'
                                         : (in_array('giang_vien', $roles)
                                             ? 'giangvien.thong-bao.index'
-                                            : 'sinhvien.thong-bao.index'));
+                                            : 'sinh-vien.thong-bao.index'));
                             @endphp
 
                             @if ($isAdmin)

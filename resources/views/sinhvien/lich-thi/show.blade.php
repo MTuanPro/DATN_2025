@@ -12,8 +12,8 @@
             <div class="col-12 col-md-6 order-md-2 order-first">
                 <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
-                        <li class="breadcrumb-item"><a href="{{ route('sinhvien.lich-thi.index') }}">Lịch thi</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('sinh-vien.lich-thi.index') }}">Lịch thi</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
                     </ol>
                 </nav>

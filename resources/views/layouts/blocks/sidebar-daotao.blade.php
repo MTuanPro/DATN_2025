@@ -210,19 +210,25 @@
                     </ul>
                 </li>
 
-                {{-- 11. CẢNH BÁO HỌC VỤ --}}
-                <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <span>Cảnh báo học vụ <!-- Đang cập nhật --></span>
-                    </a>
-                </li>
-
                 {{-- PHASE 10: QUẢN LÝ THÔNG BÁO --}}
                 <li class="sidebar-item {{ Request::is('dao-tao/thong-bao*') ? 'active' : '' }}">
                     <a href="{{ route('dao-tao.thong-bao.index') }}" class="sidebar-link">
                         <i class="bi bi-bell-fill"></i>
                         <span>Quản lý Thông báo</span>
+                    </a>
+                </li>
+
+                {{-- PHASE 8.5: CẢNH BÁO HỌC VỤ --}}
+                <li class="sidebar-item {{ Request::is('dao-tao/canh-bao-hoc-vu*') ? 'active' : '' }}">
+                    <a href="{{ route('dao-tao.canh-bao-hoc-vu.index') }}" class="sidebar-link">
+                        <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                        <span>Cảnh báo Học vụ</span>
+                        @php
+                            $soCanhBaoChuaXuLy = \App\Models\CanhBaoHocVu::where('trang_thai', 'chua_xu_ly')->count();
+                        @endphp
+                        @if($soCanhBaoChuaXuLy > 0)
+                            <span class="badge bg-danger ms-auto">{{ $soCanhBaoChuaXuLy }}</span>
+                        @endif
                     </a>
                 </li>
 

@@ -14,7 +14,7 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Đăng ký môn học</li>
                         </ol>
                     </nav>
@@ -246,7 +246,7 @@ selectedTinChi = parseInt($(this).data('tin-chi')) || 0;
                     $btn.prop('disabled', true).text('Đang xử lý...');
 
                     $.ajax({
-                        url: '{{ route('sinhvien.dang-ky-mon-hoc.store') }}',
+                        url: '{{ route('sinh-vien.dang-ky-mon-hoc.store') }}',
                         method: 'POST',
                         data: {
                             _token: '{{ csrf_token() }}',

@@ -12,8 +12,8 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.thong-bao.index') }}">Thông báo</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.thong-bao.index') }}">Thông báo</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
                         </ol>
                     </nav>
@@ -86,12 +86,12 @@
 
                             <!-- Actions -->
                             <div class="d-flex justify-content-between align-items-center">
-                                <a href="{{ route('sinhvien.thong-bao.index') }}" class="btn btn-secondary">
+                                <a href="{{ route('sinh-vien.thong-bao.index') }}" class="btn btn-secondary">
                                     <i class="bi bi-arrow-left"></i> Quay lại
                                 </a>
 
                                 @if ($nguoiNhan && !$nguoiNhan->da_doc)
-                                    <form action="{{ route('sinhvien.thong-bao.mark-read', $thongBao->id) }}"
+                                    <form action="{{ route('sinh-vien.thong-bao.mark-read', $thongBao->id) }}"
                                         method="POST">
                                         @csrf
                                         <button type="submit" class="btn btn-success">
