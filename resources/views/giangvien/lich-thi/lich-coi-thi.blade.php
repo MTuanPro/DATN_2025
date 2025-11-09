@@ -1,6 +1,6 @@
-@extends('layouts.giangvien')
+@extends('layouts.layout-giangvien')
 
-@section('title', 'Lịch coi thi')
+@section('title', 'Lịch Coi Thi')
 
 @section('content')
 <div class="page-heading">
@@ -28,7 +28,7 @@
                 <h5 class="card-title">Bộ lọc</h5>
             </div>
             <div class="card-body">
-                <form action="{{ route('giangvien.lich-coi-thi') }}" method="GET">
+                <form action="{{ route('giangvien.lich-thi.lich-coi-thi') }}" method="GET">
                     <div class="row">
                         <div class="col-md-4">
                             <div class="form-group">

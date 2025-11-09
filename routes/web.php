@@ -234,6 +234,9 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 
     // PHASE 7.5: Quản lý Lịch thi
     Route::resource('lich-thi', \App\Http\Controllers\DaoTao\LichThiController::class);
+    Route::get('lich-thi/{lichThi}/phan-phong', [\App\Http\Controllers\DaoTao\LichThiController::class, 'phanPhong'])->name('lich-thi.phan-phong');
+    Route::post('lich-thi/{lichThi}/cap-nhat-phong', [\App\Http\Controllers\DaoTao\LichThiController::class, 'capNhatPhong'])->name('lich-thi.cap-nhat-phong');
+    Route::get('lich-thi/{lichThi}/danh-sach-sinh-vien', [\App\Http\Controllers\DaoTao\LichThiController::class, 'danhSachSinhVien'])->name('lich-thi.danh-sach-sinh-vien');
     Route::post('lich-thi/{lichThi}/gui-thong-bao', [\App\Http\Controllers\DaoTao\LichThiController::class, 'guiThongBao'])->name('lich-thi.gui-thong-bao');
     Route::get('lich-thi-export', [\App\Http\Controllers\DaoTao\LichThiController::class, 'export'])->name('lich-thi.export');
     Route::get('lich-thi/{lichThi}/download-de-thi', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadDeThi'])->name('lich-thi.download-de-thi');
@@ -257,8 +260,8 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     
     // PHASE 7.5: Lịch thi
     Route::get('lich-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'index'])->name('lich-thi.index');
+    Route::get('lich-thi/lich-coi-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'lichCoiThi'])->name('lich-thi.lich-coi-thi');
     Route::get('lich-thi/{lichThi}', [\App\Http\Controllers\GiangVien\LichThiController::class, 'show'])->name('lich-thi.show');
-    Route::get('lich-coi-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'lichCoiThi'])->name('lich-coi-thi');
     Route::post('lich-thi/{lichThi}/upload-de-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'uploadDeThi'])->name('lich-thi.upload-de-thi');
     Route::post('lich-thi/{lichThi}/upload-dap-an', [\App\Http\Controllers\GiangVien\LichThiController::class, 'uploadDapAn'])->name('lich-thi.upload-dap-an');
     Route::post('lich-thi/{lichThi}/xac-nhan-coi-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'xacNhanCoiThi'])->name('lich-thi.xac-nhan-coi-thi');

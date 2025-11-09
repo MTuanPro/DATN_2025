@@ -1,6 +1,6 @@
-@extends('layouts.sinhvien')
+@extends('layouts.layout-sinhvien')
 
-@section('title', 'Lịch thi cá nhân')
+@section('title', 'Lịch Thi')
 
 @section('content')
 <div class="page-heading">
@@ -133,6 +133,7 @@
                                 <th>Ngày thi</th>
                                 <th>Giờ thi</th>
                                 <th>Phòng thi</th>
+                                <th>Số báo danh</th>
                                 <th>Hình thức</th>
                                 <th>Trạng thái</th>
                                 <th>Chi tiết</th>
@@ -166,15 +167,31 @@
                                     {{ $lichThi->gio_ket_thuc }}
                                 </td>
                                 <td>
-                                    <strong>{{ $lichThi->phongHoc->ten_phong }}</strong>
-                                    @if($lichThi->phongHoc->vi_tri)
-                                        <br><small class="text-muted">{{ $lichThi->phongHoc->vi_tri }}</small>
+                                    @php
+                                        $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', auth()->guard('sinhvien')->id())->first();
+                                    @endphp
+                                    @if($thongTinThi && $thongTinThi->phongThi)
+                                        <strong>{{ $thongTinThi->phongThi->ten_phong }}</strong>
+                                        @if($thongTinThi->phongThi->vi_tri)
+                                            <br><small class="text-muted">{{ $thongTinThi->phongThi->vi_tri }}</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">Chưa phân phòng</span>
                                     @endif
                                 </td>
                                 <td>
-                                    @if($lichThi->hinh_thuc_thi == 'offline')
+                                    @if($thongTinThi)
+                                        <span class="badge bg-primary" style="font-size: 1.1em;">
+                                            {{ $thongTinThi->so_bao_danh }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">-</span>
+                                    @endif
+                                </td>
+                                <td>
+                                    @if($lichThi->hinh_thuc == 'offline')
                                         <span class="badge bg-secondary">Tại trường</span>
-                                    @elseif($lichThi->hinh_thuc_thi == 'online')
+                                    @elseif($lichThi->hinh_thuc == 'online')
                                         <span class="badge bg-primary">Online</span>
                                     @else
                                         <span class="badge bg-success">Kết hợp</span>
@@ -201,7 +218,7 @@
                             </tr>
                             @empty
                             <tr>
-                                <td colspan="9" class="text-center text-muted py-5">
+                                <td colspan="10" class="text-center text-muted py-5">
                                     <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                     <p class="mt-2">Không có lịch thi nào</p>
                                 </td>

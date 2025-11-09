@@ -164,4 +164,26 @@ class LichThi extends Model
     {
         return !empty($this->dap_an);
     }
+
+    /**
+     * Relationship: Lịch thi có nhiều sinh viên dự thi
+     */
+    public function lichThiSinhViens()
+    {
+        return $this->hasMany(LichThiSinhVien::class, 'lich_thi_id');
+    }
+
+    /**
+     * Relationship: Lấy danh sách sinh viên thông qua bảng trung gian
+     */
+    public function sinhViens()
+    {
+        return $this->belongsToMany(
+            SinhVien::class,
+            'lich_thi_sinh_vien',
+            'lich_thi_id',
+            'sinh_vien_id'
+        )->withPivot('phong_thi_id', 'so_bao_danh', 'trang_thai', 'ghi_chu')
+          ->withTimestamps();
+    }
 }

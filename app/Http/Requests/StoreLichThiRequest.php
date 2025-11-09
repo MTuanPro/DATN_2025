@@ -3,6 +3,10 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\LichThi;
+use App\Models\LopHocPhan;
+use App\Models\GiangVien;
+use App\Models\DanhMuc\PhongHoc;
 
 class StoreLichThiRequest extends FormRequest
 {
@@ -20,7 +24,23 @@ class StoreLichThiRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'lop_hoc_phan_id' => 'required|exists:lop_hoc_phan,id',
+            'lop_hoc_phan_id' => [
+                'required',
+                'exists:lop_hoc_phan,id',
+                function ($attribute, $value, $fail) {
+                    // Kiểm tra lớp học phần đã có lịch thi loại này chưa
+                    $loaiThi = $this->input('loai_thi');
+                    $lichThiTonTai = LichThi::where('lop_hoc_phan_id', $value)
+                        ->where('loai_thi', $loaiThi)
+                        ->exists();
+                    
+                    if ($lichThiTonTai) {
+                        $lopHocPhan = LopHocPhan::find($value);
+                        $loaiThiText = $loaiThi == 'giua_ky' ? 'Giữa kỳ' : ($loaiThi == 'cuoi_ky' ? 'Cuối kỳ' : 'Thi lại');
+                        $fail("Lớp học phần {$lopHocPhan->ma_lop_hp} đã có lịch thi {$loaiThiText}.");
+                    }
+                },
+            ],
             'loai_thi' => 'required|in:giua_ky,cuoi_ky,thi_lai',
             'ngay_thi' => 'required|date|after_or_equal:today',
             'gio_bat_dau' => 'required|date_format:H:i',
@@ -34,10 +54,112 @@ class StoreLichThiRequest extends FormRequest
                     }
                 },
             ],
-            'phong_thi_id' => 'nullable|exists:phong_hoc,id',
+            'phong_thi_id' => [
+                'nullable',
+                'exists:phong_hoc,id',
+                function ($attribute, $value, $fail) {
+                    if (!$value) return;
+                    
+                    $ngayThi = $this->input('ngay_thi');
+                    $gioBatDau = $this->input('gio_bat_dau');
+                    $gioKetThuc = $this->input('gio_ket_thuc');
+                    
+                    if (!$ngayThi || !$gioBatDau || !$gioKetThuc) return;
+                    
+                    // Kiểm tra phòng thi có trùng lịch không
+                    $trungLich = LichThi::where('phong_thi_id', $value)
+                        ->where('ngay_thi', $ngayThi)
+                        ->where(function ($query) use ($gioBatDau, $gioKetThuc) {
+                            $query->whereBetween('gio_bat_dau', [$gioBatDau, $gioKetThuc])
+                                  ->orWhereBetween('gio_ket_thuc', [$gioBatDau, $gioKetThuc])
+                                  ->orWhere(function ($q) use ($gioBatDau, $gioKetThuc) {
+                                      $q->where('gio_bat_dau', '<=', $gioBatDau)
+                                        ->where('gio_ket_thuc', '>=', $gioKetThuc);
+                                  });
+                        })
+                        ->with(['phongThi', 'lopHocPhan.monHoc'])
+                        ->first();
+                    
+                    if ($trungLich) {
+                        $phong = PhongHoc::find($value);
+                        $fail("Phòng {$phong->ten_phong} đã có lịch thi vào {$ngayThi} từ {$trungLich->gio_bat_dau} đến {$trungLich->gio_ket_thuc} (Môn: {$trungLich->lopHocPhan->monHoc->ten_mon}).");
+                    }
+                },
+            ],
             'so_sinh_vien_du_thi' => 'nullable|integer|min:0',
-            'giam_thi_1_id' => 'nullable|exists:giang_vien,id',
-            'giam_thi_2_id' => 'nullable|exists:giang_vien,id|different:giam_thi_1_id',
+            'giam_thi_1_id' => [
+                'nullable',
+                'exists:giang_vien,id',
+                function ($attribute, $value, $fail) {
+                    if (!$value) return;
+                    
+                    $ngayThi = $this->input('ngay_thi');
+                    $gioBatDau = $this->input('gio_bat_dau');
+                    $gioKetThuc = $this->input('gio_ket_thuc');
+                    
+                    if (!$ngayThi || !$gioBatDau || !$gioKetThuc) return;
+                    
+                    // Kiểm tra giảng viên có trùng lịch coi thi không
+                    $trungLich = LichThi::where('ngay_thi', $ngayThi)
+                        ->where(function ($query) use ($value) {
+                            $query->where('giam_thi_1_id', $value)
+                                  ->orWhere('giam_thi_2_id', $value);
+                        })
+                        ->where(function ($query) use ($gioBatDau, $gioKetThuc) {
+                            $query->whereBetween('gio_bat_dau', [$gioBatDau, $gioKetThuc])
+                                  ->orWhereBetween('gio_ket_thuc', [$gioBatDau, $gioKetThuc])
+                                  ->orWhere(function ($q) use ($gioBatDau, $gioKetThuc) {
+                                      $q->where('gio_bat_dau', '<=', $gioBatDau)
+                                        ->where('gio_ket_thuc', '>=', $gioKetThuc);
+                                  });
+                        })
+                        ->with(['lopHocPhan.monHoc', 'phongThi'])
+                        ->first();
+                    
+                    if ($trungLich) {
+                        $giangVien = GiangVien::find($value);
+                        $phongThi = $trungLich->phongThi ? $trungLich->phongThi->ten_phong : 'N/A';
+                        $fail("Giảng viên {$giangVien->ho_ten} đã có lịch coi thi vào {$ngayThi} từ {$trungLich->gio_bat_dau} đến {$trungLich->gio_ket_thuc} (Môn: {$trungLich->lopHocPhan->monHoc->ten_mon}, Phòng: {$phongThi}).");
+                    }
+                },
+            ],
+            'giam_thi_2_id' => [
+                'nullable',
+                'exists:giang_vien,id',
+                'different:giam_thi_1_id',
+                function ($attribute, $value, $fail) {
+                    if (!$value) return;
+                    
+                    $ngayThi = $this->input('ngay_thi');
+                    $gioBatDau = $this->input('gio_bat_dau');
+                    $gioKetThuc = $this->input('gio_ket_thuc');
+                    
+                    if (!$ngayThi || !$gioBatDau || !$gioKetThuc) return;
+                    
+                    // Kiểm tra giảng viên có trùng lịch coi thi không
+                    $trungLich = LichThi::where('ngay_thi', $ngayThi)
+                        ->where(function ($query) use ($value) {
+                            $query->where('giam_thi_1_id', $value)
+                                  ->orWhere('giam_thi_2_id', $value);
+                        })
+                        ->where(function ($query) use ($gioBatDau, $gioKetThuc) {
+                            $query->whereBetween('gio_bat_dau', [$gioBatDau, $gioKetThuc])
+                                  ->orWhereBetween('gio_ket_thuc', [$gioBatDau, $gioKetThuc])
+                                  ->orWhere(function ($q) use ($gioBatDau, $gioKetThuc) {
+                                      $q->where('gio_bat_dau', '<=', $gioBatDau)
+                                        ->where('gio_ket_thuc', '>=', $gioKetThuc);
+                                  });
+                        })
+                        ->with(['lopHocPhan.monHoc', 'phongThi'])
+                        ->first();
+                    
+                    if ($trungLich) {
+                        $giangVien = GiangVien::find($value);
+                        $phongThi = $trungLich->phongThi ? $trungLich->phongThi->ten_phong : 'N/A';
+                        $fail("Giảng viên {$giangVien->ho_ten} đã có lịch coi thi vào {$ngayThi} từ {$trungLich->gio_bat_dau} đến {$trungLich->gio_ket_thuc} (Môn: {$trungLich->lopHocPhan->monHoc->ten_mon}, Phòng: {$phongThi}).");
+                    }
+                },
+            ],
             'hinh_thuc' => 'required|in:offline,online,hybrid',
             'link_online' => 'nullable|url',
             'de_thi_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',

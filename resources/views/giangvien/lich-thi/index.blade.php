@@ -1,6 +1,6 @@
-@extends('layouts.giangvien')
+@extends('layouts.layout-giangvien')
 
-@section('title', 'Lịch thi lớp giảng dạy')
+@section('title', 'Lịch Thi')
 
 @section('content')
 <div class="page-heading">
@@ -83,7 +83,7 @@
         <!-- Quick Links -->
         <div class="row mb-3">
             <div class="col-12">
-                <a href="{{ route('giangvien.lich-coi-thi') }}" class="btn btn-outline-primary">
+                <a href="{{ route('giangvien.lich-thi.lich-coi-thi') }}" class="btn btn-outline-primary">
                     <i class="bi bi-eye"></i> Xem lịch coi thi
                 </a>
             </div>
@@ -132,14 +132,14 @@
                                 <td>{{ $lichThi->phongHoc->ten_phong }}</td>
                                 <td>{{ $lichThi->so_sinh_vien_du_thi ?? 'N/A' }}</td>
                                 <td>
-                                    @if($lichThi->de_thi)
+                                    @if($lichThi->de_thi_file)
                                         <span class="badge bg-success"><i class="bi bi-check"></i> Đã có</span>
                                     @else
                                         <span class="badge bg-secondary">Chưa có</span>
                                     @endif
                                 </td>
                                 <td>
-                                    @if($lichThi->dap_an)
+                                    @if($lichThi->dap_an_file)
                                         <span class="badge bg-success"><i class="bi bi-check"></i> Đã có</span>
                                     @else
                                         <span class="badge bg-secondary">Chưa có</span>

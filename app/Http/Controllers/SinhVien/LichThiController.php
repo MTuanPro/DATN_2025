@@ -23,7 +23,7 @@ class LichThiController extends Controller
         }
 
         // Lấy các lớp học phần mà sinh viên đã đăng ký
-        $lopHocPhanIds = $sinhVien->lopHocPhanSinhViens()
+        $lopHocPhanIds = $sinhVien->lopHocPhanSinhVien()
             ->pluck('lop_hoc_phan_id')
             ->unique();
 
@@ -33,7 +33,11 @@ class LichThiController extends Controller
             'phongHoc', 
             'giamThi1', 
             'giamThi2', 
-            'hocKy'
+            'hocKy',
+            'lichThiSinhViens' => function($q) use ($sinhVien) {
+                $q->where('sinh_vien_id', $sinhVien->id)
+                  ->with('phongThi');
+            }
         ])
             ->whereIn('lop_hoc_phan_id', $lopHocPhanIds);
 
@@ -76,7 +80,7 @@ class LichThiController extends Controller
         }
 
         // Kiểm tra quyền xem (phải đăng ký lớp học phần này)
-        $lopHocPhanIds = $sinhVien->lopHocPhanSinhViens()
+        $lopHocPhanIds = $sinhVien->lopHocPhanSinhVien()
             ->pluck('lop_hoc_phan_id')
             ->unique();
 
@@ -91,7 +95,11 @@ class LichThiController extends Controller
             'phongThi', 
             'giamThi1', 
             'giamThi2', 
-            'hocKy'
+            'hocKy',
+            'lichThiSinhViens' => function($q) use ($sinhVien) {
+                $q->where('sinh_vien_id', $sinhVien->id)
+                  ->with('phongThi');
+            }
         ]);
 
         return view('sinhvien.lich-thi.show', compact('lichThi'));
@@ -110,7 +118,7 @@ class LichThiController extends Controller
         }
 
         // Lấy các lớp học phần mà sinh viên đã đăng ký
-        $lopHocPhanIds = $sinhVien->lopHocPhanSinhViens()
+        $lopHocPhanIds = $sinhVien->lopHocPhanSinhVien()
             ->pluck('lop_hoc_phan_id')
             ->unique();
 
@@ -152,7 +160,7 @@ class LichThiController extends Controller
         }
 
         // Lấy các lớp học phần mà sinh viên đã đăng ký
-        $lopHocPhanIds = $sinhVien->lopHocPhanSinhViens()
+        $lopHocPhanIds = $sinhVien->lopHocPhanSinhVien()
             ->pluck('lop_hoc_phan_id')
             ->unique();
 

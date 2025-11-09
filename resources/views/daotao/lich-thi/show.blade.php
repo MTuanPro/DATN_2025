@@ -26,6 +26,9 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h4 class="card-title">Thông tin lịch thi</h4>
                 <div>
+                    <a href="{{ route('dao-tao.lich-thi.phan-phong', $lichThi) }}" class="btn btn-info btn-sm">
+                        <i class="bi bi-door-open"></i> Phân phòng thi
+                    </a>
                     <a href="{{ route('dao-tao.lich-thi.edit', $lichThi) }}" class="btn btn-warning btn-sm">
                         <i class="bi bi-pencil"></i> Sửa
                     </a>

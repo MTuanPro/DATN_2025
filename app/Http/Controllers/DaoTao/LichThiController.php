@@ -13,6 +13,7 @@ use App\Http\Requests\UpdateLichThiRequest;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class LichThiController extends Controller
 {
@@ -94,7 +95,7 @@ class LichThiController extends Controller
         try {
             DB::beginTransaction();
 
-            // 1. Kiểm tra lớp học phần hợp lệ
+            // 1. Lấy lớp học phần
             $lopHocPhan = LopHocPhan::with(['hocKy', 'lopHocPhanSinhViens'])->findOrFail($request->lop_hoc_phan_id);
 
             // 2. Kiểm tra ngày thi trong phạm vi học kỳ
@@ -102,39 +103,21 @@ class LichThiController extends Controller
             $ngayThi = \Carbon\Carbon::parse($request->ngay_thi);
             
             if ($ngayThi->lt($hocKy->ngay_bat_dau) || $ngayThi->gt($hocKy->ngay_ket_thuc)) {
+                DB::rollBack();
                 return redirect()->back()
                     ->withInput()
-                    ->with('error', 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
+                    ->withErrors(['ngay_thi' => 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
                            $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' . 
-                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')');
+                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')']);
             }
 
             // 3. Kiểm tra trùng lịch thi sinh viên (sinh viên không được thi 2 môn cùng lúc)
             $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id');
             
-            $trungLichSinhVien = LichThi::whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
-                    $q->whereIn('sinh_vien_id', $sinhVienIds);
-                })
-                ->where('ngay_thi', $request->ngay_thi)
-                ->where(function ($query) use ($request) {
-                    $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                          ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                          ->orWhere(function ($q) use ($request) {
-                              $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
-                                ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
-                          });
-                })
-                ->exists();
-
-            if ($trungLichSinhVien) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Có sinh viên trong lớp đã có lịch thi trùng giờ!');
-            }
-
-            // 4. Kiểm tra trùng phòng thi
-            if ($request->phong_thi_id) {
-                $trungPhong = LichThi::where('phong_thi_id', $request->phong_thi_id)
+            if ($sinhVienIds->isNotEmpty()) {
+                $trungLichSinhVien = LichThi::whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
+                        $q->whereIn('sinh_vien_id', $sinhVienIds);
+                    })
                     ->where('ngay_thi', $request->ngay_thi)
                     ->where(function ($query) use ($request) {
                         $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
@@ -144,73 +127,33 @@ class LichThiController extends Controller
                                     ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
                               });
                     })
-                    ->exists();
+                    ->with(['lopHocPhan.monHoc'])
+                    ->first();
 
-                if ($trungPhong) {
+                if ($trungLichSinhVien) {
+                    DB::rollBack();
                     return redirect()->back()
                         ->withInput()
-                        ->with('error', 'Phòng thi đã có lịch thi trùng thời gian!');
+                        ->withErrors(['ngay_thi' => 'Có sinh viên trong lớp đã có lịch thi trùng giờ (Môn: ' . $trungLichSinhVien->lopHocPhan->monHoc->ten_mon . ' vào ' . $trungLichSinhVien->gio_bat_dau . '-' . $trungLichSinhVien->gio_ket_thuc . ')']);
                 }
+            }
 
-                // 5. Kiểm tra sức chứa phòng
+            // 4. Kiểm tra sức chứa phòng
+            if ($request->phong_thi_id) {
                 $phongHoc = PhongHoc::find($request->phong_thi_id);
                 $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
                 
                 if ($soSinhVienDuThi > $phongHoc->suc_chua) {
+                    DB::rollBack();
                     return redirect()->back()
                         ->withInput()
-                        ->with('error', 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!');
+                        ->withErrors(['phong_thi_id' => 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!']);
                 }
-            }
-
-            // 6. Kiểm tra trùng lịch giám thị
-            $giamThiIds = array_filter([$request->giam_thi_1_id, $request->giam_thi_2_id]);
-            
-            if (!empty($giamThiIds)) {
-                $trungGiamThi = LichThi::where('ngay_thi', $request->ngay_thi)
-                    ->where(function($q) use ($giamThiIds) {
-                        $q->whereIn('giam_thi_1_id', $giamThiIds)
-                          ->orWhereIn('giam_thi_2_id', $giamThiIds);
-                    })
-                    ->where(function ($query) use ($request) {
-                        $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                              ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                              ->orWhere(function ($q) use ($request) {
-                                  $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
-                                    ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
-                              });
-                    })
-                    ->exists();
-
-                if ($trungGiamThi) {
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Giảng viên giám thị đã có lịch coi thi trùng giờ!');
-                }
-            }
-
-            // 7. Giới hạn số lịch thi theo loại (ví dụ: 1 giữa kỳ, 1 cuối kỳ, tối đa 2 thi lại)
-            $soLichThiCungLoai = LichThi::where('lop_hoc_phan_id', $request->lop_hoc_phan_id)
-                ->where('loai_thi', $request->loai_thi)
-                ->count();
-
-            $gioiHan = [
-                'giua_ky' => 1,
-                'cuoi_ky' => 1,
-                'thi_lai' => 2
-            ];
-
-            if ($soLichThiCungLoai >= ($gioiHan[$request->loai_thi] ?? 1)) {
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Lớp học phần đã đạt giới hạn số lần thi ' . 
-                           ($request->loai_thi == 'giua_ky' ? 'giữa kỳ' : 
-                           ($request->loai_thi == 'cuoi_ky' ? 'cuối kỳ' : 'thi lại')) . '!');
             }
 
             $data = $request->validated();
 
-            // Xử lý upload file đề thi (timestamp + tên gốc)
+            // Xử lý upload file đề thi (timestamp + slug)
             if ($request->hasFile('de_thi_file')) {
                 $file = $request->file('de_thi_file');
                 $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -219,7 +162,7 @@ class LichThiController extends Controller
                 $data['de_thi_file'] = $file->storeAs('de-thi', $fileName, 'public');
             }
 
-            // Xử lý upload file đáp án (timestamp + tên gốc)
+            // Xử lý upload file đáp án (timestamp + slug)
             if ($request->hasFile('dap_an_file')) {
                 $file = $request->file('dap_an_file');
                 $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
@@ -235,16 +178,49 @@ class LichThiController extends Controller
 
             $lichThi = LichThi::create($data);
 
+            // 5. Tự động phân sinh viên vào phòng thi
+            $sinhViens = $lopHocPhan->lopHocPhanSinhViens()->with('sinhVien')->get();
+            
+            if ($sinhViens->isNotEmpty()) {
+                $lichThiSinhVienData = [];
+                $soBaoDanhCounter = 1;
+                
+                foreach ($sinhViens as $lopHocPhanSinhVien) {
+                    $lichThiSinhVienData[] = [
+                        'lich_thi_id' => $lichThi->id,
+                        'sinh_vien_id' => $lopHocPhanSinhVien->sinh_vien_id,
+                        'phong_thi_id' => $request->phong_thi_id, // Dùng phòng mặc định từ lịch thi
+                        'so_bao_danh' => str_pad($soBaoDanhCounter, 4, '0', STR_PAD_LEFT), // 0001, 0002, ...
+                        'trang_thai' => 'du_thi',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+                    $soBaoDanhCounter++;
+                }
+                
+                // Insert hàng loạt để tối ưu performance
+                \App\Models\LichThiSinhVien::insert($lichThiSinhVienData);
+                
+                Log::info('Đã tự động phân ' . count($lichThiSinhVienData) . ' sinh viên vào lịch thi ID: ' . $lichThi->id);
+            }
+
             DB::commit();
 
             return redirect()->route('dao-tao.lich-thi.index')
-                ->with('success', 'Thêm lịch thi thành công!');
+                ->with('success', 'Thêm lịch thi thành công! Đã tự động phân ' . ($sinhViens->count() ?? 0) . ' sinh viên vào phòng thi.');
 
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            DB::rollBack();
+            throw $e; // Để Laravel tự xử lý validation errors
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('Lỗi khi thêm lịch thi: ' . $e->getMessage(), [
+                'exception' => $e,
+                'request' => $request->all()
+            ]);
             return redirect()->back()
                 ->withInput()
-                ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+                ->withErrors(['error' => 'Có lỗi xảy ra khi thêm lịch thi. Vui lòng thử lại hoặc liên hệ quản trị viên.']);
         }
     }
 
@@ -440,6 +416,43 @@ class LichThiController extends Controller
 
             $lichThi->update($data);
 
+            // 8. Cập nhật phân công sinh viên nếu đổi lớp học phần
+            if ($lichThi->wasChanged('lop_hoc_phan_id')) {
+                // Xóa phân công cũ
+                \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)->delete();
+                
+                // Tạo phân công mới
+                $sinhViens = $lopHocPhan->lopHocPhanSinhViens()->with('sinhVien')->get();
+                
+                if ($sinhViens->isNotEmpty()) {
+                    $lichThiSinhVienData = [];
+                    $soBaoDanhCounter = 1;
+                    
+                    foreach ($sinhViens as $lopHocPhanSinhVien) {
+                        $lichThiSinhVienData[] = [
+                            'lich_thi_id' => $lichThi->id,
+                            'sinh_vien_id' => $lopHocPhanSinhVien->sinh_vien_id,
+                            'phong_thi_id' => $request->phong_thi_id,
+                            'so_bao_danh' => str_pad($soBaoDanhCounter, 4, '0', STR_PAD_LEFT),
+                            'trang_thai' => 'du_thi',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                        $soBaoDanhCounter++;
+                    }
+                    
+                    \App\Models\LichThiSinhVien::insert($lichThiSinhVienData);
+                    Log::info('Đã cập nhật phân công ' . count($lichThiSinhVienData) . ' sinh viên cho lịch thi ID: ' . $lichThi->id);
+                }
+            }
+            // 9. Cập nhật phòng thi mặc định nếu thay đổi phòng
+            elseif ($lichThi->wasChanged('phong_thi_id')) {
+                \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)
+                    ->update(['phong_thi_id' => $request->phong_thi_id]);
+                    
+                Log::info('Đã cập nhật phòng thi cho tất cả sinh viên của lịch thi ID: ' . $lichThi->id);
+            }
+
             DB::commit();
 
             return redirect()->route('dao-tao.lich-thi.index')
@@ -546,5 +559,136 @@ class LichThiController extends Controller
         }
 
         return response()->download($path);
+    }
+
+    /**
+     * Trang phân phòng thi cho sinh viên
+     */
+    public function phanPhong(LichThi $lichThi)
+    {
+        $lichThi->load([
+            'lopHocPhan.monHoc',
+            'lopHocPhan.hocKy',
+            'lichThiSinhViens.sinhVien',
+            'lichThiSinhViens.phongThi'
+        ]);
+
+        // Lấy danh sách phòng đã được sử dụng cho lịch thi này
+        $phongDangDungIds = $lichThi->lichThiSinhViens
+            ->pluck('phong_thi_id')
+            ->unique()
+            ->filter()
+            ->toArray();
+
+        // Thêm phòng mặc định vào danh sách (nếu có)
+        if ($lichThi->phong_thi_id && !in_array($lichThi->phong_thi_id, $phongDangDungIds)) {
+            $phongDangDungIds[] = $lichThi->phong_thi_id;
+        }
+
+        // CHỈ lấy các phòng đang được dùng hoặc phòng mặc định
+        $phongHocs = PhongHoc::whereIn('id', $phongDangDungIds)
+            ->orderBy('ten_phong')
+            ->get();
+
+        // Lấy THÊM các phòng trống (cho option "thêm phòng mới")
+        $phongTrong = PhongHoc::whereNotIn('id', function($query) use ($lichThi) {
+                // Lấy các phòng đang bận trong cùng khung giờ
+                $query->select('phong_thi_id')
+                      ->from('lich_thi')
+                      ->where('ngay_thi', $lichThi->ngay_thi)
+                      ->where(function ($q) use ($lichThi) {
+                          $q->whereBetween('gio_bat_dau', [$lichThi->gio_bat_dau, $lichThi->gio_ket_thuc])
+                            ->orWhereBetween('gio_ket_thuc', [$lichThi->gio_bat_dau, $lichThi->gio_ket_thuc])
+                            ->orWhere(function ($q2) use ($lichThi) {
+                                $q2->where('gio_bat_dau', '<=', $lichThi->gio_bat_dau)
+                                   ->where('gio_ket_thuc', '>=', $lichThi->gio_ket_thuc);
+                            });
+                      })
+                      ->whereNotNull('phong_thi_id');
+            })
+            ->whereNotIn('id', $phongDangDungIds) // Loại bỏ các phòng đã dùng
+            ->orderBy('ten_phong')
+            ->get();
+
+        // Group sinh viên theo phòng
+        $sinhVienTheoPhong = $lichThi->lichThiSinhViens->groupBy('phong_thi_id');
+
+        return view('daotao.lich-thi.phan-phong', compact('lichThi', 'phongHocs', 'phongTrong', 'sinhVienTheoPhong'));
+    }
+
+    /**
+     * Cập nhật phòng thi cho sinh viên
+     */
+    public function capNhatPhong(Request $request, LichThi $lichThi)
+    {
+        $request->validate([
+            'sinh_vien_ids' => 'required|array',
+            'sinh_vien_ids.*' => 'exists:sinh_vien,id',
+            'phong_thi_id' => 'required|exists:phong_hoc,id',
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Kiểm tra sức chứa phòng
+            $phongThi = PhongHoc::findOrFail($request->phong_thi_id);
+            $soSinhVienHienTai = \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)
+                ->where('phong_thi_id', $request->phong_thi_id)
+                ->count();
+            
+            $soSinhVienChuyenDen = count($request->sinh_vien_ids);
+            $tongSinhVienSauKhiChuyen = $soSinhVienHienTai + $soSinhVienChuyenDen;
+
+            if ($tongSinhVienSauKhiChuyen > $phongThi->suc_chua) {
+                DB::rollBack();
+                return redirect()->back()
+                    ->with('error', 'Phòng ' . $phongThi->ten_phong . ' chỉ chứa được ' . $phongThi->suc_chua . ' sinh viên. ' .
+                           'Hiện đang có ' . $soSinhVienHienTai . ' sinh viên, ' .
+                           'không thể thêm ' . $soSinhVienChuyenDen . ' sinh viên nữa (tổng: ' . $tongSinhVienSauKhiChuyen . ').');
+            }
+
+            // Cập nhật phòng cho các sinh viên được chọn
+            \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)
+                ->whereIn('sinh_vien_id', $request->sinh_vien_ids)
+                ->update(['phong_thi_id' => $request->phong_thi_id]);
+
+            DB::commit();
+
+            return redirect()->route('dao-tao.lich-thi.phan-phong', $lichThi)
+                ->with('success', 'Đã chuyển ' . count($request->sinh_vien_ids) . ' sinh viên sang phòng ' . $phongThi->ten_phong . '!');
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Xem danh sách sinh viên dự thi
+     */
+    public function danhSachSinhVien(LichThi $lichThi)
+    {
+        $lichThi->load([
+            'lopHocPhan.monHoc',
+            'lopHocPhan.hocKy',
+            'phongThi',
+            'lichThiSinhViens.sinhVien.lopHanhChinh',
+            'lichThiSinhViens.phongThi'
+        ]);
+
+        // Lọc theo phòng nếu có
+        $phongThiId = request('phong_thi_id');
+        $sinhViens = $lichThi->lichThiSinhViens()
+            ->with(['sinhVien.lopHanhChinh', 'phongThi'])
+            ->when($phongThiId, function($q) use ($phongThiId) {
+                $q->where('phong_thi_id', $phongThiId);
+            })
+            ->orderBy('so_bao_danh')
+            ->get();
+
+        $phongHocs = PhongHoc::orderBy('ten_phong')->get();
+
+        return view('daotao.lich-thi.danh-sach-sinh-vien', compact('lichThi', 'sinhViens', 'phongHocs'));
     }
 }

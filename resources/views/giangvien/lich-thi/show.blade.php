@@ -1,4 +1,4 @@
-@extends('layouts.giangvien')
+@extends('layouts.layout-giangvien')
 
 @section('title', 'Chi tiết Lịch thi')
 
@@ -212,36 +212,91 @@
 
         <!-- Danh sách sinh viên -->
         <div class="card">
-            <div class="card-header">
-                <h5 class="card-title">Danh sách sinh viên dự thi ({{ $lichThi->lopHocPhan->lopHocPhanSinhViens->count() }} sinh viên)</h5>
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <h5 class="card-title mb-0">Danh sách sinh viên dự thi ({{ $lichThi->lichThiSinhViens->count() }} sinh viên)</h5>
+                <div>
+                    <button onclick="window.print()" class="btn btn-sm btn-primary">
+                        <i class="bi bi-printer"></i> In danh sách
+                    </button>
+                    <a href="{{ route('dao-tao.lich-thi.danh-sach-sinh-vien', $lichThi) }}" 
+                       class="btn btn-sm btn-info" target="_blank">
+                        <i class="bi bi-file-earmark-text"></i> Xem chi tiết
+                    </a>
+                </div>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-striped">
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>MSSV</th>
-                                <th>Họ tên</th>
-                                <th>Lớp</th>
-                                <th>Email</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($lichThi->lopHocPhan->lopHocPhanSinhViens as $index => $lhpsv)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $lhpsv->sinhVien->ma_sinh_vien }}</td>
-                                <td>{{ $lhpsv->sinhVien->ho_ten }}</td>
-                                <td>{{ $lhpsv->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
-                                <td>{{ $lhpsv->sinhVien->email }}</td>
-                            </tr>
+                @if($lichThi->lichThiSinhViens->isEmpty())
+                    <div class="alert alert-warning text-center">
+                        <i class="bi bi-exclamation-triangle"></i> Chưa có sinh viên nào được phân phòng thi.
+                    </div>
+                @else
+                    <!-- Lọc theo phòng -->
+                    <div class="mb-3">
+                        <label class="form-label">Lọc theo phòng:</label>
+                        <select id="filterPhong" class="form-select" style="max-width: 300px;">
+                            <option value="">-- Tất cả phòng --</option>
+                            @foreach($lichThi->lichThiSinhViens->pluck('phongThi')->unique('id')->filter() as $phong)
+                                <option value="{{ $phong->id }}">{{ $phong->ten_phong }}</option>
                             @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                        </select>
+                    </div>
+
+                    <div class="table-responsive">
+                        <table class="table table-striped table-hover">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>Số báo danh</th>
+                                    <th>MSSV</th>
+                                    <th>Họ tên</th>
+                                    <th>Lớp hành chính</th>
+                                    <th>Phòng thi</th>
+                                    <th>Trạng thái</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tableBody">
+                                @foreach($lichThi->lichThiSinhViens->sortBy('so_bao_danh') as $index => $item)
+                                <tr data-phong="{{ $item->phong_thi_id }}">
+                                    <td>{{ $index + 1 }}</td>
+                                    <td><strong class="text-primary">{{ $item->so_bao_danh }}</strong></td>
+                                    <td>{{ $item->sinhVien->ma_sinh_vien }}</td>
+                                    <td>{{ $item->sinhVien->ho_ten }}</td>
+                                    <td>{{ $item->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                                    <td>{{ $item->phongThi->ten_phong ?? 'Chưa xác định' }}</td>
+                                    <td>
+                                        @if($item->trang_thai === 'du_thi')
+                                            <span class="badge bg-success">Dự thi</span>
+                                        @elseif($item->trang_thai === 'vang_co_phep')
+                                            <span class="badge bg-warning text-dark">Vắng có phép</span>
+                                        @else
+                                            <span class="badge bg-danger">Vắng không phép</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+                @endif
             </div>
         </div>
     </section>
 </div>
+
+@push('scripts')
+<script>
+document.getElementById('filterPhong')?.addEventListener('change', function() {
+    const phongId = this.value;
+    const rows = document.querySelectorAll('#tableBody tr');
+    
+    rows.forEach(row => {
+        if (!phongId || row.dataset.phong === phongId) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+});
+</script>
+@endpush
 @endsection

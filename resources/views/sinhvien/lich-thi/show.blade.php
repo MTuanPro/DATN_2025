@@ -1,4 +1,4 @@
-@extends('layouts.sinhvien')
+@extends('layouts.layout-sinhvien')
 
 @section('title', 'Chi tiết Lịch thi')
 
@@ -91,9 +91,28 @@
                             <tr>
                                 <th>Phòng thi:</th>
                                 <td>
-                                    <strong class="text-primary">{{ $lichThi->phongHoc->ten_phong }}</strong>
-                                    @if($lichThi->phongHoc->vi_tri)
-                                        <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ $lichThi->phongHoc->vi_tri }}</small>
+                                    @php
+                                        $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', auth()->guard('sinhvien')->id())->first();
+                                    @endphp
+                                    @if($thongTinThi && $thongTinThi->phongThi)
+                                        <strong class="text-primary">{{ $thongTinThi->phongThi->ten_phong }}</strong>
+                                        @if($thongTinThi->phongThi->vi_tri)
+                                            <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ $thongTinThi->phongThi->vi_tri }}</small>
+                                        @endif
+                                    @else
+                                        <span class="text-muted">Chưa được phân phòng</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Số báo danh:</th>
+                                <td>
+                                    @if($thongTinThi)
+                                        <span class="badge bg-primary" style="font-size: 1.5em; padding: 10px 20px;">
+                                            {{ $thongTinThi->so_bao_danh }}
+                                        </span>
+                                    @else
+                                        <span class="text-muted">Chưa có số báo danh</span>
                                     @endif
                                 </td>
                             </tr>

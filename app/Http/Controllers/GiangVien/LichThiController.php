@@ -24,9 +24,7 @@ class LichThiController extends Controller
         }
 
         // Lấy các lớp học phần mà giảng viên phụ trách
-        $lopHocPhanIds = $giangVien->phanCongGiangDays()
-            ->pluck('lop_hoc_phan_id')
-            ->unique();
+        $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
 
         $query = LichThi::with([
             'lopHocPhan.monHoc', 
@@ -123,9 +121,7 @@ class LichThiController extends Controller
         }
 
         // Kiểm tra quyền xem (phải là GV phụ trách lớp hoặc giám thị)
-        $lopHocPhanIds = $giangVien->phanCongGiangDays()
-            ->pluck('lop_hoc_phan_id')
-            ->unique();
+        $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
 
         $isGiamThi = ($lichThi->giam_thi_1_id == $giangVien->id || 
                       $lichThi->giam_thi_2_id == $giangVien->id);
@@ -138,11 +134,12 @@ class LichThiController extends Controller
         $lichThi->load([
             'lopHocPhan.monHoc', 
             'lopHocPhan.hocKy',
-            'lopHocPhan.lopHocPhanSinhViens.sinhVien', 
             'phongThi', 
             'giamThi1', 
             'giamThi2', 
-            'hocKy'
+            'hocKy',
+            'lichThiSinhViens.sinhVien.lopHanhChinh',
+            'lichThiSinhViens.phongThi'
         ]);
 
         return view('giangvien.lich-thi.show', compact('lichThi', 'isGiamThi'));
@@ -165,9 +162,7 @@ class LichThiController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         // Kiểm tra quyền (phải là GV phụ trách lớp)
-        $lopHocPhanIds = $giangVien->phanCongGiangDays()
-            ->pluck('lop_hoc_phan_id')
-            ->unique();
+        $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
 
         if (!$lopHocPhanIds->contains($lichThi->lop_hoc_phan_id)) {
             return redirect()->back()
@@ -214,9 +209,7 @@ class LichThiController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         // Kiểm tra quyền (phải là GV phụ trách lớp)
-        $lopHocPhanIds = $giangVien->phanCongGiangDays()
-            ->pluck('lop_hoc_phan_id')
-            ->unique();
+        $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
 
         if (!$lopHocPhanIds->contains($lichThi->lop_hoc_phan_id)) {
             return redirect()->back()
