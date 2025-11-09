@@ -42,6 +42,12 @@ use App\Http\Controllers\DaoTao\SinhVienController;
 use App\Http\Controllers\DaoTao\XepLopController;
 use App\Http\Controllers\SinhVien\DangKyMonHocController;
 use App\Http\Controllers\SinhVien\ThoiKhoaBieuController;
+use App\Http\Controllers\GiangVien\NhapDiemController;
+use App\Http\Controllers\DaoTao\DuyetDiemController;
+use App\Http\Controllers\SinhVien\XemDiemController;
+use App\Http\Controllers\DaoTao\ThongBaoController as DaoTaoThongBaoController;
+use App\Http\Controllers\GiangVien\ThongBaoController as GiangVienThongBaoController;
+use App\Http\Controllers\SinhVien\ThongBaoController as SinhVienThongBaoController;
 
 
 // Debug route (temporary)
@@ -52,7 +58,6 @@ Route::get('/', function () {
     if (Auth::check()) {
         $user = Auth::user();
         $roles = $user->vaiTro()->pluck('ma_vai_tro')->toArray();
-
         if (in_array('admin', $roles)) {
             return redirect()->route('admin.dashboard');
         }
@@ -231,6 +236,13 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::get('/lop-hoc-phan-by-mon/{monHoc}', [XepLopController::class, 'getLopHocPhanByMonHoc'])->name('lop-hoc-phan-by-mon');
         Route::delete('/xoa-khoi-lop/{lhpsv}', [XepLopController::class, 'xoaKhoiLop'])->name('xoa-khoi-lop');
     });
+    // PHASE 7: Duyệt điểm
+    Route::prefix('duyet-diem')->name('duyet-diem.')->group(function () {
+        Route::get('/', [DuyetDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [DuyetDiemController::class, 'show'])->name('show');
+        Route::post('/{lopHocPhan}/duyet', [DuyetDiemController::class, 'duyetDiem'])->name('duyet');
+    });
+
 
     // PHASE 7.5: Quản lý Lịch thi
     Route::resource('lich-thi', \App\Http\Controllers\DaoTao\LichThiController::class);
@@ -242,6 +254,27 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::get('lich-thi/{lichThi}/download-de-thi', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadDeThi'])->name('lich-thi.download-de-thi');
     Route::get('lich-thi/{lichThi}/download-dap-an', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadDapAn'])->name('lich-thi.download-dap-an');
 
+    // PHASE 10: Quản lý Thông báo (CRUD full)
+    Route::resource('thong-bao', DaoTaoThongBaoController::class);
+
+    // PHASE 8: Quản lý Học phí
+    // Cấu hình học phí
+    Route::prefix('hoc-phi')->name('hoc-phi.')->group(function () {
+        Route::resource('cau-hinh', \App\Http\Controllers\DaoTao\CauHinhHocPhiController::class);
+        Route::get('cau-hinh/current', [\App\Http\Controllers\DaoTao\CauHinhHocPhiController::class, 'getCurrent'])->name('cau-hinh.current');
+
+        // Quản lý học phí
+        Route::get('/', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'index'])->name('index');
+        Route::get('/statistics', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'statistics'])->name('statistics');
+        Route::get('/overdue', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'overdue'])->name('overdue');
+        Route::get('/export', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'export'])->name('export');
+        Route::get('/{id}', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'show'])->name('show');
+        Route::get('/{id}/edit', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'edit'])->name('edit');
+        Route::put('/{id}', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'update'])->name('update');
+        Route::get('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'payment'])->name('payment');
+        Route::post('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'storePayment'])->name('storePayment');
+    });
+
     // Thông báo (chỉ xem)
     Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
     Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
@@ -251,13 +284,38 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('giangvien.')->group(function () {
     Route::get('/dashboard', [GiangVienDashboardController::class, 'index'])->name('dashboard');
 
+    // Lớp giảng dạy
+    Route::get('/lop-giang-day', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'index'])->name('lop-giang-day.index');
+    Route::get('/lop-giang-day/{id}', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'show'])->name('lop-giang-day.show');
+    Route::get('/lop-giang-day/{id}/export-students', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'exportStudents'])->name('lop-giang-day.export-students');
+    Route::get('/lop-giang-day/{id}/export-students-pdf', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'exportStudentsPdf'])->name('lop-giang-day.export-students-pdf');
+
+    // Quản lý buổi học
+    Route::get('/buoi-hoc', [App\Http\Controllers\GiangVien\TeachingSessionController::class, 'index'])->name('buoi-hoc.index');
+    Route::get('/buoi-hoc/lich-su', [App\Http\Controllers\GiangVien\TeachingSessionController::class, 'history'])->name('buoi-hoc.history');
+    Route::get('/buoi-hoc/{id}/edit', [App\Http\Controllers\GiangVien\TeachingSessionController::class, 'edit'])->name('buoi-hoc.edit');
+    Route::put('/buoi-hoc/{id}', [App\Http\Controllers\GiangVien\TeachingSessionController::class, 'update'])->name('buoi-hoc.update');
+    Route::delete('/buoi-hoc/{id}/tai-lieu', [App\Http\Controllers\GiangVien\TeachingSessionController::class, 'deleteTaiLieu'])->name('buoi-hoc.delete-tai-lieu');
+    Route::get('/buoi-hoc/{id}/tai-lieu', [App\Http\Controllers\GiangVien\TeachingSessionController::class, 'downloadTaiLieu'])->name('buoi-hoc.download-tai-lieu');
+
+    // Điểm danh
+    Route::get('/diem-danh', [App\Http\Controllers\GiangVien\AttendanceController::class, 'index'])->name('diem-danh.index');
+    Route::get('/diem-danh/bao-cao', [App\Http\Controllers\GiangVien\AttendanceController::class, 'report'])->name('diem-danh.report');
+    Route::get('/diem-danh/bao-cao/export-excel', [App\Http\Controllers\GiangVien\AttendanceController::class, 'exportExcel'])->name('diem-danh.export-excel');
+    Route::get('/diem-danh/bao-cao/export-pdf', [App\Http\Controllers\GiangVien\AttendanceController::class, 'exportPdf'])->name('diem-danh.export-pdf');
+    Route::post('/diem-danh/canh-bao', [App\Http\Controllers\GiangVien\AttendanceController::class, 'checkAndSendWarnings'])->name('diem-danh.canh-bao');
+    Route::get('/diem-danh/{id}', [App\Http\Controllers\GiangVien\AttendanceController::class, 'show'])->name('diem-danh.show');
+    Route::post('/diem-danh/{id}', [App\Http\Controllers\GiangVien\AttendanceController::class, 'store'])->name('diem-danh.store');
+
     // Lớp chủ nhiệm (GVCN)
     Route::get('/lop-chu-nhiem', [GVCNController::class, 'index'])->name('lop-chu-nhiem.index');
     Route::get('/lop-chu-nhiem/{id}', [GVCNController::class, 'show'])->name('lop-chu-nhiem.show');
     Route::get('/lop-chu-nhiem/{id}/sinh-vien', [GVCNController::class, 'danhSachSinhVien'])->name('lop-chu-nhiem.sinh-vien');
+    Route::get('/lop-chu-nhiem/{id}/ket-qua-hoc-tap', [GVCNController::class, 'xemKetQuaHocTap'])->name('lop-chu-nhiem.ket-qua-hoc-tap');
+    Route::get('/lop-chu-nhiem/{id}/canh-bao-hoc-vu', [GVCNController::class, 'xemCanhBaoHocVu'])->name('lop-chu-nhiem.canh-bao-hoc-vu');
     Route::get('/lop-chu-nhiem/{id}/export-excel', [GVCNController::class, 'exportExcel'])->name('lop-chu-nhiem.export-excel');
     Route::get('/lop-chu-nhiem/{id}/export-pdf', [GVCNController::class, 'exportPDF'])->name('lop-chu-nhiem.export-pdf');
-    
+
     // PHASE 7.5: Lịch thi
     Route::get('lich-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'index'])->name('lich-thi.index');
     Route::get('lich-thi/lich-coi-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'lichCoiThi'])->name('lich-thi.lich-coi-thi');
@@ -271,10 +329,23 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     // Lịch dạy cá nhân
     Route::get('/lich-day', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/lich-day/export', [ScheduleController::class, 'export'])->name('schedule.export');
+    // Nhập điểm
+    Route::prefix('nhap-diem')->name('nhap-diem.')->group(function () {
+        Route::get('/', [NhapDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [NhapDiemController::class, 'show'])->name('show');
+        Route::post('/store', [NhapDiemController::class, 'nhapDiem'])->name('store');
+        Route::post('/{lopHocPhan}/khoa', [NhapDiemController::class, 'khoaDiem'])->name('khoa');
+        Route::post('/{lopHocPhan}/mo-khoa', [NhapDiemController::class, 'moKhoaDiem'])->name('mo-khoa');
+    });
 
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
+    // PHASE 10: Thông báo (chỉ xem)
+    Route::prefix('thong-bao')->name('thong-bao.')->group(function () {
+        Route::get('/', [GiangVienThongBaoController::class, 'index'])->name('index');
+        Route::get('/{thongBao}', [GiangVienThongBaoController::class, 'show'])->name('show');
+        Route::post('/{thongBao}/mark-read', [GiangVienThongBaoController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-all-read', [GiangVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::get('/unread/count', [GiangVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
+    });
 });
 
 // ========== Sinh viên Routes ==========
@@ -283,9 +354,9 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
 
     // PHASE 5: Đăng ký môn học
     Route::middleware('sinhvien.check')->prefix('dang-ky-mon-hoc')->name('dang-ky-mon-hoc.')->group(function () {
-    Route::get('/', [DangKyMonHocController::class, 'index'])->name('index');
-    Route::get('/create', [DangKyMonHocController::class, 'create'])->name('create');
-    Route::post('/', [DangKyMonHocController::class, 'store'])->name('store');
+        Route::get('/', [DangKyMonHocController::class, 'index'])->name('index');
+        Route::get('/create', [DangKyMonHocController::class, 'create'])->name('create');
+        Route::post('/', [DangKyMonHocController::class, 'store'])->name('store');
         Route::delete('/{dangKy}', [DangKyMonHocController::class, 'destroy'])->name('destroy');
         Route::get('/my-registrations', [DangKyMonHocController::class, 'myRegistrations'])->name('my-registrations');
     });
@@ -296,6 +367,13 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
         Route::get('/chi-tiet', [ThoiKhoaBieuController::class, 'chiTiet'])->name('chi-tiet');
         Route::get('/export-pdf', [ThoiKhoaBieuController::class, 'exportPDF'])->name('export-pdf');
     });
+    // PHASE 7: Xem điểm
+    Route::middleware('sinhvien.check')->prefix('diem')->name('diem.')->group(function () {
+        Route::get('/', [XemDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [XemDiemController::class, 'show'])->name('show');
+        Route::get('/bang-diem/tong-hop', [XemDiemController::class, 'bangDiem'])->name('bang-diem');
+        Route::get('/bang-diem/export-pdf', [XemDiemController::class, 'exportPDF'])->name('export-pdf');
+    });
 
     // PHASE 7.5: Lịch thi cá nhân
     Route::middleware('sinhvien.check')->prefix('lich-thi')->name('lich-thi.')->group(function () {
@@ -305,7 +383,21 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
         Route::get('/{lichThi}', [\App\Http\Controllers\SinhVien\LichThiController::class, 'show'])->name('show');
     });
 
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
+    // PHASE 8: Học phí cá nhân
+    Route::middleware('sinhvien.check')->prefix('hoc-phi')->name('hoc-phi.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'index'])->name('index');
+        Route::get('/huong-dan', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'huongDan'])->name('huong-dan');
+        Route::get('/{id}', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'show'])->name('show');
+        Route::get('/{id}/lich-su', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'lichSu'])->name('lich-su');
+        Route::get('/{id}/pdf', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'exportPdf'])->name('pdf');
+    });
+
+    // PHASE 10: Thông báo (chỉ xem)
+    Route::middleware('sinhvien.check')->prefix('thong-bao')->name('thong-bao.')->group(function () {
+        Route::get('/', [SinhVienThongBaoController::class, 'index'])->name('index');
+        Route::get('/{thongBao}', [SinhVienThongBaoController::class, 'show'])->name('show');
+        Route::post('/{thongBao}/mark-read', [SinhVienThongBaoController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-all-read', [SinhVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::get('/unread/count', [SinhVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
+    });
 });

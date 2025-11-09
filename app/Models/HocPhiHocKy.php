@@ -60,4 +60,51 @@ class HocPhiHocKy extends Model
     {
         return $this->hasMany(ChiTietHocPhiMon::class, 'hoc_phi_hoc_ky_id');
     }
+
+    /**
+     * Relationship: HocPhiHocKy has many LichSuDongHocPhi
+     */
+    public function lichSuDongHocPhi()
+    {
+        return $this->hasMany(LichSuDongHocPhi::class, 'hoc_phi_hoc_ky_id');
+    }
+
+    /**
+     * Calculate total amount
+     */
+    public function calculateTongSoTien()
+    {
+        return $this->tong_hoc_phi_mon_hoc + $this->phi_dich_vu;
+    }
+
+    /**
+     * Calculate remaining amount
+     */
+    public function calculateSoTienConLai()
+    {
+        return $this->tong_so_tien - $this->so_tien_da_dong;
+    }
+
+    /**
+     * Update payment status based on amounts
+     */
+    public function updateTrangThai()
+    {
+        $conLai = $this->calculateSoTienConLai();
+
+        if ($this->so_tien_da_dong == 0) {
+            $this->trang_thai = 'chua_nop';
+        } elseif ($conLai > 0) {
+            $this->trang_thai = 'da_nop_mot_phan';
+        } else {
+            $this->trang_thai = 'da_nop_du';
+        }
+
+        // Check if overdue
+        if ($conLai > 0 && $this->han_dong < now()) {
+            $this->trang_thai = 'qua_han';
+        }
+
+        $this->save();
+    }
 }

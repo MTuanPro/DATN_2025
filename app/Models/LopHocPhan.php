@@ -97,6 +97,10 @@ class LopHocPhan extends Model
         return $this->hasMany(CauHinhDauDiem::class, 'lop_hoc_phan_id')
             ->orderBy('id');
     }
+    public function lopHocPhanSinhVien()
+    {
+        return $this->hasMany(LopHocPhanSinhVien::class, 'lop_hoc_phan_id');
+    }
 
     /**
      * Kiểm tra còn chỗ trống không

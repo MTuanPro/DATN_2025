@@ -209,6 +209,13 @@
                         <a href="{{ route('giangvien.lop-chu-nhiem.sinh-vien', $lop->id) }}" class="btn btn-primary">
                             <i class="bi bi-list-ul"></i> Xem danh sách sinh viên
                         </a>
+                        <a href="{{ route('giangvien.lop-chu-nhiem.ket-qua-hoc-tap', $lop->id) }}" class="btn btn-info">
+                            <i class="bi bi-graph-up"></i> Kết quả học tập
+                        </a>
+                        <a href="{{ route('giangvien.lop-chu-nhiem.canh-bao-hoc-vu', $lop->id) }}"
+                            class="btn btn-warning">
+                            <i class="bi bi-exclamation-triangle"></i> Cảnh báo học vụ
+                        </a>
                         <a href="{{ route('giangvien.lop-chu-nhiem.export-excel', $lop->id) }}" class="btn btn-success">
                             <i class="bi bi-file-earmark-excel"></i> Xuất Excel
                         </a>

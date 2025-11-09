@@ -146,7 +146,8 @@
                         <span>Quản lý Lịch thi</span>
                     </a>
                     <ul class="submenu {{ Request::is('dao-tao/lich-thi*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('dao-tao/lich-thi') && !Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('dao-tao/lich-thi') && !Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.lich-thi.index') }}">Danh sách Lịch thi</a>
                         </li>
                         <li class="submenu-item {{ Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
@@ -181,17 +182,30 @@
                 </li>
 
                 {{-- 10. HỌC PHÍ --}}
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item {{ Request::is('dao-tao/duyet-diem*') ? 'active' : '' }}">
+                    <a href="{{ route('dao-tao.duyet-diem.index') }}" class="sidebar-link">
+                        <i class="bi bi-clipboard-check"></i>
+                        <span>Duyệt điểm</span>
+                    </a>
+                </li>
+                <li class="sidebar-item has-sub {{ Request::is('dao-tao/hoc-phi*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-cash-coin"></i>
                         <span>Học phí</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Cấu hình học phí <!-- Đang cập nhật --></a></li>
-                        <li class="submenu-item"><a href="#">Học phí học kỳ <!-- Đang cập nhật --></a></li>
-                        <li class="submenu-item"><a href="#">Chi tiết học phí môn <!-- Đang cập nhật --></a>
+                    <ul class="submenu {{ Request::is('dao-tao/hoc-phi*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('dao-tao/hoc-phi/cau-hinh*') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.hoc-phi.cau-hinh.index') }}">Cấu hình học phí</a>
                         </li>
-                        <li class="submenu-item"><a href="#">Lịch sử đóng học phí <!-- Đang cập nhật --></a>
+                        <li
+                            class="submenu-item {{ Request::is('dao-tao/hoc-phi') && !Request::is('dao-tao/hoc-phi/cau-hinh*', 'dao-tao/hoc-phi/statistics', 'dao-tao/hoc-phi/overdue') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.hoc-phi.index') }}">Quản lý học phí</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/hoc-phi/statistics') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.hoc-phi.statistics') }}">Thống kê học phí</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/hoc-phi/overdue') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.hoc-phi.overdue') }}">Nợ quá hạn</a>
                         </li>
                     </ul>
                 </li>
@@ -201,6 +215,14 @@
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-exclamation-triangle"></i>
                         <span>Cảnh báo học vụ <!-- Đang cập nhật --></span>
+                    </a>
+                </li>
+
+                {{-- PHASE 10: QUẢN LÝ THÔNG BÁO --}}
+                <li class="sidebar-item {{ Request::is('dao-tao/thong-bao*') ? 'active' : '' }}">
+                    <a href="{{ route('dao-tao.thong-bao.index') }}" class="sidebar-link">
+                        <i class="bi bi-bell-fill"></i>
+                        <span>Quản lý Thông báo</span>
                     </a>
                 </li>
 
