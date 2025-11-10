@@ -187,9 +187,9 @@
             color: #ffffff !important;
         }
 
-        /* Header dark mode - Nền đen, chữ và icon trắng */
+        /* Header dark mode - Nền cùng màu sidebar */
         body.dark-mode .top-header {
-            background-color: #000000 !important;
+            background-color: #1e1e1e !important;
             color: #ffffff !important;
             border-bottom: 1px solid #404040;
         }
