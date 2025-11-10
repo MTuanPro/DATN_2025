@@ -1,10 +1,10 @@
 @extends('layouts.layout-admin')
 
-@section('title', 'Admin Dashboard')
+@section('title', 'Admin Dashboard (Backup)')
 
 @section('content')
     <div class="page-heading">
-        <h3>Dashboard - Quản trị viên</h3>
+        <h3>Dashboard - Quản trị viên (Backup)</h3>
     </div>
     <div class="page-content">
         <section class="row">
@@ -23,59 +23,6 @@
                                     <div class="col-md-8">
                                         <h6 class="text-muted font-semibold">Tổng tài khoản</h6>
                                         <h6 class="font-extrabold mb-0">{{ $totalUsers }}</h6>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-lg-3 col-md-6">
-                        <div class="card">
-                            <div class="card-body px-3 py-4-5">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                        <div class="stats-icon teal">
-                                            <i class="bi bi-mortarboard-fill"></i>
-                                        </div>
-                                    </div>
-                                    <div class="col-md-8">
-                                        <h6 class="text-muted font-semibold">Tổng sinh viên</h6>
-                                        <h6 class="font-extrabold mb-0">{{ $totalStudents ?? 0 }}</h6>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                    <div class="col-6 col-lg-3 col-md-6">
-                        <div class="card">
-                            <div class="card-body px-3 py-4-5">
-                                <div class="row">
-                                    <div class="col-md-4">
-                                                <div class="stats-icon indigo">
-                                                    <i class="bi bi-person-bounding-box"></i>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-8">
-                                                <h6 class="text-muted font-semibold">Giảng viên</h6>
-                                                <h6 class="font-extrabold mb-0">{{ $totalLecturers ?? 0 }}</h6>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                            <div class="col-6 col-lg-3 col-md-6">
-                                <div class="card">
-                                    <div class="card-body px-3 py-4-5">
-                                        <div class="row">
-                                            <div class="col-md-4">
-                                                <div class="stats-icon cyan">
-                                                    <i class="bi bi-journal-bookmark-fill"></i>
-                                                </div>
-                                            </div>
-                                            <div class="col-md-8">
-                                                <h6 class="text-muted font-semibold">Lớp học phần</h6>
-                                                <h6 class="font-extrabold mb-0">{{ $totalLopHocPhan ?? 0 }}</h6>
-                                            </div>
-                                        </div>
                                     </div>
                                 </div>
                             </div>
@@ -128,133 +75,6 @@
                                         <h6 class="text-muted font-semibold">Chưa xác thực email</h6>
                                         <h6 class="font-extrabold mb-0">{{ $unverifiedUsers }}</h6>
                                     </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-                {{-- Thống kê nâng cao: Biểu đồ đăng ký, phân bố điểm, đỗ/trượt, học phí, cảnh báo --}}
-                <div class="row mt-4">
-                    <div class="col-12 col-lg-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4>Đăng ký môn học (Top 8 môn có nhiều đăng ký nhất)</h4>
-                            </div>
-                            <div class="card-body">
-                                <div id="chart-registrations" style="height:320px;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-lg-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4>Phân bố điểm</h4>
-                            </div>
-                            <div class="card-body">
-                                <div id="chart-grade-distribution" style="height:280px;"></div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mt-3">
-                    <div class="col-12 col-lg-4">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4>Tỷ lệ Đỗ/Trượt</h4>
-                            </div>
-                            <div class="card-body">
-                                <div id="chart-pass-fail" style="height:280px;"></div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="col-12 col-lg-8">
-                        <div class="card">
-                            <div class="card-header">
-                                <h4>Tình hình học phí</h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="row mb-3">
-                                    <div class="col-md-4 text-center">
-                                        <h6 class="text-muted">Tổng học phí</h6>
-                                        <h4 class="text-primary">{{ number_format($hocPhiTong ?? 0) }}</h4>
-                                        <small class="text-muted">VND</small>
-                                    </div>
-                                    <div class="col-md-4 text-center">
-                                        <h6 class="text-muted">Đã thu</h6>
-                                        <h4 class="text-success">{{ number_format($hocPhiDaThu ?? 0) }}</h4>
-                                        <small class="text-muted">VND</small>
-                                    </div>
-                                    <div class="col-md-4 text-center">
-                                        <h6 class="text-muted">Còn lại</h6>
-                                        <h4 class="text-danger">{{ number_format($hocPhiConLai ?? 0) }}</h4>
-                                        <small class="text-muted">VND</small>
-                                    </div>
-                                </div>
-                                <div class="progress" style="height: 30px;">
-                                    @php
-                                        $tong = $hocPhiTong ?? 0;
-                                        $daThu = $hocPhiDaThu ?? 0;
-                                        $pct = $tong > 0 ? round(($daThu / $tong) * 100, 2) : 0;
-                                    @endphp
-                                    <div class="progress-bar bg-success" role="progressbar" style="width: {{ $pct }}%">
-                                        <strong>{{ $pct }}%</strong>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="row mt-3">
-                    <div class="col-12">
-                        <div class="card">
-                            <div class="card-header d-flex justify-content-between align-items-center">
-                                <h4>Cảnh báo học vụ</h4>
-                                <span class="badge bg-warning">{{ $canhBaoChuaXuLy ?? 0 }} chưa xử lý</span>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
-                                        <thead>
-                                            <tr>
-                                                <th>Mã SV</th>
-                                                <th>Sinh viên</th>
-                                                <th>Loại cảnh báo</th>
-                                                <th>Mức độ</th>
-                                                <th>Ngày</th>
-                                                <th>Trạng thái</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @forelse($recentWarnings as $w)
-                                                <tr>
-                                                    <td><strong>{{ $w->sinhVien?->ma_sinh_vien ?? '-' }}</strong></td>
-                                                    <td>{{ $w->sinhVien?->ho_ten ?? 'N/A' }}</td>
-                                                    <td>{{ $w->getLoaiCanhBaoLabelAttribute() ?? $w->loai_canh_bao }}</td>
-                                                    <td>
-                                                        <span class="badge bg-{{ $w->muc_do_badge ?? 'secondary' }}">
-                                                            {{ $w->getMucDoLabelAttribute() }}
-                                                        </span>
-                                                    </td>
-                                                    <td>{{ $w->ngay_canh_bao?->format('d/m/Y') ?? '-' }}</td>
-                                                    <td>
-                                                        @if($w->da_xu_ly)
-                                                            <span class="badge bg-success">Đã xử lý</span>
-                                                        @else
-                                                            <span class="badge bg-warning">Chưa xử lý</span>
-                                                        @endif
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
-                                                    <td colspan="6" class="text-center text-muted">Không có cảnh báo nào</td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
                                 </div>
                             </div>
                         </div>
@@ -333,7 +153,7 @@
                     </div>
                 </div>
 
-                {{-- Biểu đồ và bảng --}}
+                {{-- Biểu đồ và bảng (backup) --}}
                 <div class="row">
                     <div class="col-12 col-lg-8">
                         <div class="card">
@@ -508,55 +328,3 @@
         </section>
     </div>
 @endsection
-
-@push('scripts')
-<script>
-    // Data from server
-    const regLabels = @json($registrationLabels ?? []);
-    const regSeries = @json($registrationSeries ?? []);
-
-    const gradeLabels = @json($gradeLabels ?? []);
-    const gradeSeries = @json($gradeSeries ?? []);
-
-    const passFailLabels = @json($passFail['labels'] ?? ['Qua môn','Không qua']);
-    const passFailSeries = @json($passFail['series'] ?? [0,0]);
-
-    // Registrations bar chart
-    (function(){
-        const options = {
-            chart: { type: 'bar', height: 300 },
-            series: [{ name: 'Đăng ký', data: regSeries }],
-            xaxis: { categories: regLabels },
-            colors: ['#435ebe']
-        };
-        const chart = new ApexCharts(document.querySelector('#chart-registrations'), options);
-        chart.render();
-    })();
-
-    // Grade distribution donut
-    (function(){
-        const options = {
-            chart: { type: 'donut', height: 260 },
-            series: gradeSeries,
-            labels: gradeLabels,
-            colors: ['#28a745','#20c997','#17a2b8','#ffc107','#fd7e14','#dc3545','#6c757d','#343a40'],
-            legend: { position: 'bottom' }
-        };
-        const chart = new ApexCharts(document.querySelector('#chart-grade-distribution'), options);
-        chart.render();
-    })();
-
-    // Pass / Fail chart
-    (function(){
-        const options = {
-            chart: { type: 'donut', height: 260 },
-            series: passFailSeries,
-            labels: passFailLabels,
-            colors: ['#198754','#dc3545'],
-            legend: { position: 'bottom' }
-        };
-        const chart = new ApexCharts(document.querySelector('#chart-pass-fail'), options);
-        chart.render();
-    })();
-</script>
-@endpush

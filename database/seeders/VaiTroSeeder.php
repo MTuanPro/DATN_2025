@@ -56,6 +56,11 @@ class VaiTroSeeder extends Seeder
             ],
         ];
 
-        DB::table('vai_tro')->insert($vaiTros);
+        foreach ($vaiTros as $role) {
+            DB::table('vai_tro')->updateOrInsert(
+                ['ma_vai_tro' => $role['ma_vai_tro']],
+                $role
+            );
+        }
     }
 }

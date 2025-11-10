@@ -38,6 +38,16 @@ class SinhVienSeeder extends Seeder
             return;
         }
 
+        // Lấy danh sách ID chuyên ngành có sẵn để tránh tham chiếu tới ID không tồn tại
+        $chuyenNganhIds = \App\Models\DaoTao\ChuyenNganh::pluck('id')->toArray();
+        // Map chuyên ngành theo nganh để chọn chuyên ngành phù hợp với ngành của lớp
+        $chuyenNganhByNganh = \App\Models\DaoTao\ChuyenNganh::select('id', 'nganh_id')
+            ->get()
+            ->groupBy('nganh_id')
+            ->map(function ($group) {
+                return $group->pluck('id')->toArray();
+            })->toArray();
+
         $sinhViens = [];
         $totalCreated = 0;
 
@@ -68,6 +78,18 @@ class SinhVienSeeder extends Seeder
                 // Một số sinh viên năm cuối để test priority
                 $isNamCuoi = ($kyHienTai >= 7);
 
+                // Chọn chuyên ngành (nếu sinh viên từ năm 3 trở lên)
+                $selectedChuyenNganhId = null;
+                if ($kyHienTai >= 5) {
+                    $idsForNganh = $chuyenNganhByNganh[$lop->nganh_id] ?? [];
+                    if (!empty($idsForNganh)) {
+                        $selectedChuyenNganhId = $idsForNganh[array_rand($idsForNganh)];
+                    } elseif (!empty($chuyenNganhIds)) {
+                        // fallback: chọn từ tất cả các chuyên ngành nếu không có chuyên ngành cho ngành này
+                        $selectedChuyenNganhId = $chuyenNganhIds[array_rand($chuyenNganhIds)];
+                    }
+                }
+
                 $sinhViens[] = [
                     'user_id' => $userId,
                     'ma_sinh_vien' => $maSinhVien,
@@ -87,7 +109,8 @@ class SinhVienSeeder extends Seeder
                     'khoa_hoc_id' => $lop->khoa_hoc_id,
                     'lop_hanh_chinh_id' => $lop->id,
                     'nganh_id' => $lop->nganh_id,
-                    'chuyen_nganh_id' => $kyHienTai >= 5 ? rand(1, 17) : null, // Chọn chuyên ngành từ năm 3
+                    // Chọn chuyên ngành từ năm 3: ưu tiên chọn chuyên ngành thuộc cùng ngành của lớp
+                    'chuyen_nganh_id' => $selectedChuyenNganhId,
                     'ky_hien_tai' => $kyHienTai,
                     'trang_thai_hoc_tap_id' => $trangThaiDangHoc->id,
                     'giang_vien_chu_nhiem_id' => null,

@@ -1,0 +1,517 @@
+<?php
+
+namespace App\Http\Controllers\DaoTao;
+
+use App\Http\Controllers\Controller;
+use Illuminate\Http\Request;
+use App\Models\DaoTao\SinhVien;
+use App\Models\GiangVien;
+use App\Models\LopHocPhan;
+use App\Models\KetQuaHocTap;
+use App\Models\DiemDanh;
+use App\Models\HocPhiHocKy;
+use App\Models\DangKyMonHoc;
+use App\Models\LopHocPhanSinhVien;
+use App\Models\CanhBaoHocVu;
+use App\Models\DaoTao\PhongHoc;
+use App\Models\DaoTao\Khoa;
+use App\Models\DaoTao\Nganh;
+use App\Models\DaoTao\KhoaHoc;
+use App\Models\DaoTao\LopHanhChinh;
+use App\Models\HocKy;
+use Illuminate\Support\Facades\DB;
+
+class BaoCaoController extends Controller
+{
+    /**
+     * Trang chủ báo cáo - Danh sách các loại báo cáo
+     */
+    public function index()
+    {
+        $reportTypes = [
+            [
+                'title' => 'Báo cáo Sinh viên',
+                'description' => 'Thống kê sinh viên theo khoa, ngành, khóa, lớp',
+                'icon' => 'bi-people-fill',
+                'color' => 'primary',
+                'route' => 'dao-tao.bao-cao.sinh-vien'
+            ],
+            [
+                'title' => 'Báo cáo Kết quả học tập',
+                'description' => 'Phân bố điểm, GPA, tỷ lệ đỗ/trượt',
+                'icon' => 'bi-clipboard-data',
+                'color' => 'success',
+                'route' => 'dao-tao.bao-cao.ket-qua'
+            ],
+            [
+                'title' => 'Báo cáo Điểm danh',
+                'description' => 'Tỷ lệ vắng mặt theo lớp/môn học',
+                'icon' => 'bi-calendar-check',
+                'color' => 'warning',
+                'route' => 'dao-tao.bao-cao.diem-danh'
+            ],
+            [
+                'title' => 'Báo cáo Học phí',
+                'description' => 'Thu học phí, nợ học phí theo kỳ',
+                'icon' => 'bi-cash-stack',
+                'color' => 'info',
+                'route' => 'dao-tao.bao-cao.hoc-phi'
+            ],
+            [
+                'title' => 'Báo cáo Đăng ký môn học',
+                'description' => 'Thống kê đăng ký theo môn, lớp, học kỳ',
+                'icon' => 'bi-journal-bookmark',
+                'color' => 'secondary',
+                'route' => 'dao-tao.bao-cao.dang-ky'
+            ],
+            [
+                'title' => 'Báo cáo Xếp lớp',
+                'description' => 'Thành công/thất bại, tỷ lệ xếp lớp',
+                'icon' => 'bi-diagram-3',
+                'color' => 'dark',
+                'route' => 'dao-tao.bao-cao.xep-lop'
+            ],
+            [
+                'title' => 'Báo cáo Tải giảng viên',
+                'description' => 'Số giờ giảng, số lớp, tải giảng',
+                'icon' => 'bi-person-workspace',
+                'color' => 'danger',
+                'route' => 'dao-tao.bao-cao.tai-giang-vien'
+            ],
+            [
+                'title' => 'Báo cáo Phòng học',
+                'description' => 'Sử dụng phòng, lịch phòng trống',
+                'icon' => 'bi-door-open',
+                'color' => 'primary',
+                'route' => 'dao-tao.bao-cao.phong-hoc'
+            ],
+            [
+                'title' => 'Báo cáo Cảnh báo học vụ',
+                'description' => 'Cảnh báo theo loại, mức độ, trạng thái',
+                'icon' => 'bi-exclamation-triangle',
+                'color' => 'warning',
+                'route' => 'dao-tao.bao-cao.canh-bao'
+            ],
+        ];
+
+        return view('daotao.bao-cao.index', compact('reportTypes'));
+    }
+
+    /**
+     * Báo cáo Sinh viên theo khoa/ngành/khóa/lớp
+     */
+    public function sinhVien(Request $request)
+    {
+        $khoas = Khoa::all();
+        $nganhs = Nganh::all();
+        $khoaHocs = KhoaHoc::orderBy('nam_bat_dau', 'desc')->get();
+
+        $query = SinhVien::with(['khoaHoc', 'chuyenNganh.nganh.khoa', 'trangThaiHocTap', 'lopHanhChinh']);
+
+        // Filters
+        if ($request->filled('khoa_id')) {
+            $query->whereHas('chuyenNganh.nganh', function($q) use ($request) {
+                $q->where('khoa_id', $request->khoa_id);
+            });
+        }
+        if ($request->filled('nganh_id')) {
+            $query->whereHas('chuyenNganh', function($q) use ($request) {
+                $q->where('nganh_id', $request->nganh_id);
+            });
+        }
+        if ($request->filled('khoa_hoc_id')) {
+            $query->where('khoa_hoc_id', $request->khoa_hoc_id);
+        }
+        if ($request->filled('lop')) {
+            $query->whereHas('lopHanhChinh', function($q) use ($request) {
+                $q->where('ten_lop', 'like', '%' . $request->lop . '%');
+            });
+        }
+
+        $sinhViens = $query->paginate(50);
+
+        // Thống kê tổng quan
+        $statistics = [
+            'total' => SinhVien::count(),
+            'hoc' => SinhVien::whereHas('trangThaiHocTap', function($q) {
+                $q->where('ten_trang_thai', 'Đang học');
+            })->count(),
+            'bao_luu' => SinhVien::whereHas('trangThaiHocTap', function($q) {
+                $q->where('ten_trang_thai', 'Bảo lưu');
+            })->count(),
+            'thoi_hoc' => SinhVien::whereHas('trangThaiHocTap', function($q) {
+                $q->where('ten_trang_thai', 'Thôi học');
+            })->count(),
+        ];
+
+        // Thống kê theo khoa
+        $statsByKhoa = DB::table('sinh_vien')
+            ->join('chuyen_nganh', 'sinh_vien.chuyen_nganh_id', '=', 'chuyen_nganh.id')
+            ->join('nganh', 'chuyen_nganh.nganh_id', '=', 'nganh.id')
+            ->join('khoa', 'nganh.khoa_id', '=', 'khoa.id')
+            ->leftJoin('trang_thai_hoc_tap', 'sinh_vien.trang_thai_hoc_tap_id', '=', 'trang_thai_hoc_tap.id')
+            ->select(
+                'khoa.ten_khoa',
+                DB::raw('COUNT(*) as total'),
+                DB::raw("SUM(CASE WHEN trang_thai_hoc_tap.ten_trang_thai = 'Đang học' THEN 1 ELSE 0 END) as dang_hoc"),
+                DB::raw("SUM(CASE WHEN trang_thai_hoc_tap.ten_trang_thai = 'Bảo lưu' THEN 1 ELSE 0 END) as bao_luu"),
+                DB::raw("SUM(CASE WHEN trang_thai_hoc_tap.ten_trang_thai = 'Thôi học' THEN 1 ELSE 0 END) as thoi_hoc")
+            )
+            ->groupBy('khoa.id', 'khoa.ten_khoa')
+            ->get();
+
+        return view('daotao.bao-cao.sinh-vien', compact('sinhViens', 'khoas', 'nganhs', 'khoaHocs', 'statistics', 'statsByKhoa'));
+    }
+
+    /**
+     * Báo cáo Kết quả học tập
+     */
+    public function ketQua(Request $request)
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+        $khoaHocs = KhoaHoc::orderBy('nam_bat_dau', 'desc')->get();
+
+        $query = KetQuaHocTap::with(['lopHocPhanSinhVien.lopHocPhan.monHoc']);
+
+        if ($request->filled('hoc_ky_id')) {
+            $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function($q) use ($request) {
+                $q->where('hoc_ky_id', $request->hoc_ky_id);
+            });
+        }
+
+        // Statistics
+        $statistics = [
+            'total_ket_qua' => KetQuaHocTap::count(),
+            'qua_mon' => KetQuaHocTap::where('qua_mon', true)->count(),
+            'truot_mon' => KetQuaHocTap::where('qua_mon', false)->count(),
+            'avg_gpa' => KetQuaHocTap::avg('diem_he_4') ?? 0,
+        ];
+
+        // Grade distribution
+        $gradeDistribution = KetQuaHocTap::select('diem_chu', DB::raw('count(*) as count'))
+            ->whereNotNull('diem_chu')
+            ->groupBy('diem_chu')
+            ->orderByRaw("FIELD(diem_chu, 'A+', 'A', 'B+', 'B', 'C+', 'C', 'D+', 'D', 'F')")
+            ->get();
+
+        // GPA by Khoa Hoc
+        $gpaByKhoa = DB::table('sinh_vien')
+            ->join('khoa_hoc', 'sinh_vien.khoa_hoc_id', '=', 'khoa_hoc.id')
+            ->leftJoin('lop_hoc_phan_sinh_vien', 'sinh_vien.id', '=', 'lop_hoc_phan_sinh_vien.sinh_vien_id')
+            ->leftJoin('ket_qua_hoc_tap', 'lop_hoc_phan_sinh_vien.id', '=', 'ket_qua_hoc_tap.lop_hoc_phan_sinh_vien_id')
+            ->select('khoa_hoc.ten_khoa_hoc', DB::raw('AVG(ket_qua_hoc_tap.diem_he_4) as avg_gpa'))
+            ->groupBy('khoa_hoc.id', 'khoa_hoc.ten_khoa_hoc')
+            ->get();
+
+        // Detailed results by course
+        $detailedResults = DB::table('lop_hoc_phan')
+            ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
+            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+                $join->on('lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
+                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+            })
+            ->leftJoin('giang_vien', 'lop_hoc_phan_giang_vien.giang_vien_id', '=', 'giang_vien.id')
+            ->leftJoin('lop_hoc_phan_sinh_vien', 'lop_hoc_phan.id', '=', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id')
+            ->leftJoin('ket_qua_hoc_tap', 'lop_hoc_phan_sinh_vien.id', '=', 'ket_qua_hoc_tap.lop_hoc_phan_sinh_vien_id')
+            ->select(
+                'mon_hoc.ten_mon',
+                'lop_hoc_phan.ma_lop_hp',
+                'giang_vien.ho_ten as ten_giang_vien',
+                DB::raw('COUNT(DISTINCT lop_hoc_phan_sinh_vien.id) as total'),
+                DB::raw('AVG(ket_qua_hoc_tap.diem_he_10) as avg_diem'),
+                DB::raw('SUM(CASE WHEN ket_qua_hoc_tap.qua_mon = 1 THEN 1 ELSE 0 END) as qua_mon'),
+                DB::raw('SUM(CASE WHEN ket_qua_hoc_tap.qua_mon = 0 THEN 1 ELSE 0 END) as truot_mon')
+            )
+            ->groupBy('lop_hoc_phan.id', 'mon_hoc.ten_mon', 'lop_hoc_phan.ma_lop_hp', 'giang_vien.ho_ten')
+            ->limit(20)
+            ->get();
+
+        return view('daotao.bao-cao.ket-qua', compact('hocKys', 'khoaHocs', 'statistics', 'gradeDistribution', 'gpaByKhoa', 'detailedResults'));
+    }
+
+    /**
+     * Báo cáo Điểm danh
+     */
+    public function diemDanh(Request $request)
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+
+        // Statistics
+        $statistics = [
+            'total_buoi' => DiemDanh::distinct('lich_hoc_chi_tiet_id')->count('lich_hoc_chi_tiet_id'),
+            'co_mat' => DiemDanh::where('trang_thai', 'co_mat')->count(),
+            'vang_mat' => DiemDanh::where('trang_thai', 'vang')->count(),
+        ];
+
+        // Attendance data by class
+        $attendanceData = DB::table('lop_hoc_phan')
+            ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
+            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+                $join->on('lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
+                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+            })
+            ->leftJoin('giang_vien', 'lop_hoc_phan_giang_vien.giang_vien_id', '=', 'giang_vien.id')
+            ->leftJoin('lop_hoc_phan_sinh_vien', 'lop_hoc_phan.id', '=', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id')
+            ->leftJoin('diem_danh', 'lop_hoc_phan_sinh_vien.id', '=', 'diem_danh.lop_hoc_phan_sinh_vien_id')
+            ->select(
+                'lop_hoc_phan.ma_lop_hp',
+                'mon_hoc.ten_mon',
+                'giang_vien.ho_ten as ten_giang_vien',
+                DB::raw('COUNT(DISTINCT lop_hoc_phan_sinh_vien.sinh_vien_id) as so_luong_sv'),
+                DB::raw('COUNT(DISTINCT diem_danh.lich_hoc_chi_tiet_id) as total_buoi'),
+                DB::raw('SUM(CASE WHEN diem_danh.trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat'),
+                DB::raw('SUM(CASE WHEN diem_danh.trang_thai = "vang" THEN 1 ELSE 0 END) as vang_mat')
+            )
+            ->groupBy('lop_hoc_phan.id', 'lop_hoc_phan.ma_lop_hp', 'mon_hoc.ten_mon', 'giang_vien.ho_ten')
+            ->limit(50)
+            ->get();
+
+        return view('daotao.bao-cao.diem-danh', compact('hocKys', 'statistics', 'attendanceData'));
+    }
+
+    /**
+     * Báo cáo Học phí
+     */
+    public function hocPhi(Request $request)
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+
+        $query = HocPhiHocKy::with(['sinhVien', 'hocKy']);
+
+        if ($request->filled('hoc_ky_id')) {
+            $query->where('hoc_ky_id', $request->hoc_ky_id);
+        }
+
+        $hocPhiData = $query->limit(50)->get();
+
+        // Statistics
+        $totalHocPhi = HocPhiHocKy::sum('tong_so_tien') ?? 0;
+        $daDong = HocPhiHocKy::sum('so_tien_da_dong') ?? 0;
+        $conNo = HocPhiHocKy::sum('so_tien_con_lai') ?? 0;
+
+        $statistics = [
+            'total_hoc_phi' => $totalHocPhi,
+            'da_dong' => $daDong,
+            'con_no' => $conNo,
+            'ty_le_thu' => $totalHocPhi > 0 ? ($daDong / $totalHocPhi * 100) : 0,
+        ];
+
+        // Stats by Khoa Hoc
+        $statsByKhoa = DB::table('hoc_phi_hoc_ky')
+            ->join('sinh_vien', 'hoc_phi_hoc_ky.sinh_vien_id', '=', 'sinh_vien.id')
+            ->join('khoa_hoc', 'sinh_vien.khoa_hoc_id', '=', 'khoa_hoc.id')
+            ->select(
+                'khoa_hoc.ten_khoa_hoc',
+                DB::raw('COUNT(DISTINCT sinh_vien.id) as so_luong_sv'),
+                DB::raw('SUM(hoc_phi_hoc_ky.tong_so_tien) as total'),
+                DB::raw('SUM(hoc_phi_hoc_ky.so_tien_da_dong) as da_dong'),
+                DB::raw('SUM(hoc_phi_hoc_ky.so_tien_con_lai) as con_no')
+            )
+            ->groupBy('khoa_hoc.id', 'khoa_hoc.ten_khoa_hoc')
+            ->get();
+
+        return view('daotao.bao-cao.hoc-phi', compact('hocKys', 'statistics', 'hocPhiData', 'statsByKhoa'));
+    }
+
+    /**
+     * Báo cáo Đăng ký môn học
+     */
+    public function dangKy(Request $request)
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+
+        // Statistics
+        $statistics = [
+            'total_dang_ky' => DangKyMonHoc::count(),
+            'thanh_cong' => DangKyMonHoc::where('trang_thai', 'thanh_cong')->count(),
+            'huy' => DangKyMonHoc::where('trang_thai', 'huy')->count(),
+        ];
+
+        // Top courses
+        $topCourses = DB::table('dang_ky_mon_hocs')
+            ->join('lop_hoc_phan', 'dang_ky_mon_hocs.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
+            ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
+            ->select(
+                'mon_hoc.ten_mon',
+                'mon_hoc.ma_mon',
+                'mon_hoc.so_tin_chi',
+                DB::raw('COUNT(*) as so_luot_dang_ky')
+            )
+            ->groupBy('mon_hoc.id', 'mon_hoc.ten_mon', 'mon_hoc.ma_mon', 'mon_hoc.so_tin_chi')
+            ->orderByDesc('so_luot_dang_ky')
+            ->limit(10)
+            ->get();
+
+        // Registration by class
+        $registrationByClass = DB::table('lop_hoc_phan')
+            ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
+            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+                $join->on('lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
+                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+            })
+            ->leftJoin('giang_vien', 'lop_hoc_phan_giang_vien.giang_vien_id', '=', 'giang_vien.id')
+            ->leftJoin('lop_hoc_phan_sinh_vien', 'lop_hoc_phan.id', '=', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id')
+            ->select(
+                'lop_hoc_phan.ma_lop_hp',
+                'mon_hoc.ten_mon',
+                'giang_vien.ho_ten as ten_giang_vien',
+                'lop_hoc_phan.suc_chua as si_so_toi_da',
+                DB::raw('COUNT(lop_hoc_phan_sinh_vien.id) as da_dang_ky')
+            )
+            ->groupBy('lop_hoc_phan.id', 'lop_hoc_phan.ma_lop_hp', 'mon_hoc.ten_mon', 'giang_vien.ho_ten', 'lop_hoc_phan.suc_chua')
+            ->limit(50)
+            ->get();
+
+        return view('daotao.bao-cao.dang-ky', compact('hocKys', 'statistics', 'topCourses', 'registrationByClass'));
+    }
+
+    /**
+     * Báo cáo Xếp lớp
+     */
+    public function xepLop(Request $request)
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+
+        // Statistics
+        $totalLop = LopHocPhan::count();
+        $duSiSo = LopHocPhan::whereRaw('(SELECT COUNT(*) FROM lop_hoc_phan_sinh_vien WHERE lop_hoc_phan_id = lop_hoc_phan.id) >= 10')->count();
+        $thieuSiSo = $totalLop - $duSiSo;
+
+        $statistics = [
+            'total_lop' => $totalLop,
+            'du_si_so' => $duSiSo,
+            'thieu_si_so' => $thieuSiSo,
+            'ty_le_thanh_cong' => $totalLop > 0 ? ($duSiSo / $totalLop * 100) : 0,
+        ];
+
+        // Class assignments
+        $classAssignments = DB::table('lop_hoc_phan')
+            ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
+            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+                $join->on('lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
+                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+            })
+            ->leftJoin('giang_vien', 'lop_hoc_phan_giang_vien.giang_vien_id', '=', 'giang_vien.id')
+            ->select(
+                'lop_hoc_phan.ma_lop_hp',
+                'mon_hoc.ten_mon',
+                'giang_vien.ho_ten as ten_giang_vien',
+                'lop_hoc_phan.suc_chua as si_so_toi_da',
+                'lop_hoc_phan.so_luong_toi_thieu as si_so_toi_thieu',
+                DB::raw('(SELECT COUNT(*) FROM lop_hoc_phan_sinh_vien WHERE lop_hoc_phan_id = lop_hoc_phan.id) as da_xep')
+            )
+            ->limit(50)
+            ->get();
+
+        return view('daotao.bao-cao.xep-lop', compact('hocKys', 'statistics', 'classAssignments'));
+    }
+
+    /**
+     * Báo cáo Tải giảng viên
+     */
+    public function taiGiangVien(Request $request)
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+
+        // Workload data
+        $workloadData = DB::table('giang_vien')
+            ->leftJoin('khoa', 'giang_vien.khoa_id', '=', 'khoa.id')
+            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+                $join->on('giang_vien.id', '=', 'lop_hoc_phan_giang_vien.giang_vien_id')
+                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+            })
+            ->leftJoin('lop_hoc_phan', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
+            ->leftJoin('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
+            ->select(
+                'giang_vien.ma_giang_vien',
+                'giang_vien.ho_ten',
+                'giang_vien.email',
+                'khoa.ten_khoa',
+                DB::raw('COUNT(DISTINCT lop_hoc_phan.id) as so_lop'),
+                DB::raw('SUM(mon_hoc.so_tin_chi) as tong_tin_chi'),
+                DB::raw('SUM(mon_hoc.so_tin_chi * 15) as tong_gio')
+            )
+            ->groupBy('giang_vien.id', 'giang_vien.ma_giang_vien', 'giang_vien.ho_ten', 'giang_vien.email', 'khoa.ten_khoa')
+            ->get();
+
+        $statistics = [
+            'total_giang_vien' => GiangVien::count(),
+            'avg_lop_per_gv' => $workloadData->avg('so_lop') ?? 0,
+            'avg_gio_per_gv' => $workloadData->avg('tong_gio') ?? 0,
+        ];
+
+        return view('daotao.bao-cao.tai-giang-vien', compact('hocKys', 'workloadData', 'statistics'));
+    }
+
+    /**
+     * Báo cáo Phòng học
+     */
+    public function phongHoc(Request $request)
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+
+        // Room usage
+        $roomUsage = DB::table('phong_hoc')
+            ->leftJoin('lich_hoc_chi_tiet', 'phong_hoc.id', '=', 'lich_hoc_chi_tiet.phong_hoc_id')
+            ->select(
+                'phong_hoc.ten_phong',
+                'phong_hoc.vi_tri',
+                'phong_hoc.suc_chua',
+                'phong_hoc.loai_phong',
+                DB::raw('COUNT(DISTINCT lich_hoc_chi_tiet.id) as so_buoi'),
+                DB::raw('COUNT(DISTINCT lich_hoc_chi_tiet.id) * 2 as tong_gio')
+            )
+            ->groupBy('phong_hoc.id', 'phong_hoc.ten_phong', 'phong_hoc.vi_tri', 'phong_hoc.suc_chua', 'phong_hoc.loai_phong')
+            ->get();
+
+        $totalPhong = PhongHoc::count();
+        $dangSuDung = $roomUsage->where('so_buoi', '>', 0)->count();
+
+        $statistics = [
+            'total_phong' => $totalPhong,
+            'dang_su_dung' => $dangSuDung,
+            'ty_le_su_dung' => $totalPhong > 0 ? ($dangSuDung / $totalPhong * 100) : 0,
+        ];
+
+        return view('daotao.bao-cao.phong-hoc', compact('hocKys', 'roomUsage', 'statistics'));
+    }
+
+    /**
+     * Báo cáo Cảnh báo học vụ
+     */
+    public function canhBao(Request $request)
+    {
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+
+        $query = CanhBaoHocVu::with(['sinhVien', 'hocKy']);
+
+        if ($request->filled('hoc_ky_id')) {
+            $query->where('hoc_ky_id', $request->hoc_ky_id);
+        }
+        if ($request->filled('loai_canh_bao')) {
+            $query->where('loai_canh_bao', $request->loai_canh_bao);
+        }
+
+        $warningData = $query->paginate(50);
+
+        // Statistics
+        $statistics = [
+            'total_canh_bao' => CanhBaoHocVu::count(),
+            'hoc_vu' => CanhBaoHocVu::where('loai_canh_bao', 'hoc_vu')->count(),
+            'diem_danh' => CanhBaoHocVu::where('loai_canh_bao', 'diem_danh')->count(),
+            'ky_luat' => CanhBaoHocVu::where('loai_canh_bao', 'ky_luat')->count(),
+        ];
+
+        // Stats by type
+        $statsByType = CanhBaoHocVu::select('loai_canh_bao', DB::raw('count(*) as count'))
+            ->groupBy('loai_canh_bao')
+            ->get();
+
+        // Stats by severity
+        $statsBySeverity = CanhBaoHocVu::select('muc_do', DB::raw('count(*) as count'))
+            ->groupBy('muc_do')
+            ->get();
+
+        return view('daotao.bao-cao.canh-bao', compact('hocKys', 'warningData', 'statistics', 'statsByType', 'statsBySeverity'));
+    }
+}
