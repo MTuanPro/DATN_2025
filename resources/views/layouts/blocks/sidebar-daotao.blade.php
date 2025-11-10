@@ -233,13 +233,15 @@
                         <span>Báo cáo & Thống kê</span>
                     </a>
                     <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Thống kê sinh viên</a></li>
-                        <li class="submenu-item"><a href="#">Thống kê đăng ký</a></li>
-                        <li class="submenu-item"><a href="#">Thống kê giảng viên</a></li>
-                        <li class="submenu-item"><a href="#">Thống kê phòng học</a></li>
-                        <li class="submenu-item"><a href="#">Thống kê kết quả học tập</a></li>
-                        <li class="submenu-item"><a href="#">Thống kê học phí</a></li>
-                        <li class="submenu-item"><a href="#">Thống kê cảnh báo</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.sinh-vien') }}">Thống kê sinh viên</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.dang-ky') }}">Thống kê đăng ký</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.tai-giang-vien') }}">Thống kê giảng viên</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.phong-hoc') }}">Thống kê phòng học</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.ket-qua') }}">Thống kê kết quả học tập</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.hoc-phi') }}">Thống kê học phí</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.canh-bao') }}">Thống kê cảnh báo</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.diem-danh') }}">Thống kê điểm danh</a></li>
+                        <li class="submenu-item"><a href="{{ route('dao-tao.bao-cao.xep-lop') }}">Thống kê xếp lớp</a></li>
                     </ul>
                 </li>
 

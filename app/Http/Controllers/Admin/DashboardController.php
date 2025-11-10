@@ -8,6 +8,13 @@ use App\Models\VaiTro;
 use App\Models\Quyen;
 use App\Models\Admin;
 use App\Models\DaoTao;
+use App\Models\DaoTao\SinhVien;
+use App\Models\GiangVien;
+use App\Models\LopHocPhan;
+use App\Models\DangKyMonHoc;
+use App\Models\KetQuaHocTap;
+use App\Models\HocPhiHocKy;
+use App\Models\CanhBaoHocVu;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -69,6 +76,57 @@ class DashboardController extends Controller
             'newUsersThisWeek' => $newUsersThisWeek,
             'userCreationStats' => $userCreationStats,
         ];
+
+        // Additional educational statistics for admin dashboard
+        $data['totalStudents'] = SinhVien::count();
+        $data['totalLecturers'] = GiangVien::count();
+        $data['totalLopHocPhan'] = LopHocPhan::count();
+
+        // Đăng ký môn học theo môn (top 8)
+        $registrations = DangKyMonHoc::select('mon_hoc.ten_mon', DB::raw('count(*) as total'))
+            ->join('lop_hoc_phan', 'dang_ky_mon_hocs.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
+            ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
+            ->groupBy('mon_hoc.ten_mon')
+            ->orderByDesc('total')
+            ->limit(8)
+            ->get();
+
+        $data['registrationLabels'] = $registrations->pluck('ten_mon')->toArray();
+        $data['registrationSeries'] = $registrations->pluck('total')->toArray();
+
+        // Phân bố điểm (theo diem_chu từ ket_qua_hoc_tap)
+        $gradeStats = KetQuaHocTap::select('diem_chu', DB::raw('count(*) as total'))
+            ->groupBy('diem_chu')
+            ->get()
+            ->pluck('total', 'diem_chu')
+            ->toArray();
+
+        // Ensure common grade order
+        $gradeOrder = ['A','B+','B','C+','C','D+','D','F'];
+        $gradeLabels = [];
+        $gradeSeries = [];
+        foreach ($gradeOrder as $g) {
+            $gradeLabels[] = $g;
+            $gradeSeries[] = isset($gradeStats[$g]) ? (int)$gradeStats[$g] : 0;
+        }
+        $data['gradeLabels'] = $gradeLabels;
+        $data['gradeSeries'] = $gradeSeries;
+
+        // Tỷ lệ đỗ / trượt
+        $quaMon = KetQuaHocTap::where('qua_mon', true)->count();
+        $khongQua = KetQuaHocTap::where('qua_mon', false)->count();
+        $data['passFail'] = ['labels' => ['Qua môn', 'Không qua'], 'series' => [$quaMon, $khongQua]];
+
+        // Thống kê học phí tổng quan
+        $hocPhiQuery = HocPhiHocKy::query();
+        $data['hocPhiTong'] = (clone $hocPhiQuery)->sum('tong_so_tien');
+        $data['hocPhiDaThu'] = (clone $hocPhiQuery)->sum('so_tien_da_dong');
+        $data['hocPhiConLai'] = (clone $hocPhiQuery)->sum('so_tien_con_lai');
+
+        // Cảnh báo học vụ (chưa xử lý, top 5 gần nhất)
+        $data['canhBaoCount'] = CanhBaoHocVu::count();
+        $data['canhBaoChuaXuLy'] = CanhBaoHocVu::where('da_xu_ly', false)->count();
+        $data['recentWarnings'] = CanhBaoHocVu::with('sinhVien')->orderBy('ngay_canh_bao', 'desc')->limit(5)->get();
 
         return view('admin.dashboard', $data);
     }

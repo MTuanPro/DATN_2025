@@ -286,6 +286,20 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     // Thông báo (chỉ xem)
     Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
     Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
+
+    // Báo cáo đào tạo
+    Route::prefix('bao-cao')->name('bao-cao.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'index'])->name('index');
+        Route::get('/sinh-vien', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'sinhVien'])->name('sinh-vien');
+        Route::get('/ket-qua', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'ketQua'])->name('ket-qua');
+        Route::get('/diem-danh', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'diemDanh'])->name('diem-danh');
+        Route::get('/hoc-phi', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'hocPhi'])->name('hoc-phi');
+        Route::get('/dang-ky', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'dangKy'])->name('dang-ky');
+        Route::get('/xep-lop', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'xepLop'])->name('xep-lop');
+        Route::get('/tai-giang-vien', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'taiGiangVien'])->name('tai-giang-vien');
+        Route::get('/phong-hoc', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'phongHoc'])->name('phong-hoc');
+        Route::get('/canh-bao', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'canhBao'])->name('canh-bao');
+    });
 });
 
 // ========== Giảng viên Routes ==========
