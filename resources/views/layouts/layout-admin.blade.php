@@ -92,16 +92,47 @@
         /* Dark mode styles */
         body.dark-mode {
             background-color: #1a1a1a;
-            color: #e0e0e0;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode * {
+            color: #ffffff;
         }
 
         body.dark-mode .card {
             background-color: #2d2d2d;
-            color: #e0e0e0;
+            color: #ffffff;
+            border-color: #404040;
+        }
+
+        body.dark-mode .card-header {
+            background-color: #252525;
+            color: #ffffff;
+            border-bottom: 1px solid #404040;
+        }
+
+        body.dark-mode .card-title,
+        body.dark-mode .card-text,
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+        body.dark-mode h4, body.dark-mode h5, body.dark-mode h6,
+        body.dark-mode p, body.dark-mode span, body.dark-mode label,
+        body.dark-mode .page-heading h3 {
+            color: #ffffff !important;
         }
 
         body.dark-mode .table {
-            color: #e0e0e0;
+            color: #ffffff;
+        }
+
+        body.dark-mode .table thead th {
+            color: #ffffff;
+            background-color: #252525;
+            border-color: #404040;
+        }
+
+        body.dark-mode .table tbody td {
+            color: #ffffff;
+            border-color: #404040;
         }
 
         body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) {
@@ -121,20 +152,26 @@
             border-bottom: 1px solid #333;
         }
 
+        body.dark-mode .sidebar-header h3 {
+            color: #ffffff !important;
+        }
+
         body.dark-mode .sidebar-link {
-            color: #e0e0e0;
+            color: #ffffff !important;
         }
 
         body.dark-mode .sidebar-link:hover {
             background-color: #2d2d2d;
+            color: #ffffff !important;
         }
 
         body.dark-mode .sidebar-item.active > .sidebar-link {
             background-color: #435ebe;
+            color: #ffffff !important;
         }
 
         body.dark-mode .sidebar-title {
-            color: #999;
+            color: #aaa !important;
         }
 
         body.dark-mode .submenu {
@@ -142,51 +179,115 @@
         }
 
         body.dark-mode .submenu .submenu-item a {
-            color: #ccc;
+            color: #ffffff !important;
         }
 
         body.dark-mode .submenu .submenu-item a:hover {
             background-color: #2d2d2d;
+            color: #ffffff !important;
         }
 
+        /* Header dark mode - Nền cùng màu sidebar */
         body.dark-mode .top-header {
-            background-color: #2d2d2d;
-            color: #e0e0e0;
-            border-bottom: 1px solid #333;
+            background-color: #1e1e1e !important;
+            color: #ffffff !important;
+            border-bottom: 1px solid #404040;
+        }
+
+        body.dark-mode .top-header * {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header .btn,
+        body.dark-mode .top-header button {
+            background-color: transparent;
+            color: #ffffff !important;
+            border: none;
+        }
+
+        body.dark-mode .top-header .btn:hover,
+        body.dark-mode .top-header button:hover {
+            background-color: rgba(255, 255, 255, 0.15);
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header .btn-link {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header .text-muted {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header i {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header .dropdown-toggle {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header span {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header .badge {
+            background-color: #dc3545 !important;
+            color: #ffffff !important;
         }
 
         body.dark-mode footer {
             background-color: #2d2d2d !important;
-            color: #e0e0e0;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode footer * {
+            color: #ffffff !important;
         }
 
         body.dark-mode .text-muted {
-            color: #aaa !important;
+            color: #bbb !important;
         }
 
         body.dark-mode .form-control,
-        body.dark-mode .form-select {
+        body.dark-mode .form-select,
+        body.dark-mode textarea {
             background-color: #3a3a3a;
-            color: #e0e0e0;
+            color: #ffffff !important;
             border-color: #555;
+        }
+
+        body.dark-mode .form-control::placeholder {
+            color: #999 !important;
+        }
+
+        body.dark-mode .form-label {
+            color: #ffffff !important;
         }
 
         body.dark-mode .btn-primary {
             background-color: #435ebe;
             border-color: #435ebe;
+            color: #ffffff !important;
         }
 
         body.dark-mode .dropdown-menu {
             background-color: #2d2d2d;
-            color: #e0e0e0;
+            color: #ffffff;
+            border-color: #404040;
         }
 
         body.dark-mode .dropdown-item {
-            color: #e0e0e0;
+            color: #ffffff !important;
         }
 
         body.dark-mode .dropdown-item:hover {
             background-color: #3a3a3a;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .dropdown-divider {
+            border-color: #404040;
         }
 
         body.dark-mode .alert {
@@ -195,17 +296,17 @@
 
         body.dark-mode .alert-success {
             background-color: #1e4620;
-            color: #a8e6a3;
+            color: #c3e6cb !important;
         }
 
         body.dark-mode .alert-danger {
             background-color: #4d1f1f;
-            color: #f8b4b4;
+            color: #f5c2c7 !important;
         }
 
         body.dark-mode .alert-info {
             background-color: #1f3a4d;
-            color: #a3d7f8;
+            color: #b6d4fe !important;
         }
 
         body.dark-mode .badge {
