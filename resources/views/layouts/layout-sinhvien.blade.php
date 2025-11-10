@@ -73,20 +73,55 @@
         /* Dark mode styles */
         body.dark-mode {
             background-color: #1a1a1a;
-            color: #e0e0e0;
+            color: #f5f5f5 !important;
+        }
+
+        body.dark-mode * {
+            color: #f5f5f5;
         }
 
         body.dark-mode .card {
             background-color: #2d2d2d;
-            color: #e0e0e0;
+            color: #f5f5f5;
+            border-color: #404040;
+        }
+
+        body.dark-mode .card-header {
+            background-color: #252525;
+            color: #f5f5f5;
+            border-bottom: 1px solid #404040;
+        }
+
+        body.dark-mode .card-title,
+        body.dark-mode .card-text,
+        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
+        body.dark-mode h4, body.dark-mode h5, body.dark-mode h6,
+        body.dark-mode p, body.dark-mode span, body.dark-mode label,
+        body.dark-mode .page-heading h3 {
+            color: #f5f5f5 !important;
         }
 
         body.dark-mode .table {
-            color: #e0e0e0;
+            color: #f5f5f5;
+        }
+
+        body.dark-mode .table thead th {
+            color: #f5f5f5;
+            background-color: #252525;
+            border-color: #404040;
+        }
+
+        body.dark-mode .table tbody td {
+            color: #f5f5f5;
+            border-color: #404040;
         }
 
         body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) {
             background-color: rgba(255, 255, 255, 0.05);
+        }
+
+        body.dark-mode .table-hover tbody tr:hover {
+            background-color: rgba(255, 255, 255, 0.08);
         }
 
         body.dark-mode #sidebar {
@@ -102,20 +137,26 @@
             border-bottom: 1px solid #333;
         }
 
+        body.dark-mode .sidebar-header h3 {
+            color: #f5f5f5 !important;
+        }
+
         body.dark-mode .sidebar-link {
-            color: #e0e0e0;
+            color: #f5f5f5 !important;
         }
 
         body.dark-mode .sidebar-link:hover {
             background-color: #2d2d2d;
+            color: #fff !important;
         }
 
         body.dark-mode .sidebar-item.active > .sidebar-link {
             background-color: #435ebe;
+            color: #fff !important;
         }
 
         body.dark-mode .sidebar-title {
-            color: #999;
+            color: #aaa !important;
         }
 
         body.dark-mode .submenu {
@@ -123,51 +164,124 @@
         }
 
         body.dark-mode .submenu .submenu-item a {
-            color: #ccc;
+            color: #e0e0e0 !important;
         }
 
         body.dark-mode .submenu .submenu-item a:hover {
             background-color: #2d2d2d;
+            color: #fff !important;
+        }
+
+        body.dark-mode .submenu .submenu-item.active a {
+            color: #fff !important;
         }
 
         body.dark-mode .top-header {
             background-color: #2d2d2d;
-            color: #e0e0e0;
+            color: #f5f5f5;
             border-bottom: 1px solid #333;
+        }
+
+        body.dark-mode .top-header .btn-link {
+            color: #f5f5f5 !important;
         }
 
         body.dark-mode footer {
             background-color: #2d2d2d !important;
-            color: #e0e0e0;
+            color: #f5f5f5 !important;
+            border-top: 1px solid #404040 !important;
+        }
+
+        body.dark-mode footer h5,
+        body.dark-mode footer h6,
+        body.dark-mode footer a {
+            color: #f5f5f5 !important;
+        }
+
+        body.dark-mode footer a:hover {
+            color: #435ebe !important;
         }
 
         body.dark-mode .text-muted {
-            color: #aaa !important;
+            color: #bbb !important;
         }
 
         body.dark-mode .form-control,
-        body.dark-mode .form-select {
+        body.dark-mode .form-select,
+        body.dark-mode textarea {
             background-color: #3a3a3a;
-            color: #e0e0e0;
+            color: #f5f5f5 !important;
             border-color: #555;
+        }
+
+        body.dark-mode .form-control::placeholder {
+            color: #999 !important;
+        }
+
+        body.dark-mode .form-control:focus,
+        body.dark-mode .form-select:focus {
+            background-color: #404040;
+            color: #f5f5f5 !important;
+            border-color: #435ebe;
+        }
+
+        body.dark-mode .form-label {
+            color: #f5f5f5 !important;
+        }
+
+        body.dark-mode .form-check-label {
+            color: #f5f5f5 !important;
         }
 
         body.dark-mode .btn-primary {
             background-color: #435ebe;
             border-color: #435ebe;
+            color: #fff !important;
+        }
+
+        body.dark-mode .btn-primary:hover {
+            background-color: #364a92;
+            border-color: #364a92;
+        }
+
+        body.dark-mode .btn-secondary {
+            background-color: #555;
+            border-color: #555;
+            color: #fff !important;
+        }
+
+        body.dark-mode .btn-danger {
+            background-color: #dc3545;
+            border-color: #dc3545;
+            color: #fff !important;
+        }
+
+        body.dark-mode .btn-success {
+            background-color: #28a745;
+            border-color: #28a745;
+            color: #fff !important;
+        }
+
+        body.dark-mode .btn-link {
+            color: #6ea8fe !important;
         }
 
         body.dark-mode .dropdown-menu {
             background-color: #2d2d2d;
-            color: #e0e0e0;
+            border-color: #404040;
         }
 
         body.dark-mode .dropdown-item {
-            color: #e0e0e0;
+            color: #f5f5f5 !important;
         }
 
         body.dark-mode .dropdown-item:hover {
             background-color: #3a3a3a;
+            color: #fff !important;
+        }
+
+        body.dark-mode .dropdown-divider {
+            border-color: #404040;
         }
 
         body.dark-mode .alert {
@@ -176,21 +290,95 @@
 
         body.dark-mode .alert-success {
             background-color: #1e4620;
-            color: #a8e6a3;
+            color: #c3e6cb !important;
+            border-color: #2d5a2d;
         }
 
         body.dark-mode .alert-danger {
             background-color: #4d1f1f;
-            color: #f8b4b4;
+            color: #f5c2c7 !important;
+            border-color: #6d2828;
         }
 
         body.dark-mode .alert-info {
             background-color: #1f3a4d;
-            color: #a3d7f8;
+            color: #b6d4fe !important;
+            border-color: #2d5a6d;
+        }
+
+        body.dark-mode .alert-warning {
+            background-color: #664d03;
+            color: #ffecb5 !important;
+            border-color: #7a5d0a;
         }
 
         body.dark-mode .badge {
             border: 1px solid #555;
+        }
+
+        body.dark-mode .badge-primary {
+            background-color: #435ebe;
+            color: #fff !important;
+        }
+
+        body.dark-mode .modal-content {
+            background-color: #2d2d2d;
+            color: #f5f5f5;
+            border-color: #404040;
+        }
+
+        body.dark-mode .modal-header {
+            background-color: #252525;
+            border-bottom: 1px solid #404040;
+        }
+
+        body.dark-mode .modal-footer {
+            border-top: 1px solid #404040;
+        }
+
+        body.dark-mode .breadcrumb {
+            background-color: #2d2d2d;
+        }
+
+        body.dark-mode .breadcrumb-item a {
+            color: #6ea8fe !important;
+        }
+
+        body.dark-mode .breadcrumb-item.active {
+            color: #f5f5f5 !important;
+        }
+
+        body.dark-mode .pagination .page-link {
+            background-color: #2d2d2d;
+            color: #f5f5f5;
+            border-color: #404040;
+        }
+
+        body.dark-mode .pagination .page-link:hover {
+            background-color: #3a3a3a;
+            color: #fff;
+        }
+
+        body.dark-mode .pagination .page-item.active .page-link {
+            background-color: #435ebe;
+            border-color: #435ebe;
+            color: #fff !important;
+        }
+
+        body.dark-mode input[readonly] {
+            background-color: #2d2d2d !important;
+            color: #bbb !important;
+        }
+
+        body.dark-mode .list-group-item {
+            background-color: #2d2d2d;
+            color: #f5f5f5;
+            border-color: #404040;
+        }
+
+        body.dark-mode hr {
+            border-color: #404040;
+            opacity: 0.3;
         }
     </style>
 </head>
