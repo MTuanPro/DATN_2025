@@ -196,13 +196,55 @@
         }
 
         body.dark-mode .top-header {
-            background-color: #2d2d2d;
-            color: #f5f5f5;
-            border-bottom: 1px solid #333;
+            background-color: #1e1e1e !important;
+            color: #ffffff;
+            border-bottom: 1px solid #404040;
+        }
+
+        body.dark-mode .top-header .btn,
+        body.dark-mode .top-header button {
+            background-color: transparent;
+            color: #ffffff !important;
+            border: none;
+        }
+
+        body.dark-mode .top-header .btn:hover,
+        body.dark-mode .top-header button:hover {
+            background-color: rgba(255, 255, 255, 0.1);
+            color: #ffffff !important;
         }
 
         body.dark-mode .top-header .btn-link {
-            color: #f5f5f5 !important;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header .btn-link:hover {
+            color: #ffffff !important;
+            background-color: rgba(255, 255, 255, 0.1);
+        }
+
+        body.dark-mode .top-header .text-muted {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header i {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header .dropdown-toggle {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header .dropdown-toggle::after {
+            border-top-color: #ffffff;
+        }
+
+        body.dark-mode .top-header span {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .top-header img {
+            border: 2px solid #404040;
         }
 
         body.dark-mode footer {
