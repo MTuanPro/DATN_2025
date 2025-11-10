@@ -12,8 +12,9 @@
     </div>
 
     <div class="d-flex align-items-center ms-auto">
-        <button class="btn btn-link text-decoration-none text-muted me-2 d-none d-md-inline" title="Toggle dark mode">
-            <i class="bi bi-moon"></i>
+        <!-- Dark Mode Toggle -->
+        <button class="btn btn-link text-decoration-none text-muted me-2" id="theme-toggle" title="Chuyển chế độ sáng/tối" onclick="toggleTheme()">
+            <i class="bi bi-moon" id="theme-icon"></i>
         </button>
 
         <!-- Notification Bell Dropdown -->
@@ -114,20 +115,25 @@
         <div class="dropdown">
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown"
                 data-bs-toggle="dropdown" aria-expanded="false">
-                <img src="{{ asset('assets/images/faces/1.jpg') }}" alt="user" width="36" height="36"
-                    class="rounded-circle me-2">
+                @if(auth()->user()->anh_dai_dien)
+                    <img src="{{ asset('storage/' . auth()->user()->anh_dai_dien) }}" alt="user" width="36" height="36"
+                        class="rounded-circle me-2">
+                @else
+                    <img src="{{ asset('assets/images/faces/1.jpg') }}" alt="user" width="36" height="36"
+                        class="rounded-circle me-2">
+                @endif
                 <span class="d-none d-md-inline">{{ auth()->user()->name ?? 'User' }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
-                <li><a class="dropdown-item" href="#">Profile</a></li>
-                <li><a class="dropdown-item" href="#">Settings</a></li>
+                <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="bi bi-person me-2"></i>Hồ Sơ</a></li>
+                <li><a class="dropdown-item" href="{{ route('settings.index') }}"><i class="bi bi-gear me-2"></i>Cài Đặt</a></li>
                 <li>
                     <hr class="dropdown-divider">
                 </li>
                 <li>
                     <a class="dropdown-item" href="#"
                         onclick="event.preventDefault(); document.getElementById('logout-form-header').submit();">
-                        Logout
+                        <i class="bi bi-box-arrow-right me-2"></i>Đăng Xuất
                     </a>
                 </li>
             </ul>
@@ -139,3 +145,36 @@
 <form action="{{ route('logout') }}" method="POST" id="logout-form-header" style="display: none;">
     @csrf
 </form>
+
+<!-- Dark Mode JavaScript -->
+<script>
+// Load theme từ localStorage
+document.addEventListener('DOMContentLoaded', function() {
+    const savedTheme = localStorage.getItem('theme') || 'light';
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (savedTheme === 'dark') {
+        document.body.classList.add('dark-mode');
+        themeIcon.classList.remove('bi-moon');
+        themeIcon.classList.add('bi-sun');
+    }
+});
+
+// Toggle theme
+function toggleTheme() {
+    const body = document.body;
+    const themeIcon = document.getElementById('theme-icon');
+    
+    if (body.classList.contains('dark-mode')) {
+        body.classList.remove('dark-mode');
+        themeIcon.classList.remove('bi-sun');
+        themeIcon.classList.add('bi-moon');
+        localStorage.setItem('theme', 'light');
+    } else {
+        body.classList.add('dark-mode');
+        themeIcon.classList.remove('bi-moon');
+        themeIcon.classList.add('bi-sun');
+        localStorage.setItem('theme', 'dark');
+    }
+}
+</script>

@@ -243,15 +243,6 @@
                     </ul>
                 </li>
 
-                <li class="sidebar-title">TÀI KHOẢN</li>
-
-                <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
-                        <i class="bi bi-person-circle"></i>
-                        <span>Thông tin cá nhân <!-- Đang cập nhật --></span>
-                    </a>
-                </li>
-
             </ul>
         </div>
     </div>
