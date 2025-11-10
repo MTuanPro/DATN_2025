@@ -24,15 +24,7 @@
                     </a>
                 </li>
 
-                <!-- 1. THÔNG TIN CÁ NHÂN -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-person-circle"></i>
-                        <span>Thông tin cá nhân</span>
-                    </a>
-                </li>
-
-                <!-- 2. LỚP PHỤ TRÁCH -->
+                <!-- LỚP GIẢNG DẠY -->
                 <li class="sidebar-item {{ Request::is('giang-vien/lop-giang-day*') ? 'active' : '' }}">
                     <a href="{{ route('giangvien.lop-giang-day.index') }}" class='sidebar-link'>
                         <i class="bi bi-book"></i>

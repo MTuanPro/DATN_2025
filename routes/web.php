@@ -92,6 +92,14 @@ Route::post('/reset-password', [AdminUserController::class, 'processReset'])->na
 // Logout (Cần đăng nhập)
 Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
+// ========== Profile & Settings Routes (All roles) ==========
+Route::middleware(['auth'])->group(function () {
+    Route::get('/profile', [App\Http\Controllers\ProfileController::class, 'show'])->name('profile.show');
+    Route::put('/profile', [App\Http\Controllers\ProfileController::class, 'update'])->name('profile.update');
+    Route::get('/settings', [App\Http\Controllers\SettingsController::class, 'index'])->name('settings.index');
+    Route::post('/settings', [App\Http\Controllers\SettingsController::class, 'update'])->name('settings.update');
+});
+
 // ========== Email Verification Routes ==========
 Route::get('/email/verify/{token}', [AdminUserController::class, 'showVerifyForm'])->name('verification.form');
 Route::post('/email/verify', [AdminUserController::class, 'processVerify'])->name('verification.process');
