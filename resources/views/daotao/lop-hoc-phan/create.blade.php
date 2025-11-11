@@ -197,7 +197,7 @@
                                 <select class="form-select @error('trang_thai_lop') is-invalid @enderror"
                                     id="trang_thai_lop" name="trang_thai_lop">
                                     <option value="mo_dang_ky"
-                                        {{ old('trang_thai_lop') == 'mo_dang_ky' ? 'selected' : '' }}>Mở đăng ký</option>
+                                        {{ old('trang_thai_lop', 'mo_dang_ky') == 'mo_dang_ky' ? 'selected' : '' }}>Mở đăng ký</option>
                                     <option value="dang_hoc" {{ old('trang_thai_lop') == 'dang_hoc' ? 'selected' : '' }}>
                                         Đang học</option>
                                     <option value="ket_thuc" {{ old('trang_thai_lop') == 'ket_thuc' ? 'selected' : '' }}>

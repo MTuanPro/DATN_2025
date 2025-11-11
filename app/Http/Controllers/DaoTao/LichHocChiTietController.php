@@ -88,7 +88,7 @@ class LichHocChiTietController extends Controller
         }
 
         return redirect()
-            ->route('daotao.lop-hoc-phan.lich-chi-tiet', $lopHocPhan)
+            ->route('dao-tao.lop-hoc-phan.lich-chi-tiet', $lopHocPhan)
             ->with('success', "Đã tạo $count buổi học chi tiết thành công");
     }
 
@@ -147,7 +147,7 @@ class LichHocChiTietController extends Controller
         LichHocChiTiet::create($validated);
 
         return redirect()
-            ->route('daotao.lop-hoc-phan.lich-chi-tiet', $lopHocPhan)
+            ->route('dao-tao.lop-hoc-phan.lich-chi-tiet', $lopHocPhan)
             ->with('success', 'Đã thêm buổi học thành công');
     }
 
@@ -195,7 +195,7 @@ class LichHocChiTietController extends Controller
         $lichChiTiet->update($validated);
 
         return redirect()
-            ->route('daotao.lop-hoc-phan.lich-chi-tiet', $lichChiTiet->lop_hoc_phan_id)
+            ->route('dao-tao.lop-hoc-phan.lich-chi-tiet', $lichChiTiet->lop_hoc_phan_id)
             ->with('success', 'Đã cập nhật buổi học thành công');
     }
 
@@ -207,7 +207,7 @@ class LichHocChiTietController extends Controller
         $lichChiTiet->update(['trang_thai' => 'huy']);
 
         return redirect()
-            ->route('daotao.lop-hoc-phan.lich-chi-tiet', $lichChiTiet->lop_hoc_phan_id)
+            ->route('dao-tao.lop-hoc-phan.lich-chi-tiet', $lichChiTiet->lop_hoc_phan_id)
             ->with('success', 'Đã hủy buổi học thành công');
     }
 
@@ -220,7 +220,7 @@ class LichHocChiTietController extends Controller
         $lichChiTiet->delete();
 
         return redirect()
-            ->route('daotao.lop-hoc-phan.lich-chi-tiet', $lopHocPhanId)
+            ->route('dao-tao.lop-hoc-phan.lich-chi-tiet', $lopHocPhanId)
             ->with('success', 'Đã xóa buổi học thành công');
     }
 }

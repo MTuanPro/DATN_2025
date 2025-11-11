@@ -84,8 +84,8 @@ class LichHocCoDinhController extends Controller
         LichHocCoDinh::create($validated);
 
         return redirect()
-            ->route('daotao.lop-hoc-phan.lich-co-dinh', $lopHocPhan)
-            ->with('success', 'Đã thêm lịch học cố định thành công');
+            ->route('dao-tao.lop-hoc-phan.lich-co-dinh', $lopHocPhan)
+            ->with('success', 'Thêm lịch cố định thành công!');
     }
 
     /**
@@ -131,7 +131,7 @@ class LichHocCoDinhController extends Controller
         $lichCoDinh->update($validated);
 
         return redirect()
-            ->route('daotao.lop-hoc-phan.lich-co-dinh', $lichCoDinh->lop_hoc_phan_id)
+            ->route('dao-tao.lop-hoc-phan.lich-co-dinh', $lichCoDinh->lop_hoc_phan_id)
             ->with('success', 'Đã cập nhật lịch học cố định thành công');
     }
 
@@ -144,7 +144,7 @@ class LichHocCoDinhController extends Controller
         $lichCoDinh->delete();
 
         return redirect()
-            ->route('daotao.lop-hoc-phan.lich-co-dinh', $lopHocPhanId)
+            ->route('dao-tao.lop-hoc-phan.lich-co-dinh', $lopHocPhanId)
             ->with('success', 'Đã xóa lịch học cố định thành công');
     }
 

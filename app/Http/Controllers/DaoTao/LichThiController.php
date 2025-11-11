@@ -260,17 +260,31 @@ class LichThiController extends Controller
      */
     public function update(UpdateLichThiRequest $request, LichThi $lichThi)
     {
+        Log::info('=== BẮT ĐẦU CẬP NHẬT LỊCH THI ===', [
+            'lich_thi_id' => $lichThi->id,
+            'request_data' => $request->all()
+        ]);
+
         try {
             DB::beginTransaction();
 
             // 1. Kiểm tra lớp học phần hợp lệ
             $lopHocPhan = LopHocPhan::with(['hocKy', 'lopHocPhanSinhViens'])->findOrFail($request->lop_hoc_phan_id);
+            Log::info('Lớp học phần hợp lệ', ['lop_hoc_phan_id' => $lopHocPhan->id]);
 
             // 2. Kiểm tra ngày thi trong phạm vi học kỳ
             $hocKy = $lopHocPhan->hocKy;
             $ngayThi = \Carbon\Carbon::parse($request->ngay_thi);
             
+            Log::info('Kiểm tra ngày thi', [
+                'ngay_thi' => $ngayThi->format('Y-m-d'),
+                'hoc_ky_bat_dau' => $hocKy->ngay_bat_dau->format('Y-m-d'),
+                'hoc_ky_ket_thuc' => $hocKy->ngay_ket_thuc->format('Y-m-d')
+            ]);
+            
             if ($ngayThi->lt($hocKy->ngay_bat_dau) || $ngayThi->gt($hocKy->ngay_ket_thuc)) {
+                Log::warning('Ngày thi ngoài phạm vi học kỳ');
+                DB::rollBack();
                 return redirect()->back()
                     ->withInput()
                     ->with('error', 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
@@ -280,6 +294,8 @@ class LichThiController extends Controller
 
             // 3. Kiểm tra trùng lịch thi sinh viên
             $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id');
+            
+            Log::info('Kiểm tra trùng lịch sinh viên', ['so_sinh_vien' => $sinhVienIds->count()]);
             
             $trungLichSinhVien = LichThi::where('id', '!=', $lichThi->id)
                 ->whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
@@ -297,6 +313,8 @@ class LichThiController extends Controller
                 ->exists();
 
             if ($trungLichSinhVien) {
+                Log::warning('Phát hiện trùng lịch sinh viên');
+                DB::rollBack();
                 return redirect()->back()
                     ->withInput()
                     ->with('error', 'Có sinh viên trong lớp đã có lịch thi trùng giờ!');
@@ -454,12 +472,20 @@ class LichThiController extends Controller
             }
 
             DB::commit();
+            
+            Log::info('=== CẬP NHẬT THÀNH CÔNG ===', ['lich_thi_id' => $lichThi->id]);
 
             return redirect()->route('dao-tao.lich-thi.index')
                 ->with('success', 'Cập nhật lịch thi thành công!');
 
         } catch (\Exception $e) {
             DB::rollBack();
+            Log::error('=== LỖI CẬP NHẬT LỊCH THI ===', [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());

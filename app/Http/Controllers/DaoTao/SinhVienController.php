@@ -124,6 +124,12 @@ class SinhVienController extends Controller
 
         DB::beginTransaction();
         try {
+            // Kiểm tra email đã tồn tại trong bảng users chưa
+            $existingUser = User::where('email', $validated['email'])->first();
+            if ($existingUser) {
+                return back()->withInput()->with('error', 'Email này đã được sử dụng cho tài khoản khác!');
+            }
+
             // Xử lý upload ảnh
             if ($request->hasFile('anh_dai_dien')) {
                 $validated['anh_dai_dien'] = $request->file('anh_dai_dien')->store('sinh-vien', 'public');
@@ -131,21 +137,27 @@ class SinhVienController extends Controller
 
             // Tạo tài khoản User
             $user = User::create([
-                'name' => $validated['ho_ten'], // Thêm trường name
+                'name' => $validated['ho_ten'],
                 'email' => $validated['email'],
                 'password' => Hash::make($validated['ma_sinh_vien']), // Mật khẩu mặc định là MSSV
                 'trang_thai' => 'hoat_dong',
                 'email_verified_at' => now(),
             ]);
 
+            Log::info('Đã tạo User ID: ' . $user->id . ' cho sinh viên: ' . $validated['ma_sinh_vien']);
+
             // Gán vai trò sinh_vien
             $vaiTroSinhVien = VaiTro::where('ma_vai_tro', 'sinh_vien')->first();
-            if ($vaiTroSinhVien) {
-                $user->vaiTro()->attach($vaiTroSinhVien->id, [
-                    'nguoi_gan_id' => auth()->check() ? auth()->id() : null,
-                    'ngay_gan' => now(),
-                ]);
+            if (!$vaiTroSinhVien) {
+                throw new \Exception('Không tìm thấy vai trò sinh_vien trong hệ thống!');
             }
+
+            $user->vaiTro()->attach($vaiTroSinhVien->id, [
+                'nguoi_gan_id' => auth()->check() ? auth()->id() : null,
+                'ngay_gan' => now(),
+            ]);
+
+            Log::info('Đã gán vai trò sinh_vien cho User ID: ' . $user->id);
 
             // Tạo sinh viên với user_id
             $validated['user_id'] = $user->id;
@@ -158,13 +170,15 @@ class SinhVienController extends Controller
 
             $sinhVien = SinhVien::create($validated);
 
+            Log::info('Đã tạo Sinh viên ID: ' . $sinhVien->id);
+
             // Cập nhật sĩ số lớp
             $lopHanhChinh->increment('si_so');
 
             DB::commit();
 
             return redirect()->route('dao-tao.sinh-vien.index')
-                ->with('success', 'Thêm sinh viên thành công! Mật khẩu mặc định là MSSV.');
+                ->with('success', "Thêm sinh viên thành công! Email: {$validated['email']} - Mật khẩu: {$validated['ma_sinh_vien']}");
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Lỗi tạo sinh viên: ' . $e->getMessage());

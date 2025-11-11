@@ -66,35 +66,40 @@ class LopHocPhanController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'ma_lop_hoc_phan' => 'required|string|max:20|unique:lop_hoc_phan,ma_lop_hoc_phan',
-            'ten_lop_hoc_phan' => 'required|string|max:255',
+            'ma_lop_hp' => 'required|string|max:20|unique:lop_hoc_phan,ma_lop_hp',
+            'ten_lop_hp' => 'required|string|max:255',
             'mon_hoc_id' => 'required|exists:mon_hoc,id',
             'hoc_ky_id' => 'required|exists:hoc_ky,id',
-            'so_luong_toi_da' => 'required|integer|min:1|max:200',
-            'so_luong_toi_thieu' => 'required|integer|min:1|lte:so_luong_toi_da',
-            'loai_lop' => 'required|in:ly_thuyet,thuc_hanh,ly_thuyet_thuc_hanh',
-            'hinh_thuc_hoc' => 'required|in:offline,online,hybrid',
+            'suc_chua' => 'required|integer|min:1|max:200',
+            'so_luong_toi_thieu' => 'required|integer|min:1|lte:suc_chua',
+            'nhom_lop' => 'nullable|string|max:50',
+            'hinh_thuc' => 'required|in:offline,online,hybrid',
             'link_online' => 'nullable|url',
-            'trang_thai' => 'required|in:cho_mo,dang_mo,dang_hoc,ket_thuc,huy',
+            'trang_thai_lop' => 'required|in:mo_dang_ky,dang_hoc,ket_thuc,huy',
+            'ngay_bat_dau' => 'nullable|date',
+            'ngay_ket_thuc' => 'nullable|date|after_or_equal:ngay_bat_dau',
             'ghi_chu' => 'nullable|string',
         ], [
-            'ma_lop_hoc_phan.required' => 'Mã lớp học phần là bắt buộc',
-            'ma_lop_hoc_phan.unique' => 'Mã lớp học phần đã tồn tại',
-            'ten_lop_hoc_phan.required' => 'Tên lớp học phần là bắt buộc',
+            'ma_lop_hp.required' => 'Mã lớp học phần là bắt buộc',
+            'ma_lop_hp.unique' => 'Mã lớp học phần đã tồn tại',
+            'ten_lop_hp.required' => 'Tên lớp học phần là bắt buộc',
             'mon_hoc_id.required' => 'Môn học là bắt buộc',
             'mon_hoc_id.exists' => 'Môn học không tồn tại',
             'hoc_ky_id.required' => 'Học kỳ là bắt buộc',
             'hoc_ky_id.exists' => 'Học kỳ không tồn tại',
-            'so_luong_toi_da.required' => 'Số lượng tối đa là bắt buộc',
-            'so_luong_toi_da.min' => 'Số lượng tối đa phải lớn hơn 0',
-            'so_luong_toi_da.max' => 'Số lượng tối đa không được vượt quá 200',
+            'suc_chua.required' => 'Sức chứa là bắt buộc',
+            'suc_chua.min' => 'Sức chứa phải lớn hơn 0',
+            'suc_chua.max' => 'Sức chứa không được vượt quá 200',
             'so_luong_toi_thieu.required' => 'Số lượng tối thiểu là bắt buộc',
-            'so_luong_toi_thieu.lte' => 'Số lượng tối thiểu phải nhỏ hơn hoặc bằng số lượng tối đa',
-            'loai_lop.required' => 'Loại lớp là bắt buộc',
-            'hinh_thuc_hoc.required' => 'Hình thức học là bắt buộc',
+            'so_luong_toi_thieu.lte' => 'Số lượng tối thiểu phải nhỏ hơn hoặc bằng sức chứa',
+            'hinh_thuc.required' => 'Hình thức học là bắt buộc',
             'link_online.url' => 'Link online phải là URL hợp lệ',
-            'trang_thai.required' => 'Trạng thái là bắt buộc',
+            'trang_thai_lop.required' => 'Trạng thái là bắt buộc',
+            'ngay_ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu',
         ]);
+
+        // Đặt giá trị mặc định cho so_luong_dang_ky
+        $validated['so_luong_dang_ky'] = 0;
 
         LopHocPhan::create($validated);
 
@@ -129,29 +134,31 @@ class LopHocPhanController extends Controller
     public function update(Request $request, LopHocPhan $lopHocPhan)
     {
         $validated = $request->validate([
-            'ma_lop_hoc_phan' => 'required|string|max:20|unique:lop_hoc_phan,ma_lop_hoc_phan,' . $lopHocPhan->id,
-            'ten_lop_hoc_phan' => 'required|string|max:255',
+            'ma_lop_hp' => 'required|string|max:20|unique:lop_hoc_phan,ma_lop_hp,' . $lopHocPhan->id,
+            'ten_lop_hp' => 'required|string|max:255',
             'mon_hoc_id' => 'required|exists:mon_hoc,id',
             'hoc_ky_id' => 'required|exists:hoc_ky,id',
-            'so_luong_toi_da' => 'required|integer|min:1|max:200',
-            'so_luong_toi_thieu' => 'required|integer|min:1|lte:so_luong_toi_da',
-            'loai_lop' => 'required|in:ly_thuyet,thuc_hanh,ly_thuyet_thuc_hanh',
-            'hinh_thuc_hoc' => 'required|in:offline,online,hybrid',
+            'suc_chua' => 'required|integer|min:1|max:200',
+            'so_luong_toi_thieu' => 'required|integer|min:1|lte:suc_chua',
+            'nhom_lop' => 'nullable|string|max:50',
+            'hinh_thuc' => 'required|in:offline,online,hybrid',
             'link_online' => 'nullable|url',
-            'trang_thai' => 'required|in:cho_mo,dang_mo,dang_hoc,ket_thuc,huy',
+            'trang_thai_lop' => 'required|in:mo_dang_ky,dang_hoc,ket_thuc,huy',
+            'ngay_bat_dau' => 'nullable|date',
+            'ngay_ket_thuc' => 'nullable|date|after_or_equal:ngay_bat_dau',
             'ghi_chu' => 'nullable|string',
         ], [
-            'ma_lop_hoc_phan.required' => 'Mã lớp học phần là bắt buộc',
-            'ma_lop_hoc_phan.unique' => 'Mã lớp học phần đã tồn tại',
-            'ten_lop_hoc_phan.required' => 'Tên lớp học phần là bắt buộc',
+            'ma_lop_hp.required' => 'Mã lớp học phần là bắt buộc',
+            'ma_lop_hp.unique' => 'Mã lớp học phần đã tồn tại',
+            'ten_lop_hp.required' => 'Tên lớp học phần là bắt buộc',
             'mon_hoc_id.required' => 'Môn học là bắt buộc',
             'hoc_ky_id.required' => 'Học kỳ là bắt buộc',
-            'so_luong_toi_da.required' => 'Số lượng tối đa là bắt buộc',
+            'suc_chua.required' => 'Sức chứa là bắt buộc',
             'so_luong_toi_thieu.required' => 'Số lượng tối thiểu là bắt buộc',
-            'so_luong_toi_thieu.lte' => 'Số lượng tối thiểu phải nhỏ hơn hoặc bằng số lượng tối đa',
-            'loai_lop.required' => 'Loại lớp là bắt buộc',
-            'hinh_thuc_hoc.required' => 'Hình thức học là bắt buộc',
-            'trang_thai.required' => 'Trạng thái là bắt buộc',
+            'so_luong_toi_thieu.lte' => 'Số lượng tối thiểu phải nhỏ hơn hoặc bằng sức chứa',
+            'hinh_thuc.required' => 'Hình thức học là bắt buộc',
+            'trang_thai_lop.required' => 'Trạng thái là bắt buộc',
+            'ngay_ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu',
         ]);
 
         $lopHocPhan->update($validated);
@@ -166,7 +173,7 @@ class LopHocPhanController extends Controller
     public function destroy(LopHocPhan $lopHocPhan)
     {
         // Kiểm tra xem lớp đã có sinh viên đăng ký chưa
-        if ($lopHocPhan->so_luong_hien_tai > 0) {
+        if ($lopHocPhan->so_luong_dang_ky > 0) {
             return redirect()->route('dao-tao.lop-hoc-phan.index')
                 ->with('error', 'Không thể xóa lớp học phần đã có sinh viên đăng ký!');
         }

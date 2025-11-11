@@ -63,11 +63,14 @@ class PhanCongGiangDayController extends Controller
 
         // TODO: Kiểm tra trùng lịch giảng viên (cần implement sau khi có bảng lich_hoc_co_dinh)
 
+        // Lấy ID của nhân viên đào tạo từ user đang đăng nhập
+        $daoTaoId = Auth::user()->daoTao ? Auth::user()->daoTao->id : null;
+
         PhanCongGiangDay::create([
             'lop_hoc_phan_id' => $lopHocPhanId,
             'giang_vien_id' => $validated['giang_vien_id'],
             'vai_tro' => $validated['vai_tro'],
-            'nguoi_phan_cong_id' => Auth::id(),
+            'nguoi_phan_cong_id' => $daoTaoId,
             'ngay_phan_cong' => now(),
             'ghi_chu' => $validated['ghi_chu'] ?? null,
         ]);
