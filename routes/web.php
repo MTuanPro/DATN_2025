@@ -265,6 +265,10 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     // PHASE 10: Quản lý Thông báo (CRUD full)
     Route::resource('thong-bao', DaoTaoThongBaoController::class);
 
+    // PHASE 10: Mẫu thông báo tự động
+    Route::resource('mau-thong-bao', \App\Http\Controllers\DaoTao\MauThongBaoTuDongController::class);
+    Route::patch('mau-thong-bao/{mauThongBao}/toggle', [\App\Http\Controllers\DaoTao\MauThongBaoTuDongController::class, 'toggleActivation'])->name('mau-thong-bao.toggle');
+
     // PHASE 8: Quản lý Học phí
     // Cấu hình học phí
     Route::prefix('hoc-phi')->name('hoc-phi.')->group(function () {

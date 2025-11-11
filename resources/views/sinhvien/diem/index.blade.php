@@ -59,7 +59,7 @@
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
-<h6 class="text-muted mb-2">Tín chỉ tích lũy</h6>
+                                    <h6 class="text-muted mb-2">Tín chỉ tích lũy</h6>
                                     <h2 class="mb-0 text-info">{{ $tongTinChiDat }}</h2>
                                 </div>
                                 <div class="avatar avatar-xl bg-info">
@@ -117,7 +117,7 @@
                             {{ session('error') }}
                             <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
                         </div>
-@endif
+                    @endif
 
                     @if (session('info'))
                         <div class="alert alert-info alert-dismissible fade show">
@@ -165,7 +165,7 @@
                                         </td>
                                         <td class="text-center">
                                             @if ($item->ketQuaHocTap && $item->ketQuaHocTap->diem_chu)
-<span class="badge bg-{{ $item->ketQuaHocTap->diem_chu_badge }}">
+                                                <span class="badge bg-{{ $item->ketQuaHocTap->diem_chu_badge }}">
                                                     {{ $item->ketQuaHocTap->diem_chu }}
                                                 </span>
                                             @else
