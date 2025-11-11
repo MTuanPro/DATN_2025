@@ -43,7 +43,7 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($hocPhi->chiTietHocPhi as $index => $ct)
+                                        @foreach ($hocPhi->chiTietHocPhiMon as $index => $ct)
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
                                                 <td>{{ $ct->monHoc->ma_mon }}</td>
@@ -69,19 +69,24 @@
                             <table class="table table-borderless">
                                 <tr>
                                     <td>Tổng học phí:</td>
-                                    <td class="text-end"><strong>{{ number_format($hocPhi->tong_so_tien, 0, ',', '.') }} đ</strong></td>
+                                    <td class="text-end"><strong>{{ number_format($hocPhi->tong_so_tien, 0, ',', '.') }}
+                                            đ</strong></td>
                                 </tr>
                                 <tr>
                                     <td>Đã đóng:</td>
-                                    <td class="text-end text-success"><strong>{{ number_format($hocPhi->so_tien_da_dong, 0, ',', '.') }} đ</strong></td>
+                                    <td class="text-end text-success">
+                                        <strong>{{ number_format($hocPhi->so_tien_da_dong, 0, ',', '.') }} đ</strong></td>
                                 </tr>
                                 <tr style="border-top: 2px solid #ddd;">
                                     <td>Còn lại:</td>
-                                    <td class="text-end text-danger"><h4>{{ number_format($hocPhi->so_tien_con_lai, 0, ',', '.') }} đ</h4></td>
+                                    <td class="text-end text-danger">
+                                        <h4>{{ number_format($hocPhi->so_tien_con_lai, 0, ',', '.') }} đ</h4>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>Hạn đóng:</td>
-                                    <td class="text-end"><span class="badge bg-warning">{{ $hocPhi->han_dong->format('d/m/Y') }}</span></td>
+                                    <td class="text-end"><span
+                                            class="badge bg-warning">{{ $hocPhi->han_dong->format('d/m/Y') }}</span></td>
                                 </tr>
                                 <tr>
                                     <td>Trạng thái:</td>
@@ -110,4 +115,3 @@
         </section>
     </div>
 @endsection
-

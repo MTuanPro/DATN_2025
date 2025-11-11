@@ -72,6 +72,14 @@ class LopHocPhan extends Model
     }
 
     /**
+     * Alias cho giangVienChinh
+     */
+    public function giangVien()
+    {
+        return $this->giangVienChinh();
+    }
+
+    /**
      * Quan hệ với LopHocPhanSinhVien (Sinh viên trong lớp)
      */
     public function lopHocPhanSinhViens()
@@ -97,6 +105,23 @@ class LopHocPhan extends Model
         return $this->hasMany(CauHinhDauDiem::class, 'lop_hoc_phan_id')
             ->orderBy('id');
     }
+
+    /**
+     * Quan hệ với LichHocCoDinh
+     */
+    public function lichHocCoDinhs()
+    {
+        return $this->hasMany(LichHocCoDinh::class, 'lop_hoc_phan_id');
+    }
+
+    /**
+     * Quan hệ với LichHocChiTiet
+     */
+    public function lichHocChiTiets()
+    {
+        return $this->hasMany(LichHocChiTiet::class, 'lop_hoc_phan_id');
+    }
+
     public function lopHocPhanSinhVien()
     {
         return $this->hasMany(LopHocPhanSinhVien::class, 'lop_hoc_phan_id');

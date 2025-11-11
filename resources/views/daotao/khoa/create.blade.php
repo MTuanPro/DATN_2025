@@ -1,56 +1,89 @@
 @extends('layouts.layout-daotao')
 
+@section('title', 'Thêm Khoa')
+
 @section('content')
-<div class="container">
-    <h2>Thêm Khoa Mới</h2>
-
-    {{-- Nút quay lại --}}
-    <a href="{{ route('dao-tao.khoa.index') }}" class="btn btn-secondary mb-3">← Quay lại danh sách</a>
-
-    {{-- Hiển thị thông báo lỗi --}}
-    @if ($errors->any())
-        <div class="alert alert-danger">
-            <strong>Lỗi!</strong> Vui lòng kiểm tra lại các trường sau:<br><br>
-            <ul class="mb-0">
-                @foreach ($errors->all() as $error)
-                    <li>{{ $error }}</li>
-                @endforeach
-            </ul>
-        </div>
-    @endif
-
-    {{-- Form thêm khoa --}}
-    <form action="{{ route('dao-tao.khoa.store') }}" method="POST" class="card p-4 shadow-sm rounded-3">
-        @csrf
-
-        <div class="mb-3">
-            <label for="ma_khoa" class="form-label fw-bold">Mã Khoa <span class="text-danger">*</span></label>
-            <input type="text" id="ma_khoa" name="ma_khoa" class="form-control" 
-                   value="{{ old('ma_khoa') }}" placeholder="Nhập mã khoa, ví dụ: CNTT">
-            @error('ma_khoa')
-                <div class="text-danger mt-1">{{ $message }}</div>
-            @enderror
+    <div class="page-heading">
+        <div class="page-title">
+            <div class="row">
+                <div class="col-12 col-md-6 order-md-1 order-last">
+                    <h3>Thêm Khoa</h3>
+                    <p class="text-subtitle text-muted">Thêm khoa mới vào hệ thống</p>
+                </div>
+                <div class="col-12 col-md-6 order-md-2 order-first">
+                    <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.khoa.index') }}">Khoa</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Thêm mới</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
         </div>
 
-        <div class="mb-3">
-            <label for="ten_khoa" class="form-label fw-bold">Tên Khoa <span class="text-danger">*</span></label>
-            <input type="text" id="ten_khoa" name="ten_khoa" class="form-control" 
-                   value="{{ old('ten_khoa') }}" placeholder="Nhập tên khoa, ví dụ: Công nghệ Thông tin">
-            @error('ten_khoa')
-                <div class="text-danger mt-1">{{ $message }}</div>
-            @enderror
-        </div>
+        <section class="section">
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title">Thông tin Khoa</h5>
+                </div>
+                <div class="card-body">
+                    <form action="{{ route('dao-tao.khoa.store') }}" method="POST">
+                        @csrf
 
-        <div class="mb-3">
-            <label for="truong_khoa_id" class="form-label fw-bold">Trưởng Khoa (tùy chọn)</label>
-            <input type="text" id="truong_khoa_id" name="truong_khoa_id" class="form-control"
-                   value="{{ old('truong_khoa_id') }}" placeholder="Nhập ID trưởng khoa (nếu có)">
-        </div>
+                        <div class="row">
+                            <div class="col-md-4">
+                                <div class="form-group mb-3">
+                                    <label for="ma_khoa" class="form-label">Mã Khoa <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control @error('ma_khoa') is-invalid @enderror"
+                                        id="ma_khoa" name="ma_khoa" value="{{ old('ma_khoa') }}" placeholder="VD: CNTT"
+                                        required>
+                                    @error('ma_khoa')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
 
-        <div class="mt-4">
-            <button type="submit" class="btn btn-success">💾 Lưu lại</button>
-            <a href="{{ route('dao-tao.khoa.index') }}" class="btn btn-outline-secondary">Hủy</a>
-        </div>
-    </form>
-</div>
+                            <div class="col-md-8">
+                                <div class="form-group mb-3">
+                                    <label for="ten_khoa" class="form-label">Tên Khoa <span
+                                            class="text-danger">*</span></label>
+                                    <input type="text" class="form-control @error('ten_khoa') is-invalid @enderror"
+                                        id="ten_khoa" name="ten_khoa" value="{{ old('ten_khoa') }}"
+                                        placeholder="VD: Công nghệ Thông tin" required>
+                                    @error('ten_khoa')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <div class="col-md-12">
+                                <div class="form-group mb-3">
+                                    <label for="truong_khoa_id" class="form-label">Trưởng Khoa</label>
+                                    <input type="text" class="form-control @error('truong_khoa_id') is-invalid @enderror"
+                                        id="truong_khoa_id" name="truong_khoa_id" value="{{ old('truong_khoa_id') }}"
+                                        placeholder="Nhập ID trưởng khoa (tùy chọn)">
+                                    @error('truong_khoa_id')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="bi bi-save"></i> Lưu
+                            </button>
+                            <a href="{{ route('dao-tao.khoa.index') }}" class="btn btn-secondary">
+                                <i class="bi bi-x-circle"></i> Hủy
+                            </a>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </section>
+    </div>
 @endsection

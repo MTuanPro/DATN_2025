@@ -40,4 +40,12 @@ class VaiTro extends Model
             'quyen_id'
         )->withTimestamps();
     }
+
+    /**
+     * Alias for quyens() - để tương thích với code cũ
+     */
+    public function quyen()
+    {
+        return $this->quyens();
+    }
 }
