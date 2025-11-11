@@ -299,6 +299,10 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::get('/tai-giang-vien', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'taiGiangVien'])->name('tai-giang-vien');
         Route::get('/phong-hoc', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'phongHoc'])->name('phong-hoc');
         Route::get('/canh-bao', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'canhBao'])->name('canh-bao');
+        
+        // Export routes
+        Route::get('/export-excel', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'exportExcel'])->name('export-excel');
+        Route::get('/export-pdf', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'exportPdf'])->name('export-pdf');
     });
 });
 
@@ -367,6 +371,16 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
         Route::post('/{thongBao}/mark-read', [GiangVienThongBaoController::class, 'markAsRead'])->name('mark-read');
         Route::post('/mark-all-read', [GiangVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
         Route::get('/unread/count', [GiangVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
+    });
+
+    // Báo cáo giảng dạy cá nhân
+    Route::prefix('bao-cao')->name('bao-cao.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\GiangVien\BaoCaoController::class, 'index'])->name('index');
+        Route::get('/tien-do', [\App\Http\Controllers\GiangVien\BaoCaoController::class, 'tienDoGiangDay'])->name('tien-do');
+        Route::get('/diem-danh', [\App\Http\Controllers\GiangVien\BaoCaoController::class, 'diemDanh'])->name('diem-danh');
+        Route::get('/phan-tich-diem', [\App\Http\Controllers\GiangVien\BaoCaoController::class, 'phanTichDiem'])->name('phan-tich-diem');
+        Route::get('/export-excel', [\App\Http\Controllers\GiangVien\BaoCaoController::class, 'exportExcel'])->name('export-excel');
+        Route::get('/export-pdf', [\App\Http\Controllers\GiangVien\BaoCaoController::class, 'exportPdf'])->name('export-pdf');
     });
 });
 

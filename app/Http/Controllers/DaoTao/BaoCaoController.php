@@ -20,6 +20,12 @@ use App\Models\DaoTao\KhoaHoc;
 use App\Models\DaoTao\LopHanhChinh;
 use App\Models\HocKy;
 use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+use PhpOffice\PhpSpreadsheet\Spreadsheet;
+use PhpOffice\PhpSpreadsheet\Writer\Xlsx;
+use PhpOffice\PhpSpreadsheet\Style\Alignment;
+use PhpOffice\PhpSpreadsheet\Style\Border;
+use PhpOffice\PhpSpreadsheet\Style\Fill;
 
 class BaoCaoController extends Controller
 {
@@ -513,5 +519,388 @@ class BaoCaoController extends Controller
             ->get();
 
         return view('daotao.bao-cao.canh-bao', compact('hocKys', 'warningData', 'statistics', 'statsByType', 'statsBySeverity'));
+    }
+
+    /**
+     * Xuất báo cáo Excel
+     */
+    public function exportExcel(Request $request)
+    {
+        $loaiBaoCao = $request->input('loai', 'sinh-vien');
+        
+        $spreadsheet = new Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+
+        // Header
+        $sheet->setCellValue('A1', 'TRƯỜNG ĐẠI HỌC ABC');
+        $sheet->setCellValue('A2', 'BÁO CÁO ĐÀO TẠO');
+        $sheet->mergeCells('A1:F1');
+        $sheet->mergeCells('A2:F2');
+        $sheet->getStyle('A1:A2')->getFont()->setBold(true)->setSize(14);
+        $sheet->getStyle('A1:A2')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        // Tiêu đề báo cáo
+        $reportTitles = [
+            'sinh-vien' => 'BÁO CÁO SINH VIÊN',
+            'ket-qua' => 'BÁO CÁO KẾT QUẢ HỌC TẬP',
+            'diem-danh' => 'BÁO CÁO ĐIỂM DANH',
+            'hoc-phi' => 'BÁO CÁO HỌC PHÍ',
+            'dang-ky' => 'BÁO CÁO ĐĂNG KÝ MÔN HỌC',
+            'xep-lop' => 'BÁO CÁO XẾP LỚP',
+            'tai-giang-vien' => 'BÁO CÁO TẢI GIẢNG VIÊN',
+            'phong-hoc' => 'BÁO CÁO SỬ DỤNG PHÒNG HỌC',
+            'canh-bao' => 'BÁO CÁO CẢNH BÁO HỌC VỤ',
+        ];
+
+        $sheet->setCellValue('A3', $reportTitles[$loaiBaoCao] ?? 'BÁO CÁO');
+        $sheet->mergeCells('A3:F3');
+        $sheet->getStyle('A3')->getFont()->setBold(true)->setSize(12);
+        $sheet->getStyle('A3')->getAlignment()->setHorizontal(Alignment::HORIZONTAL_CENTER);
+
+        $sheet->setCellValue('A4', 'Ngày xuất: ' . now()->format('d/m/Y H:i'));
+        $sheet->mergeCells('A4:F4');
+
+        $row = 6;
+
+        // Lấy filters
+        $khoaId = $request->input('khoa_id');
+        $nganhId = $request->input('nganh_id');
+        $hocKyId = $request->input('hoc_ky_id');
+        $tuNgay = $request->input('tu_ngay');
+        $denNgay = $request->input('den_ngay');
+
+        switch ($loaiBaoCao) {
+            case 'sinh-vien':
+                $sheet->setCellValue('A' . $row, 'STT');
+                $sheet->setCellValue('B' . $row, 'Mã SV');
+                $sheet->setCellValue('C' . $row, 'Họ tên');
+                $sheet->setCellValue('D' . $row, 'Khoa');
+                $sheet->setCellValue('E' . $row, 'Ngành');
+                $sheet->setCellValue('F' . $row, 'Trạng thái');
+                
+                $this->styleHeaderRow($sheet, $row, 'A', 'F');
+                $row++;
+
+                $query = SinhVien::with(['chuyenNganh.nganh.khoa', 'trangThaiHocTap']);
+                
+                if ($khoaId) {
+                    $query->whereHas('chuyenNganh.nganh', function($q) use ($khoaId) {
+                        $q->where('khoa_id', $khoaId);
+                    });
+                }
+                if ($nganhId) {
+                    $query->whereHas('chuyenNganh', function($q) use ($nganhId) {
+                        $q->where('nganh_id', $nganhId);
+                    });
+                }
+
+                $sinhViens = $query->get();
+                $stt = 1;
+
+                foreach ($sinhViens as $sv) {
+                    $sheet->setCellValue('A' . $row, $stt++);
+                    $sheet->setCellValue('B' . $row, $sv->ma_sinh_vien);
+                    $sheet->setCellValue('C' . $row, $sv->ho_ten);
+                    $sheet->setCellValue('D' . $row, $sv->chuyenNganh->nganh->khoa->ten_khoa ?? '');
+                    $sheet->setCellValue('E' . $row, $sv->chuyenNganh->nganh->ten_nganh ?? '');
+                    $sheet->setCellValue('F' . $row, $sv->trangThaiHocTap->ten_trang_thai ?? '');
+                    $row++;
+                }
+                break;
+
+            case 'ket-qua':
+                $sheet->setCellValue('A' . $row, 'STT');
+                $sheet->setCellValue('B' . $row, 'Mã SV');
+                $sheet->setCellValue('C' . $row, 'Họ tên');
+                $sheet->setCellValue('D' . $row, 'Môn học');
+                $sheet->setCellValue('E' . $row, 'Điểm TB');
+                $sheet->setCellValue('F' . $row, 'Kết quả');
+                
+                $this->styleHeaderRow($sheet, $row, 'A', 'F');
+                $row++;
+
+                $query = KetQuaHocTap::with(['lopHocPhanSinhVien.sinhVien', 'lopHocPhanSinhVien.lopHocPhan.monHoc']);
+                
+                if ($hocKyId) {
+                    $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function($q) use ($hocKyId) {
+                        $q->where('hoc_ky_id', $hocKyId);
+                    });
+                }
+
+                $ketQuas = $query->get();
+                $stt = 1;
+
+                foreach ($ketQuas as $kq) {
+                    $sheet->setCellValue('A' . $row, $stt++);
+                    $sheet->setCellValue('B' . $row, $kq->lopHocPhanSinhVien->sinhVien->ma_sinh_vien ?? '');
+                    $sheet->setCellValue('C' . $row, $kq->lopHocPhanSinhVien->sinhVien->ho_ten ?? '');
+                    $sheet->setCellValue('D' . $row, $kq->lopHocPhanSinhVien->lopHocPhan->monHoc->ten_mon ?? '');
+                    $sheet->setCellValue('E' . $row, $kq->diem_tong_ket);
+                    $sheet->setCellValue('F' . $row, $kq->qua_mon ? 'Đạt' : 'Không đạt');
+                    $row++;
+                }
+                break;
+
+            case 'diem-danh':
+                $sheet->setCellValue('A' . $row, 'STT');
+                $sheet->setCellValue('B' . $row, 'Mã SV');
+                $sheet->setCellValue('C' . $row, 'Họ tên');
+                $sheet->setCellValue('D' . $row, 'Lớp HP');
+                $sheet->setCellValue('E' . $row, 'Ngày học');
+                $sheet->setCellValue('F' . $row, 'Trạng thái');
+                
+                $this->styleHeaderRow($sheet, $row, 'A', 'F');
+                $row++;
+
+                $query = DiemDanh::with(['sinhVien', 'lichHocChiTiet.lopHocPhan']);
+                
+                if ($tuNgay && $denNgay) {
+                    $query->whereHas('lichHocChiTiet', function($q) use ($tuNgay, $denNgay) {
+                        $q->whereBetween('ngay_hoc', [$tuNgay, $denNgay]);
+                    });
+                }
+
+                $diemDanhs = $query->get();
+                $stt = 1;
+
+                foreach ($diemDanhs as $dd) {
+                    $sheet->setCellValue('A' . $row, $stt++);
+                    $sheet->setCellValue('B' . $row, $dd->sinhVien->ma_sinh_vien ?? '');
+                    $sheet->setCellValue('C' . $row, $dd->sinhVien->ho_ten ?? '');
+                    $sheet->setCellValue('D' . $row, $dd->lichHocChiTiet->lopHocPhan->ma_lop_hp ?? '');
+                    $sheet->setCellValue('E' . $row, $dd->lichHocChiTiet->ngay_hoc ?? '');
+                    $sheet->setCellValue('F' . $row, $this->getTrangThaiDiemDanhText($dd->trang_thai));
+                    $row++;
+                }
+                break;
+
+            case 'hoc-phi':
+                $sheet->setCellValue('A' . $row, 'STT');
+                $sheet->setCellValue('B' . $row, 'Mã SV');
+                $sheet->setCellValue('C' . $row, 'Họ tên');
+                $sheet->setCellValue('D' . $row, 'Học kỳ');
+                $sheet->setCellValue('E' . $row, 'Tổng phí');
+                $sheet->setCellValue('F' . $row, 'Đã đóng');
+                
+                $this->styleHeaderRow($sheet, $row, 'A', 'F');
+                $row++;
+
+                $query = HocPhiHocKy::with(['sinhVien', 'hocKy']);
+                
+                if ($hocKyId) {
+                    $query->where('hoc_ky_id', $hocKyId);
+                }
+
+                $hocPhis = $query->get();
+                $stt = 1;
+
+                foreach ($hocPhis as $hp) {
+                    $sheet->setCellValue('A' . $row, $stt++);
+                    $sheet->setCellValue('B' . $row, $hp->sinhVien->ma_sinh_vien ?? '');
+                    $sheet->setCellValue('C' . $row, $hp->sinhVien->ho_ten ?? '');
+                    $sheet->setCellValue('D' . $row, $hp->hocKy->ten_hoc_ky ?? '');
+                    $sheet->setCellValue('E' . $row, number_format($hp->tong_hoc_phi));
+                    $sheet->setCellValue('F' . $row, number_format($hp->da_dong));
+                    $row++;
+                }
+                break;
+
+            case 'canh-bao':
+                $sheet->setCellValue('A' . $row, 'STT');
+                $sheet->setCellValue('B' . $row, 'Mã SV');
+                $sheet->setCellValue('C' . $row, 'Họ tên');
+                $sheet->setCellValue('D' . $row, 'Loại cảnh báo');
+                $sheet->setCellValue('E' . $row, 'Mức độ');
+                $sheet->setCellValue('F' . $row, 'Ngày cảnh báo');
+                
+                $this->styleHeaderRow($sheet, $row, 'A', 'F');
+                $row++;
+
+                $query = CanhBaoHocVu::with(['sinhVien', 'hocKy']);
+                
+                if ($hocKyId) {
+                    $query->where('hoc_ky_id', $hocKyId);
+                }
+
+                $canhBaos = $query->get();
+                $stt = 1;
+
+                foreach ($canhBaos as $cb) {
+                    $sheet->setCellValue('A' . $row, $stt++);
+                    $sheet->setCellValue('B' . $row, $cb->sinhVien->ma_sinh_vien ?? '');
+                    $sheet->setCellValue('C' . $row, $cb->sinhVien->ho_ten ?? '');
+                    $sheet->setCellValue('D' . $row, $cb->loai_canh_bao);
+                    $sheet->setCellValue('E' . $row, $cb->muc_do);
+                    $sheet->setCellValue('F' . $row, $cb->ngay_canh_bao);
+                    $row++;
+                }
+                break;
+
+            default:
+                $sheet->setCellValue('A' . $row, 'Loại báo cáo không hợp lệ');
+                break;
+        }
+
+        // Auto size columns
+        foreach (range('A', 'F') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Borders
+        if ($row > 6) {
+            $sheet->getStyle('A6:F' . ($row - 1))
+                ->getBorders()
+                ->getAllBorders()
+                ->setBorderStyle(Border::BORDER_THIN);
+        }
+
+        // Export
+        $writer = new Xlsx($spreadsheet);
+        $fileName = 'bao_cao_' . $loaiBaoCao . '_' . now()->format('YmdHis') . '.xlsx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer->save('php://output');
+        exit;
+    }
+
+    /**
+     * Xuất báo cáo PDF
+     */
+    public function exportPdf(Request $request)
+    {
+        $loaiBaoCao = $request->input('loai', 'sinh-vien');
+        $khoaId = $request->input('khoa_id');
+        $nganhId = $request->input('nganh_id');
+        $hocKyId = $request->input('hoc_ky_id');
+        $tuNgay = $request->input('tu_ngay');
+        $denNgay = $request->input('den_ngay');
+
+        $data = [
+            'loaiBaoCao' => $loaiBaoCao,
+            'ngayXuat' => now()->format('d/m/Y H:i'),
+        ];
+
+        $reportTitles = [
+            'sinh-vien' => 'BÁO CÁO SINH VIÊN',
+            'ket-qua' => 'BÁO CÁO KẾT QUẢ HỌC TẬP',
+            'diem-danh' => 'BÁO CÁO ĐIỂM DANH',
+            'hoc-phi' => 'BÁO CÁO HỌC PHÍ',
+            'dang-ky' => 'BÁO CÁO ĐĂNG KÝ MÔN HỌC',
+            'xep-lop' => 'BÁO CÁO XẾP LỚP',
+            'tai-giang-vien' => 'BÁO CÁO TẢI GIẢNG VIÊN',
+            'phong-hoc' => 'BÁO CÁO SỬ DỤNG PHÒNG HỌC',
+            'canh-bao' => 'BÁO CÁO CẢNH BÁO HỌC VỤ',
+        ];
+
+        $data['tieuDe'] = $reportTitles[$loaiBaoCao] ?? 'BÁO CÁO';
+
+        switch ($loaiBaoCao) {
+            case 'sinh-vien':
+                $query = SinhVien::with(['chuyenNganh.nganh.khoa', 'trangThaiHocTap']);
+                
+                if ($khoaId) {
+                    $query->whereHas('chuyenNganh.nganh', function($q) use ($khoaId) {
+                        $q->where('khoa_id', $khoaId);
+                    });
+                }
+                if ($nganhId) {
+                    $query->whereHas('chuyenNganh', function($q) use ($nganhId) {
+                        $q->where('nganh_id', $nganhId);
+                    });
+                }
+
+                $data['items'] = $query->get();
+                break;
+
+            case 'ket-qua':
+                $query = KetQuaHocTap::with(['lopHocPhanSinhVien.sinhVien', 'lopHocPhanSinhVien.lopHocPhan.monHoc']);
+                
+                if ($hocKyId) {
+                    $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function($q) use ($hocKyId) {
+                        $q->where('hoc_ky_id', $hocKyId);
+                    });
+                }
+
+                $data['items'] = $query->get();
+                break;
+
+            case 'diem-danh':
+                $query = DiemDanh::with(['sinhVien', 'lichHocChiTiet.lopHocPhan']);
+                
+                if ($tuNgay && $denNgay) {
+                    $query->whereHas('lichHocChiTiet', function($q) use ($tuNgay, $denNgay) {
+                        $q->whereBetween('ngay_hoc', [$tuNgay, $denNgay]);
+                    });
+                }
+
+                $data['items'] = $query->get();
+                break;
+
+            case 'hoc-phi':
+                $query = HocPhiHocKy::with(['sinhVien', 'hocKy']);
+                
+                if ($hocKyId) {
+                    $query->where('hoc_ky_id', $hocKyId);
+                }
+
+                $data['items'] = $query->get();
+                break;
+
+            case 'canh-bao':
+                $query = CanhBaoHocVu::with(['sinhVien', 'hocKy']);
+                
+                if ($hocKyId) {
+                    $query->where('hoc_ky_id', $hocKyId);
+                }
+
+                $data['items'] = $query->get();
+                break;
+
+            default:
+                $data['items'] = [];
+                break;
+        }
+
+        $pdf = Pdf::loadView('daotao.bao-cao.pdf', $data);
+        $pdf->setPaper('a4', 'portrait');
+        
+        $fileName = 'bao_cao_' . $loaiBaoCao . '_' . now()->format('YmdHis') . '.pdf';
+        
+        return $pdf->download($fileName);
+    }
+
+    /**
+     * Helper: Style header row for Excel
+     */
+    private function styleHeaderRow($sheet, $row, $startCol, $endCol)
+    {
+        $range = $startCol . $row . ':' . $endCol . $row;
+        
+        $sheet->getStyle($range)->getFont()->setBold(true);
+        $sheet->getStyle($range)->getFill()
+            ->setFillType(Fill::FILL_SOLID)
+            ->getStartColor()->setRGB('4472C4');
+        $sheet->getStyle($range)->getFont()->getColor()->setRGB('FFFFFF');
+        $sheet->getStyle($range)->getAlignment()
+            ->setHorizontal(Alignment::HORIZONTAL_CENTER)
+            ->setVertical(Alignment::VERTICAL_CENTER);
+    }
+
+    /**
+     * Helper: Get text for điểm danh status
+     */
+    private function getTrangThaiDiemDanhText($trangThai)
+    {
+        $statusMap = [
+            'co_mat' => 'Có mặt',
+            'vang' => 'Vắng',
+            'di_tre' => 'Đi trễ',
+            'nghi_phep' => 'Nghỉ phép',
+        ];
+
+        return $statusMap[$trangThai] ?? $trangThai;
     }
 }

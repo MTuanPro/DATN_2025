@@ -42,23 +42,34 @@ class BaoCaoDataSeeder extends Seeder
     {
         echo "Tạo dữ liệu điểm danh...\n";
 
-        // Lấy danh sách lớp học phần sinh viên
-        $lopHocPhanSinhViens = DB::table('lop_hoc_phan_sinh_vien')
-            ->limit(500)
-            ->get();
-
-        // Lấy danh sách lịch học chi tiết
-        $lichHocChiTiets = DB::table('lich_hoc_chi_tiet')
-            ->where('ngay_hoc', '<=', now())
-            ->limit(100)
-            ->get();
+        // Xóa dữ liệu cũ
+        DB::table('diem_danh')->truncate();
 
         $diemDanhData = [];
         $count = 0;
 
+        // Lấy danh sách lớp học phần sinh viên (với thông tin lớp)
+        $lopHocPhanSinhViens = DB::table('lop_hoc_phan_sinh_vien')
+            ->select('id', 'lop_hoc_phan_id')
+            ->limit(500)
+            ->get();
+
         foreach ($lopHocPhanSinhViens as $lhpsv) {
-            // Mỗi sinh viên trong lớp học phần
-            foreach ($lichHocChiTiets->random(min(10, $lichHocChiTiets->count())) as $lichHoc) {
+            // Lấy lịch học chi tiết của ĐÚNG lớp học phần
+            $lichHocChiTiets = DB::table('lich_hoc_chi_tiet')
+                ->where('lop_hoc_phan_id', $lhpsv->lop_hoc_phan_id)
+                ->where('ngay_hoc', '<=', now())
+                ->get();
+
+            if ($lichHocChiTiets->isEmpty()) {
+                continue;
+            }
+
+            // Chọn random một số buổi học (tối đa 10 buổi)
+            $soBuoiDiemDanh = min(10, $lichHocChiTiets->count());
+            $selectedBuoiHoc = $lichHocChiTiets->random($soBuoiDiemDanh);
+
+            foreach ($selectedBuoiHoc as $lichHoc) {
                 // Random trạng thái điểm danh: co_mat, vang, di_tre, nghi_phep
                 $rand = rand(1, 100);
                 if ($rand <= 80) {
@@ -80,6 +91,7 @@ class BaoCaoDataSeeder extends Seeder
                     'lich_hoc_chi_tiet_id' => $lichHoc->id,
                     'trang_thai' => $trangThai,
                     'ghi_chu' => $ghiChu,
+                    'thoi_gian_diem_danh' => $lichHoc->ngay_hoc,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ];
@@ -90,9 +102,6 @@ class BaoCaoDataSeeder extends Seeder
         }
 
         if (!empty($diemDanhData)) {
-            // Xóa dữ liệu cũ
-            DB::table('diem_danh')->truncate();
-            
             // Insert theo batch
             foreach (array_chunk($diemDanhData, 100) as $chunk) {
                 DB::table('diem_danh')->insert($chunk);

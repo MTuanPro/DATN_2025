@@ -43,7 +43,8 @@ class TeachingClassController extends Controller
         ->where('giang_vien_id', $giangVien->id)
         // Chỉ lấy lớp có môn học hợp lệ
         ->whereHas('lopHocPhan', function ($q) {
-            $q->whereNotNull('mon_hoc_id')->whereHas('monHoc');
+            $q->whereNotNull('mon_hoc_id')
+              ->whereHas('monHoc');
         });
 
         if ($hocKyId) {

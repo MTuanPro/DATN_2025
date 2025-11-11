@@ -2,6 +2,14 @@
 
 @section('title', 'Báo cáo Sinh viên')
 
+@push('styles')
+    <!-- Add custom styles if needed -->
+@endpush
+
+@push('scripts')
+    <script src="{{ asset('assets/js/export-report.js') }}"></script>
+@endpush
+
 @section('content')
     <div class="page-heading">
         <div class="page-title">
@@ -30,7 +38,7 @@
                 <h5 class="card-title">Bộ lọc</h5>
             </div>
             <div class="card-body">
-                <form method="GET" action="{{ route('dao-tao.bao-cao.sinh-vien') }}">
+                <form method="GET" action="{{ route('dao-tao.bao-cao.sinh-vien') }}" id="filterForm" data-report-type="sinh-vien">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
@@ -86,9 +94,11 @@
                             <a href="{{ route('dao-tao.bao-cao.sinh-vien') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-counterclockwise"></i> Đặt lại
                             </a>
-                            <button type="button" class="btn btn-success float-end">
-                                <i class="bi bi-file-excel"></i> Xuất Excel
-                            </button>
+                            
+                            <!-- Export Buttons Component -->
+                            <div class="float-end">
+                                <x-export-buttons report-type="sinh-vien" />
+                            </div>
                         </div>
                     </div>
                 </form>

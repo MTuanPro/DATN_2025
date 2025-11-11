@@ -29,9 +29,8 @@ class TaoDiemDanhSeeder extends Seeder
         $totalCreated = 0;
 
         foreach ($buoiHocDaDay as $buoiHoc) {
-            // Lấy danh sách sinh viên trong lớp
+            // Lấy danh sách sinh viên trong lớp (bỏ điều kiện trạng thái để lấy tất cả)
             $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $buoiHoc->lop_hoc_phan_id)
-                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                 ->get();
 
             if ($sinhViens->isEmpty()) {

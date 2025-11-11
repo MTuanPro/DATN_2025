@@ -79,9 +79,49 @@ class GiangVienSeeder extends Seeder
                 'khoa_id' => $khoaKT->id,
                 'ngay_vao_truong' => '2020-01-15',
             ],
+            // Giảng viên môn Triết học - Tư tưởng
+            [
+                'ma_giang_vien' => 'GV007',
+                'ho_ten' => 'Nguyễn Thị Hằng',
+                'email' => 'nguyenthihang@smis.edu.vn',
+                'so_dien_thoai' => '0907890123',
+                'trinh_do_id' => $trinhDos['Tiến sĩ']->id,
+                'chuyen_mon' => 'Triết học Mác - Lênin, Tư tưởng Hồ Chí Minh',
+                'khoa_id' => $khoaCNTT->id, // Có thể thuộc bất kỳ khoa nào
+                'ngay_vao_truong' => '2014-09-01',
+            ],
+            // Giảng viên Giáo dục thể chất
+            [
+                'ma_giang_vien' => 'GV008',
+                'ho_ten' => 'Trần Văn Mạnh',
+                'email' => 'tranvanmanh@smis.edu.vn',
+                'so_dien_thoai' => '0908901234',
+                'trinh_do_id' => $trinhDos['Thạc sĩ']->id,
+                'chuyen_mon' => 'Giáo dục thể chất, Thể thao',
+                'khoa_id' => $khoaCNTT->id,
+                'ngay_vao_truong' => '2016-03-01',
+            ],
+            // Giảng viên Giáo dục quốc phòng
+            [
+                'ma_giang_vien' => 'GV009',
+                'ho_ten' => 'Lê Văn Nam',
+                'email' => 'levannam@smis.edu.vn',
+                'so_dien_thoai' => '0909012345',
+                'trinh_do_id' => $trinhDos['Đại học']->id,
+                'chuyen_mon' => 'Giáo dục quốc phòng - An ninh',
+                'khoa_id' => $khoaCNTT->id,
+                'ngay_vao_truong' => '2015-06-01',
+            ],
         ];
 
         foreach ($giangViens as $gv) {
+            // Kiểm tra giảng viên đã tồn tại chưa
+            $existingGV = DB::table('giang_vien')->where('ma_giang_vien', $gv['ma_giang_vien'])->first();
+            if ($existingGV) {
+                echo "⚠️  Giảng viên {$gv['ma_giang_vien']} đã tồn tại, bỏ qua.\n";
+                continue;
+            }
+            
             // Tạo user cho giảng viên
             $userId = DB::table('users')->insertGetId([
                 'name' => $gv['ho_ten'],

@@ -45,7 +45,7 @@ class ScheduleController extends Controller
         }
 
         // Lấy các buổi đã sinh trong bảng lich_hoc_chi_tiet
-        $chiTiets = LichHocChiTiet::with(['lopHocPhan', 'phongHoc', 'giangVien', 'lichHocCoDinh'])
+        $chiTiets = LichHocChiTiet::with(['lopHocPhan.monHoc', 'phongHoc', 'giangVien', 'lichHocCoDinh'])
             ->whereBetween('ngay_hoc', [$start->toDateString(), $end->toDateString()])
             ->where('giang_vien_id', $giangVien->id)
             ->orderBy('ngay_hoc')
@@ -65,13 +65,15 @@ class ScheduleController extends Controller
                 'gio_ket_thuc' => $ct->gio_ket_thuc ? Carbon::parse($ct->gio_ket_thuc)->format('H:i') : null,
                 'phong' => $ct->phongHoc->ten_phong ?? null,
                 'lop_hoc_phan' => $ct->lopHocPhan->ma_lop_hp ?? null,
+                'ten_mon' => $ct->lopHocPhan->monHoc->ten_mon ?? 'N/A',
+                'ma_mon' => $ct->lopHocPhan->monHoc->ma_mon ?? null,
                 'link_online' => $ct->link_online,
                 'source' => $ct,
             ];
         }
 
         // Lấy lịch cố định và phát sinh các buổi trong khoảng
-        $coDinhs = LichHocCoDinh::with(['lopHocPhan', 'phongHoc'])
+        $coDinhs = LichHocCoDinh::with(['lopHocPhan.monHoc', 'phongHoc'])
             ->where('giang_vien_id', $giangVien->id)
             ->get();
 
@@ -96,6 +98,8 @@ class ScheduleController extends Controller
                         'gio_ket_thuc' => $cd->gio_ket_thuc ? Carbon::parse($cd->gio_ket_thuc)->format('H:i') : null,
                         'phong' => $cd->phongHoc->ten_phong ?? null,
                         'lop_hoc_phan' => $cd->lopHocPhan->ma_lop_hp ?? null,
+                        'ten_mon' => $cd->lopHocPhan->monHoc->ten_mon ?? 'N/A',
+                        'ma_mon' => $cd->lopHocPhan->monHoc->ma_mon ?? null,
                         'link_online' => $cd->link_online,
                         'source' => $cd,
                     ];
