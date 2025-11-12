@@ -143,6 +143,54 @@
                     </a>
                 </li>
 
+                <!-- PHASE 8.5: CẢNH BÁO HỌC VỤ -->
+                <li class="sidebar-item {{ Request::is('giang-vien/canh-bao-hoc-vu*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.canh-bao-hoc-vu.index') }}" class='sidebar-link'>
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                        <span>Cảnh báo học vụ</span>
+                        @php
+                            $user = auth()->user();
+                            $giangVien = $user->giangVien ?? \App\Models\GiangVien::where('user_id', $user->id)->first();
+                            $sinhVienIds = [];
+                            
+                            if ($giangVien) {
+                                // Sinh viên trong lớp giảng dạy (qua bảng trung gian)
+                                $lopHocPhanIds = \DB::table('lop_hoc_phan_giang_vien')
+                                    ->where('giang_vien_id', $giangVien->id)
+                                    ->pluck('lop_hoc_phan_id');
+                                    
+                                if ($lopHocPhanIds->isNotEmpty()) {
+                                    $svTrongLopHocPhan = \DB::table('lop_hoc_phan_sinh_vien')
+                                        ->whereIn('lop_hoc_phan_id', $lopHocPhanIds)
+                                        ->pluck('sinh_vien_id')
+                                        ->toArray();
+                                    $sinhVienIds = array_merge($sinhVienIds, $svTrongLopHocPhan);
+                                }
+                                
+                                // Sinh viên trong lớp chủ nhiệm
+                                $lopChuNhiem = \App\Models\DaoTao\LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)->first();
+                                if ($lopChuNhiem) {
+                                    $svTrongLopChuNhiem = \App\Models\DaoTao\SinhVien::where('lop_hanh_chinh_id', $lopChuNhiem->id)
+                                        ->pluck('id')
+                                        ->toArray();
+                                    $sinhVienIds = array_merge($sinhVienIds, $svTrongLopChuNhiem);
+                                }
+                                
+                                $sinhVienIds = array_unique($sinhVienIds);
+                            }
+                            
+                            $canhBaoCount = !empty($sinhVienIds) 
+                                ? \App\Models\CanhBaoHocVu::whereIn('sinh_vien_id', $sinhVienIds)
+                                    ->where('da_xu_ly', false)
+                                    ->count() 
+                                : 0;
+                        @endphp
+                        @if($canhBaoCount > 0)
+                            <span class="badge bg-danger ms-auto">{{ $canhBaoCount }}</span>
+                        @endif
+                    </a>
+                </li>
+
                 <!-- 12. BÁO CÁO GIẢNG DẠY -->
                 <li class="sidebar-item has-sub {{ Request::is('giang-vien/bao-cao*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>

@@ -13,7 +13,7 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Thông báo</li>
                         </ol>
                     </nav>
@@ -157,7 +157,7 @@
                     @if ($thongBaos->count() > 0)
                         <div class="list-group">
                             @foreach ($thongBaos as $tb)
-                                <a href="{{ route('sinhvien.thong-bao.show', $tb->thongBao->id) }}"
+                                <a href="{{ route('sinh-vien.thong-bao.show', $tb->thongBao->id) }}"
                                     class="list-group-item list-group-item-action {{ !$tb->da_doc ? 'bg-light' : '' }}">
                                     <div class="d-flex w-100 justify-content-between align-items-start">
                                         <div class="flex-grow-1">
@@ -220,7 +220,7 @@
         function markAllAsRead() {
             if (!confirm('Đánh dấu tất cả thông báo là đã đọc?')) return;
 
-            fetch('{{ route('sinhvien.thong-bao.mark-all-read') }}', {
+            fetch('{{ route('sinh-vien.thong-bao.mark-all-read') }}', {
                     method: 'POST',
                     headers: {
                         'Content-Type': 'application/json',

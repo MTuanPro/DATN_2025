@@ -15,7 +15,7 @@
 
         <div class="card">
             <div class="card-body">
-                <form action="{{ route('sinhvien.dang-ky-mon-hoc.store') }}" method="POST">
+                <form action="{{ route('sinh-vien.dang-ky-mon-hoc.store') }}" method="POST">
                     @csrf
 
                     <div class="mb-3">
@@ -40,7 +40,7 @@
 
                     <div class="mb-3">
                         <button class="btn btn-primary">Đăng ký</button>
-                        <a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}" class="btn btn-secondary">Quay lại</a>
+                        <a href="{{ route('sinh-vien.dang-ky-mon-hoc.index') }}" class="btn btn-secondary">Quay lại</a>
                     </div>
                 </form>
             </div>

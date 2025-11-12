@@ -92,7 +92,7 @@ class LoginController extends Controller
         }
 
         if (in_array('sinh_vien', $roles)) {
-            return redirect()->route('sinhvien.dashboard');
+            return redirect()->route('sinh-vien.dashboard');
         }
 
         // Nếu không có vai trò nào, logout

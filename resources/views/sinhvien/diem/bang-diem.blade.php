@@ -13,8 +13,8 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.diem.index') }}">Kết quả học tập</a>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.diem.index') }}">Kết quả học tập</a>
                             </li>
                             <li class="breadcrumb-item active">Bảng điểm tổng hợp</li>
                         </ol>
@@ -60,7 +60,7 @@
                         </div>
                     </div>
                     <div class="text-end mt-3">
-                        <a href="{{ route('sinhvien.diem.export-pdf') }}" class="btn btn-danger">
+                        <a href="{{ route('sinh-vien.diem.export-pdf') }}" class="btn btn-danger">
                             <i class="bi bi-file-pdf"></i> Xuất PDF
                         </a>
                     </div>
@@ -180,7 +180,7 @@
                     <div class="card-body text-center py-5">
                         <i class="bi bi-inbox" style="font-size: 3rem; color: #ccc;"></i>
                         <p class="text-muted mt-3">Chưa có kết quả học tập nào được công bố</p>
-                        <a href="{{ route('sinhvien.diem.index') }}" class="btn btn-primary">
+                        <a href="{{ route('sinh-vien.diem.index') }}" class="btn btn-primary">
                             <i class="bi bi-arrow-left"></i> Quay lại
                         </a>
                     </div>

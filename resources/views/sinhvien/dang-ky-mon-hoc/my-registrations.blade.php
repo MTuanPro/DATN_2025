@@ -13,8 +13,8 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dang-ky-mon-hoc.index') }}">Đăng ký môn
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dang-ky-mon-hoc.index') }}">Đăng ký môn
                                     học</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Lịch sử</li>
                         </ol>
@@ -26,7 +26,7 @@
         <!-- Bộ lọc -->
         <div class="card mb-3">
             <div class="card-body">
-                <form method="GET" action="{{ route('sinhvien.dang-ky-mon-hoc.my-registrations') }}" class="row g-3">
+                <form method="GET" action="{{ route('sinh-vien.dang-ky-mon-hoc.my-registrations') }}" class="row g-3">
                     <div class="col-md-4">
                         <label class="form-label">Học kỳ</label>
                         <select name="hoc_ky_id" class="form-select">

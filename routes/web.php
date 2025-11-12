@@ -262,6 +262,21 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::get('lich-thi/{lichThi}/download-de-thi', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadDeThi'])->name('lich-thi.download-de-thi');
     Route::get('lich-thi/{lichThi}/download-dap-an', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadDapAn'])->name('lich-thi.download-dap-an');
 
+    // PHASE 8.5: Cảnh báo Học vụ
+    Route::prefix('canh-bao-hoc-vu')->name('canh-bao-hoc-vu.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'index'])->name('index');
+        Route::get('/create', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'create'])->name('create');
+        Route::post('/', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'store'])->name('store');
+        Route::get('/{canhBaoHocVu}', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'show'])->name('show');
+        Route::get('/{canhBaoHocVu}/edit', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'edit'])->name('edit');
+        Route::put('/{canhBaoHocVu}', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'update'])->name('update');
+        Route::delete('/{canhBaoHocVu}', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'destroy'])->name('destroy');
+        Route::post('/tu-dong-phat-hien', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'tuDongPhatHien'])->name('tu-dong-phat-hien');
+        Route::get('/export', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'export'])->name('export');
+        Route::post('/{canhBaoHocVu}/xu-ly', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'xuLy'])->name('xu-ly');
+        Route::post('/{canhBaoHocVu}/gui-email', [\App\Http\Controllers\DaoTao\CanhBaoHocVuController::class, 'guiEmailCanhBao'])->name('gui-email');
+    });
+
     // PHASE 10: Quản lý Thông báo (CRUD full)
     Route::resource('thong-bao', DaoTaoThongBaoController::class);
 
@@ -359,6 +374,11 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     // Lịch dạy cá nhân
     Route::get('/lich-day', [ScheduleController::class, 'index'])->name('schedule.index');
     Route::get('/lich-day/export', [ScheduleController::class, 'export'])->name('schedule.export');
+    
+    // PHASE 8.5: Cảnh báo học vụ
+    Route::get('/canh-bao-hoc-vu', [\App\Http\Controllers\GiangVien\CanhBaoHocVuController::class, 'index'])->name('canh-bao-hoc-vu.index');
+    Route::get('/canh-bao-hoc-vu/{id}', [\App\Http\Controllers\GiangVien\CanhBaoHocVuController::class, 'show'])->name('canh-bao-hoc-vu.show');
+    
     // Nhập điểm
     Route::prefix('nhap-diem')->name('nhap-diem.')->group(function () {
         Route::get('/', [NhapDiemController::class, 'index'])->name('index');
@@ -389,7 +409,7 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
 });
 
 // ========== Sinh viên Routes ==========
-Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvien.')->group(function () {
+Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-vien.')->group(function () {
     Route::get('/dashboard', [SinhVienDashboardController::class, 'index'])->name('dashboard');
 
     // PHASE 5: Đăng ký môn học
@@ -421,6 +441,12 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinhvi
         Route::get('/calendar', [\App\Http\Controllers\SinhVien\LichThiController::class, 'calendar'])->name('calendar');
         Route::get('/export-pdf', [\App\Http\Controllers\SinhVien\LichThiController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{lichThi}', [\App\Http\Controllers\SinhVien\LichThiController::class, 'show'])->name('show');
+    });
+
+    // PHASE 8.5: Cảnh báo học vụ cá nhân
+    Route::middleware('sinhvien.check')->prefix('canh-bao-hoc-vu')->name('canh-bao-hoc-vu.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\CanhBaoHocVuController::class, 'index'])->name('index');
+        Route::get('/{canhBaoHocVu}', [\App\Http\Controllers\SinhVien\CanhBaoHocVuController::class, 'show'])->name('show');
     });
 
     // PHASE 8: Học phí cá nhân

@@ -54,7 +54,7 @@ class CheckRole
         }
 
         if (in_array('sinh_vien', $userRoles)) {
-            return redirect()->route('sinhvien.dashboard')->with('error', 'Bạn không có quyền truy cập trang này');
+            return redirect()->route('sinh-vien.dashboard')->with('error', 'Bạn không có quyền truy cập trang này');
         }
 
         // Nếu không có vai trò nào, logout

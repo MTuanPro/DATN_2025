@@ -95,6 +95,9 @@ class LichThiController extends Controller
         try {
             DB::beginTransaction();
 
+            // Thu thập tất cả lỗi validation
+            $errors = [];
+
             // 1. Lấy lớp học phần
             $lopHocPhan = LopHocPhan::with(['hocKy', 'lopHocPhanSinhViens'])->findOrFail($request->lop_hoc_phan_id);
 
@@ -103,12 +106,9 @@ class LichThiController extends Controller
             $ngayThi = \Carbon\Carbon::parse($request->ngay_thi);
             
             if ($ngayThi->lt($hocKy->ngay_bat_dau) || $ngayThi->gt($hocKy->ngay_ket_thuc)) {
-                DB::rollBack();
-                return redirect()->back()
-                    ->withInput()
-                    ->withErrors(['ngay_thi' => 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
+                $errors[] = 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
                            $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' . 
-                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')']);
+                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
             }
 
             // 3. Kiểm tra trùng lịch thi sinh viên (sinh viên không được thi 2 môn cùng lúc)
@@ -131,10 +131,7 @@ class LichThiController extends Controller
                     ->first();
 
                 if ($trungLichSinhVien) {
-                    DB::rollBack();
-                    return redirect()->back()
-                        ->withInput()
-                        ->withErrors(['ngay_thi' => 'Có sinh viên trong lớp đã có lịch thi trùng giờ (Môn: ' . $trungLichSinhVien->lopHocPhan->monHoc->ten_mon . ' vào ' . $trungLichSinhVien->gio_bat_dau . '-' . $trungLichSinhVien->gio_ket_thuc . ')']);
+                    $errors[] = 'Có sinh viên trong lớp đã có lịch thi trùng giờ (Môn: ' . $trungLichSinhVien->lopHocPhan->monHoc->ten_mon . ' vào ' . $trungLichSinhVien->gio_bat_dau . '-' . $trungLichSinhVien->gio_ket_thuc . ')';
                 }
             }
 
@@ -144,11 +141,16 @@ class LichThiController extends Controller
                 $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
                 
                 if ($soSinhVienDuThi > $phongHoc->suc_chua) {
-                    DB::rollBack();
-                    return redirect()->back()
-                        ->withInput()
-                        ->withErrors(['phong_thi_id' => 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!']);
+                    $errors['phong_thi_id'] = 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!';
                 }
+            }
+
+            // Nếu có lỗi thì rollback và trả về tất cả lỗi
+            if (!empty($errors)) {
+                DB::rollBack();
+                return redirect()->back()
+                    ->withInput()
+                    ->withErrors($errors);
             }
 
             $data = $request->validated();
@@ -260,42 +262,28 @@ class LichThiController extends Controller
      */
     public function update(UpdateLichThiRequest $request, LichThi $lichThi)
     {
-        Log::info('=== BẮT ĐẦU CẬP NHẬT LỊCH THI ===', [
-            'lich_thi_id' => $lichThi->id,
-            'request_data' => $request->all()
-        ]);
-
         try {
             DB::beginTransaction();
 
+            // Thu thập tất cả lỗi validation
+            $errors = [];
+            $errorMessages = []; // Để hiển thị trong alert box
+
             // 1. Kiểm tra lớp học phần hợp lệ
             $lopHocPhan = LopHocPhan::with(['hocKy', 'lopHocPhanSinhViens'])->findOrFail($request->lop_hoc_phan_id);
-            Log::info('Lớp học phần hợp lệ', ['lop_hoc_phan_id' => $lopHocPhan->id]);
 
             // 2. Kiểm tra ngày thi trong phạm vi học kỳ
             $hocKy = $lopHocPhan->hocKy;
             $ngayThi = \Carbon\Carbon::parse($request->ngay_thi);
             
-            Log::info('Kiểm tra ngày thi', [
-                'ngay_thi' => $ngayThi->format('Y-m-d'),
-                'hoc_ky_bat_dau' => $hocKy->ngay_bat_dau->format('Y-m-d'),
-                'hoc_ky_ket_thuc' => $hocKy->ngay_ket_thuc->format('Y-m-d')
-            ]);
-            
             if ($ngayThi->lt($hocKy->ngay_bat_dau) || $ngayThi->gt($hocKy->ngay_ket_thuc)) {
-                Log::warning('Ngày thi ngoài phạm vi học kỳ');
-                DB::rollBack();
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
+                $errorMessages[] = 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
                            $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' . 
-                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')');
+                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
             }
 
             // 3. Kiểm tra trùng lịch thi sinh viên
             $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id');
-            
-            Log::info('Kiểm tra trùng lịch sinh viên', ['so_sinh_vien' => $sinhVienIds->count()]);
             
             $trungLichSinhVien = LichThi::where('id', '!=', $lichThi->id)
                 ->whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
@@ -313,11 +301,7 @@ class LichThiController extends Controller
                 ->exists();
 
             if ($trungLichSinhVien) {
-                Log::warning('Phát hiện trùng lịch sinh viên');
-                DB::rollBack();
-                return redirect()->back()
-                    ->withInput()
-                    ->with('error', 'Có sinh viên trong lớp đã có lịch thi trùng giờ!');
+                $errorMessages[] = 'Có sinh viên trong lớp đã có lịch thi trùng giờ!';
             }
 
             // 4. Kiểm tra trùng phòng thi (loại trừ bản ghi hiện tại)
@@ -336,19 +320,24 @@ class LichThiController extends Controller
                     ->exists();
 
                 if ($trungPhong) {
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Phòng thi đã có lịch thi trùng thời gian!');
+                    $errors['phong_thi_id'] = 'Phòng thi đã có lịch thi trùng thời gian!';
+                    $errorMessages[] = 'Phòng thi đã có lịch thi trùng thời gian!';
                 }
 
                 // 5. Kiểm tra sức chứa phòng
                 $phongHoc = PhongHoc::find($request->phong_thi_id);
-                $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
                 
-                if ($soSinhVienDuThi > $phongHoc->suc_chua) {
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!');
+                if ($phongHoc) {
+                    $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
+                    
+                    if ($soSinhVienDuThi > $phongHoc->suc_chua) {
+                        $msg = 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!';
+                        $errors['phong_thi_id'] = $msg;
+                        $errorMessages[] = $msg;
+                    }
+                } else {
+                    $errors['phong_thi_id'] = 'Phòng thi không tồn tại!';
+                    $errorMessages[] = 'Phòng thi không tồn tại!';
                 }
             }
 
@@ -373,30 +362,42 @@ class LichThiController extends Controller
                     ->exists();
 
                 if ($trungGiamThi) {
-                    return redirect()->back()
-                        ->withInput()
-                        ->with('error', 'Giảng viên giám thị đã có lịch coi thi trùng giờ!');
+                    $errorMessages[] = 'Giảng viên giám thị đã có lịch coi thi trùng giờ!';
                 }
             }
 
-            // 7. Giới hạn số lịch thi theo loại (loại trừ bản ghi hiện tại)
-            $soLichThiCungLoai = LichThi::where('id', '!=', $lichThi->id)
-                ->where('lop_hoc_phan_id', $request->lop_hoc_phan_id)
-                ->where('loai_thi', $request->loai_thi)
-                ->count();
+            // 7. Giới hạn số lịch thi theo loại (CHỈ CHECK KHI ĐỔI LOẠI THI HOẶC ĐỔI LỚP)
+            $daDoiLoaiThi = $lichThi->loai_thi != $request->loai_thi;
+            $daDoiLop = $lichThi->lop_hoc_phan_id != $request->lop_hoc_phan_id;
+            
+            if ($daDoiLoaiThi || $daDoiLop) {
+                $soLichThiCungLoai = LichThi::where('id', '!=', $lichThi->id)
+                    ->where('lop_hoc_phan_id', $request->lop_hoc_phan_id)
+                    ->where('loai_thi', $request->loai_thi)
+                    ->count();
 
-            $gioiHan = [
-                'giua_ky' => 1,
-                'cuoi_ky' => 1,
-                'thi_lai' => 2
-            ];
+                $gioiHan = [
+                    'giua_ky' => 1,
+                    'cuoi_ky' => 1,
+                    'thi_lai' => 2
+                ];
 
-            if ($soLichThiCungLoai >= ($gioiHan[$request->loai_thi] ?? 1)) {
+                if ($soLichThiCungLoai >= ($gioiHan[$request->loai_thi] ?? 1)) {
+                    $errorMessages[] = 'Lớp học phần đã đạt giới hạn số lần thi ' . 
+                               ($request->loai_thi == 'giua_ky' ? 'giữa kỳ' : 
+                               ($request->loai_thi == 'cuoi_ky' ? 'cuối kỳ' : 'thi lại')) . '!';
+                }
+            }
+
+            // Nếu có lỗi thì rollback và trả về
+            if (!empty($errorMessages)) {
+                DB::rollBack();
+                \Log::info('Errors array:', $errors);
+                \Log::info('Error messages:', $errorMessages);
                 return redirect()->back()
                     ->withInput()
-                    ->with('error', 'Lớp học phần đã đạt giới hạn số lần thi ' . 
-                           ($request->loai_thi == 'giua_ky' ? 'giữa kỳ' : 
-                           ($request->loai_thi == 'cuoi_ky' ? 'cuối kỳ' : 'thi lại')) . '!');
+                    ->withErrors($errors)
+                    ->with('validation_errors', $errorMessages);
             }
 
             $data = $request->validated();
@@ -472,20 +473,12 @@ class LichThiController extends Controller
             }
 
             DB::commit();
-            
-            Log::info('=== CẬP NHẬT THÀNH CÔNG ===', ['lich_thi_id' => $lichThi->id]);
 
             return redirect()->route('dao-tao.lich-thi.index')
                 ->with('success', 'Cập nhật lịch thi thành công!');
 
         } catch (\Exception $e) {
             DB::rollBack();
-            Log::error('=== LỖI CẬP NHẬT LỊCH THI ===', [
-                'error' => $e->getMessage(),
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString()
-            ]);
             return redirect()->back()
                 ->withInput()
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
