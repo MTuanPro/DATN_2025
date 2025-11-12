@@ -49,6 +49,12 @@
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title">Thêm Đầu điểm</h5>
+                    <p class="text-muted mb-0">
+                        <small><i class="bi bi-info-circle"></i> 
+                            <strong>Tỷ lệ % cho MỖI CỘT.</strong> VD: Quiz 5%/cột × 10 cột = 50% tổng điểm<br>
+                            <strong>Số cột > 1:</strong> Tự động tạo nhiều đầu điểm. VD: "quiz" + 10 cột → quiz 1, quiz 2, ..., quiz 10
+                        </small>
+                    </p>
                 </div>
                 <div class="card-body">
                     @if (session('success'))
@@ -80,23 +86,24 @@
                                     @enderror
                                 </div>
                                 <div class="col-md-2">
-                                    <label class="form-label">Tỷ lệ % <span class="text-danger">*</span></label>
+                                    <label class="form-label">Tỷ lệ %/cột <span class="text-danger">*</span></label>
                                     <input type="number" name="ty_le"
                                         class="form-control @error('ty_le') is-invalid @enderror" step="0.01"
-                                        min="0.01" max="{{ $tyLeConLai }}" placeholder="10" required>
+                                        min="0.01" max="100" placeholder="5" required>
                                     @error('ty_le')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                    <small class="text-muted">Max: {{ $tyLeConLai }}%</small>
+                                    <small class="text-muted">% cho mỗi cột</small>
                                 </div>
                                 <div class="col-md-2">
                                     <label class="form-label">Số cột <span class="text-danger">*</span></label>
                                     <input type="number" name="so_cot"
                                         class="form-control @error('so_cot') is-invalid @enderror" min="1"
-                                        max="10" value="1" required>
+                                        max="20" value="1" required>
                                     @error('so_cot')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    <small class="text-muted">Nếu > 1, tạo nhiều đầu điểm</small>
                                 </div>
                                 <div class="col-md-4">
                                     <label class="form-label">Ghi chú</label>
@@ -135,7 +142,6 @@
                                     <th>#</th>
                                     <th>Tên đầu điểm</th>
                                     <th>Tỷ lệ %</th>
-                                    <th>Số cột điểm</th>
                                     <th>Ghi chú</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -148,7 +154,6 @@
                                         <td>
                                             <span class="badge bg-primary">{{ $cau_hinh->ty_le }}%</span>
                                         </td>
-                                        <td>{{ $cau_hinh->so_cot }} cột</td>
                                         <td>{{ $cau_hinh->ghi_chu ?? '-' }}</td>
                                         <td>
                                             <form action="{{ route('dao-tao.cau-hinh-diem.destroy', $cau_hinh->id) }}"
@@ -163,7 +168,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="6" class="text-center">
+                                        <td colspan="5" class="text-center">
                                             <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                             <p class="mt-2">Chưa có cấu hình đầu điểm nào</p>
                                         </td>

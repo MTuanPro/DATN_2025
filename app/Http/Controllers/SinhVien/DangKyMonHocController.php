@@ -75,6 +75,29 @@ class DangKyMonHocController extends Controller
             ->orderBy('thu_tu_hoc', 'asc')
             ->get();
 
+        // Lấy thêm các môn có lớp học phần mở nhưng chưa có trong chương trình khung
+        $monIdTrongCTK = $chuongTrinhKhung->pluck('mon_hoc_id')->toArray();
+        $lopDangMo = LopHocPhan::where('hoc_ky_id', $hocKy->id)
+            ->whereIn('trang_thai_lop', ['mo_dang_ky', 'dang_hoc'])
+            ->whereNotIn('mon_hoc_id', $monIdTrongCTK)
+            ->with(['monHoc.khoa'])
+            ->get()
+            ->groupBy('mon_hoc_id');
+
+        // Thêm các môn không có trong CTK vào danh sách (đánh dấu là không bắt buộc)
+        foreach ($lopDangMo as $monHocId => $lops) {
+            $monHoc = $lops->first()->monHoc;
+            if ($monHoc) {
+                $chuongTrinhKhung->push((object)[
+                    'mon_hoc_id' => $monHocId,
+                    'monHoc' => $monHoc,
+                    'bat_buoc' => false,
+                    'hoc_ky_goi_y' => 0, // Không có gợi ý
+                    'thu_tu_hoc' => 999,
+                ]);
+            }
+        }
+
         // Lấy các môn đã đăng ký trong học kỳ này (lấy full collection để có ID)
         $dangKyCollection = DangKyMonHocTam::where('sinh_vien_id', $sinhVien->id)
             ->where('hoc_ky_id', $hocKy->id)

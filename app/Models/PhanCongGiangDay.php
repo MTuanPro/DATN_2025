@@ -43,11 +43,11 @@ class PhanCongGiangDay extends Model
     }
 
     /**
-     * Người phân công
+     * Người phân công (nhân viên đào tạo)
      */
     public function nguoiPhanCong()
     {
-        return $this->belongsTo(User::class, 'nguoi_phan_cong_id');
+        return $this->belongsTo(\App\Models\DaoTao::class, 'nguoi_phan_cong_id');
     }
 
     /**

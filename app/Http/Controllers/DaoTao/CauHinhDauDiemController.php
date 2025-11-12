@@ -24,19 +24,21 @@ class CauHinhDauDiemController extends Controller
     {
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy', 'cauHinhDauDiem'])->findOrFail($lopHocPhanId);
         $summary = $this->cauHinhDauDiemService->getSummary($lopHocPhanId);
+        $tyLeConLai = $summary['remaining_percentage'];
 
-        return view('daotao.cau-hinh-dau-diem.index', compact('lopHocPhan', 'summary'));
+        return view('daotao.cau-hinh-dau-diem.index', compact('lopHocPhan', 'summary', 'tyLeConLai'));
     }
 
     /**
      * Thêm cấu hình đầu điểm
+     * Nếu số cột > 1, tự động tạo nhiều đầu điểm với số đếm (VD: quiz 1, quiz 2, ...)
      */
     public function store(Request $request, $lopHocPhanId)
     {
         $validated = $request->validate([
             'ten_dau_diem' => 'required|string|max:50',
             'ty_le' => 'required|numeric|min:0.01|max:100',
-            'so_cot' => 'required|integer|min:1|max:10',
+            'so_cot' => 'required|integer|min:1|max:20',
             'ghi_chu' => 'nullable|string',
         ], [
             'ten_dau_diem.required' => 'Tên đầu điểm là bắt buộc',
@@ -45,7 +47,7 @@ class CauHinhDauDiemController extends Controller
             'ty_le.max' => 'Tỷ lệ % không được vượt quá 100',
             'so_cot.required' => 'Số cột điểm là bắt buộc',
             'so_cot.min' => 'Số cột điểm phải lớn hơn 0',
-            'so_cot.max' => 'Số cột điểm không được vượt quá 10',
+            'so_cot.max' => 'Số cột điểm không được vượt quá 20',
         ]);
 
         // Sử dụng Service để validate
@@ -62,16 +64,33 @@ class CauHinhDauDiemController extends Controller
                 ->withInput();
         }
 
-        CauHinhDauDiem::create([
-            'lop_hoc_phan_id' => $lopHocPhanId,
-            'ten_dau_diem' => $validated['ten_dau_diem'],
-            'ty_le' => $validated['ty_le'],
-            'so_cot' => $validated['so_cot'],
-            'ghi_chu' => $validated['ghi_chu'] ?? null,
-        ]);
+        // Nếu số cột = 1, tạo 1 đầu điểm bình thường
+        if ($validated['so_cot'] == 1) {
+            CauHinhDauDiem::create([
+                'lop_hoc_phan_id' => $lopHocPhanId,
+                'ten_dau_diem' => $validated['ten_dau_diem'],
+                'ty_le' => $validated['ty_le'],
+                'so_cot' => 1,
+                'ghi_chu' => $validated['ghi_chu'] ?? null,
+            ]);
+
+            return redirect()->back()
+                ->with('success', 'Thêm cấu hình đầu điểm thành công!');
+        }
+
+        // Nếu số cột > 1, tạo nhiều đầu điểm với số đếm
+        for ($i = 1; $i <= $validated['so_cot']; $i++) {
+            CauHinhDauDiem::create([
+                'lop_hoc_phan_id' => $lopHocPhanId,
+                'ten_dau_diem' => $validated['ten_dau_diem'] . ' ' . $i,
+                'ty_le' => $validated['ty_le'],
+                'so_cot' => 1, // Mỗi đầu điểm chỉ có 1 cột
+                'ghi_chu' => $validated['ghi_chu'] ?? null,
+            ]);
+        }
 
         return redirect()->back()
-            ->with('success', 'Thêm cấu hình đầu điểm thành công!');
+            ->with('success', "Thêm thành công {$validated['so_cot']} đầu điểm!");
     }
 
     /**

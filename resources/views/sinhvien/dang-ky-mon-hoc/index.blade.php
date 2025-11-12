@@ -86,6 +86,31 @@
                 </div>
             </div>
 
+            <!-- Debug Info -->
+            @if(config('app.debug'))
+            <div class="card mb-3">
+                <div class="card-header bg-info text-white">
+                    <h6 class="mb-0">🔍 Thông tin Debug</h6>
+                </div>
+                <div class="card-body">
+                    <p class="mb-1"><strong>Học kỳ ID:</strong> {{ $hocKy->id ?? 'N/A' }}</p>
+                    <p class="mb-1"><strong>Tổng lớp đang mở:</strong> {{ $lopHocPhans->count() }} môn học</p>
+                    <p class="mb-1"><strong>Môn trong CTK:</strong> {{ $chuongTrinhKhung->count() }} môn</p>
+                    <p class="mb-1"><strong>Chuyên ngành SV:</strong> {{ $sinhVien->chuyenNganh->ten_chuyen_nganh ?? 'Chưa có' }}</p>
+                    @if($lopHocPhans->isNotEmpty())
+                        <details class="mt-2">
+                            <summary class="text-primary" style="cursor: pointer;">Xem danh sách lớp đang mở</summary>
+                            <ul class="mt-2">
+                                @foreach($lopHocPhans as $monId => $lops)
+                                    <li>Môn ID {{ $monId }}: {{ $lops->first()->monHoc->ten_mon ?? 'N/A' }} - {{ $lops->count() }} lớp</li>
+                                @endforeach
+                            </ul>
+                        </details>
+                    @endif
+                </div>
+            </div>
+            @endif
+
             <!-- Danh sách môn học -->
             <div class="card">
                 <div class="card-header">
@@ -128,7 +153,13 @@ $lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
                                                 @endif
                                             </td>
                                             <td>{{ $monHoc->so_tin_chi }}</td>
-                                            <td>Kỳ {{ $ct->hoc_ky_goi_y }}</td>
+                                            <td>
+                                                @if ($ct->hoc_ky_goi_y > 0)
+                                                    Kỳ {{ $ct->hoc_ky_goi_y }}
+                                                @else
+                                                    <span class="badge bg-secondary">Tùy chọn</span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 @if ($lopHPs->isEmpty())
                                                     <span class="text-muted">Chưa mở lớp</span>
@@ -166,6 +197,16 @@ $dangKyId = $dangKyCollection->firstWhere(
                                                         data-dang-ky-id="{{ $dangKyId }}">
                                                         <i class="bi bi-x-circle"></i> Hủy
                                                     </button>
+                                                @elseif($daQua)
+                                                    <small class="text-muted">Đã qua môn</small>
+                                                @elseif($lopHPs->isEmpty())
+                                                    <small class="text-muted">Chưa mở lớp</small>
+                                                @else
+                                                    @if(config('app.debug'))
+                                                        <small class="text-warning" title="daQua:{{$daQua?'Y':'N'}} daDK:{{$daDangKy?'Y':'N'}} lops:{{$lopHPs->count()}}">
+                                                            Debug
+                                                        </small>
+                                                    @endif
                                                 @endif
                                             </td>
                                         </tr>
@@ -260,8 +301,24 @@ selectedTinChi = parseInt($(this).data('tin-chi')) || 0;
                             text: response.message
                         }).then(() => location.reload());
                     }).fail(function(xhr) {
-                        const message = xhr.responseJSON?.message || 'Có lỗi xảy ra!';
-                        showError(message);
+                        console.error('Lỗi đăng ký:', xhr);
+                        let message = xhr.responseJSON?.message || 'Có lỗi xảy ra!';
+                        
+                        // Hiển thị chi tiết lỗi nếu có
+                        if (xhr.responseJSON?.errors && Array.isArray(xhr.responseJSON.errors)) {
+                            message += '\n\n' + xhr.responseJSON.errors.join('\n');
+                        }
+                        
+                        Swal.fire({
+                            icon: 'error',
+                            title: 'Không thể đăng ký',
+                            text: message,
+                            html: message.replace(/\n/g, '<br>'),
+                            width: '500px'
+                        });
+                        
+                        // Đóng modal
+                        bootstrap.Modal.getInstance(document.getElementById('dangKyModal'))?.hide();
                     }).always(function() {
                         $btn.prop('disabled', false).text('Đăng ký');
                     });
