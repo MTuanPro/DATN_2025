@@ -16,6 +16,9 @@ class EnsureSinhVienExists
     public function handle(Request $request, Closure $next): Response
     {
         if (!auth()->check()) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Unauthenticated'], 401);
+            }
             return redirect()->route('login');
         }
 
@@ -23,6 +26,9 @@ class EnsureSinhVienExists
         $sinhVien = $user->sinhVien;
 
         if (!$sinhVien) {
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json(['error' => 'Không tìm thấy thông tin sinh viên'], 404);
+            }
             return redirect()->route('sinh-vien.dashboard')
                 ->with('error', 'Không tìm thấy thông tin sinh viên! Vui lòng liên hệ phòng đào tạo.');
         }
