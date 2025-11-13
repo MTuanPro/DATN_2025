@@ -174,6 +174,14 @@
                     </ul>
                 </li>
 
+                <!-- 12.5. AI CHATBOT -->
+                <li class="sidebar-item {{ Request::is('sinh-vien/chatbot*') ? 'active' : '' }}">
+                    <a href="{{ route('sinh-vien.chatbot.index') }}" class='sidebar-link'>
+                        <i class="bi bi-chat-dots-fill"></i>
+                        <span>AI Chat Bot</span>
+                    </a>
+                </li>
+
                 <!-- 13. XUẤT DỮ LIỆU -->
                 <li class="sidebar-item has-sub">
                     <a href="#" class='sidebar-link'>

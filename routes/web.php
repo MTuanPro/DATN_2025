@@ -48,6 +48,10 @@ use App\Http\Controllers\SinhVien\XemDiemController;
 use App\Http\Controllers\DaoTao\ThongBaoController as DaoTaoThongBaoController;
 use App\Http\Controllers\GiangVien\ThongBaoController as GiangVienThongBaoController;
 use App\Http\Controllers\SinhVien\ThongBaoController as SinhVienThongBaoController;
+use App\Http\Controllers\Admin\AiChatbotKnowledgeBaseController;
+use App\Http\Controllers\Admin\AiChatbotConversationController;
+use App\Http\Controllers\Admin\AiChatbotFeedbackController;
+use App\Http\Controllers\SinhVien\ChatbotController;
 
 
 // Debug route (temporary)
@@ -68,7 +72,7 @@ Route::get('/', function () {
             return redirect()->route('giangvien.dashboard');
         }
         if (in_array('sinh_vien', $roles)) {
-            return redirect()->route('sinhvien.dashboard');
+            return redirect()->route('sinh-vien.dashboard');
         }
     }
     return redirect()->route('login');
@@ -142,6 +146,53 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/users', [App\Http\Controllers\Admin\ReportController::class, 'users'])->name('users');
         Route::get('/permissions', [App\Http\Controllers\Admin\ReportController::class, 'permissions'])->name('permissions');
         Route::get('/export', [App\Http\Controllers\Admin\ReportController::class, 'export'])->name('export');
+    });
+
+    // PHASE 12: AI Chatbot Management
+    // Backwards-compatible aliases for older route names introduced during refactors.
+    // These are lightweight redirects that preserve old named routes (so compiled views
+    // or external links that still reference them won't throw RouteNotFound exceptions).
+    Route::get('ai-chatbot/compat/chatbot-conversation-create', function () {
+        return redirect()->route('admin.ai-chatbot.conversation.index');
+    })->name('chatbot.conversation.create'); // yields admin.chatbot.conversation.create
+
+    Route::get('ai-chatbot/compat/chatbot-feedback', function () {
+        return redirect()->route('admin.ai-chatbot.feedback.index');
+    })->name('ai-chatbot.chatbot.feedback'); // yields admin.ai-chatbot.chatbot.feedback
+
+    Route::prefix('ai-chatbot')->name('ai-chatbot.')->group(function () {
+        // Knowledge Base
+        Route::prefix('knowledge-base')->name('knowledge-base.')->group(function () {
+            Route::get('/', [AiChatbotKnowledgeBaseController::class, 'index'])->name('index');
+            Route::get('/create', [AiChatbotKnowledgeBaseController::class, 'create'])->name('create');
+            Route::get('/statistics/overview', [AiChatbotKnowledgeBaseController::class, 'statistics'])->name('statistics');
+            Route::get('/import/form', [AiChatbotKnowledgeBaseController::class, 'importForm'])->name('import.form');
+            Route::post('/import', [AiChatbotKnowledgeBaseController::class, 'import'])->name('import');
+            Route::get('/export', [AiChatbotKnowledgeBaseController::class, 'export'])->name('export');
+            Route::post('/', [AiChatbotKnowledgeBaseController::class, 'store'])->name('store');
+            Route::get('/{knowledgeBase}', [AiChatbotKnowledgeBaseController::class, 'show'])->name('show');
+            Route::get('/{knowledgeBase}/edit', [AiChatbotKnowledgeBaseController::class, 'edit'])->name('edit');
+            Route::put('/{knowledgeBase}', [AiChatbotKnowledgeBaseController::class, 'update'])->name('update');
+            Route::delete('/{knowledgeBase}', [AiChatbotKnowledgeBaseController::class, 'destroy'])->name('destroy');
+            Route::post('/{knowledgeBase}/toggle-activate', [AiChatbotKnowledgeBaseController::class, 'toggleActivate'])->name('toggle-activate');
+        });
+
+        // Conversations
+        Route::prefix('conversation')->name('conversation.')->group(function () {
+            Route::get('/', [AiChatbotConversationController::class, 'index'])->name('index');
+            Route::get('/{conversation}', [AiChatbotConversationController::class, 'show'])->name('show');
+            Route::post('/{conversation}/close', [AiChatbotConversationController::class, 'close'])->name('close');
+            Route::post('/{conversation}/reopen', [AiChatbotConversationController::class, 'reopen'])->name('reopen');
+            Route::delete('/{conversation}', [AiChatbotConversationController::class, 'destroy'])->name('destroy');
+        });
+
+        // Feedback
+        Route::prefix('feedback')->name('feedback.')->group(function () {
+            Route::get('/', [AiChatbotFeedbackController::class, 'index'])->name('index');
+            Route::get('/analytics', [AiChatbotFeedbackController::class, 'analytics'])->name('analytics');
+            Route::get('/{feedback}', [AiChatbotFeedbackController::class, 'show'])->name('show');
+            Route::delete('/{feedback}', [AiChatbotFeedbackController::class, 'destroy'])->name('destroy');
+        });
     });
 });
 
@@ -484,5 +535,18 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/hoc-phan', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traHocPhan'])->name('hoc-phan');
         Route::get('/giang-vien', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traGiangVien'])->name('giang-vien');
         Route::get('/phong-hoc', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traPhongHoc'])->name('phong-hoc');
+    });
+
+    // PHASE 12: AI Chatbot (Sinh viên)
+    Route::middleware('sinhvien.check')->prefix('chatbot')->name('chatbot.')->group(function () {
+        Route::get('/', [ChatbotController::class, 'index'])->name('index');
+        Route::post('/conversation/create', [ChatbotController::class, 'createConversation'])->name('conversation.create');
+        Route::post('/message/send', [ChatbotController::class, 'sendMessage'])->name('message.send');
+        Route::get('/conversation/{conversationId}/messages', [ChatbotController::class, 'getMessages'])->name('conversation.messages');
+        Route::get('/conversation/{conversationId}', [ChatbotController::class, 'loadConversation'])->name('conversation.show');
+        Route::delete('/conversation/{conversationId}', [ChatbotController::class, 'deleteConversation'])->name('conversation.delete');
+        Route::post('/feedback', [ChatbotController::class, 'submitFeedback'])->name('feedback.submit');
+        Route::get('/history', [ChatbotController::class, 'history'])->name('history');
+        Route::get('/suggested-questions', [ChatbotController::class, 'getSuggestedQuestions'])->name('suggested-questions');
     });
 });
