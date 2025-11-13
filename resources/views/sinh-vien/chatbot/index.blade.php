@@ -91,7 +91,7 @@
                                    placeholder="Nhập câu hỏi của bạn..." required 
                                    style="border-radius: 25px 0 0 25px;">
                             <button type="submit" class="btn btn-primary" style="border-radius: 0 25px 25px 0; padding: 0 25px;">
-                                <i class="bi bi-send-fill"></i>
+                                <i class="bi bi-send-fill me-1"></i> Gửi
                             </button>
                         </div>
                     </form>
@@ -147,7 +147,6 @@
                                 </div>
                                 <button class="btn btn-sm btn-danger btn-delete-conv" 
                                         data-id="{{ $conv->id }}" 
-                                        onclick="event.stopPropagation();"
                                         title="Xóa">
                                     <i class="bi bi-trash"></i>
                                 </button>
@@ -506,17 +505,32 @@ $('.conversation-item').click(function() {
     window.location.href = `/sinh-vien/chatbot/conversation/${convId}`;
 });
 
-// Delete conversation
-$('.btn-delete-conv').click(function() {
+// Delete conversation (using event delegation)
+$(document).on('click', '.btn-delete-conv', function(e) {
+    e.preventDefault();
+    e.stopPropagation();
+    
     const convId = $(this).data('id');
+    
     if (confirm('Bạn có chắc muốn xóa cuộc trò chuyện này?')) {
         $.ajax({
             url: `/sinh-vien/chatbot/conversation/${convId}`,
             type: 'DELETE',
-            data: { _token: '{{ csrf_token() }}' },
-            success: function() {
-                toastr.success('Đã xóa cuộc trò chuyện!');
-                setTimeout(() => location.reload(), 1000);
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                'X-Requested-With': 'XMLHttpRequest',
+                'Accept': 'application/json'
+            },
+            data: { 
+                _token: '{{ csrf_token() }}'
+            },
+            success: function(response) {
+                // Reload ngay lập tức
+                location.reload();
+            },
+            error: function(xhr) {
+                console.error('Error:', xhr);
+                toastr.error('Có lỗi xảy ra khi xóa!');
             }
         });
     }

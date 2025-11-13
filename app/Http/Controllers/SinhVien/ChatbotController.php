@@ -285,20 +285,27 @@ class ChatbotController extends Controller
      */
     public function deleteConversation($conversationId)
     {
-        $sinhVien = Auth::user()->sinhVien;
-        $conversation = AiChatbotConversation::findOrFail($conversationId);
-        
-        // Kiểm tra quyền
-        if ($conversation->sinh_vien_id != $sinhVien->id) {
-            return response()->json(['error' => 'Không có quyền truy cập'], 403);
+        try {
+            $sinhVien = Auth::user()->sinhVien;
+            $conversation = AiChatbotConversation::findOrFail($conversationId);
+            
+            // Kiểm tra quyền
+            if ($conversation->sinh_vien_id != $sinhVien->id) {
+                return response()->json(['error' => 'Không có quyền truy cập'], 403);
+            }
+            
+            $conversation->delete();
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã xóa cuộc hội thoại',
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => $e->getMessage()
+            ], 500);
         }
-        
-        $conversation->delete();
-        
-        return response()->json([
-            'success' => true,
-            'message' => 'Đã xóa cuộc hội thoại',
-        ]);
     }
     
     /**
