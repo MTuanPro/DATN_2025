@@ -92,7 +92,7 @@
                                 <th>Phòng thi:</th>
                                 <td>
                                     @php
-                                        $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', auth()->guard('sinhvien')->id())->first();
+                                        $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', $sinhVien->id ?? auth()->user()->sinhVien->id)->first();
                                     @endphp
                                     @if($thongTinThi && $thongTinThi->phongThi)
                                         <strong class="text-primary">{{ $thongTinThi->phongThi->ten_phong }}</strong>

@@ -6,7 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\HocPhiHocKy;
 use App\Models\LichSuDongHocPhi;
 use App\Models\ChiTietHocPhiMon;
-use App\Models\SinhVien;
+use App\Models\DaoTao\SinhVien;
 use App\Models\HocKy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;

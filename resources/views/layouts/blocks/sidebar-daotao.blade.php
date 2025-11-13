@@ -126,15 +126,18 @@
 
                 {{-- 6. THỜI KHÓA BIỂU --}}
                 <li
-                    class="sidebar-item has-sub {{ Request::is('dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
+                    class="sidebar-item has-sub {{ Request::is('dao-tao/thoi-khoa-bieu*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-calendar-check"></i>
                         <span>Thời khóa biểu</span>
                     </a>
                     <ul
-                        class="submenu {{ Request::is('dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
-                        <li class="submenu-item"><a href="#">Lịch theo Phòng học <!-- Đang phát triển --></a></li>
-                        <li class="submenu-item"><a href="#">Lịch theo Giảng viên <!-- Đang phát triển --></a>
+                        class="submenu {{ Request::is('dao-tao/thoi-khoa-bieu*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('dao-tao/thoi-khoa-bieu/lich-theo-phong') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.thoi-khoa-bieu.lich-theo-phong') }}">Lịch theo Phòng học</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/thoi-khoa-bieu/lich-theo-giang-vien') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.thoi-khoa-bieu.lich-theo-giang-vien') }}">Lịch theo Giảng viên</a>
                         </li>
                     </ul>
                 </li>

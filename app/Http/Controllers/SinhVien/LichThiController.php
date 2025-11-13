@@ -22,8 +22,9 @@ class LichThiController extends Controller
                 ->with('error', 'Không tìm thấy thông tin sinh viên!');
         }
 
-        // Lấy các lớp học phần mà sinh viên đã đăng ký
-        $lopHocPhanIds = $sinhVien->lopHocPhanSinhVien()
+        // Lấy các lớp học phần mà sinh viên đã đăng ký và được xếp lớp
+        $lopHocPhanIds = $sinhVien->lopHocPhanSinhViens()
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->pluck('lop_hoc_phan_id')
             ->unique();
 
@@ -80,7 +81,8 @@ class LichThiController extends Controller
         }
 
         // Kiểm tra quyền xem (phải đăng ký lớp học phần này)
-        $lopHocPhanIds = $sinhVien->lopHocPhanSinhVien()
+        $lopHocPhanIds = $sinhVien->lopHocPhanSinhViens()
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->pluck('lop_hoc_phan_id')
             ->unique();
 
@@ -117,8 +119,9 @@ class LichThiController extends Controller
                 ->with('error', 'Không tìm thấy thông tin sinh viên!');
         }
 
-        // Lấy các lớp học phần mà sinh viên đã đăng ký
-        $lopHocPhanIds = $sinhVien->lopHocPhanSinhVien()
+        // Lấy các lớp học phần mà sinh viên đã đăng ký và được xếp lớp
+        $lopHocPhanIds = $sinhVien->lopHocPhanSinhViens()
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->pluck('lop_hoc_phan_id')
             ->unique();
 
@@ -159,8 +162,9 @@ class LichThiController extends Controller
                 ->with('error', 'Không tìm thấy thông tin sinh viên!');
         }
 
-        // Lấy các lớp học phần mà sinh viên đã đăng ký
-        $lopHocPhanIds = $sinhVien->lopHocPhanSinhVien()
+        // Lấy các lớp học phần mà sinh viên đã đăng ký và được xếp lớp
+        $lopHocPhanIds = $sinhVien->lopHocPhanSinhViens()
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->pluck('lop_hoc_phan_id')
             ->unique();
 

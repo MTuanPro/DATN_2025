@@ -23,6 +23,7 @@ class CanhBaoHocVu extends Model
         'ghi_chu',
         'ngay_canh_bao',
         'nguoi_tao_id',
+        'nguoi_canh_bao_id', // Legacy field, use nguoi_tao_id instead
         'nguoi_xu_ly_id',
         'trang_thai',
         'ket_qua_xu_ly',

@@ -56,8 +56,8 @@
                 </li>
 
                 <!-- 4. LỚP HỌC PHẦN -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('sinh-vien/lop-hoc-phan*') ? 'active' : '' }}">
+                    <a href="{{ route('sinh-vien.lop-hoc-phan.index') }}" class='sidebar-link'>
                         <i class="bi bi-book"></i>
                         <span>Lớp học phần</span>
                     </a>
@@ -156,15 +156,21 @@
                 </li>
 
                 <!-- 12. TRA CỨU -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/tra-cuu*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-search"></i>
                         <span>Tra cứu</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Tra học phần</a></li>
-                        <li class="submenu-item"><a href="#">Tra giảng viên</a></li>
-                        <li class="submenu-item"><a href="#">Tra phòng học</a></li>
+                    <ul class="submenu {{ Request::is('sinh-vien/tra-cuu*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('sinh-vien/tra-cuu/hoc-phan') ? 'active' : '' }}">
+                            <a href="{{ route('sinh-vien.tra-cuu.hoc-phan') }}">Tra học phần</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('sinh-vien/tra-cuu/giang-vien') ? 'active' : '' }}">
+                            <a href="{{ route('sinh-vien.tra-cuu.giang-vien') }}">Tra giảng viên</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('sinh-vien/tra-cuu/phong-hoc') ? 'active' : '' }}">
+                            <a href="{{ route('sinh-vien.tra-cuu.phong-hoc') }}">Tra phòng học</a>
+                        </li>
                     </ul>
                 </li>
 

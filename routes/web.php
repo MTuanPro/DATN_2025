@@ -226,6 +226,12 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 
     // Lịch học chi tiết
     Route::get('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet', [LichHocChiTietController::class, 'index'])->name('lop-hoc-phan.lich-chi-tiet');
+    
+    // Thời khóa biểu
+    Route::prefix('thoi-khoa-bieu')->name('thoi-khoa-bieu.')->group(function () {
+        Route::get('/lich-theo-phong', [\App\Http\Controllers\DaoTao\ThoiKhoaBieuController::class, 'lichTheoPhong'])->name('lich-theo-phong');
+        Route::get('/lich-theo-giang-vien', [\App\Http\Controllers\DaoTao\ThoiKhoaBieuController::class, 'lichTheoGiangVien'])->name('lich-theo-giang-vien');
+    });
     Route::post('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet/generate', [LichHocChiTietController::class, 'generate'])->name('lop-hoc-phan.lich-chi-tiet.generate');
     Route::get('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet/create', [LichHocChiTietController::class, 'create'])->name('lop-hoc-phan.lich-chi-tiet.create');
     Route::post('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet', [LichHocChiTietController::class, 'store'])->name('lop-hoc-phan.lich-chi-tiet.store');
@@ -421,6 +427,12 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/my-registrations', [DangKyMonHocController::class, 'myRegistrations'])->name('my-registrations');
     });
 
+    // PHASE 5: Lớp học phần
+    Route::middleware('sinhvien.check')->prefix('lop-hoc-phan')->name('lop-hoc-phan.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'index'])->name('index');
+        Route::get('/{id}', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'show'])->name('show');
+    });
+
     // PHASE 5: Thời khóa biểu cá nhân
     Route::middleware('sinhvien.check')->prefix('thoi-khoa-bieu')->name('thoi-khoa-bieu.')->group(function () {
         Route::get('/', [ThoiKhoaBieuController::class, 'index'])->name('index');
@@ -465,5 +477,12 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::post('/{thongBao}/mark-read', [SinhVienThongBaoController::class, 'markAsRead'])->name('mark-read');
         Route::post('/mark-all-read', [SinhVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
         Route::get('/unread/count', [SinhVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
+    });
+
+    // TRA CỨU
+    Route::middleware('sinhvien.check')->prefix('tra-cuu')->name('tra-cuu.')->group(function () {
+        Route::get('/hoc-phan', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traHocPhan'])->name('hoc-phan');
+        Route::get('/giang-vien', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traGiangVien'])->name('giang-vien');
+        Route::get('/phong-hoc', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traPhongHoc'])->name('phong-hoc');
     });
 });
