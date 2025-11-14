@@ -87,8 +87,8 @@
                 </li>
 
                 <!-- 6. ĐIỂM DANH -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('sinh-vien/diem-danh*') ? 'active' : '' }}">
+                    <a href="{{ route('sinh-vien.diem-danh.index') }}" class='sidebar-link'>
                         <i class="bi bi-clipboard-check"></i>
                         <span>Lịch sử điểm danh</span>
                     </a>
@@ -183,16 +183,11 @@
                 </li>
 
                 <!-- 13. XUẤT DỮ LIỆU -->
-                <li class="sidebar-item has-sub">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('sinh-vien/xuat-du-lieu*') ? 'active' : '' }}">
+                    <a href="{{ route('sinh-vien.xuat-du-lieu.index') }}" class='sidebar-link'>
                         <i class="bi bi-download"></i>
                         <span>Xuất dữ liệu</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Xuất bảng điểm</a></li>
-                        <li class="submenu-item"><a href="#">Xuất TKB</a></li>
-                        <li class="submenu-item"><a href="#">Giấy xác nhận SV</a></li>
-                    </ul>
                 </li>
 
             </ul>
