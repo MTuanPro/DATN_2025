@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\AiChatbotKnowledgeBase;
+use Illuminate\Support\Facades\Log;
 
 class ChatbotMatchingService
 {
@@ -24,8 +25,21 @@ class ChatbotMatchingService
         
         $knowledgeList = $query->get();
         
+        // FIX: Validate knowledge base và log warning
         if ($knowledgeList->isEmpty()) {
-            return ['knowledge' => null, 'similarity' => 0];
+            $totalActive = AiChatbotKnowledgeBase::kichHoat()->count();
+            
+            Log::warning('No knowledge base found for matching', [
+                'chu_de' => $chuDe,
+                'total_active_knowledge' => $totalActive,
+                'question' => $question,
+            ]);
+            
+            return [
+                'knowledge' => null, 
+                'similarity' => 0,
+                'reason' => 'no_knowledge_base'
+            ];
         }
         
         $bestMatch = null;
@@ -51,9 +65,26 @@ class ChatbotMatchingService
             }
         }
         
-        // Chỉ trả về nếu độ tương đồng >= 30%
-        if ($highestSimilarity < 0.3) {
-            return ['knowledge' => null, 'similarity' => $highestSimilarity];
+        // FIX: Sử dụng threshold từ config
+        $threshold = config('chatbot.similarity_threshold', 0.3);
+        
+        if ($highestSimilarity < $threshold) {
+            // Log nếu có câu hỏi gần match nhưng không đủ threshold
+            if ($highestSimilarity > 0 && config('chatbot.logging.log_no_match', true)) {
+                Log::info('Question below threshold', [
+                    'question' => $question,
+                    'chu_de' => $chuDe,
+                    'best_similarity' => $highestSimilarity,
+                    'threshold' => $threshold,
+                    'best_match_id' => $bestMatch ? $bestMatch->id : null,
+                ]);
+            }
+            
+            return [
+                'knowledge' => null, 
+                'similarity' => $highestSimilarity,
+                'reason' => 'below_threshold'
+            ];
         }
         
         return [

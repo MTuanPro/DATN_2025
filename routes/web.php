@@ -139,6 +139,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Thong Bao Management
     Route::get('thong-bao/{thongBao}/download', [ThongBaoController::class, 'download'])->name('thong-bao.download');
     Route::resource('thong-bao', ThongBaoController::class);
+    
+    // Nguoi Nhan Thong Bao Management
+    Route::prefix('nguoi-nhan-thong-bao')->name('nguoi-nhan-thong-bao.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'index'])->name('index');
+        Route::get('/statistics', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'statistics'])->name('statistics');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'show'])->name('show');
+        Route::post('/mark-as-read', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'markAsRead'])->name('mark-as-read');
+        Route::post('/resend-email', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'resendEmail'])->name('resend-email');
+        Route::post('/bulk-delete', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'bulkDelete'])->name('bulk-delete');
+    });
+    
+    // Mau Thong Bao Tu Dong Management
+    Route::resource('mau-thong-bao', \App\Http\Controllers\Admin\MauThongBaoTuDongController::class);
+    Route::patch('mau-thong-bao/{mauThongBao}/toggle', [\App\Http\Controllers\Admin\MauThongBaoTuDongController::class, 'toggleActivation'])->name('mau-thong-bao.toggle');
 
     // Reports & Statistics
     Route::prefix('reports')->name('reports.')->group(function () {
@@ -359,10 +373,6 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::post('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'storePayment'])->name('storePayment');
     });
 
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
-
     // Báo cáo đào tạo
     Route::prefix('bao-cao')->name('bao-cao.')->group(function () {
         Route::get('/', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'index'])->name('index');
@@ -538,7 +548,8 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
     });
 
     // PHASE 12: AI Chatbot (Sinh viên)
-    Route::middleware('sinhvien.check')->prefix('chatbot')->name('chatbot.')->group(function () {
+    // FIX: Thêm rate limiting để tránh spam (30 requests/minute)
+    Route::middleware(['sinhvien.check', 'throttle:30,1'])->prefix('chatbot')->name('chatbot.')->group(function () {
         Route::get('/', [ChatbotController::class, 'index'])->name('index');
         Route::post('/conversation/create', [ChatbotController::class, 'createConversation'])->name('conversation.create');
         Route::post('/message/send', [ChatbotController::class, 'sendMessage'])->name('message.send');

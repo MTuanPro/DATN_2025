@@ -7,14 +7,19 @@
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-6 order-md-1 order-last">
-                    <h3>Quản lý Thông báo</h3>
-                    <p class="text-subtitle text-muted">Danh sách tất cả thông báo đã gửi</p>
+                    <h3>
+                        <i class="bi bi-megaphone-fill text-success"></i> Quản lý Thông báo Học vụ
+                    </h3>
+                    <p class="text-subtitle text-muted">
+                        <span class="badge bg-light-success">Đào tạo</span>
+                        Danh sách thông báo của bạn và thông báo tự động
+                    </p>
                 </div>
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('daotao.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item active" aria-current="page">Thông báo</li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Thông báo học vụ</li>
                         </ol>
                     </nav>
                 </div>
@@ -24,10 +29,57 @@
 
     <div class="page-content">
         <section class="section">
+            <!-- Thống kê nhanh -->
+            <div class="row mb-4">
+                <div class="col-md-3">
+                    <div class="card bg-light-success">
+                        <div class="card-body text-center">
+                            <h5 class="text-success mb-0">{{ $thongBaos->total() }}</h5>
+                            <small class="text-muted">Tổng thông báo</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light-info">
+                        <div class="card-body text-center">
+                            <h5 class="text-info mb-0">
+                                {{ $thongBaos->where('loai_nguon', 'thu_cong')->count() }}
+                            </h5>
+                            <small class="text-muted">Bạn tạo</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light-primary">
+                        <div class="card-body text-center">
+                            <h5 class="text-primary mb-0">
+                                {{ $thongBaos->where('loai_nguon', 'tu_dong')->count() }}
+                            </h5>
+                            <small class="text-muted">Tự động</small>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card bg-light-warning">
+                        <div class="card-body text-center">
+                            <h5 class="text-warning mb-0">
+                                {{ $thongBaos->where('ghim_dau_trang', true)->count() }}
+                            </h5>
+                            <small class="text-muted">Đã ghim</small>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Bộ lọc -->
-            <div class="card mb-4">
+            <div class="card border-success mb-4">
+                <div class="card-header bg-light-success">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-funnel-fill"></i> Bộ lọc thông báo
+                    </h5>
+                </div>
                 <div class="card-body">
-                    <form action="{{ route('daotao.thong-bao.index') }}" method="GET">
+                    <form action="{{ route('dao-tao.thong-bao.index') }}" method="GET">
                         <div class="row">
                             <div class="col-md-3">
                                 <div class="form-group">
@@ -114,12 +166,19 @@
             </div>
 
             <!-- Danh sách thông báo -->
-            <div class="card">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h4 class="card-title mb-0">Danh sách thông báo</h4>
-                    <a href="{{ route('daotao.thong-bao.create') }}" class="btn btn-primary">
-                        <i class="bi bi-plus-circle"></i> Tạo thông báo mới
-                    </a>
+            <div class="card border-success">
+                <div class="card-header bg-gradient-success d-flex justify-content-between align-items-center">
+                    <h4 class="card-title mb-0 text-white">
+                        <i class="bi bi-list-ul"></i> Danh sách thông báo học vụ
+                    </h4>
+                    <div class="d-flex gap-2">
+                        <a href="{{ route('dao-tao.mau-thong-bao.index') }}" class="btn btn-light btn-sm">
+                            <i class="bi bi-file-earmark-text"></i> Mẫu thông báo
+                        </a>
+                        <a href="{{ route('dao-tao.thong-bao.create') }}" class="btn btn-warning btn-sm">
+                            <i class="bi bi-plus-circle-fill"></i> Tạo thông báo mới
+                        </a>
+                    </div>
                 </div>
                 <div class="card-body">
                     <div class="table-responsive">
@@ -144,7 +203,7 @@
                                             @if ($tb->ghim_dau_trang)
                                                 <i class="bi bi-pin-angle-fill text-warning" title="Đã ghim"></i>
                                             @endif
-                                            <a href="{{ route('daotao.thong-bao.show', $tb->id) }}" class="fw-bold">
+                                            <a href="{{ route('dao-tao.thong-bao.show', $tb->id) }}" class="fw-bold">
                                                 {{ $tb->tieu_de }}
                                             </a>
                                         </td>
@@ -180,15 +239,15 @@
                                         <td><small>{{ $tb->ngay_gui->format('d/m/Y H:i') }}</small></td>
                                         <td>
                                             <div class="btn-group btn-group-sm" role="group">
-                                                <a href="{{ route('daotao.thong-bao.show', $tb->id) }}"
+                                                <a href="{{ route('dao-tao.thong-bao.show', $tb->id) }}"
                                                     class="btn btn-info" title="Xem">
                                                     <i class="bi bi-eye"></i>
                                                 </a>
-                                                <a href="{{ route('daotao.thong-bao.edit', $tb->id) }}"
+                                                <a href="{{ route('dao-tao.thong-bao.edit', $tb->id) }}"
                                                     class="btn btn-warning" title="Sửa">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
-                                                <form action="{{ route('daotao.thong-bao.destroy', $tb->id) }}"
+                                                <form action="{{ route('dao-tao.thong-bao.destroy', $tb->id) }}"
                                                     method="POST" class="d-inline"
                                                     onsubmit="return confirm('Bạn có chắc muốn xóa thông báo này?')">
                                                     @csrf
