@@ -69,13 +69,42 @@
 <script>
 $('.btn-delete').click(function() {
     const id = $(this).data('id');
-    if (confirm('Xóa cuộc trò chuyện này?')) {
+    const $btn = $(this);
+    
+    if (confirm('Bạn có chắc chắn muốn xóa cuộc trò chuyện này?')) {
+        // Disable button để tránh click nhiều lần
+        $btn.prop('disabled', true);
+        
         $.ajax({
             url: `/sinh-vien/chatbot/conversation/${id}`,
             type: 'DELETE',
             data: { _token: '{{ csrf_token() }}' },
-            success: function() {
-                location.reload();
+            success: function(response) {
+                if (response.success) {
+                    // Hiển thị thông báo thành công
+                    alert(response.message || 'Đã xóa cuộc hội thoại');
+                    // Reload trang
+                    location.reload();
+                } else {
+                    alert('Lỗi: ' + (response.error || 'Không thể xóa cuộc trò chuyện'));
+                    $btn.prop('disabled', false);
+                }
+            },
+            error: function(xhr) {
+                let errorMsg = 'Không thể xóa cuộc trò chuyện';
+                
+                if (xhr.responseJSON && xhr.responseJSON.error) {
+                    errorMsg = xhr.responseJSON.error;
+                } else if (xhr.status === 404) {
+                    errorMsg = 'Cuộc hội thoại không tồn tại hoặc đã bị xóa';
+                } else if (xhr.status === 403) {
+                    errorMsg = 'Bạn không có quyền xóa cuộc hội thoại này';
+                } else if (xhr.status === 500) {
+                    errorMsg = 'Lỗi hệ thống, vui lòng thử lại sau';
+                }
+                
+                alert('Lỗi: ' + errorMsg);
+                $btn.prop('disabled', false);
             }
         });
     }

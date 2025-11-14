@@ -363,11 +363,24 @@ class ChatbotController extends Controller
     {
         try {
             $sinhVien = Auth::user()->sinhVien;
-            $conversation = AiChatbotConversation::findOrFail($conversationId);
+            
+            // Sử dụng find() và kiểm tra null thay vì findOrFail()
+            $conversation = AiChatbotConversation::find($conversationId);
+            
+            // Kiểm tra conversation có tồn tại không
+            if (!$conversation) {
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Cuộc hội thoại không tồn tại hoặc đã bị xóa'
+                ], 404);
+            }
             
             // Kiểm tra quyền
             if ($conversation->sinh_vien_id != $sinhVien->id) {
-                return response()->json(['error' => 'Không có quyền truy cập'], 403);
+                return response()->json([
+                    'success' => false,
+                    'error' => 'Không có quyền truy cập'
+                ], 403);
             }
             
             // UPGRADE: Clear context khi xóa conversation
@@ -380,9 +393,10 @@ class ChatbotController extends Controller
                 'message' => 'Đã xóa cuộc hội thoại',
             ]);
         } catch (\Exception $e) {
+            \Log::error('Lỗi xóa conversation: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
-                'error' => $e->getMessage()
+                'error' => 'Có lỗi xảy ra khi xóa cuộc hội thoại'
             ], 500);
         }
     }
