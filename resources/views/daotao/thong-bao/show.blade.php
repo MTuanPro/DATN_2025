@@ -7,13 +7,23 @@
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-6 order-md-1 order-last">
-                    <h3>Chi tiết thông báo</h3>
+                    <h3>
+                        <i class="bi bi-file-earmark-text-fill text-success"></i> Chi tiết thông báo
+                    </h3>
+                    <p class="text-subtitle text-muted mb-0">
+                        <span class="badge bg-light-success">Đào tạo</span>
+                        @if($thongBao->loai_nguon == 'tu_dong')
+                            <span class="badge bg-light-primary">Tự động</span>
+                        @else
+                            <span class="badge bg-light-info">Thủ công</span>
+                        @endif
+                    </p>
                 </div>
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('daotao.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('daotao.thong-bao.index') }}">Thông báo</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.thong-bao.index') }}">Thông báo</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
                         </ol>
                     </nav>
@@ -101,21 +111,29 @@
         <div class="row">
             <!-- Nội dung thông báo -->
             <div class="col-lg-8">
-                <div class="card">
-                    <div class="card-header d-flex justify-content-between align-items-center">
-                        <h4 class="card-title">{{ $thongBao->tieu_de }}</h4>
+                <div class="card border-success">
+                    <div class="card-header bg-light-success d-flex justify-content-between align-items-center">
+                        <h4 class="card-title mb-0">
+                            <i class="bi bi-bell-fill"></i> {{ $thongBao->tieu_de }}
+                        </h4>
                         <div>
-                            <a href="{{ route('daotao.thong-bao.edit', $thongBao->id) }}" class="btn btn-sm btn-warning">
-                                <i class="bi bi-pencil"></i> Sửa
-                            </a>
-                            <form action="{{ route('daotao.thong-bao.destroy', $thongBao->id) }}" method="POST"
-                                class="d-inline" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?')">
-                                @csrf
-                                @method('DELETE')
-                                <button type="submit" class="btn btn-sm btn-danger">
-                                    <i class="bi bi-trash"></i> Xóa
-                                </button>
-                            </form>
+                            @if($thongBao->loai_nguon == 'thu_cong')
+                                <a href="{{ route('dao-tao.thong-bao.edit', $thongBao->id) }}" class="btn btn-sm btn-warning">
+                                    <i class="bi bi-pencil-square"></i> Chỉnh sửa
+                                </a>
+                                <form action="{{ route('dao-tao.thong-bao.destroy', $thongBao->id) }}" method="POST"
+                                    class="d-inline" onsubmit="return confirm('⚠️ Bạn có chắc chắn muốn xóa thông báo này?')">
+                                    @csrf
+                                    @method('DELETE')
+                                    <button type="submit" class="btn btn-sm btn-danger">
+                                        <i class="bi bi-trash-fill"></i> Xóa
+                                    </button>
+                                </form>
+                            @else
+                                <span class="badge bg-info">
+                                    <i class="bi bi-robot"></i> Thông báo tự động - không thể chỉnh sửa
+                                </span>
+                            @endif
                         </div>
                     </div>
                     <div class="card-body">
@@ -151,12 +169,57 @@
 
                         <div class="row text-muted small">
                             <div class="col-md-6">
-                                <p><strong>Người gửi:</strong> {{ $thongBao->daoTao->ho_ten ?? 'N/A' }}</p>
-                                <p><strong>Ngày gửi:</strong>
-                                    {{ $thongBao->ngay_gui ? $thongBao->ngay_gui->format('d/m/Y H:i') : 'Chưa gửi' }}</p>
+                                <p>
+                                    <i class="bi bi-person-circle text-success"></i> 
+                                    <strong>Người gửi:</strong> 
+                                    @if($thongBao->nguoiGui)
+                                        @if($thongBao->nguoiGui->id == Auth::id())
+                                            <span class="badge bg-light-success">Bạn</span> ({{ $thongBao->nguoiGui->name }})
+                                        @else
+                                            {{ $thongBao->nguoiGui->name }}
+                                        @endif
+                                    @else
+                                        <span class="badge bg-light-primary">
+                                            <i class="bi bi-robot"></i> Hệ thống tự động
+                                        </span>
+                                    @endif
+                                </p>
+                                <p>
+                                    <i class="bi bi-tag-fill text-success"></i>
+                                    <strong>Loại nguồn:</strong>
+                                    @if ($thongBao->loai_nguon == 'tu_dong')
+                                        <span class="badge bg-primary">
+                                            <i class="bi bi-gear-fill"></i> Tự động
+                                        </span>
+                                    @else
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-pencil-fill"></i> Thủ công
+                                        </span>
+                                    @endif
+                                </p>
+                                <p>
+                                    <i class="bi bi-calendar-check text-success"></i>
+                                    <strong>Ngày gửi:</strong>
+                                    {{ $thongBao->ngay_gui ? $thongBao->ngay_gui->format('d/m/Y H:i') : 'Chưa gửi' }}
+                                </p>
                             </div>
                             <div class="col-md-6">
-                                <p><strong>Đối tượng:</strong> {{ $thongBao->doi_tuong }}</p>
+                                <p><strong>Đối tượng:</strong>
+                                    @if ($thongBao->doi_tuong == 'all')
+                                        Tất cả
+                                    @elseif($thongBao->doi_tuong == 'sinh_vien')
+                                        Sinh viên
+                                    @elseif($thongBao->doi_tuong == 'giang_vien')
+                                        Giảng viên
+                                    @elseif($thongBao->doi_tuong == 'lop_hanh_chinh')
+                                        Lớp hành chính
+                                    @elseif($thongBao->doi_tuong == 'lop_hoc_phan')
+                                        Lớp học phần
+                                    @else
+                                        {{ $thongBao->doi_tuong }}
+                                    @endif
+                                </p>
+                                <p><strong>Lượt xem:</strong> {{ $thongBao->so_luot_xem ?? 0 }}</p>
                                 @if ($thongBao->ngay_het_han)
                                     <p><strong>Hết hạn:</strong> {{ $thongBao->ngay_het_han->format('d/m/Y H:i') }}</p>
                                 @endif
@@ -168,19 +231,26 @@
 
             <!-- Danh sách người nhận -->
             <div class="col-lg-4">
-                <div class="card">
-                    <div class="card-header">
-                        <h5 class="card-title">Danh sách người nhận</h5>
+                <div class="card border-success">
+                    <div class="card-header bg-light-success">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-people-fill"></i> Danh sách người nhận
+                        </h5>
                     </div>
                     <div class="card-body">
                         <!-- Filter -->
                         <form method="GET" class="mb-3">
+                            <label class="form-label small">
+                                <i class="bi bi-funnel"></i> Lọc theo trạng thái
+                            </label>
                             <select name="trang_thai" class="form-select form-select-sm" onchange="this.form.submit()">
-                                <option value="">Tất cả</option>
-                                <option value="da_doc" {{ request('trang_thai') == 'da_doc' ? 'selected' : '' }}>Đã đọc
+                                <option value="">📋 Tất cả</option>
+                                <option value="da_doc" {{ request('trang_thai') == 'da_doc' ? 'selected' : '' }}>
+                                    ✅ Đã đọc
                                 </option>
-                                <option value="chua_doc" {{ request('trang_thai') == 'chua_doc' ? 'selected' : '' }}>Chưa
-                                    đọc</option>
+                                <option value="chua_doc" {{ request('trang_thai') == 'chua_doc' ? 'selected' : '' }}>
+                                    ⏳ Chưa đọc
+                                </option>
                             </select>
                         </form>
 

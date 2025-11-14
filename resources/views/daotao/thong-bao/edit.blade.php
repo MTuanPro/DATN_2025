@@ -13,8 +13,8 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('daotao.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('daotao.thong-bao.index') }}">Thông báo</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.thong-bao.index') }}">Thông báo</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Chỉnh sửa</li>
                         </ol>
                     </nav>
@@ -30,7 +30,7 @@
                     <h4 class="card-title">Thông tin thông báo</h4>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('daotao.thong-bao.update', $thongBao->id) }}" method="POST"
+                    <form action="{{ route('dao-tao.thong-bao.update', $thongBao->id) }}" method="POST"
                         enctype="multipart/form-data">
                         @csrf
                         @method('PUT')
@@ -209,7 +209,7 @@
                         </div>
 
                         <div class="d-flex justify-content-end gap-2 mt-3">
-                            <a href="{{ route('daotao.thong-bao.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('dao-tao.thong-bao.index') }}" class="btn btn-secondary">
                                 <i class="bi bi-x-circle"></i> Hủy
                             </a>
                             <button type="submit" class="btn btn-primary">

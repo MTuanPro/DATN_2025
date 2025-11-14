@@ -13,8 +13,8 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.hoc-phi.index') }}">Học phí</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.hoc-phi.index') }}">Học phí</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
                         </ol>
                     </nav>
@@ -102,10 +102,10 @@
                                 </tr>
                             </table>
 
-                            <a href="{{ route('sinhvien.hoc-phi.lich-su', $hocPhi->id) }}" class="btn btn-info w-100 mt-2">
+                            <a href="{{ route('sinh-vien.hoc-phi.lich-su', $hocPhi->id) }}" class="btn btn-info w-100 mt-2">
                                 <i class="bi bi-clock-history"></i> Xem lịch sử đóng
                             </a>
-                            <a href="{{ route('sinhvien.hoc-phi.huong-dan') }}" class="btn btn-success w-100 mt-2">
+                            <a href="{{ route('sinh-vien.hoc-phi.huong-dan') }}" class="btn btn-success w-100 mt-2">
                                 <i class="bi bi-question-circle"></i> Hướng dẫn nộp
                             </a>
                         </div>

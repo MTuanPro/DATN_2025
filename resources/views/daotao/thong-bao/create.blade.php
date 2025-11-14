@@ -7,14 +7,19 @@
         <div class="page-title">
             <div class="row">
                 <div class="col-12 col-md-6 order-md-1 order-last">
-                    <h3>Tạo thông báo mới</h3>
-                    <p class="text-subtitle text-muted">Gửi thông báo đến sinh viên, giảng viên</p>
+                    <h3>
+                        <i class="bi bi-bell-fill text-success"></i> Tạo thông báo mới
+                    </h3>
+                    <p class="text-subtitle text-muted">
+                        <span class="badge bg-light-success">Đào tạo</span>
+                        Gửi thông báo học vụ đến sinh viên và giảng viên
+                    </p>
                 </div>
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('daotao.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('daotao.thong-bao.index') }}">Thông báo</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.thong-bao.index') }}">Thông báo</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Tạo mới</li>
                         </ol>
                     </nav>
@@ -25,12 +30,27 @@
 
     <div class="page-content">
         <section class="section">
-            <div class="card">
-                <div class="card-header">
-                    <h4 class="card-title">Thông tin thông báo</h4>
+            <!-- Alert hướng dẫn -->
+            <div class="alert alert-light-success alert-dismissible fade show" role="alert">
+                <h5 class="alert-heading">
+                    <i class="bi bi-info-circle-fill"></i> Lưu ý dành cho Đào tạo
+                </h5>
+                <p class="mb-0">
+                    • Bạn chỉ có thể gửi thông báo cho <strong>Sinh viên</strong> và <strong>Giảng viên</strong><br>
+                    • Thông báo có thể gửi cho toàn bộ hoặc từng lớp cụ thể<br>
+                    • Có thể gửi kèm email tự động cho các thông báo quan trọng
+                </p>
+                <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+            </div>
+
+            <div class="card border-success">
+                <div class="card-header bg-light-success">
+                    <h4 class="card-title mb-0">
+                        <i class="bi bi-clipboard-check"></i> Thông tin thông báo học vụ
+                    </h4>
                 </div>
                 <div class="card-body">
-                    <form action="{{ route('daotao.thong-bao.store') }}" method="POST" enctype="multipart/form-data">
+                    <form action="{{ route('dao-tao.thong-bao.store') }}" method="POST" enctype="multipart/form-data">
                         @csrf
 
                         <div class="row">
@@ -122,25 +142,35 @@
                                 </div>
                             </div>
 
-                            <!-- Đối tượng -->
+                            <!-- Đối tượng nhận - DÀNH CHO ĐÀO TẠO -->
                             <div class="col-md-6 mb-3">
-                                <label class="form-label">Đối tượng nhận <span class="text-danger">*</span></label>
+                                <label class="form-label">
+                                    <i class="bi bi-people-fill text-success"></i> Đối tượng nhận 
+                                    <span class="text-danger">*</span>
+                                </label>
                                 <select name="doi_tuong" id="doi_tuong"
                                     class="form-select @error('doi_tuong') is-invalid @enderror" required>
-                                    <option value="">-- Chọn đối tượng --</option>
-                                    <option value="all" {{ old('doi_tuong') == 'all' ? 'selected' : '' }}>Tất cả người
-                                        dùng</option>
-                                    <option value="sinh_vien" {{ old('doi_tuong') == 'sinh_vien' ? 'selected' : '' }}>Tất
-                                        cả sinh viên</option>
-                                    <option value="giang_vien" {{ old('doi_tuong') == 'giang_vien' ? 'selected' : '' }}>Tất
-                                        cả giảng viên</option>
-                                    <option value="lop_hanh_chinh"
-                                        {{ old('doi_tuong') == 'lop_hanh_chinh' ? 'selected' : '' }}>Lớp hành chính cụ thể
+                                    <option value="">-- Chọn đối tượng nhận --</option>
+                                    <option value="all" {{ old('doi_tuong') == 'all' ? 'selected' : '' }}>
+                                        📢 Tất cả (Sinh viên + Giảng viên)
                                     </option>
-                                    <option value="lop_hoc_phan"
-                                        {{ old('doi_tuong') == 'lop_hoc_phan' ? 'selected' : '' }}>Lớp học phần cụ thể
+                                    <option value="sinh_vien" {{ old('doi_tuong') == 'sinh_vien' ? 'selected' : '' }}>
+                                        👨‍🎓 Tất cả sinh viên
+                                    </option>
+                                    <option value="giang_vien" {{ old('doi_tuong') == 'giang_vien' ? 'selected' : '' }}>
+                                        👨‍🏫 Tất cả giảng viên
+                                    </option>
+                                    <option value="lop_hanh_chinh" {{ old('doi_tuong') == 'lop_hanh_chinh' ? 'selected' : '' }}>
+                                        🏫 Lớp hành chính cụ thể
+                                    </option>
+                                    <option value="lop_hoc_phan" {{ old('doi_tuong') == 'lop_hoc_phan' ? 'selected' : '' }}>
+                                        📚 Lớp học phần cụ thể
                                     </option>
                                 </select>
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i> 
+                                    Chỉ có thể gửi cho sinh viên và giảng viên
+                                </small>
                                 @error('doi_tuong')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -200,13 +230,19 @@
                             </div>
                         </div>
 
-                        <div class="d-flex justify-content-end gap-2 mt-3">
-                            <a href="{{ route('daotao.thong-bao.index') }}" class="btn btn-secondary">
-                                <i class="bi bi-x-circle"></i> Hủy
-                            </a>
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-send"></i> Gửi thông báo
-                            </button>
+                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                            <div class="text-muted small">
+                                <i class="bi bi-shield-check"></i> 
+                                Thông báo sẽ được gửi qua hệ thống và email (nếu chọn)
+                            </div>
+                            <div class="d-flex gap-2">
+                                <a href="{{ route('dao-tao.thong-bao.index') }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Hủy bỏ
+                                </a>
+                                <button type="submit" class="btn btn-success">
+                                    <i class="bi bi-send-fill"></i> Gửi thông báo ngay
+                                </button>
+                            </div>
                         </div>
                     </form>
                 </div>

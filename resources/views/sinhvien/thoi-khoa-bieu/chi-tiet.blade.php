@@ -13,8 +13,8 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('sinhvien.thoi-khoa-bieu.index') }}">Thời khóa
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.thoi-khoa-bieu.index') }}">Thời khóa
                                     biểu</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Chi tiết</li>
                         </ol>
@@ -26,7 +26,7 @@
         <!-- Bộ lọc tuần -->
         <div class="card mb-3">
             <div class="card-body">
-                <form method="GET" action="{{ route('sinhvien.thoi-khoa-bieu.chi-tiet') }}"
+                <form method="GET" action="{{ route('sinh-vien.thoi-khoa-bieu.chi-tiet') }}"
                     class="row g-3 align-items-end">
                     <div class="col-md-3">
                         <label class="form-label">Học kỳ</label>
@@ -48,12 +48,12 @@
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-search"></i> Xem
                         </button>
-                        <a href="{{ route('sinhvien.thoi-khoa-bieu.index') }}" class="btn btn-secondary">
+                        <a href="{{ route('sinh-vien.thoi-khoa-bieu.index') }}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> TKB tổng quát
                         </a>
                     </div>
                     <div class="col-md-3 text-end">
-                        <a href="{{ route('sinhvien.thoi-khoa-bieu.export-pdf', ['hoc_ky_id' => $selectedHocKy->id, 'tuan' => $tuan]) }}"
+                        <a href="{{ route('sinh-vien.thoi-khoa-bieu.export-pdf', ['hoc_ky_id' => $selectedHocKy->id, 'tuan' => $tuan]) }}"
                             class="btn btn-danger">
                             <i class="bi bi-file-pdf"></i> Xuất PDF
                         </a>

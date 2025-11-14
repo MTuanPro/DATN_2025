@@ -20,17 +20,17 @@ class CanhBaoHocVu extends Model
         'loai_canh_bao',
         'muc_do',
         'ly_do',
+        'ghi_chu',
         'ngay_canh_bao',
-        'nguoi_canh_bao_id',
-        'da_xu_ly',
-        'ngay_xu_ly',
+        'nguoi_tao_id',
+        'nguoi_canh_bao_id', // Legacy field, use nguoi_tao_id instead
+        'nguoi_xu_ly_id',
+        'trang_thai',
         'ket_qua_xu_ly',
     ];
 
     protected $casts = [
-        'ngay_canh_bao' => 'date',
-        'ngay_xu_ly' => 'date',
-        'da_xu_ly' => 'boolean',
+        'ngay_canh_bao' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -52,11 +52,28 @@ class CanhBaoHocVu extends Model
     }
 
     /**
-     * Relationship: CanhBaoHocVu belongs to DaoTao (người cảnh báo)
+     * Relationship: CanhBaoHocVu belongs to User (người tạo)
+     */
+    public function nguoiTao()
+    {
+        return $this->belongsTo(User::class, 'nguoi_tao_id');
+    }
+
+    /**
+     * Relationship: CanhBaoHocVu belongs to User (người xử lý)
+     */
+    public function nguoiXuLy()
+    {
+        return $this->belongsTo(User::class, 'nguoi_xu_ly_id');
+    }
+
+    /**
+     * Relationship: CanhBaoHocVu belongs to DaoTao (người cảnh báo) - Legacy support
+     * @deprecated Use nguoiTao() instead
      */
     public function nguoiCanhBao()
     {
-        return $this->belongsTo(DaoTao::class, 'nguoi_canh_bao_id');
+        return $this->nguoiTao();
     }
 
     /**
@@ -123,7 +140,7 @@ class CanhBaoHocVu extends Model
      */
     public function scopeChuaXuLy($query)
     {
-        return $query->where('da_xu_ly', false);
+        return $query->where('trang_thai', 'chua_xu_ly');
     }
 
     /**
@@ -131,6 +148,14 @@ class CanhBaoHocVu extends Model
      */
     public function scopeDaXuLy($query)
     {
-        return $query->where('da_xu_ly', true);
+        return $query->where('trang_thai', 'da_xu_ly');
+    }
+
+    /**
+     * Scope: Lọc theo trạng thái
+     */
+    public function scopeTrangThai($query, $trangThai)
+    {
+        return $query->where('trang_thai', $trangThai);
     }
 }

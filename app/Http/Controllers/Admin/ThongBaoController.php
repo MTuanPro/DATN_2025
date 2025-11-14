@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\ThongBao;
 use App\Models\NguoiNhanThongBao;
 use App\Models\User;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
@@ -59,7 +60,7 @@ class ThongBaoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, NotificationService $notificationService)
     {
         try {
             $validated = $request->validate([
@@ -92,13 +93,11 @@ class ThongBaoController extends Controller
             $validated['trang_thai'] = 'cong_khai';
             $validated['gui_web_notification'] = true;
 
-            $thongBao = ThongBao::create($validated);
-
-            // Tạo bản ghi người nhận dựa vào đối tượng
-            $this->taoNguoiNhan($thongBao);
+            // Sử dụng NotificationService để tạo và gửi thông báo
+            $thongBao = $notificationService->createNotification($validated, true);
 
             return redirect()->route('admin.thong-bao.index')
-                ->with('success', 'Tạo thông báo thành công!');
+                ->with('success', 'Tạo thông báo thành công! Đang gửi đến người nhận...');
         } catch (\Illuminate\Validation\ValidationException $e) {
             return redirect()->back()
                 ->withErrors($e->errors())

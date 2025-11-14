@@ -325,6 +325,10 @@
 @endsection
 
 @push('scripts')
+    @php
+        $oldChuyenNganhId = old('chuyen_nganh_id', $sinhVien->chuyen_nganh_id ?? '');
+        $oldLopHanhChinhId = old('lop_hanh_chinh_id', $sinhVien->lop_hanh_chinh_id ?? '');
+    @endphp
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const nganhSelect = document.getElementById('nganh_id');
@@ -335,8 +339,8 @@
             const allChuyenNganhs = Array.from(chuyenNganhSelect.options).slice(1);
             const allLopHanhChinhs = Array.from(lopHanhChinhSelect.options).slice(1);
 
-            const currentChuyenNganhId = '{{ old('chuyen_nganh_id', $sinhVien->chuyen_nganh_id) }}';
-            const currentLopHanhChinhId = '{{ old('lop_hanh_chinh_id', $sinhVien->lop_hanh_chinh_id) }}';
+            const currentChuyenNganhId = '{{ $oldChuyenNganhId }}';
+            const currentLopHanhChinhId = '{{ $oldLopHanhChinhId }}';
 
             // Hàm lọc chuyên ngành theo ngành
             function filterChuyenNganh(nganhId) {

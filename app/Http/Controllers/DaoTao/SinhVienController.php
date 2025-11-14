@@ -13,6 +13,7 @@ use App\Models\GiangVien;
 use App\Models\User;
 use App\Models\VaiTro;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
@@ -122,6 +123,26 @@ class SinhVienController extends Controller
             'can_cuoc_cong_dan.unique' => 'Số CCCD đã tồn tại',
         ]);
 
+        // Validation: Chuyên ngành phải thuộc ngành đã chọn
+        if ($validated['chuyen_nganh_id']) {
+            $chuyenNganh = ChuyenNganh::find($validated['chuyen_nganh_id']);
+            if (!$chuyenNganh || $chuyenNganh->nganh_id != $validated['nganh_id']) {
+                return back()->withInput()->with('error', 'Chuyên ngành không thuộc ngành đã chọn!');
+            }
+        }
+
+        // Validation: Lớp hành chính phải thuộc ngành và khóa học đã chọn
+        $lopHanhChinh = LopHanhChinh::find($validated['lop_hanh_chinh_id']);
+        if (!$lopHanhChinh) {
+            return back()->withInput()->with('error', 'Lớp hành chính không tồn tại!');
+        }
+        if ($lopHanhChinh->nganh_id != $validated['nganh_id']) {
+            return back()->withInput()->with('error', 'Lớp hành chính không thuộc ngành đã chọn!');
+        }
+        if ($lopHanhChinh->khoa_hoc_id != $validated['khoa_hoc_id']) {
+            return back()->withInput()->with('error', 'Lớp hành chính không thuộc khóa học đã chọn!');
+        }
+
         DB::beginTransaction();
         try {
             // Kiểm tra email đã tồn tại trong bảng users chưa
@@ -153,7 +174,7 @@ class SinhVienController extends Controller
             }
 
             $user->vaiTro()->attach($vaiTroSinhVien->id, [
-                'nguoi_gan_id' => auth()->check() ? auth()->id() : null,
+                'nguoi_gan_id' => Auth::check() ? Auth::id() : null,
                 'ngay_gan' => now(),
             ]);
 
@@ -162,8 +183,7 @@ class SinhVienController extends Controller
             // Tạo sinh viên với user_id
             $validated['user_id'] = $user->id;
 
-            // Lấy GVCN từ lớp hành chính
-            $lopHanhChinh = LopHanhChinh::find($validated['lop_hanh_chinh_id']);
+            // Lấy GVCN từ lớp hành chính (đã lấy ở trên)
             if ($lopHanhChinh && $lopHanhChinh->giang_vien_chu_nhiem_id) {
                 $validated['giang_vien_chu_nhiem_id'] = $lopHanhChinh->giang_vien_chu_nhiem_id;
             }
@@ -250,6 +270,26 @@ class SinhVienController extends Controller
             'trang_thai_hoc_tap_id' => 'required|exists:trang_thai_hoc_tap,id',
         ]);
 
+        // Validation: Chuyên ngành phải thuộc ngành đã chọn
+        if ($validated['chuyen_nganh_id']) {
+            $chuyenNganh = ChuyenNganh::find($validated['chuyen_nganh_id']);
+            if (!$chuyenNganh || $chuyenNganh->nganh_id != $validated['nganh_id']) {
+                return back()->withInput()->with('error', 'Chuyên ngành không thuộc ngành đã chọn!');
+            }
+        }
+
+        // Validation: Lớp hành chính phải thuộc ngành và khóa học đã chọn
+        $lopHanhChinh = LopHanhChinh::find($validated['lop_hanh_chinh_id']);
+        if (!$lopHanhChinh) {
+            return back()->withInput()->with('error', 'Lớp hành chính không tồn tại!');
+        }
+        if ($lopHanhChinh->nganh_id != $validated['nganh_id']) {
+            return back()->withInput()->with('error', 'Lớp hành chính không thuộc ngành đã chọn!');
+        }
+        if ($lopHanhChinh->khoa_hoc_id != $validated['khoa_hoc_id']) {
+            return back()->withInput()->with('error', 'Lớp hành chính không thuộc khóa học đã chọn!');
+        }
+
         DB::beginTransaction();
         try {
             // Xử lý upload ảnh mới
@@ -269,11 +309,10 @@ class SinhVienController extends Controller
                 // Giảm sĩ số lớp cũ
                 LopHanhChinh::find($lopCu)->decrement('si_so');
                 // Tăng sĩ số lớp mới
-                LopHanhChinh::find($lopMoi)->increment('si_so');
+                $lopHanhChinh->increment('si_so');
 
-                // Cập nhật GVCN từ lớp mới
-                $lopHanhChinh = LopHanhChinh::find($lopMoi);
-                if ($lopHanhChinh && $lopHanhChinh->giang_vien_chu_nhiem_id) {
+                // Cập nhật GVCN từ lớp mới (đã lấy ở trên)
+                if ($lopHanhChinh->giang_vien_chu_nhiem_id) {
                     $validated['giang_vien_chu_nhiem_id'] = $lopHanhChinh->giang_vien_chu_nhiem_id;
                 }
             }

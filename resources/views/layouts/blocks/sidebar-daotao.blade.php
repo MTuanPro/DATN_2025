@@ -126,15 +126,18 @@
 
                 {{-- 6. THỜI KHÓA BIỂU --}}
                 <li
-                    class="sidebar-item has-sub {{ Request::is('dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
+                    class="sidebar-item has-sub {{ Request::is('dao-tao/thoi-khoa-bieu*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-calendar-check"></i>
                         <span>Thời khóa biểu</span>
                     </a>
                     <ul
-                        class="submenu {{ Request::is('dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
-                        <li class="submenu-item"><a href="#">Lịch theo Phòng học <!-- Đang phát triển --></a></li>
-                        <li class="submenu-item"><a href="#">Lịch theo Giảng viên <!-- Đang phát triển --></a>
+                        class="submenu {{ Request::is('dao-tao/thoi-khoa-bieu*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('dao-tao/thoi-khoa-bieu/lich-theo-phong') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.thoi-khoa-bieu.lich-theo-phong') }}">Lịch theo Phòng học</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/thoi-khoa-bieu/lich-theo-giang-vien') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.thoi-khoa-bieu.lich-theo-giang-vien') }}">Lịch theo Giảng viên</a>
                         </li>
                     </ul>
                 </li>
@@ -210,14 +213,6 @@
                     </ul>
                 </li>
 
-                {{-- 11. CẢNH BÁO HỌC VỤ --}}
-                <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        <span>Cảnh báo học vụ <!-- Đang cập nhật --></span>
-                    </a>
-                </li>
-
                 {{-- PHASE 10: QUẢN LÝ THÔNG BÁO --}}
                 <li
                     class="sidebar-item has-sub {{ Request::is('dao-tao/thong-bao*', 'dao-tao/mau-thong-bao*') ? 'active' : '' }}">
@@ -234,6 +229,20 @@
                             <a href="{{ route('dao-tao.mau-thong-bao.index') }}">Mẫu thông báo tự động</a>
                         </li>
                     </ul>
+                </li>
+
+                {{-- PHASE 8.5: CẢNH BÁO HỌC VỤ --}}
+                <li class="sidebar-item {{ Request::is('dao-tao/canh-bao-hoc-vu*') ? 'active' : '' }}">
+                    <a href="{{ route('dao-tao.canh-bao-hoc-vu.index') }}" class="sidebar-link">
+                        <i class="bi bi-exclamation-triangle-fill text-warning"></i>
+                        <span>Cảnh báo Học vụ</span>
+                        @php
+                            $soCanhBaoChuaXuLy = \App\Models\CanhBaoHocVu::where('trang_thai', 'chua_xu_ly')->count();
+                        @endphp
+                        @if($soCanhBaoChuaXuLy > 0)
+                            <span class="badge bg-danger ms-auto">{{ $soCanhBaoChuaXuLy }}</span>
+                        @endif
+                    </a>
                 </li>
 
                 {{-- 12. BÁO CÁO & THỐNG KÊ --}}

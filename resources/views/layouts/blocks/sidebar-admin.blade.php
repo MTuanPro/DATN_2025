@@ -54,43 +54,25 @@
                 </li>
 
                 <!-- 3. THÔNG BÁO HỆ THỐNG -->
-                <li class="sidebar-item has-sub {{ Request::is('admin/thong-bao*') ? 'active' : '' }}">
+                <li class="sidebar-item has-sub {{ Request::is('admin/thong-bao*', 'admin/nguoi-nhan-thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-megaphone-fill"></i>
                         <span>Thông báo hệ thống</span>
                     </a>
-                    <ul class="submenu">
-                        <li
-                            class="submenu-item {{ Request::is('admin/thong-bao') || Request::is('admin/thong-bao/create') || Request::is('admin/thong-bao/*/edit') ? 'active' : '' }}">
+                    <ul class="submenu {{ Request::is('admin/thong-bao*', 'admin/nguoi-nhan-thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('admin/thong-bao') || Request::is('admin/thong-bao/create') || Request::is('admin/thong-bao/*/edit') ? 'active' : '' }}">
                             <a href="{{ route('admin.thong-bao.index') }}">Quản lý Thông báo</a>
                         </li>
-                        <li class="submenu-item">
-                            <a href="#">Người nhận</a>
+                        <li class="submenu-item {{ Request::is('admin/nguoi-nhan-thong-bao*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.nguoi-nhan-thong-bao.index') }}">Người nhận</a>
                         </li>
-                        <li class="submenu-item">
-                            <a href="#">Mẫu thông báo tự động</a>
+                        <li class="submenu-item {{ Request::is('admin/mau-thong-bao*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.mau-thong-bao.index') }}">Mẫu thông báo tự động</a>
                         </li>
                     </ul>
                 </li>
 
-                <!-- 4. AI CHATBOT -->
-                <li class="sidebar-item has-sub">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-robot"></i>
-                        <span>AI Chatbot</span>
-                    </a>
-                    <ul class="submenu">
-                        <li class="submenu-item">
-                            <a href="#">Knowledge Base</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Hội thoại</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Feedback</a>
-                        </li>
-                    </ul>
-                </li>
+                <!-- AI CHATBOT (moved lower) -->
 
                 <!-- 5. NHẬT KÝ HOẠT ĐỘNG -->
                 <li class="sidebar-item">
@@ -123,7 +105,27 @@
                     </ul>
                 </li>
 
-                <!-- 7. CÀI ĐẶT & VẬN HÀNH -->
+                <!-- 7. AI CHAT BOT (placed second from bottom) -->
+                <li class="sidebar-item has-sub {{ Request::is('admin/ai-chatbot*') ? 'active' : '' }}">
+                    <a href="#" class='sidebar-link'>
+                        <i class="bi bi-chat-dots-fill"></i>
+                        <span>AI Chat Bot</span>
+                    </a>
+                    <ul class="submenu">
+                        <li class="submenu-item {{ Request::is('admin/ai-chatbot/knowledge-base*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.ai-chatbot.knowledge-base.index') }}">Knowledge Base</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('admin/ai-chatbot/conversation*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.ai-chatbot.conversation.index') }}">Hội thoại</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('admin/ai-chatbot/feedback*') ? 'active' : '' }}">
+                            <a href="{{ route('admin.ai-chatbot.feedback.index') }}">Feedback</a>
+                        </li>
+                        <!-- 'Thống kê' removed per request -->
+                    </ul>
+                </li>
+
+                <!-- 8. CÀI ĐẶT & VẬN HÀNH -->
                 <li class="sidebar-item has-sub">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-gear-fill"></i>

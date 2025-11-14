@@ -13,7 +13,7 @@
             <div class="col-12 col-md-6 order-md-2 order-first">
                 <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                     <ol class="breadcrumb">
-                        <li class="breadcrumb-item"><a href="{{ route('sinhvien.dashboard') }}">Dashboard</a></li>
+                        <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
                         <li class="breadcrumb-item active" aria-current="page">Lịch thi</li>
                     </ol>
                 </nav>
@@ -66,7 +66,7 @@
                 <h5 class="card-title">Bộ lọc</h5>
             </div>
             <div class="card-body">
-                <form action="{{ route('sinhvien.lich-thi.index') }}" method="GET">
+                <form action="{{ route('sinh-vien.lich-thi.index') }}" method="GET">
                     <div class="row">
                         <div class="col-md-3">
                             <div class="form-group">
@@ -111,10 +111,10 @@
         <!-- Quick Actions -->
         <div class="row mb-3">
             <div class="col-12">
-                <a href="{{ route('sinhvien.lich-thi.calendar') }}" class="btn btn-outline-primary">
+                <a href="{{ route('sinh-vien.lich-thi.calendar') }}" class="btn btn-outline-primary">
                     <i class="bi bi-calendar3"></i> Xem dạng lịch
                 </a>
-                <a href="{{ route('sinhvien.lich-thi.export-pdf') }}" class="btn btn-outline-success">
+                <a href="{{ route('sinh-vien.lich-thi.export-pdf') }}" class="btn btn-outline-success">
                     <i class="bi bi-file-pdf"></i> Xuất PDF
                 </a>
             </div>
@@ -168,7 +168,7 @@
                                 </td>
                                 <td>
                                     @php
-                                        $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', auth()->guard('sinhvien')->id())->first();
+                                        $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', $sinhVien->id ?? auth()->user()->sinhVien->id)->first();
                                     @endphp
                                     @if($thongTinThi && $thongTinThi->phongThi)
                                         <strong>{{ $thongTinThi->phongThi->ten_phong }}</strong>
@@ -211,7 +211,7 @@
                                     @endif
                                 </td>
                                 <td>
-                                    <a href="{{ route('sinhvien.lich-thi.show', $lichThi) }}" class="btn btn-sm btn-info" title="Xem chi tiết">
+                                    <a href="{{ route('sinh-vien.lich-thi.show', $lichThi) }}" class="btn btn-sm btn-info" title="Xem chi tiết">
                                         <i class="bi bi-eye"></i>
                                     </a>
                                 </td>

@@ -48,121 +48,188 @@ class SinhVienSeeder extends Seeder
                 return $group->pluck('id')->toArray();
             })->toArray();
 
+        // Lấy vai trò sinh viên một lần
+        $vaiTroSinhVien = \App\Models\VaiTro::where('ma_vai_tro', 'sinh_vien')->first();
+        if (!$vaiTroSinhVien) {
+            $this->command->error('Không tìm thấy vai trò sinh_vien!');
+            return;
+        }
+
+        // Hash password một lần để tái sử dụng
+        $hashedPassword = Hash::make('password');
+
+        // Batch collections
+        $users = [];
         $sinhViens = [];
+        $lopUpdates = [];
         $totalCreated = 0;
+        $batchSize = 200; // Tăng batch size lên 200
 
-        foreach ($lopHanhChinhs as $lop) {
-            if (!$lop->khoaHoc) {
-                $this->command->warn("Lớp {$lop->ma_lop} không có khóa học!");
-                continue;
-            }
+        // Bắt đầu transaction để tăng tốc
+        DB::beginTransaction();
 
-            // Số sinh viên cho lớp này (70-90% sĩ số tối đa)
-            $soSinhVien = rand(
-                (int)($lop->si_so * 0.7),
-                (int)($lop->si_so * 0.9)
-            );
+        try {
+            foreach ($lopHanhChinhs as $lop) {
+                if (!$lop->khoaHoc) {
+                    $this->command->warn("Lớp {$lop->ma_lop} không có khóa học!");
+                    continue;
+                }
 
-            for ($i = 1; $i <= $soSinhVien; $i++) {
-                $maSinhVien = $this->generateMaSinhVien($lop, $i);
+                // Số sinh viên cho lớp này (70-90% sĩ số tối đa)
+                $soSinhVien = rand(
+                    (int)($lop->si_so * 0.7),
+                    (int)($lop->si_so * 0.9)
+                );
 
-                // Tạo user account
-                $userId = $this->createUser($maSinhVien);
+                for ($i = 1; $i <= $soSinhVien; $i++) {
+                    $maSinhVien = $this->generateMaSinhVien($lop, $i);
+                    $email = $maSinhVien . '@student.edu.vn';
 
-                // Xác định kỳ hiện tại dựa trên năm bắt đầu
-                $namHienTai = now()->year;
-                $namBatDau = $lop->khoaHoc->nam_bat_dau;
-                $soNamHoc = $namHienTai - $namBatDau;
-                $kyHienTai = min(8, max(1, ($soNamHoc * 2) + (now()->month >= 8 ? 1 : 0)));
+                    // Thêm user vào batch
+                    $users[] = [
+                        'name' => $maSinhVien,
+                        'email' => $email,
+                        'password' => $hashedPassword,
+                        'email_verified_at' => now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
 
-                // Một số sinh viên năm cuối để test priority
-                $isNamCuoi = ($kyHienTai >= 7);
+                    // Xác định kỳ hiện tại dựa trên năm bắt đầu
+                    $namHienTai = now()->year;
+                    $namBatDau = $lop->khoaHoc->nam_bat_dau;
+                    $soNamHoc = $namHienTai - $namBatDau;
+                    $kyHienTai = min(8, max(1, ($soNamHoc * 2) + (now()->month >= 8 ? 1 : 0)));
 
-                // Chọn chuyên ngành (nếu sinh viên từ năm 3 trở lên)
-                $selectedChuyenNganhId = null;
-                if ($kyHienTai >= 5) {
-                    $idsForNganh = $chuyenNganhByNganh[$lop->nganh_id] ?? [];
-                    if (!empty($idsForNganh)) {
-                        $selectedChuyenNganhId = $idsForNganh[array_rand($idsForNganh)];
-                    } elseif (!empty($chuyenNganhIds)) {
-                        // fallback: chọn từ tất cả các chuyên ngành nếu không có chuyên ngành cho ngành này
-                        $selectedChuyenNganhId = $chuyenNganhIds[array_rand($chuyenNganhIds)];
+                    // Chọn chuyên ngành (nếu sinh viên từ năm 3 trở lên)
+                    $selectedChuyenNganhId = null;
+                    if ($kyHienTai >= 5) {
+                        $idsForNganh = $chuyenNganhByNganh[$lop->nganh_id] ?? [];
+                        if (!empty($idsForNganh)) {
+                            $selectedChuyenNganhId = $idsForNganh[array_rand($idsForNganh)];
+                        } elseif (!empty($chuyenNganhIds)) {
+                            $selectedChuyenNganhId = $chuyenNganhIds[array_rand($chuyenNganhIds)];
+                        }
+                    }
+
+                    // Lưu thông tin để tạo sinh viên sau khi insert users
+                    $sinhViens[] = [
+                        'ma_sinh_vien' => $maSinhVien,
+                        'email' => $email, // Giữ lại email cho bảng sinh_vien
+                        'ho_ten' => $this->generateHoTen(),
+                        'ngay_sinh' => $this->generateNgaySinh($namBatDau),
+                        'gioi_tinh' => rand(0, 1) ? 'nam' : 'nu',
+                        'so_dien_thoai' => '0' . rand(300000000, 999999999),
+                        'so_nha_duong' => rand(1, 200) . ' Đường Số ' . rand(1, 30),
+                        'phuong_xa' => 'Phường ' . rand(1, 20),
+                        'quan_huyen' => 'Quận ' . rand(1, 12),
+                        'tinh_thanh' => $this->getRandomProvince(),
+                        'can_cuoc_cong_dan' => $this->generateCCCD(),
+                        'ngay_cap_cccd' => now()->subYears(rand(1, 3))->format('Y-m-d'),
+                        'noi_cap_cccd' => 'Công an ' . $this->getRandomProvince(),
+                        'anh_dai_dien' => null,
+                        'khoa_hoc_id' => $lop->khoa_hoc_id,
+                        'lop_hanh_chinh_id' => $lop->id,
+                        'nganh_id' => $lop->nganh_id,
+                        'chuyen_nganh_id' => $selectedChuyenNganhId,
+                        'ky_hien_tai' => $kyHienTai,
+                        'trang_thai_hoc_tap_id' => $trangThaiDangHoc->id,
+                        'giang_vien_chu_nhiem_id' => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ];
+
+                    $totalCreated++;
+
+                    // Batch insert users và sinh viên
+                    if (count($users) >= $batchSize) {
+                        $this->insertBatchUsersAndSinhViens($users, $sinhViens, $vaiTroSinhVien->id);
+                        $users = [];
+                        $sinhViens = [];
+                        $this->command->info("  Đã tạo {$totalCreated} sinh viên...");
                     }
                 }
 
-                $sinhViens[] = [
-                    'user_id' => $userId,
-                    'ma_sinh_vien' => $maSinhVien,
-                    'ho_ten' => $this->generateHoTen(),
-                    'ngay_sinh' => $this->generateNgaySinh($namBatDau),
-                    'gioi_tinh' => rand(0, 1) ? 'nam' : 'nu',
-                    'email' => $maSinhVien . '@student.university.edu.vn',
-                    'so_dien_thoai' => '0' . rand(300000000, 999999999),
-                    'so_nha_duong' => rand(1, 200) . ' Đường Số ' . rand(1, 30),
-                    'phuong_xa' => 'Phường ' . rand(1, 20),
-                    'quan_huyen' => 'Quận ' . rand(1, 12),
-                    'tinh_thanh' => $this->getRandomProvince(),
-                    'can_cuoc_cong_dan' => $this->generateCCCD(),
-                    'ngay_cap_cccd' => now()->subYears(rand(1, 3))->format('Y-m-d'),
-                    'noi_cap_cccd' => 'Công an ' . $this->getRandomProvince(),
-                    'anh_dai_dien' => null,
-                    'khoa_hoc_id' => $lop->khoa_hoc_id,
-                    'lop_hanh_chinh_id' => $lop->id,
-                    'nganh_id' => $lop->nganh_id,
-                    // Chọn chuyên ngành từ năm 3: ưu tiên chọn chuyên ngành thuộc cùng ngành của lớp
-                    'chuyen_nganh_id' => $selectedChuyenNganhId,
-                    'ky_hien_tai' => $kyHienTai,
-                    'trang_thai_hoc_tap_id' => $trangThaiDangHoc->id,
-                    'giang_vien_chu_nhiem_id' => null,
-                    'created_at' => now(),
-                    'updated_at' => now(),
+                // Lưu thông tin cập nhật lớp
+                $lopUpdates[] = [
+                    'id' => $lop->id,
+                    'si_so' => $soSinhVien,
                 ];
+            }
 
-                $totalCreated++;
+            // Insert batch cuối cùng
+            if (!empty($users)) {
+                $this->insertBatchUsersAndSinhViens($users, $sinhViens, $vaiTroSinhVien->id);
+            }
 
-                // Insert batch mỗi 50 records
-                if (count($sinhViens) >= 50) {
-                    \App\Models\DaoTao\SinhVien::insert($sinhViens);
-                    $sinhViens = [];
+            // Batch update lớp hành chính
+            if (!empty($lopUpdates)) {
+                foreach ($lopUpdates as $update) {
+                    DB::table('lop_hanh_chinh')
+                        ->where('id', $update['id'])
+                        ->update(['si_so' => $update['si_so']]);
                 }
             }
 
-            // Cập nhật sĩ số hiện tại của lớp
-            $lop->update(['si_so' => $soSinhVien]);
+            DB::commit();
+            $this->command->info("✓ Đã tạo {$totalCreated} sinh viên");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            $this->command->error("Lỗi khi tạo sinh viên: " . $e->getMessage());
+            throw $e;
         }
-
-        // Insert records còn lại
-        if (!empty($sinhViens)) {
-            \App\Models\DaoTao\SinhVien::insert($sinhViens);
-        }
-
-        $this->command->info("✓ Đã tạo {$totalCreated} sinh viên");
     }
     /**
-     * Tạo user account cho sinh viên
+     * Batch insert users và sinh viên
      */
-    private function createUser(string $maSinhVien): int
+    private function insertBatchUsersAndSinhViens(array &$users, array &$sinhViens, int $vaiTroId): void
     {
-        // Kiểm tra xem user đã tồn tại chưa
-        $existingUser = User::where('email', $maSinhVien . '@student.edu.vn')->first();
-        if ($existingUser) {
-            return $existingUser->id;
+        // Lọc các user đã tồn tại
+        $emails = array_column($users, 'email');
+        $existingEmails = User::whereIn('email', $emails)->pluck('email')->toArray();
+        
+        // Chỉ insert các user chưa tồn tại
+        $newUsers = array_filter($users, function($user) use ($existingEmails) {
+            return !in_array($user['email'], $existingEmails);
+        });
+        
+        if (!empty($newUsers)) {
+            User::insert(array_values($newUsers));
         }
 
-        $user = User::create([
-            'name' => $maSinhVien,
-            'email' => $maSinhVien . '@student.edu.vn',
-            'password' => Hash::make('password'),
-            'email_verified_at' => now(),
-        ]);
+        // Lấy các user vừa insert để lấy ID
+        $emails = array_column($users, 'email');
+        $insertedUsers = User::whereIn('email', $emails)
+            ->pluck('id', 'email')
+            ->toArray();
 
-        // Gán vai trò sinh viên
-        $vaiTroSinhVien = \App\Models\VaiTro::where('ma_vai_tro', 'sinh_vien')->first();
-        if ($vaiTroSinhVien) {
-            $user->vaiTro()->attach($vaiTroSinhVien->id);
+        // Tạo vai trò inserts
+        $vaiTroInserts = [];
+        $now = now();
+        foreach ($insertedUsers as $email => $userId) {
+            $vaiTroInserts[] = [
+                'tai_khoan_id' => $userId,
+                'vai_tro_id' => $vaiTroId,
+                'ngay_gan' => $now,
+                'nguoi_gan_id' => 1, // Admin
+                'created_at' => $now,
+                'updated_at' => $now,
+            ];
         }
 
-        return $user->id;
+        // Gán user_id cho sinh viên
+        foreach ($sinhViens as &$sv) {
+            $sv['user_id'] = $insertedUsers[$sv['email']] ?? null;
+            // Giữ lại email vì bảng sinh_vien yêu cầu trường này
+        }
+
+        // Insert vai trò batch
+        if (!empty($vaiTroInserts)) {
+            DB::table('tai_khoan_vai_tro')->insert($vaiTroInserts);
+        }
+
+        // Insert sinh viên batch
+        \App\Models\DaoTao\SinhVien::insert($sinhViens);
     }
 
     /**

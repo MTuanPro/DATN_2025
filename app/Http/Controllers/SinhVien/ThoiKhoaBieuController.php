@@ -20,7 +20,7 @@ class ThoiKhoaBieuController extends Controller
         $sinhVien = Auth::user()->sinhVien;
 
         if (!$sinhVien) {
-            return redirect()->route('sinhvien.dashboard')
+            return redirect()->route('sinh-vien.dashboard')
                 ->with('error', 'Không tìm thấy thông tin sinh viên!');
         }
 
@@ -203,6 +203,7 @@ class ThoiKhoaBieuController extends Controller
             ->whereHas('lopHocPhan', function ($query) use ($hocKy) {
                 $query->where('hoc_ky_id', $hocKy->id);
             })
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->with([
                 'lopHocPhan.monHoc',
                 'lopHocPhan.lichHocCoDinhs.phongHoc',

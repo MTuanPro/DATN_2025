@@ -140,7 +140,7 @@ class User extends Authenticatable
      */
     public function sinhVien()
     {
-        return $this->hasOne(\App\Models\SinhVien::class, 'user_id');
+        return $this->hasOne(\App\Models\DaoTao\SinhVien::class, 'user_id');
     }
 
     /**
