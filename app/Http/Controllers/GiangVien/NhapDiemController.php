@@ -190,7 +190,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
                 ],
                 [
                     'diem_so' => $validated['diem_so'],
-                    'ghi_chu' => $validated['ghi_chu'],
+                    'ghi_chu' => $validated['ghi_chu'] ?? null,
                 ]
             );
 

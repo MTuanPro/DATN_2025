@@ -75,32 +75,19 @@
                 </li>
 
                 <!-- 6. CẤU HÌNH ĐIỂM -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('giang-vien/cau-hinh-diem*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.cau-hinh-diem.index') }}" class='sidebar-link'>
                         <i class="bi bi-sliders"></i>
                         <span>Cấu hình điểm</span>
                     </a>
                 </li>
 
-                <!-- 7. NHẬP ĐIỂM -->
-                <li class="sidebar-item {{ Request::is('giang-vien/nhap-diem*') ? 'active' : '' }}">
-                    <a href="{{ route('giangvien.nhap-diem.index') }}" class='sidebar-link'>
-                        <i class="bi bi-pencil-square"></i>
-                        <span>Nhập điểm</span>
-                    </a>
-                </li>
-
                 <!-- 8. KẾT QUẢ HỌC TẬP -->
-                <li class="sidebar-item has-sub">
-                    <a href="#" class='sidebar-link'>
+                <li class="sidebar-item {{ Request::is('giang-vien/ket-qua-hoc-tap*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.ket-qua-hoc-tap.index') }}" class='sidebar-link'>
                         <i class="bi bi-trophy"></i>
                         <span>Kết quả học tập</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">Bảng điểm tổng kết</a></li>
-                        <li class="submenu-item"><a href="#">Phân tích điểm</a></li>
-                        <li class="submenu-item"><a href="#">Xuất bảng điểm</a></li>
-                    </ul>
                 </li>
 
                 <!-- 9. THI & ĐỀ THI -->

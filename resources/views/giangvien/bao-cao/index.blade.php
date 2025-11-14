@@ -171,12 +171,12 @@
                                         {{ $lop->hocKy->ten_hoc_ky }}
                                         @endif
                                     </td>
-                                    <td>{{ $lop->lopHocPhanSinhVien->count() }}</td>
-                                    <td>{{ $lop->lichHocChiTiet->count() }}</td>
+                                    <td>{{ $lop->lopHocPhanSinhVien ? $lop->lopHocPhanSinhVien->count() : 0 }}</td>
+                                    <td>{{ $lop->lichHocChiTiet ? $lop->lichHocChiTiet->count() : 0 }}</td>
                                     <td>
                                         @php
-                                            $tongBuoi = $lop->lichHocChiTiet->count();
-                                            $daDayCount = $lop->lichHocChiTiet->where('trang_thai', 'da_day')->count();
+                                            $tongBuoi = $lop->lichHocChiTiet ? $lop->lichHocChiTiet->count() : 0;
+                                            $daDayCount = $lop->lichHocChiTiet ? $lop->lichHocChiTiet->where('trang_thai', 'da_day')->count() : 0;
                                             $tiLe = $tongBuoi > 0 ? round(($daDayCount / $tongBuoi) * 100, 2) : 0;
                                         @endphp
                                         <div class="progress" style="height: 20px;">

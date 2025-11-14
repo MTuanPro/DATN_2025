@@ -379,6 +379,17 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     Route::get('/canh-bao-hoc-vu', [\App\Http\Controllers\GiangVien\CanhBaoHocVuController::class, 'index'])->name('canh-bao-hoc-vu.index');
     Route::get('/canh-bao-hoc-vu/{id}', [\App\Http\Controllers\GiangVien\CanhBaoHocVuController::class, 'show'])->name('canh-bao-hoc-vu.show');
     
+    // PHASE 6: Cấu hình điểm
+    Route::prefix('cau-hinh-diem')->name('cau-hinh-diem.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\GiangVien\CauHinhDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [\App\Http\Controllers\GiangVien\CauHinhDiemController::class, 'show'])->name('show');
+        Route::get('/{lopHocPhan}/create', [\App\Http\Controllers\GiangVien\CauHinhDiemController::class, 'create'])->name('create');
+        Route::post('/{lopHocPhan}/store', [\App\Http\Controllers\GiangVien\CauHinhDiemController::class, 'store'])->name('store');
+        Route::get('/edit/{cauHinh}', [\App\Http\Controllers\GiangVien\CauHinhDiemController::class, 'edit'])->name('edit');
+        Route::put('/update/{cauHinh}', [\App\Http\Controllers\GiangVien\CauHinhDiemController::class, 'update'])->name('update');
+        Route::delete('/delete/{cauHinh}', [\App\Http\Controllers\GiangVien\CauHinhDiemController::class, 'destroy'])->name('destroy');
+    });
+    
     // Nhập điểm
     Route::prefix('nhap-diem')->name('nhap-diem.')->group(function () {
         Route::get('/', [NhapDiemController::class, 'index'])->name('index');
@@ -386,6 +397,15 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
         Route::post('/store', [NhapDiemController::class, 'nhapDiem'])->name('store');
         Route::post('/{lopHocPhan}/khoa', [NhapDiemController::class, 'khoaDiem'])->name('khoa');
         Route::post('/{lopHocPhan}/mo-khoa', [NhapDiemController::class, 'moKhoaDiem'])->name('mo-khoa');
+    });
+
+    // PHASE 8: Xem kết quả học tập
+    Route::prefix('ket-qua-hoc-tap')->name('ket-qua-hoc-tap.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\GiangVien\KetQuaHocTapController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [\App\Http\Controllers\GiangVien\KetQuaHocTapController::class, 'show'])->name('show');
+        Route::get('/{lopHocPhan}/phan-tich', [\App\Http\Controllers\GiangVien\KetQuaHocTapController::class, 'phanTich'])->name('phan-tich');
+        Route::get('/{lopHocPhan}/export-excel', [\App\Http\Controllers\GiangVien\KetQuaHocTapController::class, 'exportExcel'])->name('export-excel');
+        Route::get('/{lopHocPhan}/export-pdf', [\App\Http\Controllers\GiangVien\KetQuaHocTapController::class, 'exportPdf'])->name('export-pdf');
     });
 
     // PHASE 10: Thông báo (chỉ xem)

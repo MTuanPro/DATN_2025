@@ -37,7 +37,7 @@ class BaoCaoController extends Controller
         $lopHocPhans = LopHocPhan::select('lop_hoc_phan.*')
             ->join('lop_hoc_phan_giang_vien', 'lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
             ->where('lop_hoc_phan_giang_vien.giang_vien_id', $giangVien->id)
-            ->with(['monHoc', 'hocKy'])
+            ->with(['monHoc', 'hocKy', 'lopHocPhanSinhVien', 'lichHocChiTiet'])
             ->get();
 
         // Thống kê tổng quan

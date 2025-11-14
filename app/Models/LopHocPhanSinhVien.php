@@ -71,6 +71,14 @@ class LopHocPhanSinhVien extends Model
     }
 
     /**
+     * Relationship: Các điểm đã nhập
+     */
+    public function nhapDiems()
+    {
+        return $this->hasMany(NhapDiem::class, 'lop_hoc_phan_sinh_vien_id');
+    }
+
+    /**
      * Scope: Đã xếp lớp
      */
     public function scopeDaXepLop($query)

@@ -63,6 +63,21 @@ class LopHocPhan extends Model
     }
 
     /**
+     * Quan hệ với GiangVien thông qua bảng trung gian lop_hoc_phan_giang_vien
+     */
+    public function giangViens()
+    {
+        return $this->belongsToMany(
+            GiangVien::class,
+            'lop_hoc_phan_giang_vien',
+            'lop_hoc_phan_id',
+            'giang_vien_id'
+        )
+            ->withPivot('vai_tro', 'ngay_phan_cong')
+            ->withTimestamps();
+    }
+
+    /**
      * Lấy giảng viên chính
      */
     public function giangVienChinh()
@@ -120,6 +135,14 @@ class LopHocPhan extends Model
     public function lichHocChiTiets()
     {
         return $this->hasMany(LichHocChiTiet::class, 'lop_hoc_phan_id');
+    }
+
+    /**
+     * Alias cho lichHocChiTiets (số ít)
+     */
+    public function lichHocChiTiet()
+    {
+        return $this->lichHocChiTiets();
     }
 
     public function lopHocPhanSinhVien()

@@ -56,10 +56,10 @@
                         @if(count($baoCao) > 0)
                             <!-- Thống kê tổng quan -->
                             @php
-                                $tongCoMat = collect($baoCao)->sum('stats.co_mat');
-                                $tongVang = collect($baoCao)->sum('stats.vang');
-                                $tongDiTre = collect($baoCao)->sum('stats.di_tre');
-                                $tongNghiPhep = collect($baoCao)->sum('stats.nghi_phep');
+                                $tongCoMat = collect($baoCao)->sum(fn($item) => $item['stats']->co_mat ?? 0);
+                                $tongVang = collect($baoCao)->sum(fn($item) => $item['stats']->vang ?? 0);
+                                $tongDiTre = collect($baoCao)->sum(fn($item) => $item['stats']->di_tre ?? 0);
+                                $tongNghiPhep = collect($baoCao)->sum(fn($item) => $item['stats']->nghi_phep ?? 0);
                                 $tyLeTrungBinh = collect($baoCao)->avg('ty_le_co_mat');
                             @endphp
 
@@ -137,10 +137,10 @@
                                                 <td>{{ $item['sinh_vien']->ho_ten }}</td>
                                                 <td>{{ $item['sinh_vien']->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
                                                 <td class="text-center"><strong>{{ $item['tong_buoi_hoc'] }}</strong></td>
-                                                <td class="text-center text-success"><strong>{{ $item['stats']->co_mat }}</strong></td>
-                                                <td class="text-center text-danger">{{ $item['stats']->vang }}</td>
-                                                <td class="text-center text-warning">{{ $item['stats']->di_tre }}</td>
-                                                <td class="text-center text-info">{{ $item['stats']->nghi_phep }}</td>
+                                                <td class="text-center text-success"><strong>{{ $item['stats']->co_mat ?? 0 }}</strong></td>
+                                                <td class="text-center text-danger">{{ $item['stats']->vang ?? 0 }}</td>
+                                                <td class="text-center text-warning">{{ $item['stats']->di_tre ?? 0 }}</td>
+                                                <td class="text-center text-info">{{ $item['stats']->nghi_phep ?? 0 }}</td>
                                                 <td class="text-center">
                                                     <strong>{{ $tyLe }}%</strong>
                                                 </td>

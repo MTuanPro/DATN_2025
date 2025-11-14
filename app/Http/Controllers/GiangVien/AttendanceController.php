@@ -256,8 +256,9 @@ class AttendanceController extends Controller
                     ')
                     ->first();
 
+                $coMat = $diemDanhStats ? ($diemDanhStats->co_mat ?? 0) : 0;
                 $tyLeCoMat = $tongBuoiHoc > 0 
-                    ? round(($diemDanhStats->co_mat / $tongBuoiHoc) * 100, 1) 
+                    ? round(($coMat / $tongBuoiHoc) * 100, 1) 
                     : 0;
 
                 $baoCao[] = [

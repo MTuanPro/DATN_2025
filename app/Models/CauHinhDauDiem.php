@@ -34,6 +34,14 @@ class CauHinhDauDiem extends Model
     }
 
     /**
+     * Quan hệ với NhapDiem
+     */
+    public function nhapDiems()
+    {
+        return $this->hasMany(NhapDiem::class, 'cau_hinh_id');
+    }
+
+    /**
      * Kiểm tra tổng tỷ lệ % của lớp học phần có = 100% không
      */
     public static function kiemTraTongTyLe($lopHocPhanId, $tyLeMoi = 0, $idLoaiTru = null)
