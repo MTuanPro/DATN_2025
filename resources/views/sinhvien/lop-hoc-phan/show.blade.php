@@ -25,6 +25,16 @@
         </div>
 
         <section class="section">
+            {{-- Nút hành động --}}
+            <div class="mb-3">
+                <a href="{{ route('sinh-vien.lop-hoc-phan.lich-su-diem-danh', $lopHocPhanSinhVien->id) }}" class="btn btn-primary">
+                    <i class="bi bi-calendar-check"></i> Xem lịch sử điểm danh
+                </a>
+                <a href="{{ route('sinh-vien.lop-hoc-phan.index') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                </a>
+            </div>
+
             {{-- Thông tin lớp học phần --}}
             <div class="card mb-4">
                 <div class="card-header bg-primary text-white">
