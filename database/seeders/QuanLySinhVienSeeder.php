@@ -124,24 +124,84 @@ class QuanLySinhVienSeeder extends Seeder
         $this->command->newLine();
 
         // ========================================
-        // PHASE 11: Học phí (nếu có)
+        // PHASE 11: Cấu hình học phí
         // ========================================
-        if (class_exists(CauHinhHocPhiSeeder::class)) {
-            $this->command->info('💰 PHASE 11: Cấu hình học phí');
-            $this->call(CauHinhHocPhiSeeder::class);
-            $this->command->info('✅ Hoàn thành PHASE 11');
-            $this->command->newLine();
-        }
+        $this->command->info('💰 PHASE 11: Cấu hình học phí');
+        $this->call(CauHinhHocPhiSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 11');
+        $this->command->newLine();
 
         // ========================================
-        // PHASE 12: Dữ liệu bổ sung (nếu có)
+        // PHASE 12: Học phí học kỳ
         // ========================================
-        if (class_exists(DiemDanhSeeder::class)) {
-            $this->command->info('📊 PHASE 12: Dữ liệu bổ sung');
-            $this->call(DiemDanhSeeder::class);
-            $this->command->info('✅ Hoàn thành PHASE 12');
-            $this->command->newLine();
-        }
+        $this->command->info('💵 PHASE 12: Học phí học kỳ');
+        $this->call(HocPhiHocKySeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 12');
+        $this->command->newLine();
+
+        // ========================================
+        // PHASE 13: Điểm danh
+        // ========================================
+        $this->command->info('📊 PHASE 13: Điểm danh');
+        $this->call(DiemDanhSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 13');
+        $this->command->newLine();
+
+        // ========================================
+        // PHASE 14: Nhập điểm chi tiết
+        // ========================================
+        $this->command->info('📝 PHASE 14: Nhập điểm chi tiết');
+        $this->call(NhapDiemSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 14');
+        $this->command->newLine();
+
+        // ========================================
+        // PHASE 15: Kết quả học tập
+        // ========================================
+        $this->command->info('📊 PHASE 15: Kết quả học tập');
+        $this->call(KetQuaHocTapSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 15');
+        $this->command->newLine();
+
+        // ========================================
+        // PHASE 16: Bảng điểm tổng hợp
+        // ========================================
+        $this->command->info('📋 PHASE 16: Bảng điểm tổng hợp');
+        $this->call(BangDiemSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 16');
+        $this->command->newLine();
+
+        // ========================================
+        // PHASE 17: Cảnh báo học vụ
+        // ========================================
+        $this->command->info('⚠️  PHASE 17: Cảnh báo học vụ');
+        $this->call(CanhBaoHocVuSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 17');
+        $this->command->newLine();
+
+        // ========================================
+        // PHASE 18: AI Chatbot Knowledge Base
+        // ========================================
+        $this->command->info('🤖 PHASE 18: AI Chatbot Knowledge Base');
+        $this->call(AiChatbotKnowledgeBaseSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 18');
+        $this->command->newLine();
+
+        // ========================================
+        // PHASE 19: Mẫu thông báo tự động
+        // ========================================
+        $this->command->info('📝 PHASE 19: Mẫu thông báo tự động');
+        $this->call(MauThongBaoTuDongSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 19');
+        $this->command->newLine();
+
+        // ========================================
+        // PHASE 20: Thông báo
+        // ========================================
+        $this->command->info('📢 PHASE 20: Thông báo');
+        $this->call(ThongBaoSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 20');
+        $this->command->newLine();
 
         $this->command->info('🎉 Hoàn thành seed dữ liệu cho hệ thống quản lý sinh viên!');
         $this->command->newLine();
@@ -172,6 +232,15 @@ class QuanLySinhVienSeeder extends Seeder
             'Lịch học cố định' => DB::table('lich_hoc_co_dinh')->count(),
             'Lịch học chi tiết' => DB::table('lich_hoc_chi_tiet')->count(),
             'Lịch thi' => DB::table('lich_thi')->count(),
+            'Điểm danh' => DB::table('diem_danh')->count(),
+            'Nhập điểm' => DB::table('nhap_diem')->count(),
+            'Kết quả học tập' => DB::table('ket_qua_hoc_tap')->count(),
+            'Bảng điểm' => DB::table('bang_diem')->count(),
+            'Học phí học kỳ' => DB::table('hoc_phi_hoc_ky')->count(),
+            'Cảnh báo học vụ' => DB::table('canh_bao_hoc_vu')->count(),
+            'Thông báo' => DB::table('thong_bao')->count(),
+            'Mẫu thông báo tự động' => DB::table('mau_thong_bao_tu_dong')->count(),
+            'AI Chatbot KB' => DB::table('ai_chatbot_knowledge_base')->count(),
             'Tài khoản' => DB::table('users')->count(),
         ];
 
