@@ -96,6 +96,7 @@
                                 <option value="">-- Tất cả trạng thái --</option>
                                 <option value="da_xep_lop" {{ request('trang_thai') == 'da_xep_lop' ? 'selected' : '' }}>Đã xếp lớp</option>
                                 <option value="dang_hoc" {{ request('trang_thai') == 'dang_hoc' ? 'selected' : '' }}>Đang học</option>
+                                <option value="hoc_lai" {{ request('trang_thai') == 'hoc_lai' ? 'selected' : '' }}>Học lại</option>
                                 <option value="da_hoan_thanh" {{ request('trang_thai') == 'da_hoan_thanh' ? 'selected' : '' }}>Đã hoàn thành</option>
                                 <option value="bo_hoc" {{ request('trang_thai') == 'bo_hoc' ? 'selected' : '' }}>Bỏ học</option>
                             </select>
@@ -164,6 +165,8 @@
                                                 <span class="badge bg-info">Đã xếp lớp</span>
                                             @elseif($lhpsv->trang_thai == 'dang_hoc')
                                                 <span class="badge bg-success">Đang học</span>
+                                            @elseif($lhpsv->trang_thai == 'hoc_lai')
+                                                <span class="badge bg-warning">Học lại</span>
                                             @elseif($lhpsv->trang_thai == 'da_hoan_thanh')
                                                 <span class="badge bg-primary">Đã hoàn thành</span>
                                             @elseif($lhpsv->trang_thai == 'bo_hoc')

@@ -491,6 +491,7 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
     // PHASE 5: Lớp học phần
     Route::middleware('sinhvien.check')->prefix('lop-hoc-phan')->name('lop-hoc-phan.')->group(function () {
         Route::get('/', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'index'])->name('index');
+        Route::get('/{id}/lich-su-diem-danh', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'lichSuDiemDanh'])->name('lich-su-diem-danh');
         Route::get('/{id}', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'show'])->name('show');
     });
 
@@ -500,6 +501,12 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/chi-tiet', [ThoiKhoaBieuController::class, 'chiTiet'])->name('chi-tiet');
         Route::get('/export-pdf', [ThoiKhoaBieuController::class, 'exportPDF'])->name('export-pdf');
     });
+
+    // PHASE 6: Lịch sử điểm danh
+    Route::middleware('sinhvien.check')->prefix('diem-danh')->name('diem-danh.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'tongHopDiemDanh'])->name('index');
+    });
+
     // PHASE 7: Xem điểm
     Route::middleware('sinhvien.check')->prefix('diem')->name('diem.')->group(function () {
         Route::get('/', [XemDiemController::class, 'index'])->name('index');
@@ -529,6 +536,15 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/{id}', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'show'])->name('show');
         Route::get('/{id}/lich-su', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'lichSu'])->name('lich-su');
         Route::get('/{id}/pdf', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'exportPdf'])->name('pdf');
+    });
+
+    // PHASE 9.5: Xuất dữ liệu (Export Data)
+    Route::middleware('sinhvien.check')->prefix('xuat-du-lieu')->name('xuat-du-lieu.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'index'])->name('index');
+        Route::get('/bang-diem/excel', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatBangDiemExcel'])->name('bang-diem.excel');
+        Route::get('/bang-diem/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatBangDiemPdf'])->name('bang-diem.pdf');
+        Route::get('/tkb/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatTKBPdf'])->name('tkb.pdf');
+        Route::get('/giay-xac-nhan/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'giayXacNhanPdf'])->name('giay-xac-nhan.pdf');
     });
 
     // PHASE 10: Thông báo (chỉ xem)
