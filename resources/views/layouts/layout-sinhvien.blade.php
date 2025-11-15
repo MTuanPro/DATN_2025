@@ -59,6 +59,19 @@
             max-width: 520px;
         }
 
+        /* Gradient styles */
+        .bg-gradient-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+        }
+
+        .bg-gradient-success {
+            background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%) !important;
+        }
+
+        .shadow-sm {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+        }
+
         @media screen and (max-width: 1199px) {
             .top-header {
                 left: 0;
@@ -95,9 +108,15 @@
 
         body.dark-mode .card-title,
         body.dark-mode .card-text,
-        body.dark-mode h1, body.dark-mode h2, body.dark-mode h3, 
-        body.dark-mode h4, body.dark-mode h5, body.dark-mode h6,
-        body.dark-mode p, body.dark-mode span, body.dark-mode label,
+        body.dark-mode h1,
+        body.dark-mode h2,
+        body.dark-mode h3,
+        body.dark-mode h4,
+        body.dark-mode h5,
+        body.dark-mode h6,
+        body.dark-mode p,
+        body.dark-mode span,
+        body.dark-mode label,
         body.dark-mode .page-heading h3 {
             color: #ffffff !important;
         }
@@ -117,7 +136,7 @@
             border-color: #404040;
         }
 
-        body.dark-mode .table-striped > tbody > tr:nth-of-type(odd) {
+        body.dark-mode .table-striped>tbody>tr:nth-of-type(odd) {
             background-color: rgba(255, 255, 255, 0.05);
         }
 
@@ -147,7 +166,7 @@
             color: #ffffff !important;
         }
 
-        body.dark-mode .sidebar-item.active > .sidebar-link {
+        body.dark-mode .sidebar-item.active>.sidebar-link {
             background-color: #435ebe;
             color: #ffffff !important;
         }
@@ -234,13 +253,23 @@
         body.dark-mode .form-control,
         body.dark-mode .form-select,
         body.dark-mode textarea {
-            background-color: #3a3a3a;
+            background-color: #2b3035 !important;
+            color: #e9ecef !important;
+            border-color: #4a5057 !important;
+        }
+
+        body.dark-mode .form-control:focus,
+        body.dark-mode .form-select:focus,
+        body.dark-mode textarea:focus {
+            background-color: #363b41 !important;
             color: #ffffff !important;
-            border-color: #555;
+            border-color: #667eea !important;
+            box-shadow: 0 0 0 0.25rem rgba(102, 126, 234, 0.25) !important;
         }
 
         body.dark-mode .form-control::placeholder {
-            color: #999 !important;
+            color: #8a93a2 !important;
+            opacity: 1;
         }
 
         body.dark-mode .form-label {
