@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\HocKy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class HocKyController extends Controller
 {
@@ -76,22 +77,30 @@ class HocKyController extends Controller
                 ->exists();
 
             if ($exists) {
+                DB::rollBack();
                 return back()->withInput()
                     ->with('error', 'Học kỳ này đã tồn tại trong năm học ' . $validated['nam_hoc']);
             }
 
             // Nếu đặt là học kỳ hiện tại, bỏ cờ của các học kỳ khác
-            if ($request->la_hoc_ky_hien_tai) {
+            if ($request->has('la_hoc_ky_hien_tai') && $request->la_hoc_ky_hien_tai) {
                 HocKy::where('la_hoc_ky_hien_tai', true)->update(['la_hoc_ky_hien_tai' => false]);
             }
+
+            // Xử lý checkbox boolean
+            $validated['la_hoc_ky_hien_tai'] = $request->has('la_hoc_ky_hien_tai') ? true : false;
 
             HocKy::create($validated);
 
             DB::commit();
-            return redirect()->route('daotao.hoc-ky.index')
+            return redirect()->route('dao-tao.hoc-ky.index')
                 ->with('success', 'Thêm học kỳ thành công!');
         } catch (\Exception $e) {
-            DB::rollback();
+            DB::rollBack();
+            Log::error('Lỗi khi tạo học kỳ: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString(),
+                'request' => $request->all()
+            ]);
             return back()->withInput()
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
@@ -156,7 +165,7 @@ class HocKyController extends Controller
             $hocKy->update($validated);
 
             DB::commit();
-            return redirect()->route('daotao.hoc-ky.index')
+            return redirect()->route('dao-tao.hoc-ky.index')
                 ->with('success', 'Cập nhật học kỳ thành công!');
         } catch (\Exception $e) {
             DB::rollback();
@@ -182,7 +191,7 @@ class HocKyController extends Controller
 
         try {
             $hocKy->delete();
-            return redirect()->route('daotao.hoc-ky.index')
+            return redirect()->route('dao-tao.hoc-ky.index')
                 ->with('success', 'Xóa học kỳ thành công!');
         } catch (\Exception $e) {
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
@@ -211,7 +220,7 @@ class HocKyController extends Controller
     }
 
     /**
-     * Mở đăng ký môn học cho học kỳ
+     * Bật/tắt đăng ký môn học cho học kỳ
      */
     public function moDangKy(HocKy $hocKy)
     {
@@ -222,24 +231,26 @@ class HocKyController extends Controller
 
         // Kiểm tra xem có phải học kỳ hiện tại không
         if (!$hocKy->la_hoc_ky_hien_tai) {
-            return back()->with('error', 'Chỉ có thể mở đăng ký cho học kỳ hiện tại!');
+            return back()->with('error', 'Chỉ có thể mở/đóng đăng ký cho học kỳ hiện tại!');
         }
 
+        DB::beginTransaction();
         try {
-            // Logic mở đăng ký (có thể thêm flag mo_dang_ky vào bảng nếu cần)
-            // Hiện tại chỉ kiểm tra thời gian
-            $now = now();
+            // Toggle trạng thái mở/đóng đăng ký
+            $hocKy->update([
+                'dang_mo_dang_ky' => !$hocKy->dang_mo_dang_ky
+            ]);
 
-            if ($now < $hocKy->ngay_bat_dau_dang_ky) {
-                return back()->with('warning', 'Chưa đến thời gian mở đăng ký!');
-            }
-
-            if ($now > $hocKy->ngay_ket_thuc_dang_ky) {
-                return back()->with('warning', 'Đã hết thời gian đăng ký!');
-            }
-
-            return back()->with('success', 'Học kỳ đang trong thời gian mở đăng ký môn học!');
+            DB::commit();
+            
+            $message = $hocKy->dang_mo_dang_ky 
+                ? 'Đã mở đăng ký môn học cho học kỳ này!' 
+                : 'Đã đóng đăng ký môn học cho học kỳ này!';
+            
+            return back()->with('success', $message);
         } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Lỗi khi bật/tắt đăng ký: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
     }
@@ -256,15 +267,21 @@ class HocKyController extends Controller
         if (!$hocKy->ngay_bat_dau_dang_ky || !$hocKy->ngay_ket_thuc_dang_ky) {
             $status = 'chua_thiet_lap';
             $message = 'Chưa thiết lập thời gian đăng ký';
-        } elseif ($now < $hocKy->ngay_bat_dau_dang_ky) {
-            $status = 'chua_mo';
-            $message = 'Chưa đến thời gian đăng ký';
-        } elseif ($now > $hocKy->ngay_ket_thuc_dang_ky) {
-            $status = 'da_dong';
-            $message = 'Đã hết thời gian đăng ký';
+        } elseif ($hocKy->dang_mo_dang_ky) {
+            // Kiểm tra thời gian nếu đã bật đăng ký
+            if ($now < $hocKy->ngay_bat_dau_dang_ky) {
+                $status = 'chua_mo';
+                $message = 'Chưa đến thời gian đăng ký';
+            } elseif ($now > $hocKy->ngay_ket_thuc_dang_ky) {
+                $status = 'da_dong';
+                $message = 'Đã hết thời gian đăng ký';
+            } else {
+                $status = 'dang_mo';
+                $message = 'Đang trong thời gian đăng ký';
+            }
         } else {
-            $status = 'dang_mo';
-            $message = 'Đang trong thời gian đăng ký';
+            $status = 'da_dong';
+            $message = 'Đăng ký đã bị đóng';
         }
 
         return response()->json([

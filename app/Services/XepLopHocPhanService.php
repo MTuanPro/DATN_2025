@@ -197,7 +197,8 @@ class XepLopHocPhanService
     {
         try {
             DB::beginTransaction();
-// 1. Tạo bản ghi lớp học phần sinh viên
+            // 1. Tạo bản ghi lớp học phần sinh viên
+            // Observer sẽ tự động cập nhật so_luong_dang_ky, không cần cập nhật thủ công
             $lopHocPhanSinhVien = LopHocPhanSinhVien::create([
                 'sinh_vien_id' => $dangKy->sinh_vien_id,
                 'lop_hoc_phan_id' => $lop->id,
@@ -208,9 +209,8 @@ class XepLopHocPhanService
                 'phuong_thuc_xep' => 'tu_dong'
             ]);
 
-            // 2. Cập nhật số lượng sinh viên trong lớp
-            $lop->so_luong_dang_ky = (int)$lop->so_luong_dang_ky + 1;
-            $lop->save();
+            // 2. Refresh lại model để có số lượng mới nhất (Observer đã tự động cập nhật)
+            $lop->refresh();
 
             // 3. Cập nhật trạng thái đăng ký tạm
             $dangKy->trang_thai = 'da_xep_lop';

@@ -31,13 +31,28 @@ class NotificationService
             // Lấy danh sách người nhận
             $nguoiNhanIds = $this->getNguoiNhanIds($thongBao);
 
-            if ($useQueue && count($nguoiNhanIds) > 100) {
-                // Sử dụng Queue cho số lượng lớn
-                SendBulkNotificationJob::dispatch($thongBao->id, $nguoiNhanIds)
-                    ->onQueue('notifications');
+            // Log để debug
+            Log::info('Tạo thông báo', [
+                'thong_bao_id' => $thongBao->id,
+                'doi_tuong' => $thongBao->doi_tuong,
+                'so_nguoi_nhan' => count($nguoiNhanIds),
+                'nguoi_nhan_ids' => array_slice($nguoiNhanIds, 0, 10) // Log 10 ID đầu tiên
+            ]);
+
+            if (empty($nguoiNhanIds)) {
+                Log::warning('Không có người nhận cho thông báo', [
+                    'thong_bao_id' => $thongBao->id,
+                    'doi_tuong' => $thongBao->doi_tuong
+                ]);
             } else {
-                // Xử lý trực tiếp cho số lượng nhỏ
+                // Luôn tạo bản ghi người nhận ngay lập tức để đảm bảo thông báo hiển thị
+                // Queue chỉ dùng cho các tác vụ phụ như gửi email
                 $this->createNguoiNhanRecords($thongBao->id, $nguoiNhanIds);
+                
+                Log::info('Đã tạo bản ghi người nhận', [
+                    'thong_bao_id' => $thongBao->id,
+                    'so_nguoi_nhan' => count($nguoiNhanIds)
+                ]);
             }
 
             // Gửi Laravel Notification (database + broadcast)
@@ -122,13 +137,31 @@ class NotificationService
 
         switch ($thongBao->doi_tuong) {
             case 'all':
-                $nguoiNhanIds = User::where('trang_thai', 'hoat_dong')
+                // Gửi cho tất cả user có vai trò (bất kể trạng thái)
+                // Bao gồm: admin, sinh_vien, giang_vien, truong_phong_dt, nhan_vien_dt
+                $nguoiNhanIds = User::whereHas('vaiTro', function ($query) {
+                    $query->whereIn('ma_vai_tro', [
+                        'admin',
+                        'sinh_vien',
+                        'giang_vien',
+                        'truong_phong_dt',
+                        'nhan_vien_dt'
+                    ]);
+                })
+                    ->where('trang_thai', 'hoat_dong')
                     ->pluck('id')
                     ->toArray();
+                
+                Log::info('Lấy danh sách người nhận cho "all"', [
+                    'so_nguoi_nhan' => count($nguoiNhanIds),
+                    'nguoi_nhan_ids_sample' => array_slice($nguoiNhanIds, 0, 10)
+                ]);
                 break;
 
             case 'sinh_vien':
-                $nguoiNhanIds = User::whereHas('sinhVien')
+                $nguoiNhanIds = User::whereHas('vaiTro', function ($query) {
+                    $query->where('ma_vai_tro', 'sinh_vien');
+                })
                     ->where('trang_thai', 'hoat_dong')
                     ->pluck('id')
                     ->toArray();

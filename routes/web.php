@@ -228,6 +228,7 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::resource('mon-hoc', MonHocController::class);
     Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'tienQuyet'])->name('mon-hoc.tien-quyet');
     Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'storeTienQuyet'])->name('mon-hoc.tien-quyet.store');
+    Route::put('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocTienQuyetController::class, 'update'])->name('mon-hoc.tien-quyet.update');
     Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocController::class, 'destroyTienQuyet'])->name('mon-hoc.tien-quyet.destroy');
 
     Route::resource('monhoctienquyet', MonHocTienQuyetController::class);
@@ -265,6 +266,7 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 
     // PHASE 4: Lớp học phần & Phân công
     Route::resource('lop-hoc-phan', LopHocPhanController::class);
+    Route::post('lop-hoc-phan/sync-so-luong', [LopHocPhanController::class, 'syncSoLuongDangKy'])->name('lop-hoc-phan.sync-so-luong');
 
     // Phân công giảng dạy
     Route::get('lop-hoc-phan/{lopHocPhan}/phan-cong', [PhanCongGiangDayController::class, 'index'])->name('lop-hoc-phan.phan-cong');

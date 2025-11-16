@@ -73,7 +73,10 @@ class ThongBaoController extends Controller
     {
         // Lấy danh sách để chọn đối tượng cụ thể
         $lopHanhChinhs = LopHanhChinh::orderBy('ma_lop')->get();
-        $lopHocPhans = LopHocPhan::with('monHoc')->where('trang_thai', 'dang_mo')->orderBy('ma_lop_hoc_phan')->get();
+        $lopHocPhans = LopHocPhan::with('monHoc')
+            ->where('trang_thai_lop', 'mo_dang_ky')
+            ->orderBy('ma_lop_hp')
+            ->get();
 
         return view('daotao.thong-bao.create', compact('lopHanhChinhs', 'lopHocPhans'));
     }
@@ -118,7 +121,7 @@ class ThongBaoController extends Controller
             // Sử dụng NotificationService để tạo và gửi thông báo
             $thongBao = $notificationService->createNotification($validated, true);
 
-            return redirect()->route('daotao.thong-bao.index')
+            return redirect()->route('dao-tao.thong-bao.index')
                 ->with('success', 'Đã tạo và gửi thông báo thành công!');
         } catch (\Exception $e) {
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage())->withInput();
@@ -185,7 +188,10 @@ class ThongBaoController extends Controller
         }
         
         $lopHanhChinhs = LopHanhChinh::orderBy('ma_lop')->get();
-        $lopHocPhans = LopHocPhan::with('monHoc')->where('trang_thai', 'dang_mo')->orderBy('ma_lop_hoc_phan')->get();
+        $lopHocPhans = LopHocPhan::with('monHoc')
+            ->where('trang_thai_lop', 'mo_dang_ky')
+            ->orderBy('ma_lop_hp')
+            ->get();
 
         return view('daotao.thong-bao.edit', compact('thongBao', 'lopHanhChinhs', 'lopHocPhans'));
     }
@@ -250,7 +256,7 @@ class ThongBaoController extends Controller
 
             DB::commit();
 
-            return redirect()->route('daotao.thong-bao.show', $thongBao->id)
+            return redirect()->route('dao-tao.thong-bao.show', $thongBao->id)
                 ->with('success', 'Đã cập nhật thông báo thành công!');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -280,7 +286,7 @@ class ThongBaoController extends Controller
 
         $thongBao->delete();
 
-        return redirect()->route('daotao.thong-bao.index')
+        return redirect()->route('dao-tao.thong-bao.index')
             ->with('success', 'Đã xóa thông báo thành công!');
     }
 
@@ -297,7 +303,12 @@ class ThongBaoController extends Controller
                 break;
 
             case 'sinh_vien':
-                $nguoiNhanIds = User::whereHas('sinhVien')->where('trang_thai', 'hoat_dong')->pluck('id')->toArray();
+                $nguoiNhanIds = User::whereHas('vaiTro', function ($query) {
+                    $query->where('ma_vai_tro', 'sinh_vien');
+                })
+                    ->where('trang_thai', 'hoat_dong')
+                    ->pluck('id')
+                    ->toArray();
                 break;
 
             case 'giang_vien':

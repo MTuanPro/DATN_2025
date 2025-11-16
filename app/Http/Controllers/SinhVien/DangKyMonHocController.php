@@ -35,10 +35,9 @@ class DangKyMonHocController extends Controller
                 ->with('error', 'Không tìm thấy thông tin sinh viên!');
         }
 
-        // Lấy học kỳ hiện tại hoặc đang mở đăng ký
+        // Lấy học kỳ hiện tại và đang mở đăng ký
         $hocKy = HocKy::where('la_hoc_ky_hien_tai', true)
-            ->where('ngay_bat_dau_dang_ky', '<=', now())
-            ->where('ngay_ket_thuc_dang_ky', '>=', now())
+            ->where('dang_mo_dang_ky', true)
             ->first();
 
       if (!$hocKy) {
@@ -68,35 +67,23 @@ class DangKyMonHocController extends Controller
 
 
 
-        // Lấy chương trình khung của sinh viên (sắp xếp theo học kỳ và thứ tự)
-        $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
-            ->with(['monHoc.khoa'])
-            ->orderBy('hoc_ky_goi_y', 'asc')
-            ->orderBy('thu_tu_hoc', 'asc')
-            ->get();
-
-        // Lấy thêm các môn có lớp học phần mở nhưng chưa có trong chương trình khung
-        $monIdTrongCTK = $chuongTrinhKhung->pluck('mon_hoc_id')->toArray();
+        // Lấy danh sách lớp học phần đang mở trong học kỳ này
         $lopDangMo = LopHocPhan::where('hoc_ky_id', $hocKy->id)
             ->whereIn('trang_thai_lop', ['mo_dang_ky', 'dang_hoc'])
-            ->whereNotIn('mon_hoc_id', $monIdTrongCTK)
             ->with(['monHoc.khoa'])
             ->get()
             ->groupBy('mon_hoc_id');
 
-        // Thêm các môn không có trong CTK vào danh sách (đánh dấu là không bắt buộc)
-        foreach ($lopDangMo as $monHocId => $lops) {
-            $monHoc = $lops->first()->monHoc;
-            if ($monHoc) {
-                $chuongTrinhKhung->push((object)[
-                    'mon_hoc_id' => $monHocId,
-                    'monHoc' => $monHoc,
-                    'bat_buoc' => false,
-                    'hoc_ky_goi_y' => 0, // Không có gợi ý
-                    'thu_tu_hoc' => 999,
-                ]);
-            }
-        }
+        $monIdCoLopMo = $lopDangMo->keys()->toArray();
+
+        // Lấy chương trình khung của sinh viên - chỉ lấy môn có lớp học phần đang mở
+        // Chỉ hiển thị môn thuộc chương trình khung của sinh viên
+        $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
+            ->whereIn('mon_hoc_id', $monIdCoLopMo) // Chỉ lấy môn có lớp đang mở
+            ->with(['monHoc.khoa'])
+            ->orderBy('hoc_ky_goi_y', 'asc')
+            ->orderBy('thu_tu_hoc', 'asc')
+            ->get();
 
         // Lấy các môn đã đăng ký trong học kỳ này (lấy full collection để có ID)
         $dangKyCollection = DangKyMonHocTam::where('sinh_vien_id', $sinhVien->id)
@@ -183,10 +170,25 @@ class DangKyMonHocController extends Controller
 
         // Kiểm tra học kỳ đang mở đăng ký
         $hocKy = HocKy::find($request->hoc_ky_id);
-        if (!$hocKy || $hocKy->ngay_bat_dau_dang_ky > now() || $hocKy->ngay_ket_thuc_dang_ky < now()) {
+        if (!$hocKy || !$hocKy->dang_mo_dang_ky) {
             return response()->json([
                 'success' => false,
                 'message' => 'Học kỳ không mở đăng ký!'
+            ], 400);
+        }
+        
+        // Kiểm tra thời gian đăng ký (nếu có)
+        if ($hocKy->ngay_bat_dau_dang_ky && $hocKy->ngay_bat_dau_dang_ky > now()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chưa đến thời gian đăng ký!'
+            ], 400);
+        }
+        
+        if ($hocKy->ngay_ket_thuc_dang_ky && $hocKy->ngay_ket_thuc_dang_ky < now()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã hết thời gian đăng ký!'
             ], 400);
         }
 

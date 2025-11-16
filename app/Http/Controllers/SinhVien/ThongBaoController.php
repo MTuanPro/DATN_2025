@@ -7,6 +7,8 @@ use App\Models\ThongBao;
 use App\Models\NguoiNhanThongBao;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Pagination\LengthAwarePaginator;
 
 class ThongBaoController extends Controller
 {
@@ -17,25 +19,28 @@ class ThongBaoController extends Controller
     {
         $userId = Auth::id();
 
+        $now = now();
+        
+        // Debug: Kiểm tra tổng số thông báo của user
+        $totalNguoiNhan = NguoiNhanThongBao::where('nguoi_nhan_id', $userId)->count();
+        Log::info('SinhVien ThongBaoController - Tổng số bản ghi NguoiNhanThongBao', [
+            'user_id' => $userId,
+            'total' => $totalNguoiNhan
+        ]);
+        
         $query = NguoiNhanThongBao::with(['thongBao.nguoiGui'])
             ->where('nguoi_nhan_id', $userId)
-            ->whereHas('thongBao', function ($q) {
+            ->whereHas('thongBao', function ($q) use ($now) {
                 $q->where('trang_thai', 'cong_khai')
-                    ->where(function ($subQ) {
+                    ->where(function ($subQ) use ($now) {
                         $subQ->whereNull('hien_thi_tu_ngay')
-                            ->orWhere('hien_thi_tu_ngay', '<=', now());
+                            ->orWhere('hien_thi_tu_ngay', '<=', $now);
                     })
-                    ->where(function ($subQ) {
+                    ->where(function ($subQ) use ($now) {
                         $subQ->whereNull('ngay_het_han')
-                            ->orWhere('ngay_het_han', '>=', now());
+                            ->orWhere('ngay_het_han', '>=', $now);
                     });
-            })
-            ->orderByDesc(function ($q) {
-                $q->selectRaw('thong_bao.ghim_dau_trang')
-                    ->from('thong_bao')
-                    ->whereColumn('thong_bao.id', 'nguoi_nhan_thong_bao.thong_bao_id');
-            })
-            ->orderBy('created_at', 'desc');
+            });
 
         // Filter theo loại
         if ($request->filled('loai_thong_bao')) {
@@ -65,7 +70,53 @@ class ThongBaoController extends Controller
             });
         }
 
-        $thongBaos = $query->paginate(20);
+        // Lấy dữ liệu và sort
+        $thongBaos = $query->get();
+        
+        // Debug: Log số lượng thông báo sau khi query
+        Log::info('SinhVien ThongBaoController - Số lượng thông báo sau query', [
+            'user_id' => $userId,
+            'count' => $thongBaos->count(),
+            'filters' => [
+                'loai_thong_bao' => $request->loai_thong_bao,
+                'trang_thai_doc' => $request->trang_thai_doc,
+                'muc_do' => $request->muc_do,
+                'search' => $request->search,
+            ]
+        ]);
+        
+        // Sort: Ưu tiên thông báo ghim, sau đó sắp xếp theo ngày giờ mới nhất
+        $thongBaos = $thongBaos->sort(function ($a, $b) {
+            if (!$a->thongBao || !$b->thongBao) {
+                return 0;
+            }
+            
+            // So sánh ghim_dau_trang trước
+            $aGhim = $a->thongBao->ghim_dau_trang ? 1 : 0;
+            $bGhim = $b->thongBao->ghim_dau_trang ? 1 : 0;
+            
+            if ($aGhim !== $bGhim) {
+                return $bGhim - $aGhim; // Ghim trước, không ghim sau
+            }
+            
+            // Nếu cùng trạng thái ghim, sắp xếp theo ngày giờ mới nhất
+            $aTime = $a->thongBao->ngay_gui ? $a->thongBao->ngay_gui->timestamp : 0;
+            $bTime = $b->thongBao->ngay_gui ? $b->thongBao->ngay_gui->timestamp : 0;
+            
+            return $bTime - $aTime; // Mới nhất trước
+        })->values();
+
+        // Paginate thủ công
+        $currentPage = LengthAwarePaginator::resolveCurrentPage();
+        $perPage = 20;
+        $currentItems = $thongBaos->slice(($currentPage - 1) * $perPage, $perPage)->all();
+        $thongBaos = new LengthAwarePaginator(
+            $currentItems,
+            $thongBaos->count(),
+            $perPage,
+            $currentPage,
+            ['path' => $request->url(), 'query' => $request->query()]
+        );
 
         // Đếm số thông báo chưa đọc
         $chuaDocCount = NguoiNhanThongBao::where('nguoi_nhan_id', $userId)
@@ -142,7 +193,10 @@ class ThongBaoController extends Controller
         // Tăng lượt xem
         $thongBao->increment('so_luot_xem');
 
-        return view('sinhvien.thong-bao.show', compact('thongBao', 'nguoiNhanThongBao'));
+        // Đổi tên biến để khớp với view
+        $nguoiNhan = $nguoiNhanThongBao;
+
+        return view('sinhvien.thong-bao.show', compact('thongBao', 'nguoiNhan'));
     }
 
     /**

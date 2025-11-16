@@ -8,6 +8,7 @@ use App\Models\Daotao\Khoa;
 use App\Models\Daotao\MonHocTienQuyet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MonHocController extends Controller
 {
@@ -245,11 +246,53 @@ class MonHocController extends Controller
      */
     public function destroyTienQuyet(string $monHocId, string $tienQuyetId)
     {
-        MonHocTienQuyet::where('id', $tienQuyetId)
-            ->where('mon_hoc_id', $monHocId)
-            ->delete();
+        DB::beginTransaction();
+        try {
+            Log::info('Bắt đầu xóa môn tiên quyết', [
+                'mon_hoc_id' => $monHocId,
+                'tien_quyet_id' => $tienQuyetId
+            ]);
 
-        return back()->with('success', 'Xóa môn tiên quyết thành công!');
+            // Tìm record trong bảng mon_hoc_tien_quyet (không quan tâm soft delete)
+            $monTienQuyet = MonHocTienQuyet::withTrashed()
+                ->where('id', $tienQuyetId)
+                ->where('mon_hoc_id', $monHocId)
+                ->first();
+
+            if (!$monTienQuyet) {
+                // Thử tìm không có withTrashed
+                $monTienQuyet = MonHocTienQuyet::where('id', $tienQuyetId)
+                    ->where('mon_hoc_id', $monHocId)
+                    ->first();
+            }
+
+            if (!$monTienQuyet) {
+                Log::warning('Không tìm thấy môn tiên quyết', [
+                    'mon_hoc_id' => $monHocId,
+                    'tien_quyet_id' => $tienQuyetId
+                ]);
+                DB::rollBack();
+                return back()->with('error', 'Không tìm thấy môn tiên quyết cần xóa!');
+            }
+
+            // Xóa vĩnh viễn (force delete) để đảm bảo xóa hoàn toàn
+            $monTienQuyet->forceDelete();
+
+            DB::commit();
+            Log::info('Xóa môn tiên quyết thành công', [
+                'mon_hoc_id' => $monHocId,
+                'tien_quyet_id' => $tienQuyetId
+            ]);
+            return back()->with('success', 'Xóa môn tiên quyết thành công!');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Lỗi khi xóa môn tiên quyết: ' . $e->getMessage(), [
+                'mon_hoc_id' => $monHocId,
+                'tien_quyet_id' => $tienQuyetId,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return back()->with('error', 'Không thể xóa môn tiên quyết: ' . $e->getMessage());
+        }
     }
 
     /**

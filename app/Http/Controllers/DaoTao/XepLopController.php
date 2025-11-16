@@ -120,12 +120,20 @@ class XepLopController extends Controller
             ->get();
 
         foreach ($lopHocPhans as $lopHocPhan) {
-            // Lấy sức chứa và số lượng đã đăng ký
+            // Lấy sức chứa và số lượng thực tế từ bảng lop_hoc_phan_sinh_vien
             $sucChua = $lopHocPhan->suc_chua ?? 0;
-            $soLuongHienTai = $lopHocPhan->so_luong_dang_ky ?? 0;
+            $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                ->count();
 
             // Kiểm tra còn chỗ không
-            if ($soLuongHienTai < $sucChua) {
+            if ($soLuongThucTe < $sucChua) {
+                // Đồng bộ so_luong_dang_ky với số lượng thực tế trước khi xếp lớp
+                if ($lopHocPhan->so_luong_dang_ky != $soLuongThucTe) {
+                    $lopHocPhan->so_luong_dang_ky = $soLuongThucTe;
+                    $lopHocPhan->save();
+                }
+
                 // Kiểm tra sinh viên đã đăng ký lớp này chưa
                 $exists = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
                     ->where('sinh_vien_id', $dangKy->sinh_vien_id)
@@ -136,6 +144,7 @@ class XepLopController extends Controller
                 }
 
                 // Xếp vào lớp này
+                // Observer sẽ tự động cập nhật so_luong_dang_ky, không cần cập nhật thủ công
                 LopHocPhanSinhVien::create([
                     'lop_hoc_phan_id' => $lopHocPhan->id,
                     'sinh_vien_id' => $dangKy->sinh_vien_id,
@@ -150,9 +159,6 @@ class XepLopController extends Controller
                 $dangKy->update([
                     'trang_thai' => 'da_xep_lop',
                 ]);
-
-                // Cập nhật số lượng đăng ký của lớp
-                $lopHocPhan->increment('so_luong_dang_ky');
 
                 return ['success' => true, 'lop_hoc_phan_id' => $lopHocPhan->id];
             }
@@ -182,15 +188,23 @@ class XepLopController extends Controller
             $dangKy = DangKyMonHocTam::findOrFail($request->dang_ky_tam_id);
             $lopHocPhan = LopHocPhan::findOrFail($request->lop_hoc_phan_id);
 
-            // Kiểm tra lớp còn chỗ không (dùng đúng tên cột)
+            // Kiểm tra lớp còn chỗ không - tính từ bảng thực tế
             $sucChua = $lopHocPhan->suc_chua ?? 0;
-            $soLuongHienTai = $lopHocPhan->so_luong_dang_ky ?? 0;
+            $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                ->count();
 
-            if ($soLuongHienTai >= $sucChua) {
+            if ($soLuongThucTe >= $sucChua) {
                 return response()->json([
                     'success' => false,
                     'message' => 'Lớp học phần đã đầy!'
                 ], 400);
+            }
+
+            // Đồng bộ so_luong_dang_ky với số lượng thực tế trước khi xếp lớp
+            if ($lopHocPhan->so_luong_dang_ky != $soLuongThucTe) {
+                $lopHocPhan->so_luong_dang_ky = $soLuongThucTe;
+                $lopHocPhan->save();
             }
 
             // Kiểm tra sinh viên đã đăng ký lớp này chưa
@@ -206,6 +220,7 @@ class XepLopController extends Controller
             }
 
             // Xếp vào lớp
+            // Observer sẽ tự động cập nhật so_luong_dang_ky, không cần cập nhật thủ công
             LopHocPhanSinhVien::create([
                 'lop_hoc_phan_id' => $lopHocPhan->id,
                 'sinh_vien_id' => $dangKy->sinh_vien_id,
@@ -222,9 +237,6 @@ class XepLopController extends Controller
             $dangKy->update([
                 'trang_thai' => 'da_xep_lop',
             ]);
-
-            // Cập nhật số lượng đăng ký của lớp
-            $lopHocPhan->increment('so_luong_dang_ky');
 
             DB::commit();
 
@@ -295,15 +307,18 @@ class XepLopController extends Controller
             ->get()
             ->map(function ($lop) {
                 $sucChua = $lop->suc_chua ?? 0;
-                $soLuongHienTai = $lop->so_luong_dang_ky ?? 0;
-                $conTrong = $sucChua - $soLuongHienTai;
+                // Tính số lượng thực tế từ bảng lop_hoc_phan_sinh_vien thay vì dùng so_luong_dang_ky
+                $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lop->id)
+                    ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                    ->count();
+                $conTrong = $sucChua - $soLuongThucTe;
 
                 return [
                     'id' => $lop->id,
                     'ma_lop_hoc_phan' => $lop->ma_lop_hp,
                     'ten_lop_hoc_phan' => $lop->ten_lop_hp,
                     'so_luong_toi_da' => $sucChua,
-                    'so_luong_hien_tai' => $soLuongHienTai,
+                    'so_luong_hien_tai' => $soLuongThucTe,
                     'con_trong' => $conTrong,
                 ];
             })
@@ -335,9 +350,8 @@ class XepLopController extends Controller
                 ], 400);
             }
 
-            // Giảm sĩ số lớp
+            // Observer sẽ tự động cập nhật so_luong_dang_ky khi xóa, không cần cập nhật thủ công
             $lopHocPhan = $lhpsv->lopHocPhan;
-            $lopHocPhan->decrement('so_luong_dang_ky');
 
             // Cập nhật trạng thái đăng ký tạm về chờ xếp lớp
             if ($lhpsv->dang_ky_tam_id) {

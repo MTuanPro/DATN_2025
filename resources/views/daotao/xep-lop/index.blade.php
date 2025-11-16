@@ -296,8 +296,9 @@
                         success: function(response) {
                             let options = '<option value="">-- Chọn lớp --</option>';
                             response.data.forEach(lop => {
+                                // Hiển thị: Mã lớp (Số hiện tại/Sức chứa - Còn X chỗ)
                                 options +=
-                                    `<option value="${lop.id}">${lop.ma_lop_hoc_phan} (Còn ${lop.con_trong} chỗ)</option>`;
+                                    `<option value="${lop.id}">${lop.ma_lop_hoc_phan} (${lop.so_luong_hien_tai}/${lop.so_luong_toi_da} - Còn ${lop.con_trong} chỗ)</option>`;
                             });
                             $('#selectLopHocPhan').html(options);
                         },

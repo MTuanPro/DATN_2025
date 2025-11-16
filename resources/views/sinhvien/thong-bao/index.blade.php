@@ -158,16 +158,16 @@
                         <div class="list-group">
                             @foreach ($thongBaos as $tb)
                                 <a href="{{ route('sinh-vien.thong-bao.show', $tb->thongBao->id) }}"
-                                    class="list-group-item list-group-item-action {{ !$tb->da_doc ? 'bg-light' : '' }}">
+                                    class="list-group-item list-group-item-action {{ !$tb->da_doc ? 'bg-light' : '' }} {{ $tb->thongBao->ghim_dau_trang ? 'border-start border-primary border-3' : '' }}">
                                     <div class="d-flex w-100 justify-content-between align-items-start">
                                         <div class="flex-grow-1">
+                                            @if ($tb->thongBao->ghim_dau_trang)
+                                                <i class="bi bi-pin-angle-fill text-danger me-2" title="Đã ghim đầu trang"></i>
+                                            @endif
                                             @if (!$tb->da_doc)
                                                 <span class="badge bg-primary me-2">Mới</span>
                                             @endif
-                                            @if ($tb->thongBao->ghim_dau_trang)
-                                                <i class="bi bi-pin-angle-fill text-warning"></i>
-                                            @endif
-                                            <h5 class="mb-1 {{ !$tb->da_doc ? 'fw-bold' : '' }}">
+                                            <h5 class="mb-1 d-inline {{ !$tb->da_doc ? 'fw-bold' : '' }} {{ $tb->thongBao->ghim_dau_trang ? 'text-primary' : '' }}">
                                                 {{ $tb->thongBao->tieu_de }}
                                             </h5>
                                             <p class="mb-1 text-muted small">

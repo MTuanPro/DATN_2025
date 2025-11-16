@@ -34,20 +34,54 @@
                                 <div class="d-flex align-items-center text-muted mb-3">
                                     <i class="bi bi-calendar-event me-2"></i>
                                     <span>{{ $thongBao->ngay_gui ? $thongBao->ngay_gui->format('d/m/Y H:i') : '' }}</span>
-                                    <span class="mx-2">|</span>
-                                    <i class="bi bi-person me-2"></i>
-                                    <span>{{ $thongBao->daoTao->ho_ten ?? 'Phòng Đào tạo' }}</span>
+                                    @if ($thongBao->nguoiGui)
+                                        <span class="mx-2">|</span>
+                                        <i class="bi bi-person me-2"></i>
+                                        <span>{{ $thongBao->nguoiGui->name ?? 'Hệ thống' }}</span>
+                                    @endif
                                 </div>
                                 <div>
-                                    <span class="badge bg-{{ $thongBao->loai_badge }} me-1">
-                                        {{ $thongBao->loai_thong_bao }}
+                                    @php
+                                        $loaiColors = [
+                                            'tin_gap' => 'danger',
+                                            'lich_thi' => 'warning',
+                                            'diem' => 'success',
+                                            'hoc_phi' => 'primary',
+                                            'lich_hoc' => 'info',
+                                            'dang_ky_mon' => 'warning',
+                                            'tin_tuc' => 'secondary',
+                                            'thong_bao_chung' => 'dark',
+                                        ];
+                                        $mucDoColors = [
+                                            'rat_quan_trong' => 'danger',
+                                            'quan_trong' => 'warning',
+                                            'binh_thuong' => 'info',
+                                        ];
+                                        $loaiLabels = [
+                                            'tin_gap' => 'Tin gấp',
+                                            'lich_thi' => 'Lịch thi',
+                                            'diem' => 'Điểm',
+                                            'hoc_phi' => 'Học phí',
+                                            'lich_hoc' => 'Lịch học',
+                                            'dang_ky_mon' => 'Đăng ký môn',
+                                            'tin_tuc' => 'Tin tức',
+                                            'thong_bao_chung' => 'Thông báo chung',
+                                        ];
+                                        $mucDoLabels = [
+                                            'rat_quan_trong' => 'Rất quan trọng',
+                                            'quan_trong' => 'Quan trọng',
+                                            'binh_thuong' => 'Bình thường',
+                                        ];
+                                    @endphp
+                                    <span class="badge bg-{{ $loaiColors[$thongBao->loai_thong_bao] ?? 'secondary' }} me-1">
+                                        {{ $loaiLabels[$thongBao->loai_thong_bao] ?? $thongBao->loai_thong_bao }}
                                     </span>
-                                    <span class="badge bg-{{ $thongBao->muc_do_badge }}">
-                                        {{ $thongBao->muc_do_quan_trong }}
+                                    <span class="badge bg-{{ $mucDoColors[$thongBao->muc_do_quan_trong] ?? 'info' }}">
+                                        {{ $mucDoLabels[$thongBao->muc_do_quan_trong] ?? $thongBao->muc_do_quan_trong }}
                                     </span>
                                     @if ($thongBao->ghim_dau_trang)
-                                        <span class="badge bg-info">
-                                            <i class="bi bi-pin-angle-fill"></i> Ghim
+                                        <span class="badge bg-warning">
+                                            <i class="bi bi-pin-angle-fill"></i> Ghim đầu trang
                                         </span>
                                     @endif
                                 </div>
@@ -64,8 +98,8 @@
                             @endif
 
                             <!-- Nội dung -->
-                            <div class="content mb-4" style="white-space: pre-line; font-size: 1.05rem; line-height: 1.8;">
-                                {{ $thongBao->noi_dung }}
+                            <div class="content mb-4" style="font-size: 1.05rem; line-height: 1.8;">
+                                {!! nl2br(e($thongBao->noi_dung)) !!}
                             </div>
 
                             <!-- File đính kèm -->

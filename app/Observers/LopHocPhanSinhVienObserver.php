@@ -14,8 +14,10 @@ class LopHocPhanSinhVienObserver
     public function created(LopHocPhanSinhVien $lhpsv): void
     {
         if (in_array($lhpsv->trang_thai, ['da_xep_lop', 'dang_hoc'])) {
-            LopHocPhan::where('id', $lhpsv->lop_hoc_phan_id)
-                ->increment('so_luong_dang_ky');
+            $lopHocPhan = LopHocPhan::find($lhpsv->lop_hoc_phan_id);
+            if ($lopHocPhan && $lopHocPhan->so_luong_dang_ky < $lopHocPhan->suc_chua) {
+                $lopHocPhan->increment('so_luong_dang_ky');
+            }
         }
     }
 
@@ -34,8 +36,10 @@ class LopHocPhanSinhVienObserver
                 !in_array($oldStatus, ['da_xep_lop', 'dang_hoc']) &&
                 in_array($newStatus, ['da_xep_lop', 'dang_hoc'])
             ) {
-                LopHocPhan::where('id', $lhpsv->lop_hoc_phan_id)
-                    ->increment('so_luong_dang_ky');
+                $lopHocPhan = LopHocPhan::find($lhpsv->lop_hoc_phan_id);
+                if ($lopHocPhan && $lopHocPhan->so_luong_dang_ky < $lopHocPhan->suc_chua) {
+                    $lopHocPhan->increment('so_luong_dang_ky');
+                }
             }
 
             // Trạng thái cũ có tính, trạng thái mới không tính -> giảm
@@ -67,8 +71,10 @@ class LopHocPhanSinhVienObserver
     public function restored(LopHocPhanSinhVien $lhpsv): void
     {
         if (in_array($lhpsv->trang_thai, ['da_xep_lop', 'dang_hoc'])) {
-            LopHocPhan::where('id', $lhpsv->lop_hoc_phan_id)
-                ->increment('so_luong_dang_ky');
+            $lopHocPhan = LopHocPhan::find($lhpsv->lop_hoc_phan_id);
+            if ($lopHocPhan && $lopHocPhan->so_luong_dang_ky < $lopHocPhan->suc_chua) {
+                $lopHocPhan->increment('so_luong_dang_ky');
+            }
         }
     }
 

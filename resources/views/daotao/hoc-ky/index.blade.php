@@ -96,12 +96,16 @@
                                                     $batDau = $hocKy->ngay_bat_dau_dang_ky;
                                                     $ketThuc = $hocKy->ngay_ket_thuc_dang_ky;
                                                 @endphp
-                                                @if ($now < $batDau)
-                                                    <small class="text-warning">Chưa mở</small>
-                                                @elseif ($now > $ketThuc)
-                                                    <small class="text-danger">Đã đóng</small>
-                                                @else
+                                                @if ($hocKy->dang_mo_dang_ky ?? false)
                                                     <small class="text-success fw-bold">✓ Đang mở</small>
+                                                @else
+                                                    @if ($now < $batDau)
+                                                        <small class="text-warning">Chưa mở</small>
+                                                    @elseif ($now > $ketThuc)
+                                                        <small class="text-danger">Đã đóng</small>
+                                                    @else
+                                                        <small class="text-secondary">Đã đóng</small>
+                                                    @endif
                                                 @endif
                                             @else
                                                 <small class="text-muted">Chưa thiết lập</small>
@@ -117,9 +121,17 @@
                                                     <form action="{{ route('dao-tao.hoc-ky.mo-dang-ky', $hocKy->id) }}"
                                                         method="POST" class="d-inline mt-1">
                                                         @csrf
-                                                        <button type="submit" class="btn btn-sm btn-info">
-                                                            <i class="bi bi-unlock"></i> Mở đăng ký
-                                                        </button>
+                                                        @if ($hocKy->dang_mo_dang_ky ?? false)
+                                                            <button type="submit" class="btn btn-sm btn-danger" 
+                                                                onclick="return confirm('Bạn có chắc muốn đóng đăng ký?')">
+                                                                <i class="bi bi-lock"></i> Đóng đăng ký
+                                                            </button>
+                                                        @else
+                                                            <button type="submit" class="btn btn-sm btn-info"
+                                                                onclick="return confirm('Bạn có chắc muốn mở đăng ký?')">
+                                                                <i class="bi bi-unlock"></i> Mở đăng ký
+                                                            </button>
+                                                        @endif
                                                     </form>
                                                 @endif
                                             @else

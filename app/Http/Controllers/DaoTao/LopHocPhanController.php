@@ -4,10 +4,12 @@ namespace App\Http\Controllers\DaoTao;
 
 use App\Http\Controllers\Controller;
 use App\Models\LopHocPhan;
+use App\Models\LopHocPhanSinhVien;
 use App\Models\DaoTao\MonHoc;
 use App\Models\HocKy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class LopHocPhanController extends Controller
 {
@@ -43,6 +45,21 @@ class LopHocPhanController extends Controller
         }
 
         $lopHocPhans = $query->orderBy('created_at', 'desc')->paginate(15);
+        
+        // Tính số lượng thực tế từ bảng lop_hoc_phan_sinh_vien cho mỗi lớp
+        // Sử dụng cùng logic với getLopHocPhanByMonHoc để đảm bảo đồng bộ
+        $lopIds = $lopHocPhans->pluck('id')->toArray();
+        $soLuongThucTe = LopHocPhanSinhVien::whereIn('lop_hoc_phan_id', $lopIds)
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+            ->selectRaw('lop_hoc_phan_id, COUNT(*) as so_luong')
+            ->groupBy('lop_hoc_phan_id')
+            ->pluck('so_luong', 'lop_hoc_phan_id')
+            ->toArray();
+        
+        foreach ($lopHocPhans as $lop) {
+            $lop->so_luong_thuc_te = $soLuongThucTe[$lop->id] ?? 0;
+        }
+        
         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
         $monHocs = MonHoc::orderBy('ten_mon')->get();
 
@@ -216,5 +233,42 @@ class LopHocPhanController extends Controller
 
         return redirect()->route('dao-tao.lop-hoc-phan.index')
             ->with('success', 'Xóa lớp học phần thành công!');
+    }
+
+    /**
+     * Đồng bộ lại số lượng đăng ký từ bảng lop_hoc_phan_sinh_vien
+     */
+    public function syncSoLuongDangKy()
+    {
+        try {
+            DB::beginTransaction();
+
+            // Lấy tất cả lớp học phần
+            $lopHocPhans = LopHocPhan::all();
+            $updated = 0;
+
+            foreach ($lopHocPhans as $lop) {
+                // Đếm số lượng sinh viên thực tế có trạng thái da_xep_lop hoặc dang_hoc
+                $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lop->id)
+                    ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                    ->count();
+
+                // Cập nhật số lượng
+                if ($lop->so_luong_dang_ky != $soLuongThucTe) {
+                    $lop->so_luong_dang_ky = $soLuongThucTe;
+                    $lop->save();
+                    $updated++;
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('dao-tao.lop-hoc-phan.index')
+                ->with('success', "Đã đồng bộ lại số lượng đăng ký cho {$updated} lớp học phần!");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return redirect()->route('dao-tao.lop-hoc-phan.index')
+                ->with('error', 'Lỗi khi đồng bộ: ' . $e->getMessage());
+        }
     }
 }

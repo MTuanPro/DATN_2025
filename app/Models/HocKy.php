@@ -19,6 +19,7 @@ class HocKy extends Model
         'ngay_bat_dau_dang_ky',
         'ngay_ket_thuc_dang_ky',
         'la_hoc_ky_hien_tai',
+        'dang_mo_dang_ky',
         'mo_ta',
     ];
 
@@ -28,6 +29,7 @@ class HocKy extends Model
         'ngay_bat_dau_dang_ky' => 'date',
         'ngay_ket_thuc_dang_ky' => 'date',
         'la_hoc_ky_hien_tai' => 'boolean',
+        'dang_mo_dang_ky' => 'boolean',
     ];
 
     /**

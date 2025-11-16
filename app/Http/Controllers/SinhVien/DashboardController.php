@@ -7,9 +7,11 @@ use App\Models\DaoTao\SinhVien;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\HocPhiHocKy;
 use App\Models\CanhBaoHocVu;
+use App\Models\NguoiNhanThongBao;
 use App\Services\DiemService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class DashboardController extends Controller
 {
@@ -62,6 +64,47 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
+        // Lấy tất cả thông báo mới nhất để hiển thị trong modal (từ bất kỳ actor nào gửi)
+        // Sắp xếp theo ngày giờ mới nhất, ưu tiên thông báo chưa đọc
+        $userId = Auth::id();
+        $now = now();
+        $thongBaoMoiNhat = NguoiNhanThongBao::with(['thongBao.nguoiGui'])
+            ->where('nguoi_nhan_id', $userId)
+            ->whereHas('thongBao', function ($q) use ($now) {
+                $q->where('trang_thai', 'cong_khai')
+                    ->where(function ($subQ) use ($now) {
+                        $subQ->whereNull('hien_thi_tu_ngay')
+                            ->orWhere('hien_thi_tu_ngay', '<=', $now);
+                    })
+                    ->where(function ($subQ) use ($now) {
+                        $subQ->whereNull('ngay_het_han')
+                            ->orWhere('ngay_het_han', '>=', $now);
+                    });
+            })
+            ->get()
+            ->filter(function ($item) {
+                return $item->thongBao !== null;
+            })
+            ->sort(function ($a, $b) {
+                // Ưu tiên thông báo chưa đọc trước
+                if ($a->da_doc !== $b->da_doc) {
+                    return $a->da_doc ? 1 : -1; // Chưa đọc trước
+                }
+                // Nếu cùng trạng thái đọc, sắp xếp theo ngày giờ mới nhất
+                $aTime = $a->thongBao ? $a->thongBao->ngay_gui->timestamp : 0;
+                $bTime = $b->thongBao ? $b->thongBao->ngay_gui->timestamp : 0;
+                return $bTime - $aTime; // Mới nhất trước
+            })
+            ->take(10) // Giới hạn 10 thông báo mới nhất
+            ->values();
+        
+        // Log để debug
+        Log::info('Dashboard - Thông báo mới nhất', [
+            'user_id' => $userId,
+            'count' => $thongBaoMoiNhat->count(),
+            'thong_bao_ids' => $thongBaoMoiNhat->pluck('thong_bao_id')->toArray()
+        ]);
+
         $data = [
             'totalCredits' => $totalCredits,
             'gpa' => $gpaFormatted,
@@ -72,6 +115,7 @@ class DashboardController extends Controller
             'course' => $sinhVien->khoaHoc ? $sinhVien->khoaHoc->ten_khoa_hoc : null,
             'warnings' => $warnings,
             'sinhVien' => $sinhVien,
+            'thongBaoMoiNhat' => $thongBaoMoiNhat,
         ];
 
         return view('sinhvien.dashboard', $data);

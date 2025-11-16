@@ -10,6 +10,8 @@ use App\Models\LichHocCoDinh;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\LopHocPhan;
 use App\Models\DaoTao\HocKy;
+use App\Models\DaoTao\SinhVien;
+use App\Models\DaoTao\ChuongTrinhKhung;
 
 class DangKyMonHocService
 {
@@ -173,19 +175,56 @@ class DangKyMonHocService
     {
         $errors = [];
 
+        // Lấy thông tin sinh viên
+        $sinhVien = SinhVien::findOrFail($sinhVienId);
+        $kyHienTai = $sinhVien->ky_hien_tai;
+
         // 1. Kiểm tra trùng đăng ký
         if ($this->checkDuplicateRegistration($sinhVienId, $monHocId, $hocKyId)) {
             $errors[] = 'Bạn đã đăng ký môn học này trong học kỳ hiện tại.';
         }
 
-        // 2. Kiểm tra môn tiên quyết
+        // 2. Kiểm tra kỳ học: Sinh viên chỉ được đăng ký môn của kỳ hiện tại hoặc kỳ trước đó (học lại)
+        $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
+            ->where('mon_hoc_id', $monHocId)
+            ->first();
+
+        if ($chuongTrinhKhung) {
+            $hocKyGoiY = $chuongTrinhKhung->hoc_ky_goi_y;
+            
+            // Kiểm tra xem sinh viên đã học môn này chưa (học lại) - chỉ môn kỳ trước
+            $daHocChuaQua = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $monHocId) {
+                $q->where('sinh_vien_id', $sinhVienId)
+                    ->whereHas('lopHocPhan', function ($q2) use ($monHocId) {
+                        $q2->where('mon_hoc_id', $monHocId);
+                    });
+            })->where('qua_mon', false)->exists();
+
+            // Chỉ cho phép đăng ký:
+            // - Môn của kỳ hiện tại (hoc_ky_goi_y == ky_hien_tai)
+            // - Môn của kỳ trước VÀ đã học nhưng chưa qua (học lại)
+            if ($hocKyGoiY == $kyHienTai) {
+                // Cho phép đăng ký môn kỳ hiện tại
+            } elseif ($hocKyGoiY < $kyHienTai && $daHocChuaQua) {
+                // Cho phép đăng ký môn kỳ trước nếu đã học nhưng chưa qua (học lại)
+            } else {
+                // Không cho phép
+                if ($hocKyGoiY > $kyHienTai) {
+                    $errors[] = "Bạn chỉ được đăng ký môn học của kỳ {$kyHienTai}. Môn này thuộc kỳ {$hocKyGoiY}.";
+                } elseif ($hocKyGoiY < $kyHienTai && !$daHocChuaQua) {
+                    $errors[] = "Bạn chỉ được đăng ký môn học của kỳ {$kyHienTai} hoặc môn học lại (kỳ trước). Môn này thuộc kỳ {$hocKyGoiY} và bạn chưa học lại.";
+                }
+            }
+        }
+
+        // 3. Kiểm tra môn tiên quyết
         $prerequisiteCheck = $this->validatePrerequisites($sinhVienId, $monHocId);
         if (!$prerequisiteCheck['passed']) {
             $monChuaHoc = collect($prerequisiteCheck['missing_subjects'])->pluck('ten_mon')->implode(', ');
             $errors[] = "Chưa hoàn thành môn tiên quyết: {$monChuaHoc}";
         }
 
-        // 3. Kiểm tra tổng tín chỉ
+        // 4. Kiểm tra tổng tín chỉ
         $monHoc = MonHoc::findOrFail($monHocId);
         $creditCheck = $this->validateTotalCredits($sinhVienId, $hocKyId, $monHoc->so_tin_chi);
         if (!$creditCheck['passed']) {
