@@ -364,14 +364,14 @@ class CanhBaoHocVuController extends Controller
         $count = 0;
         
         // Lấy danh sách sinh viên đăng ký lớp trong học kỳ này
-        $sinhViens = SinhVien::whereHas('lopHocPhanSinhVien.lopHocPhan', function($q) use ($hocKy) {
+        $sinhViens = SinhVien::whereHas('lopHocPhanSinhViens.lopHocPhan', function($q) use ($hocKy) {
             $q->where('hoc_ky_id', $hocKy->id);
         })->get();
 
         foreach ($sinhViens as $sv) {
             // Đếm tổng số buổi điểm danh của sinh viên trong học kỳ
             // Join: lop_hoc_phan_sinh_vien -> diem_danh -> lich_hoc_chi_tiet -> lop_hoc_phan
-            $lopHocPhanSinhVienIds = $sv->lopHocPhanSinhVien()
+            $lopHocPhanSinhVienIds = $sv->lopHocPhanSinhViens()
                 ->whereHas('lopHocPhan', function($q) use ($hocKy) {
                     $q->where('hoc_ky_id', $hocKy->id);
                 })->pluck('id');

@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\HocPhiHocKy;
+use App\Models\NguoiNhanThongBao;
 use App\Services\NotificationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -50,10 +51,15 @@ class CheckTuitionDeadlineJob implements ShouldQueue
             foreach ($hocPhis as $hocPhi) {
                 try {
                     // Kiểm tra xem đã gửi thông báo cho mốc này chưa
-                    $daGuiThongBao = $hocPhi->nguoiNhanThongBao()
-                        ->whereHas('thongBao', function ($query) use ($days) {
+                    // Kiểm tra trực tiếp trong bảng thong_bao và nguoi_nhan_thong_bao
+                    $daGuiThongBao = NguoiNhanThongBao::where('nguoi_nhan_id', $hocPhi->sinhVien->user_id)
+                        ->whereHas('thongBao', function ($query) use ($days, $hocPhi) {
                             $query->where('loai_thong_bao', 'hoc_phi')
                                 ->where('noi_dung', 'like', "%{$days} ngày%")
+                                ->where(function($q) use ($hocPhi) {
+                                    $q->where('lien_ket_id', $hocPhi->id)
+                                      ->orWhere('lien_ket_loai', 'hoc_phi');
+                                })
                                 ->whereDate('ngay_gui', '>=', Carbon::today());
                         })
                         ->exists();
@@ -88,10 +94,15 @@ class CheckTuitionDeadlineJob implements ShouldQueue
         foreach ($hocPhisQuaHan as $hocPhi) {
             try {
                 // Kiểm tra đã gửi thông báo quá hạn trong vòng 7 ngày gần nhất chưa
-                $daGuiThongBao = $hocPhi->nguoiNhanThongBao()
-                    ->whereHas('thongBao', function ($query) {
+                // Kiểm tra trực tiếp trong bảng thong_bao và nguoi_nhan_thong_bao
+                $daGuiThongBao = NguoiNhanThongBao::where('nguoi_nhan_id', $hocPhi->sinhVien->user_id)
+                    ->whereHas('thongBao', function ($query) use ($hocPhi) {
                         $query->where('loai_thong_bao', 'hoc_phi')
                             ->where('noi_dung', 'like', '%quá hạn%')
+                            ->where(function($q) use ($hocPhi) {
+                                $q->where('lien_ket_id', $hocPhi->id)
+                                  ->orWhere('lien_ket_loai', 'hoc_phi');
+                            })
                             ->whereDate('ngay_gui', '>=', Carbon::today()->subDays(7));
                     })
                     ->exists();

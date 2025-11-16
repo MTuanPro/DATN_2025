@@ -39,9 +39,12 @@ class LichThiObserver
                 $lopHocPhan = $lichThi->lopHocPhan;
                 $monHoc = $lopHocPhan->monHoc;
 
-                // Lấy danh sách sinh viên trong lớp học phần
-                $sinhVienIds = $lopHocPhan->sinhViens()
-                    ->pluck('sinh_vien.user_id')
+                // Lấy danh sách sinh viên trong lớp học phần (chỉ lấy các sinh viên đã được xếp lớp)
+                $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens()
+                    ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                    ->with('sinhVien')
+                    ->get()
+                    ->pluck('sinhVien.user_id')
                     ->filter()
                     ->toArray();
 
@@ -86,8 +89,12 @@ class LichThiObserver
                 $lopHocPhan = $lichThi->lopHocPhan;
                 $monHoc = $lopHocPhan->monHoc;
 
-                $sinhVienIds = $lopHocPhan->sinhViens()
-                    ->pluck('sinh_vien.user_id')
+                // Lấy danh sách sinh viên trong lớp học phần (chỉ lấy các sinh viên đã được xếp lớp)
+                $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens()
+                    ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                    ->with('sinhVien')
+                    ->get()
+                    ->pluck('sinhVien.user_id')
                     ->filter()
                     ->toArray();
 

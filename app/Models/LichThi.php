@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\DaoTao\SinhVien;
 
 class LichThi extends Model
 {
@@ -185,5 +186,138 @@ class LichThi extends Model
             'sinh_vien_id'
         )->withPivot('phong_thi_id', 'so_bao_danh', 'trang_thai', 'ghi_chu')
           ->withTimestamps();
+    }
+
+    /**
+     * Kiểm tra trùng thời gian giữa 2 lịch thi
+     * Logic: Hai lịch trùng nhau nếu cùng ngày và có khoảng thời gian giao nhau
+     * Trùng nếu: gio_ket_thuc >= gio_bat_dau_moi AND gio_bat_dau <= gio_ket_thuc_moi
+     * 
+     * @param string $ngayThi Ngày thi (Y-m-d)
+     * @param string $gioBatDau Giờ bắt đầu (H:i)
+     * @param string $gioKetThuc Giờ kết thúc (H:i)
+     * @param int|null $excludeId ID lịch thi cần loại trừ (khi update)
+     * @return bool
+     */
+    public static function kiemTraTrungThoiGian($ngayThi, $gioBatDau, $gioKetThuc, $excludeId = null)
+    {
+        $query = self::where('ngay_thi', $ngayThi)
+            ->where(function ($q) use ($gioBatDau, $gioKetThuc) {
+                // Logic đơn giản: trùng nếu end1 >= start2 AND start1 <= end2
+                $q->where('gio_ket_thuc', '>=', $gioBatDau)
+                  ->where('gio_bat_dau', '<=', $gioKetThuc);
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Kiểm tra xung đột phòng thi
+     * 
+     * @param int $phongThiId ID phòng thi
+     * @param string $ngayThi Ngày thi (Y-m-d)
+     * @param string $gioBatDau Giờ bắt đầu (H:i)
+     * @param string $gioKetThuc Giờ kết thúc (H:i)
+     * @param int|null $excludeId ID lịch thi cần loại trừ
+     * @return bool
+     */
+    public static function kiemTraXungDotPhong($phongThiId, $ngayThi, $gioBatDau, $gioKetThuc, $excludeId = null)
+    {
+        if (!$phongThiId) {
+            return false;
+        }
+
+        $query = self::where('phong_thi_id', $phongThiId)
+            ->where('ngay_thi', $ngayThi)
+            ->where(function ($q) use ($gioBatDau, $gioKetThuc) {
+                $q->where('gio_ket_thuc', '>=', $gioBatDau)
+                  ->where('gio_bat_dau', '<=', $gioKetThuc);
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Kiểm tra xung đột giám thị
+     * 
+     * @param int|array $giamThiIds ID giám thị (có thể là 1 ID hoặc mảng [giam_thi_1_id, giam_thi_2_id])
+     * @param string $ngayThi Ngày thi (Y-m-d)
+     * @param string $gioBatDau Giờ bắt đầu (H:i)
+     * @param string $gioKetThuc Giờ kết thúc (H:i)
+     * @param int|null $excludeId ID lịch thi cần loại trừ
+     * @return bool
+     */
+    public static function kiemTraXungDotGiamThi($giamThiIds, $ngayThi, $gioBatDau, $gioKetThuc, $excludeId = null)
+    {
+        if (empty($giamThiIds)) {
+            return false;
+        }
+
+        if (!is_array($giamThiIds)) {
+            $giamThiIds = [$giamThiIds];
+        }
+
+        $giamThiIds = array_filter($giamThiIds);
+
+        if (empty($giamThiIds)) {
+            return false;
+        }
+
+        $query = self::where('ngay_thi', $ngayThi)
+            ->where(function($q) use ($giamThiIds) {
+                $q->whereIn('giam_thi_1_id', $giamThiIds)
+                  ->orWhereIn('giam_thi_2_id', $giamThiIds);
+            })
+            ->where(function ($q) use ($gioBatDau, $gioKetThuc) {
+                $q->where('gio_ket_thuc', '>=', $gioBatDau)
+                  ->where('gio_bat_dau', '<=', $gioKetThuc);
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * Kiểm tra xung đột lịch thi sinh viên
+     * Kiểm tra xem có sinh viên nào trong danh sách đã có lịch thi trùng giờ không
+     * 
+     * @param array $sinhVienIds Mảng ID sinh viên
+     * @param string $ngayThi Ngày thi (Y-m-d)
+     * @param string $gioBatDau Giờ bắt đầu (H:i)
+     * @param string $gioKetThuc Giờ kết thúc (H:i)
+     * @param int|null $excludeId ID lịch thi cần loại trừ
+     * @return \App\Models\LichThi|null Lịch thi trùng (nếu có) hoặc null
+     */
+    public static function kiemTraXungDotSinhVien($sinhVienIds, $ngayThi, $gioBatDau, $gioKetThuc, $excludeId = null)
+    {
+        if (empty($sinhVienIds)) {
+            return null;
+        }
+
+        $query = self::whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
+                $q->whereIn('sinh_vien_id', $sinhVienIds);
+            })
+            ->where('ngay_thi', $ngayThi)
+            ->where(function ($q) use ($gioBatDau, $gioKetThuc) {
+                $q->where('gio_ket_thuc', '>=', $gioBatDau)
+                  ->where('gio_bat_dau', '<=', $gioKetThuc);
+            });
+
+        if ($excludeId) {
+            $query->where('id', '!=', $excludeId);
+        }
+
+        return $query->with(['lopHocPhan.monHoc'])->first();
     }
 }

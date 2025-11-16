@@ -1,9 +1,10 @@
 <?php
 
-namespace App\Models\Daotao;
+namespace App\Models\DaoTao;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\DaoTao\Nganh;
 
 class ChuyenNganh extends Model
 {

@@ -54,8 +54,6 @@ use App\Http\Controllers\Admin\AiChatbotFeedbackController;
 use App\Http\Controllers\SinhVien\ChatbotController;
 
 
-// Debug route (temporary)
-Route::get('/debug/check-auth', [App\Http\Controllers\DebugController::class, 'checkAuth'])->name('debug.check-auth');
 
 // Route trang chủ - redirect to dashboard nếu đã login, ngược lại về login
 Route::get('/', function () {
@@ -543,6 +541,13 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/calendar', [\App\Http\Controllers\SinhVien\LichThiController::class, 'calendar'])->name('calendar');
         Route::get('/export-pdf', [\App\Http\Controllers\SinhVien\LichThiController::class, 'exportPdf'])->name('export-pdf');
         Route::get('/{lichThi}', [\App\Http\Controllers\SinhVien\LichThiController::class, 'show'])->name('show');
+    });
+
+    // PHASE 2: Chương trình đào tạo
+    Route::middleware('sinhvien.check')->prefix('chuong-trinh-dao-tao')->name('chuong-trinh-dao-tao.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\ChuongTrinhDaoTaoController::class, 'index'])->name('index');
+        Route::get('/dieu-kien-tot-nghiep', [\App\Http\Controllers\SinhVien\ChuongTrinhDaoTaoController::class, 'dieuKienTotNghiep'])->name('dieu-kien-tot-nghiep');
+        Route::get('/mon-hoc/{id}', [\App\Http\Controllers\SinhVien\ChuongTrinhDaoTaoController::class, 'chiTietMonHoc'])->name('mon-hoc');
     });
 
     // PHASE 8.5: Cảnh báo học vụ cá nhân

@@ -83,18 +83,24 @@ class LichHocCoDinh extends Model
 
     /**
      * Kiểm tra xung đột phòng học
+     * Logic: Hai lịch trùng nhau nếu:
+     * - Cùng phòng học
+     * - Cùng thứ trong tuần
+     * - Có khoảng thời gian giao nhau (không phải end1 < start2 hoặc start1 > end2)
      */
     public function kiemTraXungDotPhong($excludeId = null)
     {
         $query = self::where('phong_hoc_id', $this->phong_hoc_id)
             ->where('thu_trong_tuan', $this->thu_trong_tuan)
             ->where(function ($q) {
-                $q->whereBetween('tiet_bat_dau', [$this->tiet_bat_dau, $this->tiet_ket_thuc])
-                    ->orWhereBetween('tiet_ket_thuc', [$this->tiet_bat_dau, $this->tiet_ket_thuc])
-                    ->orWhere(function ($q2) {
-                        $q2->where('tiet_bat_dau', '<=', $this->tiet_bat_dau)
-                            ->where('tiet_ket_thuc', '>=', $this->tiet_ket_thuc);
-                    });
+                // Logic tương tự kiemTraTrungTiet: trùng nếu !(end1 < start2 || start1 > end2)
+                // Tức là: trùng nếu end1 >= start2 AND start1 <= end2
+                $q->where(function ($q2) {
+                    // Lịch cũ kết thúc sau hoặc bằng lịch mới bắt đầu
+                    // VÀ lịch cũ bắt đầu trước hoặc bằng lịch mới kết thúc
+                    $q2->where('tiet_ket_thuc', '>=', $this->tiet_bat_dau)
+                       ->where('tiet_bat_dau', '<=', $this->tiet_ket_thuc);
+                });
             });
 
         if ($excludeId) {
@@ -106,18 +112,23 @@ class LichHocCoDinh extends Model
 
     /**
      * Kiểm tra xung đột giảng viên
+     * Logic: Hai lịch trùng nhau nếu:
+     * - Cùng thứ trong tuần
+     * - Có khoảng thời gian giao nhau (không phải end1 < start2 hoặc start1 > end2)
      */
     public function kiemTraXungDotGiangVien($excludeId = null)
     {
         $query = self::where('giang_vien_id', $this->giang_vien_id)
             ->where('thu_trong_tuan', $this->thu_trong_tuan)
             ->where(function ($q) {
-                $q->whereBetween('tiet_bat_dau', [$this->tiet_bat_dau, $this->tiet_ket_thuc])
-                    ->orWhereBetween('tiet_ket_thuc', [$this->tiet_bat_dau, $this->tiet_ket_thuc])
-                    ->orWhere(function ($q2) {
-                        $q2->where('tiet_bat_dau', '<=', $this->tiet_bat_dau)
-                            ->where('tiet_ket_thuc', '>=', $this->tiet_ket_thuc);
-                    });
+                // Logic tương tự kiemTraTrungTiet: trùng nếu !(end1 < start2 || start1 > end2)
+                // Tức là: trùng nếu end1 >= start2 AND start1 <= end2
+                $q->where(function ($q2) {
+                    // Lịch cũ kết thúc sau hoặc bằng lịch mới bắt đầu
+                    // VÀ lịch cũ bắt đầu trước hoặc bằng lịch mới kết thúc
+                    $q2->where('tiet_ket_thuc', '>=', $this->tiet_bat_dau)
+                       ->where('tiet_bat_dau', '<=', $this->tiet_ket_thuc);
+                });
             });
 
         if ($excludeId) {

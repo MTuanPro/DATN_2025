@@ -39,7 +39,7 @@ class CheckExamReminderJob implements ShouldQueue
             $targetDate = $today->copy()->addDays($days);
 
             // Lấy các lịch thi sắp diễn ra
-            $lichThis = LichThi::with(['lopHocPhan.monHoc', 'lopHocPhan.sinhViens.sinhVien'])
+            $lichThis = LichThi::with(['lopHocPhan.monHoc', 'lopHocPhan.lopHocPhanSinhViens.sinhVien'])
                 ->whereDate('ngay_thi', '=', $targetDate)
                 ->get();
 
@@ -54,9 +54,12 @@ class CheckExamReminderJob implements ShouldQueue
 
                     $monHoc = $lopHocPhan->monHoc;
                     
-                    // Lấy danh sách sinh viên
-                    $sinhVienIds = $lopHocPhan->sinhViens()
-                        ->pluck('sinh_vien.user_id')
+                    // Lấy danh sách sinh viên (chỉ lấy các sinh viên đã được xếp lớp)
+                    $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens()
+                        ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                        ->with('sinhVien')
+                        ->get()
+                        ->pluck('sinhVien.user_id')
                         ->filter()
                         ->toArray();
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Models\Daotao;
+namespace App\Models\DaoTao;
 use App\Models\DaoTao\Khoa;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;

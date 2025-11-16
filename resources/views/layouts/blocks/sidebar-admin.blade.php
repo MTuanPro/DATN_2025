@@ -54,13 +54,16 @@
                 </li>
 
                 <!-- 3. THÔNG BÁO HỆ THỐNG -->
-                <li class="sidebar-item has-sub {{ Request::is('admin/thong-bao*', 'admin/nguoi-nhan-thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
+                <li
+                    class="sidebar-item has-sub {{ Request::is('admin/thong-bao*', 'admin/nguoi-nhan-thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-megaphone-fill"></i>
                         <span>Thông báo hệ thống</span>
                     </a>
-                    <ul class="submenu {{ Request::is('admin/thong-bao*', 'admin/nguoi-nhan-thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('admin/thong-bao') || Request::is('admin/thong-bao/create') || Request::is('admin/thong-bao/*/edit') ? 'active' : '' }}">
+                    <ul
+                        class="submenu {{ Request::is('admin/thong-bao*', 'admin/nguoi-nhan-thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
+                        <li
+                            class="submenu-item {{ Request::is('admin/thong-bao') || Request::is('admin/thong-bao/create') || Request::is('admin/thong-bao/*/edit') ? 'active' : '' }}">
                             <a href="{{ route('admin.thong-bao.index') }}">Quản lý Thông báo</a>
                         </li>
                         <li class="submenu-item {{ Request::is('admin/nguoi-nhan-thong-bao*') ? 'active' : '' }}">
@@ -125,36 +128,6 @@
                     </ul>
                 </li>
 
-                <!-- 8. CÀI ĐẶT & VẬN HÀNH -->
-                <li class="sidebar-item has-sub">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-gear-fill"></i>
-                        <span>Cài đặt & Vận hành</span>
-                    </a>
-                    <ul class="submenu">
-                        <li class="submenu-item">
-                            <a href="#">Cấu hình chung</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Cấu hình Email</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Cấu hình SMS</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Cấu hình thông báo</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Cấu hình bảo mật</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Quản lý dữ liệu</a>
-                        </li>
-                        <li class="submenu-item">
-                            <a href="#">Quản lý Logs</a>
-                        </li>
-                    </ul>
-                </li>
 
             </ul>
         </div>

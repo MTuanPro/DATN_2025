@@ -27,7 +27,7 @@
                 <div class="col-md-8">
                     <div class="card">
                         <div class="card-body">
-                            <form action="{{ route('dao-tao.hoc-phi.store-payment', $hocPhi->id) }}" method="POST" enctype="multipart/form-data">
+                            <form action="{{ route('dao-tao.hoc-phi.storePayment', $hocPhi->id) }}" method="POST" enctype="multipart/form-data">
                                 @csrf
 
                                 <div class="alert alert-info">
@@ -39,13 +39,14 @@
 
                                 <div class="mb-3">
                                     <label class="form-label">Số tiền <span class="text-danger">*</span></label>
-                                    <input type="number" name="so_tien" class="form-control @error('so_tien') is-invalid @enderror" 
-                                           value="{{ old('so_tien') }}" required min="1000" step="1000"
+                                    <input type="number" name="so_tien_dong" id="so_tien_dong" class="form-control @error('so_tien_dong') is-invalid @enderror" 
+                                           value="{{ old('so_tien_dong') }}" required min="1000" step="1000" max="{{ $hocPhi->so_tien_con_lai }}"
                                            placeholder="Nhập số tiền thanh toán">
-                                    @error('so_tien')
+                                    @error('so_tien_dong')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                     <small class="text-muted">Số tiền còn lại: <strong class="text-danger">{{ number_format($hocPhi->so_tien_con_lai, 0, ',', '.') }} đ</strong></small>
+                                    <small id="so_tien_error" class="text-danger d-none"></small>
                                 </div>
 
                                 <div class="mb-3">
@@ -59,13 +60,22 @@
 
                                 <div class="mb-3">
                                     <label class="form-label">Phương thức thanh toán <span class="text-danger">*</span></label>
-                                    <select name="phuong_thuc_thanh_toan" class="form-select @error('phuong_thuc_thanh_toan') is-invalid @enderror" required>
+                                    <select name="phuong_thuc_thanh_toan" id="phuong_thuc_thanh_toan" class="form-select @error('phuong_thuc_thanh_toan') is-invalid @enderror" required>
                                         <option value="">-- Chọn phương thức --</option>
                                         <option value="Tiền mặt" {{ old('phuong_thuc_thanh_toan') == 'Tiền mặt' ? 'selected' : '' }}>Tiền mặt</option>
                                         <option value="Chuyển khoản" {{ old('phuong_thuc_thanh_toan') == 'Chuyển khoản' ? 'selected' : '' }}>Chuyển khoản</option>
                                         <option value="Thẻ ATM" {{ old('phuong_thuc_thanh_toan') == 'Thẻ ATM' ? 'selected' : '' }}>Thẻ ATM</option>
                                     </select>
                                     @error('phuong_thuc_thanh_toan')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="mb-3" id="ngan_hang_field" style="display: none;">
+                                    <label class="form-label">Ngân hàng</label>
+                                    <input type="text" name="ngan_hang" class="form-control @error('ngan_hang') is-invalid @enderror" 
+                                           value="{{ old('ngan_hang') }}" placeholder="Tên ngân hàng (nếu chuyển khoản)">
+                                    @error('ngan_hang')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -77,9 +87,9 @@
 
                                 <div class="mb-3">
                                     <label class="form-label">Biên lai thanh toán (nếu có)</label>
-                                    <input type="file" name="bien_lai" class="form-control @error('bien_lai') is-invalid @enderror" 
+                                    <input type="file" name="bien_lai_file" class="form-control @error('bien_lai_file') is-invalid @enderror" 
                                            accept="image/*,.pdf">
-                                    @error('bien_lai')
+                                    @error('bien_lai_file')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
@@ -120,3 +130,62 @@
         </section>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const phuongThucSelect = document.getElementById('phuong_thuc_thanh_toan');
+        const nganHangField = document.getElementById('ngan_hang_field');
+        const soTienDongInput = document.getElementById('so_tien_dong');
+        const soTienError = document.getElementById('so_tien_error');
+        const soTienConLai = {{ $hocPhi->so_tien_con_lai }};
+        
+        // Hiển thị/ẩn trường ngân hàng
+        if (phuongThucSelect && nganHangField) {
+            phuongThucSelect.addEventListener('change', function() {
+                if (this.value === 'Chuyển khoản') {
+                    nganHangField.style.display = 'block';
+                } else {
+                    nganHangField.style.display = 'none';
+                }
+            });
+            
+            // Check on page load (for old input)
+            if (phuongThucSelect.value === 'Chuyển khoản') {
+                nganHangField.style.display = 'block';
+            }
+        }
+        
+        // Validate số tiền không vượt quá số tiền còn lại
+        if (soTienDongInput && soTienError) {
+            soTienDongInput.addEventListener('input', function() {
+                const soTien = parseFloat(this.value) || 0;
+                if (soTien > soTienConLai) {
+                    soTienError.textContent = 'Số tiền đóng không được vượt quá số tiền còn lại (' + new Intl.NumberFormat('vi-VN').format(soTienConLai) + ' đ)';
+                    soTienError.classList.remove('d-none');
+                    this.classList.add('is-invalid');
+                } else {
+                    soTienError.classList.add('d-none');
+                    this.classList.remove('is-invalid');
+                }
+            });
+            
+            // Validate khi submit form
+            const form = soTienDongInput.closest('form');
+            if (form) {
+                form.addEventListener('submit', function(e) {
+                    const soTien = parseFloat(soTienDongInput.value) || 0;
+                    if (soTien > soTienConLai) {
+                        e.preventDefault();
+                        soTienError.textContent = 'Số tiền đóng không được vượt quá số tiền còn lại (' + new Intl.NumberFormat('vi-VN').format(soTienConLai) + ' đ)';
+                        soTienError.classList.remove('d-none');
+                        soTienDongInput.classList.add('is-invalid');
+                        soTienDongInput.focus();
+                        return false;
+                    }
+                });
+            }
+        }
+    });
+</script>
+@endpush

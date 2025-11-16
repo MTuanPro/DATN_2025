@@ -137,7 +137,10 @@ class XepLopHocPhanService
     {
         $lichHoc = [];
         
+        // Chỉ lấy các lớp đang hoạt động (đã xếp lớp hoặc đang học)
+        // Không lấy các lớp đã hủy, kết thúc, hoặc chưa xếp lớp
         $lopDaDangKy = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVienId)
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
             ->whereHas('lopHocPhan', function(Builder $q) use ($hocKyId) {
                 $q->where('hoc_ky_id', $hocKyId);
             })

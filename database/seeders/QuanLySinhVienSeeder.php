@@ -164,6 +164,14 @@ class QuanLySinhVienSeeder extends Seeder
         $this->command->newLine();
 
         // ========================================
+        // PHASE 15.5: Dữ liệu test cho Chương trình đào tạo
+        // ========================================
+        $this->command->info('🎓 PHASE 15.5: Dữ liệu test cho Chương trình đào tạo');
+        $this->call(ChuongTrinhDaoTaoTestSeeder::class);
+        $this->command->info('✅ Hoàn thành PHASE 15.5');
+        $this->command->newLine();
+
+        // ========================================
         // PHASE 16: Bảng điểm tổng hợp
         // ========================================
         $this->command->info('📋 PHASE 16: Bảng điểm tổng hợp');

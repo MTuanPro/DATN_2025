@@ -102,7 +102,7 @@ class HocPhiController extends Controller
             $hocPhi->updateTrangThai();
 
             return redirect()
-                ->route('daotao.hoc-phi.show', $id)
+                ->route('dao-tao.hoc-phi.show', $id)
                 ->with('success', 'Cập nhật học phí thành công!');
         } catch (\Exception $e) {
             return redirect()
@@ -127,8 +127,19 @@ class HocPhiController extends Controller
      */
     public function storePayment(Request $request, $id)
     {
+        $hocPhi = HocPhiHocKy::findOrFail($id);
+        
         $validated = $request->validate([
-            'so_tien_dong' => 'required|numeric|min:1',
+            'so_tien_dong' => [
+                'required',
+                'numeric',
+                'min:1',
+                function ($attribute, $value, $fail) use ($hocPhi) {
+                    if ($value > $hocPhi->so_tien_con_lai) {
+                        $fail('Số tiền đóng không được vượt quá số tiền còn lại (' . number_format($hocPhi->so_tien_con_lai, 0, ',', '.') . ' đ)');
+                    }
+                },
+            ],
             'ngay_dong' => 'required|date',
             'phuong_thuc_thanh_toan' => 'required|string',
             'ngan_hang' => 'nullable|string',
@@ -144,16 +155,6 @@ class HocPhiController extends Controller
 
         try {
             DB::beginTransaction();
-
-            $hocPhi = HocPhiHocKy::findOrFail($id);
-
-            // Check if payment amount exceeds remaining amount
-            if ($validated['so_tien_dong'] > $hocPhi->so_tien_con_lai) {
-                return redirect()
-                    ->back()
-                    ->withInput()
-                    ->with('error', 'Số tiền đóng vượt quá số tiền còn lại!');
-            }
 
             // Handle file upload
             $filePath = null;
@@ -192,7 +193,7 @@ class HocPhiController extends Controller
             DB::commit();
 
             return redirect()
-                ->route('daotao.hoc-phi.show', $id)
+                ->route('dao-tao.hoc-phi.show', $id)
                 ->with('success', 'Ghi nhận thanh toán thành công! Mã giao dịch: ' . $lichSu->ma_giao_dich);
         } catch (\Exception $e) {
             DB::rollBack();

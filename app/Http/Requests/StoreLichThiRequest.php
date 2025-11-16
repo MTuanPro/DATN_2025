@@ -67,22 +67,23 @@ class StoreLichThiRequest extends FormRequest
                     if (!$ngayThi || !$gioBatDau || !$gioKetThuc) return;
                     
                     // Kiểm tra phòng thi có trùng lịch không
-                    $trungLich = LichThi::where('phong_thi_id', $value)
-                        ->where('ngay_thi', $ngayThi)
-                        ->where(function ($query) use ($gioBatDau, $gioKetThuc) {
-                            $query->whereBetween('gio_bat_dau', [$gioBatDau, $gioKetThuc])
-                                  ->orWhereBetween('gio_ket_thuc', [$gioBatDau, $gioKetThuc])
-                                  ->orWhere(function ($q) use ($gioBatDau, $gioKetThuc) {
-                                      $q->where('gio_bat_dau', '<=', $gioBatDau)
-                                        ->where('gio_ket_thuc', '>=', $gioKetThuc);
-                                  });
-                        })
-                        ->with(['phongThi', 'lopHocPhan.monHoc'])
-                        ->first();
+                    $trungLich = LichThi::kiemTraXungDotPhong($value, $ngayThi, $gioBatDau, $gioKetThuc);
                     
                     if ($trungLich) {
-                        $phong = PhongHoc::find($value);
-                        $fail("Phòng {$phong->ten_phong} đã có lịch thi vào {$ngayThi} từ {$trungLich->gio_bat_dau} đến {$trungLich->gio_ket_thuc} (Môn: {$trungLich->lopHocPhan->monHoc->ten_mon}).");
+                        // Lấy thông tin lịch thi trùng để hiển thị
+                        $lichThiTrung = LichThi::where('phong_thi_id', $value)
+                            ->where('ngay_thi', $ngayThi)
+                            ->where(function ($q) use ($gioBatDau, $gioKetThuc) {
+                                $q->where('gio_ket_thuc', '>=', $gioBatDau)
+                                  ->where('gio_bat_dau', '<=', $gioKetThuc);
+                            })
+                            ->with(['phongThi', 'lopHocPhan.monHoc'])
+                            ->first();
+                        
+                        if ($lichThiTrung) {
+                            $phong = PhongHoc::find($value);
+                            $fail("Phòng {$phong->ten_phong} đã có lịch thi vào {$ngayThi} từ {$lichThiTrung->gio_bat_dau} đến {$lichThiTrung->gio_ket_thuc} (Môn: {$lichThiTrung->lopHocPhan->monHoc->ten_mon}).");
+                        }
                     }
                 },
             ],
@@ -100,26 +101,27 @@ class StoreLichThiRequest extends FormRequest
                     if (!$ngayThi || !$gioBatDau || !$gioKetThuc) return;
                     
                     // Kiểm tra giảng viên có trùng lịch coi thi không
-                    $trungLich = LichThi::where('ngay_thi', $ngayThi)
-                        ->where(function ($query) use ($value) {
-                            $query->where('giam_thi_1_id', $value)
-                                  ->orWhere('giam_thi_2_id', $value);
-                        })
-                        ->where(function ($query) use ($gioBatDau, $gioKetThuc) {
-                            $query->whereBetween('gio_bat_dau', [$gioBatDau, $gioKetThuc])
-                                  ->orWhereBetween('gio_ket_thuc', [$gioBatDau, $gioKetThuc])
-                                  ->orWhere(function ($q) use ($gioBatDau, $gioKetThuc) {
-                                      $q->where('gio_bat_dau', '<=', $gioBatDau)
-                                        ->where('gio_ket_thuc', '>=', $gioKetThuc);
-                                  });
-                        })
-                        ->with(['lopHocPhan.monHoc', 'phongThi'])
-                        ->first();
+                    $trungLich = LichThi::kiemTraXungDotGiamThi($value, $ngayThi, $gioBatDau, $gioKetThuc);
                     
                     if ($trungLich) {
-                        $giangVien = GiangVien::find($value);
-                        $phongThi = $trungLich->phongThi ? $trungLich->phongThi->ten_phong : 'N/A';
-                        $fail("Giảng viên {$giangVien->ho_ten} đã có lịch coi thi vào {$ngayThi} từ {$trungLich->gio_bat_dau} đến {$trungLich->gio_ket_thuc} (Môn: {$trungLich->lopHocPhan->monHoc->ten_mon}, Phòng: {$phongThi}).");
+                        // Lấy thông tin lịch thi trùng để hiển thị
+                        $lichThiTrung = LichThi::where('ngay_thi', $ngayThi)
+                            ->where(function ($q) use ($value) {
+                                $q->where('giam_thi_1_id', $value)
+                                  ->orWhere('giam_thi_2_id', $value);
+                            })
+                            ->where(function ($q) use ($gioBatDau, $gioKetThuc) {
+                                $q->where('gio_ket_thuc', '>=', $gioBatDau)
+                                  ->where('gio_bat_dau', '<=', $gioKetThuc);
+                            })
+                            ->with(['lopHocPhan.monHoc', 'phongThi'])
+                            ->first();
+                        
+                        if ($lichThiTrung) {
+                            $giangVien = GiangVien::find($value);
+                            $phongThi = $lichThiTrung->phongThi ? $lichThiTrung->phongThi->ten_phong : 'N/A';
+                            $fail("Giảng viên {$giangVien->ho_ten} đã có lịch coi thi vào {$ngayThi} từ {$lichThiTrung->gio_bat_dau} đến {$lichThiTrung->gio_ket_thuc} (Môn: {$lichThiTrung->lopHocPhan->monHoc->ten_mon}, Phòng: {$phongThi}).");
+                        }
                     }
                 },
             ],
@@ -137,26 +139,27 @@ class StoreLichThiRequest extends FormRequest
                     if (!$ngayThi || !$gioBatDau || !$gioKetThuc) return;
                     
                     // Kiểm tra giảng viên có trùng lịch coi thi không
-                    $trungLich = LichThi::where('ngay_thi', $ngayThi)
-                        ->where(function ($query) use ($value) {
-                            $query->where('giam_thi_1_id', $value)
-                                  ->orWhere('giam_thi_2_id', $value);
-                        })
-                        ->where(function ($query) use ($gioBatDau, $gioKetThuc) {
-                            $query->whereBetween('gio_bat_dau', [$gioBatDau, $gioKetThuc])
-                                  ->orWhereBetween('gio_ket_thuc', [$gioBatDau, $gioKetThuc])
-                                  ->orWhere(function ($q) use ($gioBatDau, $gioKetThuc) {
-                                      $q->where('gio_bat_dau', '<=', $gioBatDau)
-                                        ->where('gio_ket_thuc', '>=', $gioKetThuc);
-                                  });
-                        })
-                        ->with(['lopHocPhan.monHoc', 'phongThi'])
-                        ->first();
+                    $trungLich = LichThi::kiemTraXungDotGiamThi($value, $ngayThi, $gioBatDau, $gioKetThuc);
                     
                     if ($trungLich) {
-                        $giangVien = GiangVien::find($value);
-                        $phongThi = $trungLich->phongThi ? $trungLich->phongThi->ten_phong : 'N/A';
-                        $fail("Giảng viên {$giangVien->ho_ten} đã có lịch coi thi vào {$ngayThi} từ {$trungLich->gio_bat_dau} đến {$trungLich->gio_ket_thuc} (Môn: {$trungLich->lopHocPhan->monHoc->ten_mon}, Phòng: {$phongThi}).");
+                        // Lấy thông tin lịch thi trùng để hiển thị
+                        $lichThiTrung = LichThi::where('ngay_thi', $ngayThi)
+                            ->where(function ($q) use ($value) {
+                                $q->where('giam_thi_1_id', $value)
+                                  ->orWhere('giam_thi_2_id', $value);
+                            })
+                            ->where(function ($q) use ($gioBatDau, $gioKetThuc) {
+                                $q->where('gio_ket_thuc', '>=', $gioBatDau)
+                                  ->where('gio_bat_dau', '<=', $gioKetThuc);
+                            })
+                            ->with(['lopHocPhan.monHoc', 'phongThi'])
+                            ->first();
+                        
+                        if ($lichThiTrung) {
+                            $giangVien = GiangVien::find($value);
+                            $phongThi = $lichThiTrung->phongThi ? $lichThiTrung->phongThi->ten_phong : 'N/A';
+                            $fail("Giảng viên {$giangVien->ho_ten} đã có lịch coi thi vào {$ngayThi} từ {$lichThiTrung->gio_bat_dau} đến {$lichThiTrung->gio_ket_thuc} (Môn: {$lichThiTrung->lopHocPhan->monHoc->ten_mon}, Phòng: {$phongThi}).");
+                        }
                     }
                 },
             ],

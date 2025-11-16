@@ -81,16 +81,20 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($hocPhi->chiTietHocPhi as $index => $ct)
+                                        @forelse ($hocPhi->chiTietHocPhiMon ?? [] as $index => $ct)
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
-                                                <td>{{ $ct->monHoc->ma_mon }}</td>
-                                                <td>{{ $ct->monHoc->ten_mon }}</td>
+                                                <td>{{ $ct->monHoc->ma_mon ?? 'N/A' }}</td>
+                                                <td>{{ $ct->monHoc->ten_mon ?? 'N/A' }}</td>
                                                 <td>{{ $ct->so_tin_chi }}</td>
                                                 <td>{{ number_format($ct->don_gia_tin_chi, 0, ',', '.') }} đ</td>
                                                 <td>{{ number_format($ct->thanh_tien, 0, ',', '.') }} đ</td>
                                             </tr>
-                                        @endforeach
+                                        @empty
+                                            <tr>
+                                                <td colspan="6" class="text-center text-muted">Chưa có chi tiết học phí</td>
+                                            </tr>
+                                        @endforelse
                                     </tbody>
                                 </table>
                             </div>

@@ -9,6 +9,8 @@ use App\Models\AiChatbotFeedback;
 use App\Services\ChatbotMatchingService;
 use App\Services\AdvancedChatbotMatchingService;
 use App\Services\ChatbotContextService;
+use App\Services\ChatbotGPTService;
+use App\Services\ChatbotGeminiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -20,15 +22,21 @@ class ChatbotController extends Controller
     protected $matchingService;
     protected $advancedMatchingService;
     protected $contextService;
+    protected $gptService;
+    protected $geminiService;
 
     public function __construct(
         ChatbotMatchingService $matchingService,
         AdvancedChatbotMatchingService $advancedMatchingService,
-        ChatbotContextService $contextService
+        ChatbotContextService $contextService,
+        ChatbotGPTService $gptService,
+        ChatbotGeminiService $geminiService
     ) {
         $this->matchingService = $matchingService;
         $this->advancedMatchingService = $advancedMatchingService;
         $this->contextService = $contextService;
+        $this->gptService = $gptService;
+        $this->geminiService = $geminiService;
     }
 
     /**
@@ -154,6 +162,10 @@ class ChatbotController extends Controller
         $entities = $matchResult['entities'] ?? [];
 
         // Tạo câu trả lời
+        $usedAI = false;
+        $aiProvider = null;
+        $aiTokensUsed = 0;
+        
         if ($knowledge) {
             // Có câu trả lời từ knowledge base
             $botResponse = $knowledge->cau_tra_loi;
@@ -162,22 +174,112 @@ class ChatbotController extends Controller
             // Tăng lượt truy cập
             $knowledge->tangLuotTruyCap();
         } else {
-            // FIX: Sử dụng config thay vì hard-coded
-            // Không tìm thấy câu trả lời phù hợp
-            $botResponse = config(
-                'chatbot.default_response',
-                'Xin lỗi, tôi chưa có thông tin về câu hỏi này. Bạn có thể liên hệ phòng Đào tạo để được hỗ trợ chi tiết hơn.'
-            );
-            $botResponse .= "\n\n📞 Hotline: " . config('chatbot.hotline', '024.xxxx.xxxx');
-            $botResponse .= "\n📧 Email: " . config('chatbot.email', 'daotao@smis.edu.vn');
+            // Không tìm thấy trong knowledge base
             $knowledgeId = null;
+            
+            // Lấy context từ conversation
+            $conversationContext = $this->contextService->getContext($conversation->id);
+            $recentMessages = $conversation->messages()
+                ->orderBy('thoi_gian_gui', 'desc')
+                ->take(10)
+                ->get()
+                ->reverse()
+                ->map(function($msg) {
+                    return [
+                        'nguoi_gui' => $msg->nguoi_gui,
+                        'noi_dung' => $msg->noi_dung,
+                    ];
+                })
+                ->toArray();
+            
+            $contextForAI = [
+                'messages' => $recentMessages,
+                'intent' => $intent,
+                'entities' => $entities,
+            ];
+            
+            // Lấy một số knowledge base liên quan để làm context
+            $relatedKnowledge = \App\Models\AiChatbotKnowledgeBase::kichHoat()
+                ->where('chu_de', $intent)
+                ->limit(3)
+                ->get()
+                ->map(function($kb) {
+                    return [
+                        'cau_hoi' => $kb->cau_hoi_mau,
+                        'cau_tra_loi' => $kb->cau_tra_loi,
+                    ];
+                })
+                ->toArray();
+            
+            // Ưu tiên: Gemini > GPT > Default
+            $minSimilarity = config('chatbot.gemini.min_similarity_for_gemini', 0.3);
+            if (config('chatbot.gemini.enabled', false) && 
+                config('chatbot.gemini.use_when_no_match', true) && 
+                $similarity < $minSimilarity) {
+                
+                // Thử dùng Gemini
+                $geminiResult = $this->geminiService->getResponse($cleanMessage, $contextForAI, $relatedKnowledge);
+                
+                if (!empty($geminiResult['response'])) {
+                    $botResponse = $geminiResult['response'];
+                    $usedAI = true;
+                    $aiProvider = 'gemini';
+                    $aiTokensUsed = $geminiResult['tokens_used'] ?? 0;
+                    
+                    Log::info('Chatbot used Gemini', [
+                        'question' => $cleanMessage,
+                        'tokens_used' => $aiTokensUsed,
+                        'similarity' => $similarity,
+                    ]);
+                }
+            }
+            
+            // Nếu Gemini không hoạt động, thử GPT
+            if (!$usedAI) {
+                $gptEnabled = config('chatbot.gpt.enabled', false);
+                $useGPTWhenNoMatch = config('chatbot.gpt.use_when_no_match', true);
+                $minSimilarityForGPT = config('chatbot.gpt.min_similarity_for_gpt', 0.3);
+                
+                if ($gptEnabled && $useGPTWhenNoMatch && $similarity < $minSimilarityForGPT) {
+                    $gptResult = $this->gptService->getResponse($cleanMessage, $contextForAI, $relatedKnowledge);
+                    
+                    if (!empty($gptResult['response'])) {
+                        $botResponse = $gptResult['response'];
+                        $usedAI = true;
+                        $aiProvider = 'gpt';
+                        $aiTokensUsed = $gptResult['tokens_used'] ?? 0;
+                        
+                        Log::info('Chatbot used GPT', [
+                            'question' => $cleanMessage,
+                            'tokens_used' => $aiTokensUsed,
+                            'similarity' => $similarity,
+                        ]);
+                    }
+                }
+            }
+            
+            // Nếu cả Gemini và GPT đều không hoạt động, dùng default response
+            if (!$usedAI) {
+                $botResponse = config(
+                    'chatbot.default_response',
+                    'Xin lỗi, tôi chưa có thông tin về câu hỏi này. Bạn có thể liên hệ phòng Đào tạo để được hỗ trợ chi tiết hơn.'
+                );
+                $botResponse .= "\n\n📞 Hotline: " . config('chatbot.hotline', '024.xxxx.xxxx');
+                $botResponse .= "\n📧 Email: " . config('chatbot.email', 'daotao@smis.edu.vn');
+                
+                Log::warning('Chatbot AI failed, using default', [
+                    'question' => $cleanMessage,
+                ]);
+            }
 
-            // FIX: Log câu hỏi không match được
+            // Log câu hỏi không match được
             Log::info('Chatbot no match', [
                 'question' => $cleanMessage,
                 'chu_de' => $request->chu_de,
                 'sinh_vien_id' => $sinhVien->id,
                 'best_similarity' => $similarity,
+                'used_ai' => $usedAI,
+                'ai_provider' => $aiProvider,
             ]);
         }
 
@@ -230,6 +332,9 @@ class ChatbotController extends Controller
                 'similarity' => $similarity ? round($similarity * 100) : null,
                 'intent' => $intent, // Debug info
                 'entities' => config('app.debug') ? $entities : null, // Debug info
+                'used_ai' => $usedAI, // Thông tin về việc sử dụng AI
+                'ai_provider' => $aiProvider, // 'gemini' hoặc 'gpt'
+                'ai_tokens' => $usedAI ? $aiTokensUsed : null, // Số tokens đã dùng
             ],
         ]);
     }
@@ -404,7 +509,7 @@ class ChatbotController extends Controller
                 'message' => 'Đã xóa cuộc hội thoại',
             ]);
         } catch (\Exception $e) {
-            \Log::error('Lỗi xóa conversation: ' . $e->getMessage());
+            Log::error('Lỗi xóa conversation: ' . $e->getMessage());
             return response()->json([
                 'success' => false,
                 'error' => 'Có lỗi xảy ra khi xóa cuộc hội thoại'

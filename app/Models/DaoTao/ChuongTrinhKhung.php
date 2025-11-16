@@ -1,11 +1,11 @@
 <?php
 
-namespace App\Models\Daotao;
+namespace App\Models\DaoTao;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
-use App\Models\Daotao\ChuyenNganh;
-use App\Models\Daotao\MonHoc;
+use App\Models\DaoTao\ChuyenNganh;
+use App\Models\DaoTao\MonHoc;
 
 class ChuongTrinhKhung extends Model
 {

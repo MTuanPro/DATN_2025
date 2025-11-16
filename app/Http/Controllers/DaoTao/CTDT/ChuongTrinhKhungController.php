@@ -3,9 +3,9 @@
 namespace App\Http\Controllers\DaoTao\CTDT;
 
 use App\Http\Controllers\Controller;
-use App\Models\Daotao\ChuongTrinhKhung;
-use App\Models\Daotao\ChuyenNganh;
-use App\Models\Daotao\MonHoc;
+use App\Models\DaoTao\ChuongTrinhKhung;
+use App\Models\DaoTao\ChuyenNganh;
+use App\Models\DaoTao\MonHoc;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 

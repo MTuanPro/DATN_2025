@@ -112,23 +112,15 @@ class LichThiController extends Controller
             }
 
             // 3. Kiểm tra trùng lịch thi sinh viên (sinh viên không được thi 2 môn cùng lúc)
-            $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id');
+            $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id')->toArray();
             
-            if ($sinhVienIds->isNotEmpty()) {
-                $trungLichSinhVien = LichThi::whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
-                        $q->whereIn('sinh_vien_id', $sinhVienIds);
-                    })
-                    ->where('ngay_thi', $request->ngay_thi)
-                    ->where(function ($query) use ($request) {
-                        $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                              ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                              ->orWhere(function ($q) use ($request) {
-                                  $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
-                                    ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
-                              });
-                    })
-                    ->with(['lopHocPhan.monHoc'])
-                    ->first();
+            if (!empty($sinhVienIds)) {
+                $trungLichSinhVien = LichThi::kiemTraXungDotSinhVien(
+                    $sinhVienIds,
+                    $request->ngay_thi,
+                    $request->gio_bat_dau,
+                    $request->gio_ket_thuc
+                );
 
                 if ($trungLichSinhVien) {
                     $errors[] = 'Có sinh viên trong lớp đã có lịch thi trùng giờ (Môn: ' . $trungLichSinhVien->lopHocPhan->monHoc->ten_mon . ' vào ' . $trungLichSinhVien->gio_bat_dau . '-' . $trungLichSinhVien->gio_ket_thuc . ')';
@@ -283,41 +275,29 @@ class LichThiController extends Controller
             }
 
             // 3. Kiểm tra trùng lịch thi sinh viên
-            $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id');
+            $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id')->toArray();
             
-            $trungLichSinhVien = LichThi::where('id', '!=', $lichThi->id)
-                ->whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienIds) {
-                    $q->whereIn('sinh_vien_id', $sinhVienIds);
-                })
-                ->where('ngay_thi', $request->ngay_thi)
-                ->where(function ($query) use ($request) {
-                    $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                          ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                          ->orWhere(function ($q) use ($request) {
-                              $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
-                                ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
-                          });
-                })
-                ->exists();
+            $trungLichSinhVien = LichThi::kiemTraXungDotSinhVien(
+                $sinhVienIds,
+                $request->ngay_thi,
+                $request->gio_bat_dau,
+                $request->gio_ket_thuc,
+                $lichThi->id
+            );
 
             if ($trungLichSinhVien) {
-                $errorMessages[] = 'Có sinh viên trong lớp đã có lịch thi trùng giờ!';
+                $errorMessages[] = 'Có sinh viên trong lớp đã có lịch thi trùng giờ (Môn: ' . $trungLichSinhVien->lopHocPhan->monHoc->ten_mon . ' vào ' . $trungLichSinhVien->gio_bat_dau . '-' . $trungLichSinhVien->gio_ket_thuc . ')!';
             }
 
             // 4. Kiểm tra trùng phòng thi (loại trừ bản ghi hiện tại)
             if ($request->phong_thi_id) {
-                $trungPhong = LichThi::where('id', '!=', $lichThi->id)
-                    ->where('phong_thi_id', $request->phong_thi_id)
-                    ->where('ngay_thi', $request->ngay_thi)
-                    ->where(function ($query) use ($request) {
-                        $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                              ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                              ->orWhere(function ($q) use ($request) {
-                                  $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
-                                    ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
-                              });
-                    })
-                    ->exists();
+                $trungPhong = LichThi::kiemTraXungDotPhong(
+                    $request->phong_thi_id,
+                    $request->ngay_thi,
+                    $request->gio_bat_dau,
+                    $request->gio_ket_thuc,
+                    $lichThi->id
+                );
 
                 if ($trungPhong) {
                     $errors['phong_thi_id'] = 'Phòng thi đã có lịch thi trùng thời gian!';
@@ -345,21 +325,13 @@ class LichThiController extends Controller
             $giamThiIds = array_filter([$request->giam_thi_1_id, $request->giam_thi_2_id]);
             
             if (!empty($giamThiIds)) {
-                $trungGiamThi = LichThi::where('id', '!=', $lichThi->id)
-                    ->where('ngay_thi', $request->ngay_thi)
-                    ->where(function($q) use ($giamThiIds) {
-                        $q->whereIn('giam_thi_1_id', $giamThiIds)
-                          ->orWhereIn('giam_thi_2_id', $giamThiIds);
-                    })
-                    ->where(function ($query) use ($request) {
-                        $query->whereBetween('gio_bat_dau', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                              ->orWhereBetween('gio_ket_thuc', [$request->gio_bat_dau, $request->gio_ket_thuc])
-                              ->orWhere(function ($q) use ($request) {
-                                  $q->where('gio_bat_dau', '<=', $request->gio_bat_dau)
-                                    ->where('gio_ket_thuc', '>=', $request->gio_ket_thuc);
-                              });
-                    })
-                    ->exists();
+                $trungGiamThi = LichThi::kiemTraXungDotGiamThi(
+                    $giamThiIds,
+                    $request->ngay_thi,
+                    $request->gio_bat_dau,
+                    $request->gio_ket_thuc,
+                    $lichThi->id
+                );
 
                 if ($trungGiamThi) {
                     $errorMessages[] = 'Giảng viên giám thị đã có lịch coi thi trùng giờ!';
@@ -610,21 +582,19 @@ class LichThiController extends Controller
             ->get();
 
         // Lấy THÊM các phòng trống (cho option "thêm phòng mới")
-        $phongTrong = PhongHoc::whereNotIn('id', function($query) use ($lichThi) {
-                // Lấy các phòng đang bận trong cùng khung giờ
-                $query->select('phong_thi_id')
-                      ->from('lich_thi')
-                      ->where('ngay_thi', $lichThi->ngay_thi)
-                      ->where(function ($q) use ($lichThi) {
-                          $q->whereBetween('gio_bat_dau', [$lichThi->gio_bat_dau, $lichThi->gio_ket_thuc])
-                            ->orWhereBetween('gio_ket_thuc', [$lichThi->gio_bat_dau, $lichThi->gio_ket_thuc])
-                            ->orWhere(function ($q2) use ($lichThi) {
-                                $q2->where('gio_bat_dau', '<=', $lichThi->gio_bat_dau)
-                                   ->where('gio_ket_thuc', '>=', $lichThi->gio_ket_thuc);
-                            });
-                      })
-                      ->whereNotNull('phong_thi_id');
+        // Lấy các phòng đang bận trong cùng khung giờ
+        $phongBanIds = LichThi::where('ngay_thi', $lichThi->ngay_thi)
+            ->where(function ($q) use ($lichThi) {
+                $q->where('gio_ket_thuc', '>=', $lichThi->gio_bat_dau)
+                  ->where('gio_bat_dau', '<=', $lichThi->gio_ket_thuc);
             })
+            ->whereNotNull('phong_thi_id')
+            ->where('id', '!=', $lichThi->id) // Loại trừ chính lịch thi này
+            ->pluck('phong_thi_id')
+            ->unique()
+            ->toArray();
+
+        $phongTrong = PhongHoc::whereNotIn('id', $phongBanIds)
             ->whereNotIn('id', $phongDangDungIds) // Loại bỏ các phòng đã dùng
             ->orderBy('ten_phong')
             ->get();

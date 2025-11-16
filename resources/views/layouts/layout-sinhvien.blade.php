@@ -87,11 +87,7 @@
         /* Dark mode styles */
         body.dark-mode {
             background-color: #1a1a1a;
-            color: #ffffff !important;
-        }
-
-        body.dark-mode * {
-            color: #ffffff;
+            color: #e9ecef !important;
         }
 
         body.dark-mode .card {
@@ -322,6 +318,133 @@
 
         body.dark-mode .badge {
             border: 1px solid #555;
+        }
+
+        /* Đảm bảo các phần tử có nền sáng vẫn có chữ tối để dễ đọc */
+        body.dark-mode .badge.bg-primary,
+        body.dark-mode .badge.bg-success,
+        body.dark-mode .badge.bg-info,
+        body.dark-mode .badge.bg-warning,
+        body.dark-mode .badge.bg-danger {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .badge.bg-light,
+        body.dark-mode .badge.bg-secondary {
+            color: #212529 !important;
+            background-color: #e9ecef !important;
+        }
+
+        body.dark-mode .btn-primary,
+        body.dark-mode .btn-success,
+        body.dark-mode .btn-info,
+        body.dark-mode .btn-danger,
+        body.dark-mode .btn-warning {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .btn-light,
+        body.dark-mode .btn-secondary {
+            color: #212529 !important;
+            background-color: #e9ecef !important;
+            border-color: #dee2e6 !important;
+        }
+
+        body.dark-mode .btn-light:hover,
+        body.dark-mode .btn-secondary:hover {
+            background-color: #d3d3d3 !important;
+            color: #212529 !important;
+        }
+
+        /* Breadcrumb */
+        body.dark-mode .breadcrumb {
+            background-color: transparent;
+        }
+
+        body.dark-mode .breadcrumb-item a {
+            color: #6c757d !important;
+        }
+
+        body.dark-mode .breadcrumb-item.active {
+            color: #e9ecef !important;
+        }
+
+        /* Pagination */
+        body.dark-mode .pagination .page-link {
+            background-color: #2d2d2d;
+            color: #e9ecef;
+            border-color: #404040;
+        }
+
+        body.dark-mode .pagination .page-link:hover {
+            background-color: #3a3a3a;
+            color: #ffffff;
+        }
+
+        body.dark-mode .pagination .page-item.active .page-link {
+            background-color: #435ebe;
+            border-color: #435ebe;
+            color: #ffffff;
+        }
+
+        /* Modal */
+        body.dark-mode .modal-content {
+            background-color: #2d2d2d;
+            color: #e9ecef;
+            border-color: #404040;
+        }
+
+        body.dark-mode .modal-header {
+            border-bottom-color: #404040;
+        }
+
+        body.dark-mode .modal-footer {
+            border-top-color: #404040;
+        }
+
+        body.dark-mode .modal-title {
+            color: #ffffff !important;
+        }
+
+        /* Input group */
+        body.dark-mode .input-group-text {
+            background-color: #2b3035;
+            color: #e9ecef;
+            border-color: #4a5057;
+        }
+
+        /* List group */
+        body.dark-mode .list-group-item {
+            background-color: #2d2d2d;
+            color: #e9ecef;
+            border-color: #404040;
+        }
+
+        body.dark-mode .list-group-item.active {
+            background-color: #435ebe;
+            border-color: #435ebe;
+            color: #ffffff;
+        }
+
+        /* Nav tabs */
+        body.dark-mode .nav-tabs {
+            border-bottom-color: #404040;
+        }
+
+        body.dark-mode .nav-tabs .nav-link {
+            color: #e9ecef;
+            border-color: transparent;
+        }
+
+        body.dark-mode .nav-tabs .nav-link:hover {
+            border-color: #404040;
+            color: #ffffff;
+        }
+
+        body.dark-mode .nav-tabs .nav-link.active {
+            background-color: #2d2d2d;
+            border-color: #404040 #404040 #2d2d2d;
+            color: #ffffff;
         }
     </style>
 </head>

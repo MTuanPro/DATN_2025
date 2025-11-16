@@ -27,14 +27,18 @@
 
 
                 <!-- 2. CHƯƠNG TRÌNH ĐÀO TẠO -->
-                <li class="sidebar-item has-sub">
+                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/chuong-trinh-dao-tao*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-journal-text"></i>
                         <span>Chương trình ĐT</span>
                     </a>
-                    <ul class="submenu">
-                        <li class="submenu-item"><a href="#">CTĐT của lớp</a></li>
-                        <li class="submenu-item"><a href="#">Điều kiện tốt nghiệp</a></li>
+                    <ul class="submenu {{ Request::is('sinh-vien/chuong-trinh-dao-tao*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('sinh-vien/chuong-trinh-dao-tao') && !Request::is('sinh-vien/chuong-trinh-dao-tao/*') ? 'active' : '' }}">
+                            <a href="{{ route('sinh-vien.chuong-trinh-dao-tao.index') }}">CTĐT của lớp</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('sinh-vien/chuong-trinh-dao-tao/dieu-kien-tot-nghiep') ? 'active' : '' }}">
+                            <a href="{{ route('sinh-vien.chuong-trinh-dao-tao.dieu-kien-tot-nghiep') }}">Điều kiện tốt nghiệp</a>
+                        </li>
                     </ul>
                 </li>
 

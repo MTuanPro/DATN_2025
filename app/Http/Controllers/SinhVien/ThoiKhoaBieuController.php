@@ -6,9 +6,11 @@ use App\Http\Controllers\Controller;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\LichHocChiTiet;
 use App\Models\HocKy;
+use App\Models\HocPhiHocKy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use Carbon\Carbon;
 
 class ThoiKhoaBieuController extends Controller
 {
@@ -38,6 +40,27 @@ class ThoiKhoaBieuController extends Controller
                 'hocKy' => null,
                 'hocKys' => $hocKys,
                 'message' => 'Không tìm thấy học kỳ hiện tại.'
+            ]);
+        }
+
+        // ✅ KIỂM TRA HỌC PHÍ - Logic mới
+        $hocPhi = HocPhiHocKy::where('sinh_vien_id', $sinhVien->id)
+            ->where('hoc_ky_id', $hocKy->id)
+            ->first();
+
+        $checkResult = $this->kiemTraCoTheXemTKB($sinhVien->id, $hocKy->id);
+
+        if (!$checkResult['co_the_xem']) {
+            $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+            return view('sinhvien.thoi-khoa-bieu.index', [
+                'hocKy' => $hocKy,
+                'hocKys' => $hocKys,
+                'coTheXemTKB' => false,
+                'hocPhi' => $hocPhi,
+                'lyDoKhongXem' => $checkResult['ly_do'],
+                'hanXemTKB' => $checkResult['han_xem_tkb'],
+                'ngayXepLop' => $checkResult['ngay_xep_lop'],
+                'message' => $checkResult['ly_do']
             ]);
         }
 
@@ -100,8 +123,112 @@ class ThoiKhoaBieuController extends Controller
             'lopHocPhanSinhViens',
             'thoiKhoaBieu',
             'trungLich',
-            'sinhVien'
-        ));
+            'sinhVien',
+            'hocPhi'
+        ))->with('coTheXemTKB', true);
+    }
+
+    /**
+     * Kiểm tra sinh viên có thể xem TKB không
+     * 
+     * Logic mới (đúng theo yêu cầu):
+     * 1. Sau khi xếp lớp → TKB BỊ ẨN (chưa thể xem ngay)
+     * 2. Có 1 tuần để đóng học phí
+     * 3. Sau 1 tuần:
+     *    - Nếu đã đóng học phí → TKB xuất hiện ✅
+     *    - Nếu chưa đóng học phí → TKB vẫn ẩn ❌
+     * 4. Nếu đóng bù sau đó → TKB xuất hiện lại ✅
+     * 
+     * @param int $sinhVienId
+     * @param int $hocKyId
+     * @return array ['co_the_xem' => bool, 'ly_do' => string, 'han_xem_tkb' => Carbon|null]
+     */
+    private function kiemTraCoTheXemTKB($sinhVienId, $hocKyId)
+    {
+        // Lấy thông tin học phí
+        $hocPhi = HocPhiHocKy::where('sinh_vien_id', $sinhVienId)
+            ->where('hoc_ky_id', $hocKyId)
+            ->first();
+
+        // Trường hợp 1: Chưa có học phí (chưa xếp lớp hoặc chưa tính học phí)
+        if (!$hocPhi) {
+            return [
+                'co_the_xem' => false,
+                'ly_do' => 'Bạn chưa được xếp lớp hoặc chưa có thông tin học phí. Vui lòng liên hệ phòng đào tạo.',
+                'han_xem_tkb' => null,
+                'ngay_xep_lop' => null
+            ];
+        }
+
+        // Lấy ngày xếp lớp gần nhất của sinh viên trong học kỳ
+        $ngayXepLop = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVienId)
+            ->whereHas('lopHocPhan', function($q) use($hocKyId) {
+                $q->where('hoc_ky_id', $hocKyId);
+            })
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+            ->max('ngay_xep_lop');
+
+        if (!$ngayXepLop) {
+            return [
+                'co_the_xem' => false,
+                'ly_do' => 'Bạn chưa được xếp vào lớp học phần nào.',
+                'han_xem_tkb' => null,
+                'ngay_xep_lop' => null
+            ];
+        }
+
+        // Tính hạn đóng học phí (1 tuần sau ngày xếp lớp)
+        $hanDongHocPhi = Carbon::parse($ngayXepLop)->addWeek();
+
+        // ✅ QUY TẮC CHÍNH: Chỉ xem được TKB khi:
+        // 1. Đã qua 1 tuần kể từ ngày xếp lớp VÀ
+        // 2. Đã đóng đủ học phí
+
+        // Trường hợp 1: ĐÃ ĐÓNG ĐỦ HỌC PHÍ
+        if ($hocPhi->trang_thai == 'da_nop_du') {
+            // Kiểm tra đã qua 1 tuần chưa
+            if (now()->gte($hanDongHocPhi)) {
+                // ✅ Đã đóng học phí VÀ đã qua 1 tuần → XEM ĐƯỢC TKB
+                return [
+                    'co_the_xem' => true,
+                    'ly_do' => '',
+                    'han_xem_tkb' => $hanDongHocPhi,
+                    'ngay_xep_lop' => Carbon::parse($ngayXepLop)
+                ];
+            } else {
+                // Đã đóng học phí nhưng chưa qua 1 tuần → VẪN CHƯA XEM ĐƯỢC
+                $soNgayConLai = now()->diffInDays($hanDongHocPhi, false);
+                return [
+                    'co_the_xem' => false,
+                    'ly_do' => "Bạn đã đóng học phí. Thời khóa biểu sẽ xuất hiện sau {$soNgayConLai} ngày (ngày " . $hanDongHocPhi->format('d/m/Y') . ").",
+                    'han_xem_tkb' => $hanDongHocPhi,
+                    'ngay_xep_lop' => Carbon::parse($ngayXepLop),
+                    'da_dong_hoc_phi' => true
+                ];
+            }
+        }
+
+        // Trường hợp 2: CHƯA ĐÓNG HỌC PHÍ
+        if (now()->lt($hanDongHocPhi)) {
+            // Chưa qua 1 tuần → Thời gian đóng học phí
+            $soNgayConLai = now()->diffInDays($hanDongHocPhi, false);
+            return [
+                'co_the_xem' => false,
+                'ly_do' => "Bạn có {$soNgayConLai} ngày để đóng học phí. Thời khóa biểu sẽ xuất hiện sau khi đóng học phí và qua hạn 1 tuần (ngày " . $hanDongHocPhi->format('d/m/Y') . ").",
+                'han_xem_tkb' => $hanDongHocPhi,
+                'ngay_xep_lop' => Carbon::parse($ngayXepLop),
+                'trong_thoi_gian_dong' => true
+            ];
+        }
+
+        // Trường hợp 3: Đã qua 1 tuần NHƯNG chưa đóng học phí → KHÔNG XEM ĐƯỢC
+        return [
+            'co_the_xem' => false,
+            'ly_do' => "Bạn đã quá hạn đóng học phí. Vui lòng đóng học phí để xem thời khóa biểu. Hạn đóng: " . $hanDongHocPhi->format('d/m/Y'),
+            'han_xem_tkb' => $hanDongHocPhi,
+            'ngay_xep_lop' => Carbon::parse($ngayXepLop),
+            'qua_han' => true
+        ];
     }
 
     /**
@@ -197,6 +324,14 @@ class ThoiKhoaBieuController extends Controller
             $hocKy = HocKy::find($request->hoc_ky_id);
         } else {
             $hocKy = HocKy::where('la_hoc_ky_hien_tai', true)->first();
+        }
+
+        // ✅ KIỂM TRA HỌC PHÍ trước khi export PDF
+        $checkResult = $this->kiemTraCoTheXemTKB($sinhVien->id, $hocKy->id);
+
+        if (!$checkResult['co_the_xem']) {
+            return redirect()->route('sinh-vien.thoi-khoa-bieu.index')
+                ->with('error', $checkResult['ly_do']);
         }
 
         $lopHocPhanSinhViens = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)

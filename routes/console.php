@@ -21,6 +21,12 @@ Schedule::job(new \App\Jobs\CheckExamReminderJob())
     ->dailyAt('07:00')
     ->timezone('Asia/Ho_Chi_Minh');
 
+// Kiểm tra quyền truy cập TKB (sau 1 tuần xếp lớp)
+// Chạy mỗi ngày lúc 9:00 sáng để kiểm tra sinh viên được xếp lớp 1 tuần trước
+Schedule::job(new \App\Jobs\CheckTKBAccessJob())
+    ->dailyAt('09:00')
+    ->timezone('Asia/Ho_Chi_Minh');
+
 // ===== ATTENDANCE JOBS =====
 // Lên lịch kiểm tra cảnh báo điểm danh
 // Chạy vào mỗi Chủ Nhật lúc 20:00

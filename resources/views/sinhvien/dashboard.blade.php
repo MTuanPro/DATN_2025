@@ -217,7 +217,7 @@
             <div class="modal-dialog modal-dialog-centered modal-lg">
                 <div class="modal-content">
                     <div class="modal-header border-0 pb-0">
-                        <h2 class="modal-title fw-bold text-dark" id="thongBaoMoiNhatModalLabel" style="font-size: 1.75rem;">
+                        <h2 class="modal-title fw-bold" id="thongBaoMoiNhatModalLabel" style="font-size: 1.75rem;">
                             THÔNG BÁO
                         </h2>
                         <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
@@ -230,7 +230,7 @@
                                         $thongBao = $nguoiNhan->thongBao;
                                     @endphp
                                     <div class="thong-bao-item {{ $index === 0 ? 'active' : '' }}" data-index="{{ $index }}" data-thong-bao-id="{{ $thongBao->id }}" data-da-doc="{{ $nguoiNhan->da_doc ? 'true' : 'false' }}">
-                                        <div class="notification-content mb-4" style="min-height: 200px; line-height: 1.8; font-size: 1rem; color: #333;">
+                                        <div class="notification-content mb-4" style="min-height: 200px; line-height: 1.8; font-size: 1rem;">
                                             {!! nl2br(e($thongBao->noi_dung)) !!}
                                         </div>
                                         @if ($thongBao->file_dinh_kem)
@@ -398,6 +398,32 @@
             .notification-content {
                 white-space: pre-wrap;
                 word-wrap: break-word;
+            }
+            /* Dark mode support for notification modal */
+            body.dark-mode .modal-content {
+                background-color: #2d3748;
+                color: #e2e8f0;
+            }
+            body.dark-mode .modal-title {
+                color: #e2e8f0 !important;
+            }
+            body.dark-mode .notification-content {
+                color: #e2e8f0 !important;
+            }
+            body.dark-mode .modal-header {
+                border-bottom-color: #4a5568;
+            }
+            body.dark-mode .modal-footer {
+                border-top-color: #4a5568;
+            }
+            body.dark-mode .border-top {
+                border-top-color: #4a5568 !important;
+            }
+            body.dark-mode .text-muted {
+                color: #a0aec0 !important;
+            }
+            body.dark-mode .btn-close {
+                filter: invert(1) grayscale(100%) brightness(200%);
             }
         </style>
         @endpush

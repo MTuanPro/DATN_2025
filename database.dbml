@@ -49,6 +49,8 @@ Table users {
   password varchar [not null]
   email_verified_at datetime
   remember_token varchar
+  anh_dai_dien varchar [note: 'Ảnh đại diện']
+  so_dien_thoai varchar [note: 'Số điện thoại']
   trang_thai varchar [default: 'hoat_dong', note: 'hoat_dong, khoa, ngung_hoat_dong']
   lan_dang_nhap_cuoi datetime
   created_at timestamp
@@ -112,11 +114,16 @@ Table vai_tro_quyen {
 // ======================== Nhân sự hệ thống ========================
 Table admin {
   id int [pk]
-  ho_ten varchar
-  email varchar [unique]
-  so_dien_thoai varchar
-  anh_dai_dien varchar [note: 'Ảnh đại diện của admin']
   user_id int [ref: > users.id, note: 'Foreign key tới bảng users']
+  ma_admin varchar [not null, unique, note: 'Mã admin']
+  ho_ten varchar [not null]
+  ngay_sinh date
+  gioi_tinh varchar [default: 'Nam', note: 'Nam, Nữ, Khác']
+  email varchar [not null, unique]
+  so_dien_thoai varchar
+  dia_chi text
+  anh_dai_dien varchar [note: 'Ảnh đại diện của admin']
+  ghi_chu text
   created_at timestamp
   updated_at timestamp
   deleted_at timestamp [note: 'Soft delete']
@@ -124,11 +131,16 @@ Table admin {
 
 Table dao_tao {
   id int [pk]
-  ho_ten varchar
-  email varchar [unique]
-  so_dien_thoai varchar
-  anh_dai_dien varchar [note: 'Ảnh đại diện của đào tạo']
   user_id int [ref: > users.id, note: 'Foreign key tới bảng users']
+  ma_dao_tao varchar [not null, unique, note: 'Mã nhân viên đào tạo']
+  ho_ten varchar [not null]
+  ngay_sinh date
+  gioi_tinh varchar [default: 'Nam', note: 'Nam, Nữ, Khác']
+  email varchar [not null, unique]
+  so_dien_thoai varchar
+  dia_chi text
+  anh_dai_dien varchar [note: 'Ảnh đại diện của đào tạo']
+  ghi_chu text
   created_at timestamp
   updated_at timestamp
   deleted_at timestamp [note: 'Soft delete']
@@ -184,12 +196,15 @@ Table giang_vien {
   ho_ten varchar [not null]
   email varchar [not null, unique]
   so_dien_thoai varchar [not null, note: 'Bắt buộc để liên hệ']
+  ngay_sinh date [note: 'Ngày sinh']
+  gioi_tinh varchar [note: 'Nam, Nữ, Khác']
+  dia_chi text [note: 'Địa chỉ']
   trinh_do_id int [ref: > dm_trinh_do.id, not null, note: 'Bắt buộc có trình độ']
   chuyen_mon varchar [not null, note: 'Bắt buộc có chuyên môn']
   khoa_id int [ref: > khoa.id, not null, note: 'Bắt buộc thuộc khoa']
   ngay_vao_truong date [not null, note: 'Ngày vào làm việc']
   anh_dai_dien varchar
-  user_id int [ref: > users.id, not null, unique, note: 'Mỗi GV có 1 tài khoản duy nhất']
+  user_id int [ref: > users.id, unique, note: 'Mỗi GV có 1 tài khoản duy nhất (tùy chọn)']
   created_at timestamp
   updated_at timestamp
   deleted_at timestamp [note: 'Soft delete']
@@ -415,10 +430,29 @@ Table lich_thi {
   ghi_chu text
   created_at timestamp
   updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
   indexes {
     (ngay_thi, gio_bat_dau, phong_thi_id) [unique]
   }
   note: 'Lịch thi của lớp học phần'
+}
+
+Table lich_thi_sinh_vien {
+  id int [pk]
+  lich_thi_id int [ref: > lich_thi.id, not null]
+  sinh_vien_id int [ref: > sinh_vien.id, not null]
+  phong_thi_id int [ref: > phong_hoc.id, note: 'Phòng thi riêng cho sinh viên (nếu phân phòng)']
+  so_bao_danh varchar [note: 'Số báo danh']
+  trang_thai varchar [default: 'du_thi', note: 'du_thi, vang_co_phep, vang_khong_phep']
+  ghi_chu text
+  created_at timestamp
+  updated_at timestamp
+  deleted_at timestamp [note: 'Soft delete']
+  indexes {
+    (lich_thi_id, sinh_vien_id) [unique, name: 'unique_lich_thi_sinh_vien']
+    (lich_thi_id, phong_thi_id) [name: 'idx_lich_thi_phong']
+  }
+  note: 'Phân phòng thi cho từng sinh viên'
 }
 
 // ======================== Điểm, đăng ký ========================
@@ -561,6 +595,7 @@ Table hoc_ky {
   ngay_bat_dau_dang_ky date
   ngay_ket_thuc_dang_ky date
   la_hoc_ky_hien_tai boolean [default: false]
+  dang_mo_dang_ky boolean [default: false, note: 'Trạng thái mở/đóng đăng ký môn học']
   mo_ta text
   created_at timestamp
   updated_at timestamp
@@ -667,9 +702,12 @@ Table canh_bao_hoc_vu {
   ly_do text [not null, note: 'GPA < 1.0, vắng > 20%, nợ học phí quá hạn']
   ngay_canh_bao date [not null]
   nguoi_canh_bao_id int [ref: > dao_tao.id]
-  da_xu_ly boolean [default: false]
+  nguoi_tao_id int [note: 'Người tạo cảnh báo (admin hoặc dao_tao)']
+  trang_thai varchar [default: 'chua_xu_ly', note: 'chua_xu_ly, dang_xu_ly, da_xu_ly']
+  da_xu_ly boolean [default: false, note: 'Deprecated - dùng trang_thai thay thế']
   ngay_xu_ly date
   ket_qua_xu_ly text
+  ghi_chu text
   created_at timestamp
   updated_at timestamp
   indexes {
@@ -793,6 +831,22 @@ Table mau_thong_bao_tu_dong {
   created_at timestamp
   updated_at timestamp
   note: 'Mẫu thông báo tự động của hệ thống'
+}
+
+// ======================== Laravel Notifications ========================
+Table notifications {
+  id varchar [pk, note: 'UUID']
+  type varchar [not null]
+  notifiable_type varchar [not null]
+  notifiable_id int [not null]
+  data text [not null]
+  read_at datetime
+  created_at timestamp
+  updated_at timestamp
+  indexes {
+    (notifiable_type, notifiable_id) [name: 'idx_notifiable']
+  }
+  note: 'Laravel notifications table - lưu thông báo real-time'
 }
 
 // ======================== Nhật ký hoạt động (Audit Log) ========================

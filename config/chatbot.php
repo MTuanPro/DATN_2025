@@ -76,5 +76,45 @@ return [
         'log_no_match' => true, // Log câu hỏi không match
         'log_errors' => true, // Log errors
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | GPT Integration
+    |--------------------------------------------------------------------------
+    |
+    | Cấu hình tích hợp GPT (OpenAI)
+    |
+    */
+    'gpt' => [
+        'enabled' => env('CHATBOT_GPT_ENABLED', false),
+        'api_key' => env('OPENAI_API_KEY', ''),
+        'api_url' => env('OPENAI_API_URL', 'https://api.openai.com/v1/chat/completions'),
+        'model' => env('CHATBOT_GPT_MODEL', 'gpt-3.5-turbo'),
+        'max_tokens' => env('CHATBOT_GPT_MAX_TOKENS', 500),
+        'temperature' => env('CHATBOT_GPT_TEMPERATURE', 0.7),
+        'use_when_no_match' => env('CHATBOT_GPT_USE_WHEN_NO_MATCH', true), // Dùng GPT khi không tìm thấy trong KB
+        'use_as_fallback' => env('CHATBOT_GPT_USE_AS_FALLBACK', true), // Dùng GPT làm fallback
+        'min_similarity_for_gpt' => env('CHATBOT_GPT_MIN_SIMILARITY', 0.3), // Chỉ dùng GPT nếu similarity < 0.3
+    ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Gemini Integration
+    |--------------------------------------------------------------------------
+    |
+    | Cấu hình tích hợp Google Gemini (Free tier available)
+    |
+    */
+    'gemini' => [
+        'enabled' => env('CHATBOT_GEMINI_ENABLED', false),
+        'api_key' => env('GOOGLE_GEMINI_API_KEY', ''),
+        'api_url' => env('GEMINI_API_URL', 'https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent'),
+        'model' => env('CHATBOT_GEMINI_MODEL', 'gemini-2.5-flash'),
+        'max_tokens' => env('CHATBOT_GEMINI_MAX_TOKENS', 1000),
+        'temperature' => env('CHATBOT_GEMINI_TEMPERATURE', 0.7),
+        'use_when_no_match' => env('CHATBOT_GEMINI_USE_WHEN_NO_MATCH', true), // Dùng Gemini khi không tìm thấy trong KB
+        'use_as_fallback' => env('CHATBOT_GEMINI_USE_AS_FALLBACK', true), // Dùng Gemini làm fallback
+        'min_similarity_for_gemini' => env('CHATBOT_GEMINI_MIN_SIMILARITY', 0.3), // Chỉ dùng Gemini nếu similarity < 0.3
+    ],
 ];
 
