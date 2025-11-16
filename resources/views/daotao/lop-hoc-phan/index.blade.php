@@ -29,6 +29,12 @@
                             <h5 class="card-title">Danh sách Lớp học phần</h5>
                         </div>
                         <div class="col-md-6 text-end">
+                            <form method="POST" action="{{ route('dao-tao.lop-hoc-phan.sync-so-luong') }}" class="d-inline">
+                                @csrf
+                                <button type="submit" class="btn btn-warning me-2" onclick="return confirm('Bạn có chắc muốn đồng bộ lại số lượng đăng ký?')">
+                                    <i class="bi bi-arrow-repeat"></i> Đồng bộ sĩ số
+                                </button>
+                            </form>
                             <a href="{{ route('dao-tao.lop-hoc-phan.create') }}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Thêm lớp học phần
                             </a>
@@ -124,7 +130,7 @@
                                         <td>{{ $lhp->hocKy->ten_hoc_ky ?? 'N/A' }}</td>
                                         <td>
                                             <span class="badge bg-info">
-                                                {{ $lhp->so_luong_dang_ky }}/{{ $lhp->suc_chua }}
+                                                {{ $lhp->so_luong_thuc_te ?? $lhp->so_luong_dang_ky }}/{{ $lhp->suc_chua }}
                                             </span>
                                         </td>
                                         <td>

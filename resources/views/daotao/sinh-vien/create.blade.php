@@ -273,7 +273,7 @@
                                     <label for="lop_hanh_chinh_id" class="form-label">Lớp hành chính <span
                                             class="text-danger">*</span></label>
                                     <select class="form-select @error('lop_hanh_chinh_id') is-invalid @enderror"
-                                        id="lop_hanh_chinh_id" name="lop_hanh_chinh_id" required disabled>
+                                        id="lop_hanh_chinh_id" name="lop_hanh_chinh_id" required>
                                         <option value="">-- Chọn khóa học và ngành trước --</option>
                                         @foreach ($lopHanhChinhs as $lop)
                                             <option value="{{ $lop->id }}" data-nganh-id="{{ $lop->nganh_id }}"
@@ -393,6 +393,12 @@
 @endsection
 
 @push('scripts')
+    @php
+        $oldNganhId = old('nganh_id', '');
+        $oldKhoaHocId = old('khoa_hoc_id', '');
+        $oldChuyenNganhId = old('chuyen_nganh_id', '');
+        $oldLopHanhChinhId = old('lop_hanh_chinh_id', '');
+    @endphp
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const nganhSelect = document.getElementById('nganh_id');
@@ -483,14 +489,14 @@
             });
 
             // Khởi tạo trạng thái ban đầu
-            const initialNganhId = nganhSelect.value || '{{ old('nganh_id') }}';
-            const initialKhoaHocId = khoaHocSelect.value || '{{ old('khoa_hoc_id') }}';
+            const initialNganhId = nganhSelect.value || '{{ $oldNganhId }}';
+            const initialKhoaHocId = khoaHocSelect.value || '{{ $oldKhoaHocId }}';
 
             if (initialNganhId) {
                 filterChuyenNganh(initialNganhId);
 
                 // Khôi phục giá trị chuyên ngành đã chọn nếu có
-                const oldChuyenNganhId = '{{ old('chuyen_nganh_id') }}';
+                const oldChuyenNganhId = '{{ $oldChuyenNganhId }}';
                 if (oldChuyenNganhId) {
                     chuyenNganhSelect.value = oldChuyenNganhId;
                 }
@@ -501,7 +507,7 @@
                 filterLopHanhChinh();
 
                 // Khôi phục giá trị lớp đã chọn nếu có
-                const oldLopHanhChinhId = '{{ old('lop_hanh_chinh_id') }}';
+                const oldLopHanhChinhId = '{{ $oldLopHanhChinhId }}';
                 if (oldLopHanhChinhId) {
                     lopHanhChinhSelect.value = oldLopHanhChinhId;
                 }

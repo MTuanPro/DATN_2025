@@ -37,7 +37,7 @@
                                         ? 'dao-tao.thong-bao.index'
                                         : (in_array('giang_vien', $roles)
                                             ? 'giangvien.thong-bao.index'
-                                            : 'sinhvien.thong-bao.index'));
+                                            : 'sinh-vien.thong-bao.index'));
                             @endphp
 
                             @if ($isAdmin)

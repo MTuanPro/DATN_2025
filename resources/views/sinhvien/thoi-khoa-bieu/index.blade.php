@@ -30,26 +30,35 @@
             </div>
         @else
             <!-- Lọc học kỳ và xuất PDF -->
-            <div class="row mb-3">
-                <div class="col-md-6">
-                    <form method="GET" action="{{ route('sinh-vien.thoi-khoa-bieu.index') }}" class="d-flex gap-2">
-                        <select name="hoc_ky_id" class="form-select" onchange="this.form.submit()">
-                            @foreach ($hocKys as $hk)
-                                <option value="{{ $hk->id }}" {{ $hocKy->id == $hk->id ? 'selected' : '' }}>
-                                    {{ $hk->ten_hoc_ky }} - {{ $hk->nam_hoc }}
-                                </option>
-                            @endforeach
-                        </select>
-                    </form>
-                </div>
-                <div class="col-md-6 text-end">
-                    <a href="{{ route('sinh-vien.thoi-khoa-bieu.export-pdf', ['hoc_ky_id' => $hocKy->id]) }}"
-                        class="btn btn-danger">
-                        <i class="bi bi-file-pdf"></i> Xuất PDF
-                    </a>
-                    <a href="{{ route('sinh-vien.thoi-khoa-bieu.chi-tiet') }}" class="btn btn-info">
-                        <i class="bi bi-calendar-week"></i> Xem chi tiết
-                    </a>
+            <div class="card mb-4 shadow-sm">
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-6 mb-3 mb-md-0">
+                            <form method="GET" action="{{ route('sinh-vien.thoi-khoa-bieu.index') }}">
+                                <label class="form-label fw-bold">
+                                    <i class="bi bi-funnel"></i> Chọn học kỳ
+                                </label>
+                                <select name="hoc_ky_id" class="form-select form-select-lg" onchange="this.form.submit()">
+                                    @foreach ($hocKys as $hk)
+                                        <option value="{{ $hk->id }}" {{ $hocKy->id == $hk->id ? 'selected' : '' }}>
+                                            {{ $hk->ten_hoc_ky }} - {{ $hk->nam_hoc }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </form>
+                        </div>
+                        <div class="col-md-6 text-md-end">
+                            <div class="d-flex flex-wrap gap-2 justify-content-md-end">
+                                <a href="{{ route('sinh-vien.thoi-khoa-bieu.chi-tiet') }}" class="btn btn-primary btn-lg">
+                                    <i class="bi bi-calendar-week me-1"></i> Xem chi tiết theo tuần
+                                </a>
+                                <a href="{{ route('sinh-vien.thoi-khoa-bieu.export-pdf', ['hoc_ky_id' => $hocKy->id]) }}"
+                                    class="btn btn-danger btn-lg">
+                                    <i class="bi bi-file-pdf me-1"></i> Xuất PDF
+                                </a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
 
@@ -69,27 +78,34 @@
             @endif
 
             <!-- Bảng thời khóa biểu -->
-            <div class="card">
-                <div class="card-body">
+            <div class="card shadow-sm">
+                <div class="card-header bg-gradient-primary text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-calendar3"></i> Thời khóa biểu tổng quan
+                    </h5>
+                </div>
+                <div class="card-body p-0">
                     <div class="table-responsive">
-                        <table class="table table-bordered table-sm" style="font-size: 0.9rem;">
-                            <thead class="table-light">
-                                <tr>
-                                    <th style="width: 80px;">Tiết/Thứ</th>
-                                    <th>Thứ 2</th>
-                                    <th>Thứ 3</th>
-                                    <th>Thứ 4</th>
-                                    <th>Thứ 5</th>
-                                    <th>Thứ 6</th>
-                                    <th>Thứ 7</th>
-                                    <th>Chủ nhật</th>
+                        <table class="table table-bordered table-hover mb-0" style="font-size: 0.85rem;">
+                            <thead class="table-dark">
+                                <tr class="text-center">
+                                    <th style="width: 70px; position: sticky; left: 0; background: #212529; z-index: 10;">
+                                        Tiết</th>
+                                    <th style="min-width: 150px;">Thứ 2</th>
+                                    <th style="min-width: 150px;">Thứ 3</th>
+                                    <th style="min-width: 150px;">Thứ 4</th>
+                                    <th style="min-width: 150px;">Thứ 5</th>
+                                    <th style="min-width: 150px;">Thứ 6</th>
+                                    <th style="min-width: 150px;">Thứ 7</th>
+                                    <th style="min-width: 150px;">Chủ nhật</th>
                                 </tr>
                             </thead>
                             <tbody>
                                 @for ($tiet = 1; $tiet <= 12; $tiet++)
                                     <tr>
-                                        <td class="text-center align-middle">
-                                            <strong>{{ $tiet }}</strong>
+                                        <td class="text-center align-middle fw-bold bg-light"
+                                            style="position: sticky; left: 0; z-index: 5;">
+                                            {{ $tiet }}
                                         </td>
                                         @for ($thu = 2; $thu <= 8; $thu++)
                                             @php
@@ -99,28 +115,40 @@
                                             @if ($lich === 'span')
                                                 {{-- Cell đã được merge --}}
                                             @elseif($lich)
-                                                <td rowspan="{{ $lich['so_tiet'] }}"
-                                                    class="align-middle {{ $lich['loai_lop'] == 'ly_thuyet' ? 'bg-info' : 'bg-warning' }} bg-opacity-25">
-                                                    <div class="p-2">
-                                                        <strong class="d-block">{{ $lich['mon_hoc'] }}</strong>
-                                                        <small class="d-block text-muted">
-                                                            <i class="bi bi-code-square"></i> {{ $lich['ma_mon'] }}
-                                                        </small>
-                                                        <hr class="my-1">
-                                                        <small class="d-block">
-                                                            <i class="bi bi-door-closed"></i> {{ $lich['phong'] }}
-                                                        </small>
-                                                        <small class="d-block">
-                                                            <i class="bi bi-person"></i> {{ $lich['giang_vien'] }}
-                                                        </small>
-                                                        <small class="d-block text-primary">
-                                                            <i class="bi bi-clock"></i> {{ $lich['gio_bat_dau'] }} -
-                                                            {{ $lich['gio_ket_thuc'] }}
-                                                        </small>
+                                                <td rowspan="{{ $lich['so_tiet'] }}" class="align-middle p-0"
+                                                    style="{{ $lich['loai_lop'] == 'ly_thuyet' ? 'background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 4px solid #2196F3;' : 'background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-left: 4px solid #FF9800;' }}">
+                                                    <div class="p-3">
+                                                        <div class="d-flex align-items-start mb-2">
+                                                            <span
+                                                                class="badge {{ $lich['loai_lop'] == 'ly_thuyet' ? 'bg-primary' : 'bg-warning text-dark' }} me-2">
+                                                                {{ $lich['loai_lop'] == 'ly_thuyet' ? 'LT' : 'TH' }}
+                                                            </span>
+                                                            <strong class="flex-grow-1"
+                                                                style="font-size: 0.9rem;">{{ $lich['mon_hoc'] }}</strong>
+                                                        </div>
+                                                        <div class="text-muted" style="font-size: 0.8rem;">
+                                                            <div class="mb-1">
+                                                                <i class="bi bi-code-square text-secondary"></i>
+                                                                <code
+                                                                    class="bg-white px-1 rounded">{{ $lich['ma_mon'] }}</code>
+                                                            </div>
+                                                            <div class="mb-1">
+                                                                <i class="bi bi-door-closed text-success"></i>
+                                                                {{ $lich['phong'] }}
+                                                            </div>
+                                                            <div class="mb-1">
+                                                                <i class="bi bi-person-fill text-primary"></i>
+                                                                {{ $lich['giang_vien'] }}
+                                                            </div>
+                                                            <div class="text-primary fw-bold">
+                                                                <i class="bi bi-clock-fill"></i> {{ $lich['gio_bat_dau'] }}
+                                                                - {{ $lich['gio_ket_thuc'] }}
+                                                            </div>
+                                                        </div>
                                                     </div>
                                                 </td>
                                             @else
-                                                <td></td>
+                                                <td class="bg-light bg-opacity-25"></td>
                                             @endif
                                         @endfor
                                     </tr>
@@ -132,9 +160,11 @@
             </div>
 
             <!-- Danh sách môn học đã đăng ký -->
-            <div class="card mt-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Danh sách môn học trong học kỳ</h5>
+            <div class="card mt-4 shadow-sm">
+                <div class="card-header bg-gradient-success text-white">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-book-half"></i> Danh sách môn học trong học kỳ
+                    </h5>
                 </div>
                 <div class="card-body">
                     @if ($lopHocPhanSinhViens->isEmpty())

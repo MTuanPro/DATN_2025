@@ -6,7 +6,7 @@ use App\Models\CauHinhHocPhi;
 use App\Models\HocPhiHocKy;
 use App\Models\ChiTietHocPhiMon;
 use App\Models\LopHocPhanSinhVien;
-use App\Models\SinhVien;
+use App\Models\DaoTao\SinhVien;
 use App\Models\HocKy;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;

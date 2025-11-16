@@ -210,4 +210,196 @@
             </div>
         </section>
     </div>
+
+    {{-- Modal hiển thị nhiều thông báo mới nhất --}}
+    @if (isset($thongBaoMoiNhat) && $thongBaoMoiNhat->count() > 0)
+        <div class="modal fade" id="thongBaoMoiNhatModal" tabindex="-1" aria-labelledby="thongBaoMoiNhatModalLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
+            <div class="modal-dialog modal-dialog-centered modal-lg">
+                <div class="modal-content">
+                    <div class="modal-header border-0 pb-0">
+                        <h2 class="modal-title fw-bold text-dark" id="thongBaoMoiNhatModalLabel" style="font-size: 1.75rem;">
+                            THÔNG BÁO
+                        </h2>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                    </div>
+                    <div class="modal-body pt-3 pb-4">
+                        <div id="thongBaoCarousel">
+                            @foreach ($thongBaoMoiNhat as $index => $nguoiNhan)
+                                @if ($nguoiNhan->thongBao)
+                                    @php
+                                        $thongBao = $nguoiNhan->thongBao;
+                                    @endphp
+                                    <div class="thong-bao-item {{ $index === 0 ? 'active' : '' }}" data-index="{{ $index }}" data-thong-bao-id="{{ $thongBao->id }}" data-da-doc="{{ $nguoiNhan->da_doc ? 'true' : 'false' }}">
+                                        <div class="notification-content mb-4" style="min-height: 200px; line-height: 1.8; font-size: 1rem; color: #333;">
+                                            {!! nl2br(e($thongBao->noi_dung)) !!}
+                                        </div>
+                                        @if ($thongBao->file_dinh_kem)
+                                            <div class="mb-3">
+                                                <a href="{{ Storage::url($thongBao->file_dinh_kem) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                    <i class="bi bi-paperclip"></i> Tải file đính kèm
+                                                </a>
+                                            </div>
+                                        @endif
+                                        <div class="d-flex justify-content-between align-items-center mt-4 pt-3 border-top">
+                                            <div>
+                                                <a href="{{ route('sinh-vien.thong-bao.show', $thongBao->id) }}" class="btn btn-primary btn-view-detail">Xem Thêm</a>
+                                            </div>
+                                            <div class="text-muted text-end">
+                                                <small>Ngày {{ $thongBao->ngay_gui->format('d') }} tháng {{ $thongBao->ngay_gui->format('m') }} năm {{ $thongBao->ngay_gui->format('Y') }}</small>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endif
+                            @endforeach
+                        </div>
+                    </div>
+                    <div class="modal-footer border-top pt-3 pb-3">
+                        <div class="d-flex align-items-center gap-2">
+                            <button type="button" class="btn btn-outline-secondary" id="btnPrev" disabled>
+                                <i class="bi bi-chevron-left"></i> Trước
+                            </button>
+                            <span class="text-muted small" id="thongBaoCounter">1 / {{ $thongBaoMoiNhat->count() }}</span>
+                            <button type="button" class="btn btn-outline-secondary" id="btnNext">
+                                Tiếp <i class="bi bi-chevron-right"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const modal = document.getElementById('thongBaoMoiNhatModal');
+                if (!modal) return;
+
+                const items = modal.querySelectorAll('.thong-bao-item');
+                const totalItems = items.length;
+                let currentIndex = 0;
+                const viewedIds = new Set();
+
+                // Debug: Log số lượng thông báo
+                console.log('Tổng số thông báo:', totalItems);
+                console.log('Modal element:', modal);
+                
+                // Đếm số thông báo chưa đọc (từ database và sessionStorage)
+                let unreadCount = 0;
+                items.forEach(item => {
+                    const thongBaoId = item.dataset.thongBaoId;
+                    const daDoc = item.dataset.daDoc === 'true';
+                    
+                    // Kiểm tra cả database (da_doc) và sessionStorage
+                    const readKey = 'thong_bao_read_' + thongBaoId;
+                    const markedAsRead = sessionStorage.getItem(readKey);
+                    
+                    // Chưa đọc nếu: database chưa đọc VÀ chưa đánh dấu trong sessionStorage
+                    if (!daDoc && !markedAsRead) {
+                        unreadCount++;
+                    }
+                });
+                
+                console.log('Số thông báo chưa đọc:', unreadCount);
+                
+                // Hiển thị modal nếu có thông báo chưa đọc
+                if (totalItems > 0 && unreadCount > 0) {
+                    console.log('Có thông báo chưa đọc, đang hiển thị modal...');
+                    const bootstrapModal = new bootstrap.Modal(modal);
+                    bootstrapModal.show();
+                } else if (totalItems > 0) {
+                    console.log('Có thông báo nhưng đã đọc hết');
+                } else {
+                    console.log('Không có thông báo để hiển thị');
+                }
+
+                function showItem(index) {
+                    items.forEach((item, i) => {
+                        item.classList.toggle('active', i === index);
+                    });
+                    
+                    currentIndex = index;
+                    updateButtons();
+                    updateCounter();
+                    updateViewDetailLink();
+                    
+                    // Đánh dấu đã xem thông báo hiện tại
+                    const currentItem = items[index];
+                    if (currentItem) {
+                        const thongBaoId = currentItem.dataset.thongBaoId;
+                        if (thongBaoId && !viewedIds.has(thongBaoId)) {
+                            viewedIds.add(thongBaoId);
+                            markAsRead(thongBaoId);
+                        }
+                    }
+                }
+
+                function updateButtons() {
+                    const btnPrev = document.getElementById('btnPrev');
+                    const btnNext = document.getElementById('btnNext');
+                    
+                    btnPrev.disabled = currentIndex === 0;
+                    btnNext.disabled = currentIndex === totalItems - 1;
+                }
+
+                function updateCounter() {
+                    const counter = document.getElementById('thongBaoCounter');
+                    counter.textContent = `${currentIndex + 1} / ${totalItems}`;
+                }
+
+                function updateViewDetailLink() {
+                    // Không cần cập nhật vì mỗi item đã có link riêng
+                }
+
+                function markAsRead(thongBaoId) {
+                    fetch(`/sinh-vien/thong-bao/${thongBaoId}/mark-read`, {
+                        method: 'POST',
+                        headers: {
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                            'Content-Type': 'application/json'
+                        }
+                    }).then(() => {
+                        // Đánh dấu đã đọc trong sessionStorage
+                        const readKey = 'thong_bao_read_' + thongBaoId;
+                        sessionStorage.setItem(readKey, 'true');
+                    });
+                }
+
+                // Event listeners
+                document.getElementById('btnPrev').addEventListener('click', function() {
+                    if (currentIndex > 0) {
+                        showItem(currentIndex - 1);
+                    }
+                });
+
+                document.getElementById('btnNext').addEventListener('click', function() {
+                    if (currentIndex < totalItems - 1) {
+                        showItem(currentIndex + 1);
+                    }
+                });
+
+                // Đánh dấu đã xem khi đóng modal (không cần thiết nữa vì đã dùng logic chưa đọc)
+                modal.addEventListener('hidden.bs.modal', function() {
+                    console.log('Modal đã đóng');
+                });
+
+                // Hiển thị item đầu tiên
+                if (totalItems > 0) {
+                    showItem(0);
+                }
+            });
+        </script>
+        <style>
+            .thong-bao-item {
+                display: none;
+            }
+            .thong-bao-item.active {
+                display: block;
+            }
+            .notification-content {
+                white-space: pre-wrap;
+                word-wrap: break-word;
+            }
+        </style>
+        @endpush
+    @endif
 @endsection

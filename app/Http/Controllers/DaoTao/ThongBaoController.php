@@ -10,6 +10,7 @@ use App\Models\DaoTao\SinhVien;
 use App\Models\DaoTao\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\GiangVien;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -22,7 +23,14 @@ class ThongBaoController extends Controller
      */
     public function index(Request $request)
     {
-        $query = ThongBao::with('nguoiGui')->orderBy('ghim_dau_trang', 'desc')->orderBy('ngay_gui', 'desc');
+        // Đào tạo chỉ thấy thông báo của mình tạo hoặc thông báo tự động
+        $query = ThongBao::with('nguoiGui')
+            ->where(function($q) {
+                $q->where('nguoi_gui_id', Auth::id())
+                  ->orWhere('loai_nguon', 'tu_dong');
+            })
+            ->orderBy('ghim_dau_trang', 'desc')
+            ->orderBy('ngay_gui', 'desc');
 
         // Filter theo loại
         if ($request->filled('loai_thong_bao')) {
@@ -65,7 +73,10 @@ class ThongBaoController extends Controller
     {
         // Lấy danh sách để chọn đối tượng cụ thể
         $lopHanhChinhs = LopHanhChinh::orderBy('ma_lop')->get();
-        $lopHocPhans = LopHocPhan::with('monHoc')->where('trang_thai', 'dang_mo')->orderBy('ma_lop_hoc_phan')->get();
+        $lopHocPhans = LopHocPhan::with('monHoc')
+            ->where('trang_thai_lop', 'mo_dang_ky')
+            ->orderBy('ma_lop_hp')
+            ->get();
 
         return view('daotao.thong-bao.create', compact('lopHanhChinhs', 'lopHocPhans'));
     }
@@ -73,7 +84,7 @@ class ThongBaoController extends Controller
     /**
      * Store a newly created resource in storage.
      */
-    public function store(Request $request)
+    public function store(Request $request, NotificationService $notificationService)
     {
         $validated = $request->validate([
             'tieu_de' => 'required|string|max:255',
@@ -90,7 +101,6 @@ class ThongBaoController extends Controller
             'file_dinh_kem' => 'nullable|file|max:10240|mimes:pdf,doc,docx,xls,xlsx',
         ]);
 
-        DB::beginTransaction();
         try {
             // Upload ảnh đại diện
             if ($request->hasFile('anh_dai_dien')) {
@@ -108,17 +118,12 @@ class ThongBaoController extends Controller
             $validated['trang_thai'] = 'cong_khai';
             $validated['gui_web_notification'] = true;
 
-            $thongBao = ThongBao::create($validated);
+            // Sử dụng NotificationService để tạo và gửi thông báo
+            $thongBao = $notificationService->createNotification($validated, true);
 
-            // Tạo bản ghi người nhận dựa vào đối tượng
-            $this->taoNguoiNhan($thongBao);
-
-            DB::commit();
-
-            return redirect()->route('daotao.thong-bao.index')
+            return redirect()->route('dao-tao.thong-bao.index')
                 ->with('success', 'Đã tạo và gửi thông báo thành công!');
         } catch (\Exception $e) {
-            DB::rollBack();
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage())->withInput();
         }
     }
@@ -126,22 +131,48 @@ class ThongBaoController extends Controller
     /**
      * Display the specified resource.
      */
-    public function show($id)
+    public function show($id, Request $request)
     {
         $thongBao = ThongBao::with(['nguoiGui', 'nguoiNhan.nguoiNhan'])->findOrFail($id);
 
         // Tăng lượt xem
         $thongBao->increment('so_luot_xem');
 
-        // Thống kê người nhận
-        $thongKe = [
-            'tong_nguoi_nhan' => $thongBao->nguoiNhan->count(),
-            'da_doc' => $thongBao->nguoiNhan->where('da_doc', true)->count(),
-            'chua_doc' => $thongBao->nguoiNhan->where('da_doc', false)->count(),
-            'da_gui_email' => $thongBao->nguoiNhan->where('da_gui_email', true)->count(),
-        ];
+        // Đánh dấu đã đọc cho user hiện tại
+        if (Auth::check()) {
+            $nguoiNhan = NguoiNhanThongBao::where('thong_bao_id', $thongBao->id)
+                ->where('nguoi_nhan_id', Auth::id())
+                ->first();
 
-        return view('daotao.thong-bao.show', compact('thongBao', 'thongKe'));
+            if ($nguoiNhan && !$nguoiNhan->da_doc) {
+                $nguoiNhan->danhDauDaDoc();
+            }
+        }
+
+        // Thống kê người nhận
+        $tongNguoiNhan = $thongBao->nguoiNhan->count();
+        $daDoc = $thongBao->nguoiNhan->where('da_doc', true)->count();
+        $chuaDoc = $thongBao->nguoiNhan->where('da_doc', false)->count();
+        $daGuiEmail = $thongBao->nguoiNhan->where('da_gui_email', true)->count();
+
+        // Danh sách người nhận với phân trang và filter
+        $query = NguoiNhanThongBao::with('nguoiNhan')
+            ->where('thong_bao_id', $thongBao->id);
+
+        if ($request->filled('trang_thai')) {
+            $query->where('da_doc', $request->trang_thai == 'da_doc' ? true : false);
+        }
+
+        $nguoiNhans = $query->paginate(20);
+
+        return view('daotao.thong-bao.show', compact(
+            'thongBao',
+            'tongNguoiNhan',
+            'daDoc',
+            'chuaDoc',
+            'daGuiEmail',
+            'nguoiNhans'
+        ));
     }
 
     /**
@@ -150,8 +181,17 @@ class ThongBaoController extends Controller
     public function edit($id)
     {
         $thongBao = ThongBao::findOrFail($id);
+        
+        // Kiểm tra quyền: Đào tạo chỉ sửa thông báo của mình
+        if ($thongBao->nguoi_gui_id !== Auth::id() && $thongBao->loai_nguon !== 'tu_dong') {
+            abort(403, 'Bạn không có quyền sửa thông báo này');
+        }
+        
         $lopHanhChinhs = LopHanhChinh::orderBy('ma_lop')->get();
-        $lopHocPhans = LopHocPhan::with('monHoc')->where('trang_thai', 'dang_mo')->orderBy('ma_lop_hoc_phan')->get();
+        $lopHocPhans = LopHocPhan::with('monHoc')
+            ->where('trang_thai_lop', 'mo_dang_ky')
+            ->orderBy('ma_lop_hp')
+            ->get();
 
         return view('daotao.thong-bao.edit', compact('thongBao', 'lopHanhChinhs', 'lopHocPhans'));
     }
@@ -162,13 +202,19 @@ class ThongBaoController extends Controller
     public function update(Request $request, $id)
     {
         $thongBao = ThongBao::findOrFail($id);
+        
+        // Kiểm tra quyền: Đào tạo chỉ sửa thông báo của mình
+        if ($thongBao->nguoi_gui_id !== Auth::id() && $thongBao->loai_nguon !== 'tu_dong') {
+            abort(403, 'Bạn không có quyền sửa thông báo này');
+        }
 
+        // Validation - Đào tạo chỉ được gửi cho sinh viên, giảng viên, lớp
         $validated = $request->validate([
             'tieu_de' => 'required|string|max:255',
             'noi_dung' => 'required|string',
             'loai_thong_bao' => 'required|in:tin_tuc,thong_bao_chung,tin_gap,lich_hoc,lich_thi,hoc_phi,diem,dang_ky_mon',
             'muc_do_quan_trong' => 'required|in:rat_quan_trong,quan_trong,binh_thuong',
-            'doi_tuong' => 'required|in:all,sinh_vien,giang_vien,lop_hanh_chinh,lop_hoc_phan',
+            'doi_tuong' => 'required|in:all,sinh_vien,giang_vien,lop_hanh_chinh,lop_hoc_phan', // Không cho phép: admin, dao_tao
             'doi_tuong_cu_the_id' => 'nullable|integer',
             'ghim_dau_trang' => 'boolean',
             'gui_email' => 'boolean',
@@ -210,7 +256,7 @@ class ThongBaoController extends Controller
 
             DB::commit();
 
-            return redirect()->route('daotao.thong-bao.show', $thongBao->id)
+            return redirect()->route('dao-tao.thong-bao.show', $thongBao->id)
                 ->with('success', 'Đã cập nhật thông báo thành công!');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -224,6 +270,11 @@ class ThongBaoController extends Controller
     public function destroy($id)
     {
         $thongBao = ThongBao::findOrFail($id);
+        
+        // Kiểm tra quyền: Đào tạo chỉ xóa thông báo của mình
+        if ($thongBao->nguoi_gui_id !== Auth::id()) {
+            abort(403, 'Bạn không có quyền xóa thông báo này');
+        }
 
         // Xóa file đính kèm
         if ($thongBao->anh_dai_dien && Storage::disk('public')->exists($thongBao->anh_dai_dien)) {
@@ -235,7 +286,7 @@ class ThongBaoController extends Controller
 
         $thongBao->delete();
 
-        return redirect()->route('daotao.thong-bao.index')
+        return redirect()->route('dao-tao.thong-bao.index')
             ->with('success', 'Đã xóa thông báo thành công!');
     }
 
@@ -252,7 +303,12 @@ class ThongBaoController extends Controller
                 break;
 
             case 'sinh_vien':
-                $nguoiNhanIds = User::whereHas('sinhVien')->where('trang_thai', 'hoat_dong')->pluck('id')->toArray();
+                $nguoiNhanIds = User::whereHas('vaiTro', function ($query) {
+                    $query->where('ma_vai_tro', 'sinh_vien');
+                })
+                    ->where('trang_thai', 'hoat_dong')
+                    ->pluck('id')
+                    ->toArray();
                 break;
 
             case 'giang_vien':

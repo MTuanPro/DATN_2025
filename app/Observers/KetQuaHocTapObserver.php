@@ -67,7 +67,8 @@ class KetQuaHocTapObserver
      */
     public function created(KetQuaHocTap $ketQua): void
     {
-        //
+        // Gửi thông báo khi điểm mới được tạo
+        $this->sendGradeNotification($ketQua);
     }
 
     /**
@@ -75,7 +76,34 @@ class KetQuaHocTapObserver
      */
     public function updated(KetQuaHocTap $ketQua): void
     {
-        //
+        // Gửi thông báo khi điểm được cập nhật
+        if ($ketQua->wasChanged('diem_he_10') && $ketQua->diem_he_10 !== null) {
+            $this->sendGradeNotification($ketQua);
+        }
+    }
+
+    /**
+     * Gửi thông báo điểm cho sinh viên
+     */
+    private function sendGradeNotification(KetQuaHocTap $ketQua): void
+    {
+        try {
+            if ($ketQua->diem_he_10 !== null && $ketQua->lopHocPhanSinhVien && $ketQua->lopHocPhanSinhVien->sinhVien) {
+                $notificationService = app(\App\Services\NotificationService::class);
+                $sinhVien = $ketQua->lopHocPhanSinhVien->sinhVien;
+                $monHoc = $ketQua->lopHocPhanSinhVien->lopHocPhan->monHoc ?? null;
+
+                if ($monHoc) {
+                    $notificationService->sendGradeNotification(
+                        $sinhVien->id,
+                        $monHoc->ten_mon,
+                        $ketQua->diem_he_10
+                    );
+                }
+            }
+        } catch (\Exception $e) {
+            \Log::error('Lỗi gửi thông báo điểm: ' . $e->getMessage());
+        }
     }
 
     /**

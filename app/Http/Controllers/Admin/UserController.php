@@ -72,8 +72,7 @@ class UserController extends Controller
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
             'password' => ['required', 'confirmed', PasswordRule::min(8)],
             'trang_thai' => ['required', 'in:hoat_dong,khoa,ngung_hoat_dong'],
-            'vai_tro' => ['nullable', 'array'],
-            'vai_tro.*' => ['exists:vai_tro,id'],
+            'vai_tro' => ['required', 'exists:vai_tro,id'],
         ], [
             'name.required' => 'Vui lòng nhập họ tên',
             'email.required' => 'Vui lòng nhập email',
@@ -83,6 +82,8 @@ class UserController extends Controller
             'password.confirmed' => 'Xác nhận mật khẩu không khớp',
             'password.min' => 'Mật khẩu phải có ít nhất 8 ký tự',
             'trang_thai.required' => 'Vui lòng chọn trạng thái',
+            'vai_tro.required' => 'Vui lòng chọn vai trò',
+            'vai_tro.exists' => 'Vai trò không hợp lệ',
         ]);
 
         DB::beginTransaction();
@@ -94,58 +95,57 @@ class UserController extends Controller
                 'trang_thai' => $validated['trang_thai'],
             ]);
 
-            // Gán vai trò nếu có
-            if (!empty($validated['vai_tro'])) {
-                $user->vaiTro()->attach($validated['vai_tro']);
+            // Gán vai trò
+            $vaiTroId = $validated['vai_tro'];
+            $user->vaiTro()->attach($vaiTroId);
 
-                // Tự động tạo Admin profile nếu gán vai trò admin
-                $adminRole = VaiTro::where('ma_vai_tro', 'admin')->first();
-                if ($adminRole && in_array($adminRole->id, $validated['vai_tro'])) {
-                    // Kiểm tra xem đã có profile chưa
-                    $existingAdmin = Admin::where('user_id', $user->id)->first();
+            // Tự động tạo Admin profile nếu gán vai trò admin
+            $adminRole = VaiTro::where('ma_vai_tro', 'admin')->first();
+            if ($adminRole && $adminRole->id == $vaiTroId) {
+                // Kiểm tra xem đã có profile chưa
+                $existingAdmin = Admin::where('user_id', $user->id)->first();
 
-                    if (!$existingAdmin) {
-                        // Tạo mã admin tự động: AD + năm + số thứ tự
-                        $year = date('Y');
-                        $lastAdmin = Admin::whereYear('created_at', $year)
-                            ->orderBy('id', 'desc')
-                            ->first();
+                if (!$existingAdmin) {
+                    // Tạo mã admin tự động: AD + năm + số thứ tự
+                    $year = date('Y');
+                    $lastAdmin = Admin::whereYear('created_at', $year)
+                        ->orderBy('id', 'desc')
+                        ->first();
 
-                        $sequence = $lastAdmin ? (int)substr($lastAdmin->ma_admin, -4) + 1 : 1;
-                        $maAdmin = 'AD' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+                    $sequence = $lastAdmin ? (int)substr($lastAdmin->ma_admin, -4) + 1 : 1;
+                    $maAdmin = 'AD' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
 
-                        Admin::create([
-                            'user_id' => $user->id,
-                            'ma_admin' => $maAdmin,
-                            'ho_ten' => $user->name,
-                            'email' => $user->email,
-                        ]);
-                    }
+                    Admin::create([
+                        'user_id' => $user->id,
+                        'ma_admin' => $maAdmin,
+                        'ho_ten' => $user->name,
+                        'email' => $user->email,
+                    ]);
                 }
+            }
 
-                // Tự động tạo DaoTao profile nếu gán vai trò truong_phong_dt hoặc nhan_vien_dt
-                $daoTaoRoles = VaiTro::whereIn('ma_vai_tro', ['truong_phong_dt', 'nhan_vien_dt'])->pluck('id')->toArray();
-                if (!empty(array_intersect($daoTaoRoles, $validated['vai_tro']))) {
-                    // Kiểm tra xem đã có profile chưa
-                    $existingDaoTao = DaoTao::where('user_id', $user->id)->first();
+            // Tự động tạo DaoTao profile nếu gán vai trò truong_phong_dt hoặc nhan_vien_dt
+            $daoTaoRoles = VaiTro::whereIn('ma_vai_tro', ['truong_phong_dt', 'nhan_vien_dt'])->pluck('id')->toArray();
+            if (in_array($vaiTroId, $daoTaoRoles)) {
+                // Kiểm tra xem đã có profile chưa
+                $existingDaoTao = DaoTao::where('user_id', $user->id)->first();
 
-                    if (!$existingDaoTao) {
-                        // Tạo mã đào tạo tự động: DT + năm + số thứ tự
-                        $year = date('Y');
-                        $lastDaoTao = DaoTao::whereYear('created_at', $year)
-                            ->orderBy('id', 'desc')
-                            ->first();
+                if (!$existingDaoTao) {
+                    // Tạo mã đào tạo tự động: DT + năm + số thứ tự
+                    $year = date('Y');
+                    $lastDaoTao = DaoTao::whereYear('created_at', $year)
+                        ->orderBy('id', 'desc')
+                        ->first();
 
-                        $sequence = $lastDaoTao ? (int)substr($lastDaoTao->ma_dao_tao, -4) + 1 : 1;
-                        $maDaoTao = 'DT' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
+                    $sequence = $lastDaoTao ? (int)substr($lastDaoTao->ma_dao_tao, -4) + 1 : 1;
+                    $maDaoTao = 'DT' . $year . str_pad($sequence, 4, '0', STR_PAD_LEFT);
 
-                        DaoTao::create([
-                            'user_id' => $user->id,
-                            'ma_dao_tao' => $maDaoTao,
-                            'ho_ten' => $user->name,
-                            'email' => $user->email,
-                        ]);
-                    }
+                    DaoTao::create([
+                        'user_id' => $user->id,
+                        'ma_dao_tao' => $maDaoTao,
+                        'ho_ten' => $user->name,
+                        'email' => $user->email,
+                    ]);
                 }
             }
 
@@ -341,14 +341,57 @@ class UserController extends Controller
             return back()->with('error', 'Không thể xóa tài khoản của chính bạn!');
         }
 
+        DB::beginTransaction();
         try {
-            $user->vaiTro()->detach(); // Xóa các vai trò
+            // Xóa các bảng liên quan trước
+            // Xóa Admin profile nếu có (force delete để xóa hoàn toàn)
+            if ($user->admin) {
+                $user->admin->forceDelete();
+            }
+
+            // Xóa DaoTao profile nếu có (force delete để xóa hoàn toàn)
+            if ($user->daoTao) {
+                $user->daoTao->forceDelete();
+            }
+
+            // Xóa SinhVien profile nếu có (force delete để xóa hoàn toàn)
+            if ($user->sinhVien) {
+                $user->sinhVien->forceDelete();
+            }
+
+            // Xóa GiangVien profile nếu có (force delete để xóa hoàn toàn)
+            if ($user->giangVien) {
+                $user->giangVien->forceDelete();
+            }
+
+            // Xóa các vai trò (xóa trong bảng pivot)
+            $user->vaiTro()->detach();
+
+            // Xóa các bảng liên quan khác có foreign key đến user
+            // Xóa nhật ký hoạt động
+            DB::table('nhat_ky_hoat_dong')->where('user_id', $user->id)->delete();
+            
+            // Xóa người nhận thông báo
+            DB::table('nguoi_nhan_thong_bao')->where('nguoi_nhan_id', $user->id)->delete();
+            
+            // Xóa token xác thực email
+            DB::table('email_verification_tokens')->where('email', $user->email)->delete();
+            
+            // Xóa token reset password
+            DB::table('password_reset_tokens')->where('email', $user->email)->delete();
+            
+            // Xóa session
+            DB::table('sessions')->where('user_id', $user->id)->delete();
+
+            // Xóa user (các bảng khác có foreign key với onDelete('cascade') sẽ tự động xóa)
             $user->delete();
 
+            DB::commit();
             return redirect()->route('admin.users.index')
                 ->with('success', 'Xóa tài khoản thành công!');
         } catch (\Exception $e) {
-            return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+            DB::rollback();
+            return back()->with('error', 'Có lỗi xảy ra khi xóa tài khoản: ' . $e->getMessage());
         }
     }
 

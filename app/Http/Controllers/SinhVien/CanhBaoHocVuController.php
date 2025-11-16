@@ -16,7 +16,7 @@ class CanhBaoHocVuController extends Controller
     {
         // Lấy thông tin sinh viên từ user hiện tại
         $user = auth()->user();
-        $sinhVien = $user->sinhVien ?? \App\Models\DaoTao\SinhVien::where('user_id', $user->id)->first();
+        $sinhVien = $user->sinhVien;
 
         if (!$sinhVien) {
             return redirect()->route('sinh-vien.dashboard')
@@ -53,7 +53,7 @@ class CanhBaoHocVuController extends Controller
     {
         // Lấy thông tin sinh viên từ user hiện tại
         $user = auth()->user();
-        $sinhVien = $user->sinhVien ?? \App\Models\DaoTao\SinhVien::where('user_id', $user->id)->first();
+        $sinhVien = $user->sinhVien;
 
         if (!$sinhVien) {
             return redirect()->route('sinh-vien.dashboard')

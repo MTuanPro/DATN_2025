@@ -5,13 +5,14 @@ namespace App\Http\Controllers\DaoTao;
 use App\Http\Controllers\Controller;
 use App\Models\BangDiem;
 use App\Models\CanhBaoHocVu;
-use App\Models\SinhVien;
+use App\Models\DaoTao\SinhVien;
 use App\Models\KetQuaHocTap;
 use App\Models\DiemDanh;
 use App\Models\HocPhiHocKy;
 use App\Models\HocKy;
 use App\Models\LopHocPhanSinhVien;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
@@ -102,7 +103,7 @@ class CanhBaoHocVuController extends Controller
         try {
             DB::beginTransaction();
 
-            $validated['nguoi_tao_id'] = auth()->id();
+            $validated['nguoi_tao_id'] = Auth::id();
             $validated['ngay_canh_bao'] = $request->filled('ngay_canh_bao') ? $request->ngay_canh_bao : now();
             $validated['trang_thai'] = 'chua_xu_ly';
 
@@ -344,7 +345,7 @@ class CanhBaoHocVuController extends Controller
                     'loai_canh_bao' => 'diem_thap',
                     'muc_do' => $bangDiem->diem_trung_binh_hoc_ky < 0.5 ? 'buoc_thoi_hoc' : ($bangDiem->diem_trung_binh_hoc_ky < 0.8 ? 'dinh_chi' : 'canh_cao'),
                     'ly_do' => "Điểm trung bình học kỳ " . number_format($bangDiem->diem_trung_binh_hoc_ky, 2) . "/4.0 (< 1.0)",
-                    'nguoi_canh_bao_id' => auth()->id(),
+                    'nguoi_canh_bao_id' => Auth::id(),
                     'ngay_canh_bao' => now(),
                     'trang_thai' => 'chua_xu_ly',
                 ]);
@@ -402,7 +403,7 @@ class CanhBaoHocVuController extends Controller
                             'loai_canh_bao' => 'vang_nhieu',
                             'muc_do' => $tyLeVang > 50 ? 'dinh_chi' : 'canh_cao',
                             'ly_do' => "Vắng {$soBuoiVang}/{$tongBuoiHoc} buổi (" . number_format($tyLeVang, 1) . "%, vượt ngưỡng 20%)",
-                            'nguoi_canh_bao_id' => auth()->id(),
+                            'nguoi_canh_bao_id' => Auth::id(),
                             'ngay_canh_bao' => now(),
                             'trang_thai' => 'chua_xu_ly',
                         ]);
@@ -444,7 +445,7 @@ class CanhBaoHocVuController extends Controller
                     'loai_canh_bao' => 'no_hoc_phi',
                     'muc_do' => 'canh_cao',
                     'ly_do' => "Nợ học phí " . number_format($soTienNo) . " VNĐ, quá hạn từ " . $hocPhi->han_dong->format('d/m/Y'),
-                    'nguoi_canh_bao_id' => auth()->id(),
+                    'nguoi_canh_bao_id' => Auth::id(),
                     'ngay_canh_bao' => now(),
                     'trang_thai' => 'chua_xu_ly',
                 ]);
@@ -501,7 +502,7 @@ class CanhBaoHocVuController extends Controller
                     'loai_canh_bao' => 'hoc_ky_lien_tiep',
                     'muc_do' => 'buoc_thoi_hoc',
                     'ly_do' => "Điểm trung bình < 1.0 trong 2 học kỳ liên tiếp ({$hocKyTruoc->ten_hoc_ky} và {$hocKy->ten_hoc_ky})",
-                    'nguoi_canh_bao_id' => auth()->id(),
+                    'nguoi_canh_bao_id' => Auth::id(),
                     'ngay_canh_bao' => now(),
                     'trang_thai' => 'chua_xu_ly',
                 ]);

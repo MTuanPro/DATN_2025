@@ -52,7 +52,7 @@
                                         ? 'dao-tao.thong-bao.show'
                                         : (in_array('giang_vien', $roles)
                                             ? 'giangvien.thong-bao.show'
-                                            : 'sinhvien.thong-bao.show'));
+                                            : 'sinh-vien.thong-bao.show'));
                             @endphp
                             <li>
                                 <a class="dropdown-item {{ !$nguoiNhan->da_doc ? 'bg-light' : '' }}"
@@ -93,7 +93,7 @@
                                 ? 'dao-tao.thong-bao.index'
                                 : (in_array('giang_vien', $roles)
                                     ? 'giangvien.thong-bao.index'
-                                    : 'sinhvien.thong-bao.index'));
+                                    : 'sinh-vien.thong-bao.index'));
                     @endphp
 
                     <li>

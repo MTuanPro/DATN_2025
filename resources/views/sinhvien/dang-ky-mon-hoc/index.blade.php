@@ -154,10 +154,25 @@ $lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
                                             </td>
                                             <td>{{ $monHoc->so_tin_chi }}</td>
                                             <td>
-                                                @if ($ct->hoc_ky_goi_y > 0)
-                                                    Kỳ {{ $ct->hoc_ky_goi_y }}
+                                                @php
+                                                    // Lấy học kỳ gợi ý từ CTK hoặc object
+                                                    $hocKyGoiY = null;
+                                                    if (is_object($ct)) {
+                                                        // Nếu là model ChuongTrinhKhung
+                                                        if (method_exists($ct, 'getAttribute')) {
+                                                            $hocKyGoiY = $ct->hoc_ky_goi_y;
+                                                        } else {
+                                                            // Nếu là stdClass object
+                                                            $hocKyGoiY = $ct->hoc_ky_goi_y ?? null;
+                                                        }
+                                                    } else {
+                                                        $hocKyGoiY = $ct['hoc_ky_goi_y'] ?? null;
+                                                    }
+                                                @endphp
+                                                @if ($hocKyGoiY && $hocKyGoiY > 0)
+                                                    <span class="badge bg-info text-white">Kỳ {{ $hocKyGoiY }}</span>
                                                 @else
-                                                    <span class="badge bg-secondary">Tùy chọn</span>
+                                                    <span class="badge bg-secondary">Chưa xác định</span>
                                                 @endif
                                             </td>
                                             <td>

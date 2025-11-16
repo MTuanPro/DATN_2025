@@ -48,6 +48,10 @@ use App\Http\Controllers\SinhVien\XemDiemController;
 use App\Http\Controllers\DaoTao\ThongBaoController as DaoTaoThongBaoController;
 use App\Http\Controllers\GiangVien\ThongBaoController as GiangVienThongBaoController;
 use App\Http\Controllers\SinhVien\ThongBaoController as SinhVienThongBaoController;
+use App\Http\Controllers\Admin\AiChatbotKnowledgeBaseController;
+use App\Http\Controllers\Admin\AiChatbotConversationController;
+use App\Http\Controllers\Admin\AiChatbotFeedbackController;
+use App\Http\Controllers\SinhVien\ChatbotController;
 
 
 // Debug route (temporary)
@@ -68,7 +72,7 @@ Route::get('/', function () {
             return redirect()->route('giangvien.dashboard');
         }
         if (in_array('sinh_vien', $roles)) {
-            return redirect()->route('sinhvien.dashboard');
+            return redirect()->route('sinh-vien.dashboard');
         }
     }
     return redirect()->route('login');
@@ -135,6 +139,20 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     // Thong Bao Management
     Route::get('thong-bao/{thongBao}/download', [ThongBaoController::class, 'download'])->name('thong-bao.download');
     Route::resource('thong-bao', ThongBaoController::class);
+    
+    // Nguoi Nhan Thong Bao Management
+    Route::prefix('nguoi-nhan-thong-bao')->name('nguoi-nhan-thong-bao.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'index'])->name('index');
+        Route::get('/statistics', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'statistics'])->name('statistics');
+        Route::get('/{id}', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'show'])->name('show');
+        Route::post('/mark-as-read', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'markAsRead'])->name('mark-as-read');
+        Route::post('/resend-email', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'resendEmail'])->name('resend-email');
+        Route::post('/bulk-delete', [\App\Http\Controllers\Admin\NguoiNhanThongBaoController::class, 'bulkDelete'])->name('bulk-delete');
+    });
+    
+    // Mau Thong Bao Tu Dong Management
+    Route::resource('mau-thong-bao', \App\Http\Controllers\Admin\MauThongBaoTuDongController::class);
+    Route::patch('mau-thong-bao/{mauThongBao}/toggle', [\App\Http\Controllers\Admin\MauThongBaoTuDongController::class, 'toggleActivation'])->name('mau-thong-bao.toggle');
 
     // Reports & Statistics
     Route::prefix('reports')->name('reports.')->group(function () {
@@ -142,6 +160,53 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
         Route::get('/users', [App\Http\Controllers\Admin\ReportController::class, 'users'])->name('users');
         Route::get('/permissions', [App\Http\Controllers\Admin\ReportController::class, 'permissions'])->name('permissions');
         Route::get('/export', [App\Http\Controllers\Admin\ReportController::class, 'export'])->name('export');
+    });
+
+    // PHASE 12: AI Chatbot Management
+    // Backwards-compatible aliases for older route names introduced during refactors.
+    // These are lightweight redirects that preserve old named routes (so compiled views
+    // or external links that still reference them won't throw RouteNotFound exceptions).
+    Route::get('ai-chatbot/compat/chatbot-conversation-create', function () {
+        return redirect()->route('admin.ai-chatbot.conversation.index');
+    })->name('chatbot.conversation.create'); // yields admin.chatbot.conversation.create
+
+    Route::get('ai-chatbot/compat/chatbot-feedback', function () {
+        return redirect()->route('admin.ai-chatbot.feedback.index');
+    })->name('ai-chatbot.chatbot.feedback'); // yields admin.ai-chatbot.chatbot.feedback
+
+    Route::prefix('ai-chatbot')->name('ai-chatbot.')->group(function () {
+        // Knowledge Base
+        Route::prefix('knowledge-base')->name('knowledge-base.')->group(function () {
+            Route::get('/', [AiChatbotKnowledgeBaseController::class, 'index'])->name('index');
+            Route::get('/create', [AiChatbotKnowledgeBaseController::class, 'create'])->name('create');
+            Route::get('/statistics/overview', [AiChatbotKnowledgeBaseController::class, 'statistics'])->name('statistics');
+            Route::get('/import/form', [AiChatbotKnowledgeBaseController::class, 'importForm'])->name('import.form');
+            Route::post('/import', [AiChatbotKnowledgeBaseController::class, 'import'])->name('import');
+            Route::get('/export', [AiChatbotKnowledgeBaseController::class, 'export'])->name('export');
+            Route::post('/', [AiChatbotKnowledgeBaseController::class, 'store'])->name('store');
+            Route::get('/{knowledgeBase}', [AiChatbotKnowledgeBaseController::class, 'show'])->name('show');
+            Route::get('/{knowledgeBase}/edit', [AiChatbotKnowledgeBaseController::class, 'edit'])->name('edit');
+            Route::put('/{knowledgeBase}', [AiChatbotKnowledgeBaseController::class, 'update'])->name('update');
+            Route::delete('/{knowledgeBase}', [AiChatbotKnowledgeBaseController::class, 'destroy'])->name('destroy');
+            Route::post('/{knowledgeBase}/toggle-activate', [AiChatbotKnowledgeBaseController::class, 'toggleActivate'])->name('toggle-activate');
+        });
+
+        // Conversations
+        Route::prefix('conversation')->name('conversation.')->group(function () {
+            Route::get('/', [AiChatbotConversationController::class, 'index'])->name('index');
+            Route::get('/{conversation}', [AiChatbotConversationController::class, 'show'])->name('show');
+            Route::post('/{conversation}/close', [AiChatbotConversationController::class, 'close'])->name('close');
+            Route::post('/{conversation}/reopen', [AiChatbotConversationController::class, 'reopen'])->name('reopen');
+            Route::delete('/{conversation}', [AiChatbotConversationController::class, 'destroy'])->name('destroy');
+        });
+
+        // Feedback
+        Route::prefix('feedback')->name('feedback.')->group(function () {
+            Route::get('/', [AiChatbotFeedbackController::class, 'index'])->name('index');
+            Route::get('/analytics', [AiChatbotFeedbackController::class, 'analytics'])->name('analytics');
+            Route::get('/{feedback}', [AiChatbotFeedbackController::class, 'show'])->name('show');
+            Route::delete('/{feedback}', [AiChatbotFeedbackController::class, 'destroy'])->name('destroy');
+        });
     });
 });
 
@@ -163,6 +228,7 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::resource('mon-hoc', MonHocController::class);
     Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'tienQuyet'])->name('mon-hoc.tien-quyet');
     Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'storeTienQuyet'])->name('mon-hoc.tien-quyet.store');
+    Route::put('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocTienQuyetController::class, 'update'])->name('mon-hoc.tien-quyet.update');
     Route::delete('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocController::class, 'destroyTienQuyet'])->name('mon-hoc.tien-quyet.destroy');
 
     Route::resource('monhoctienquyet', MonHocTienQuyetController::class);
@@ -200,6 +266,7 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 
     // PHASE 4: Lớp học phần & Phân công
     Route::resource('lop-hoc-phan', LopHocPhanController::class);
+    Route::post('lop-hoc-phan/sync-so-luong', [LopHocPhanController::class, 'syncSoLuongDangKy'])->name('lop-hoc-phan.sync-so-luong');
 
     // Phân công giảng dạy
     Route::get('lop-hoc-phan/{lopHocPhan}/phan-cong', [PhanCongGiangDayController::class, 'index'])->name('lop-hoc-phan.phan-cong');
@@ -226,6 +293,12 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 
     // Lịch học chi tiết
     Route::get('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet', [LichHocChiTietController::class, 'index'])->name('lop-hoc-phan.lich-chi-tiet');
+    
+    // Thời khóa biểu
+    Route::prefix('thoi-khoa-bieu')->name('thoi-khoa-bieu.')->group(function () {
+        Route::get('/lich-theo-phong', [\App\Http\Controllers\DaoTao\ThoiKhoaBieuController::class, 'lichTheoPhong'])->name('lich-theo-phong');
+        Route::get('/lich-theo-giang-vien', [\App\Http\Controllers\DaoTao\ThoiKhoaBieuController::class, 'lichTheoGiangVien'])->name('lich-theo-giang-vien');
+    });
     Route::post('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet/generate', [LichHocChiTietController::class, 'generate'])->name('lop-hoc-phan.lich-chi-tiet.generate');
     Route::get('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet/create', [LichHocChiTietController::class, 'create'])->name('lop-hoc-phan.lich-chi-tiet.create');
     Route::post('lop-hoc-phan/{lopHocPhan}/lich-chi-tiet', [LichHocChiTietController::class, 'store'])->name('lop-hoc-phan.lich-chi-tiet.store');
@@ -301,10 +374,6 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::get('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'payment'])->name('payment');
         Route::post('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'storePayment'])->name('storePayment');
     });
-
-    // Thông báo (chỉ xem)
-    Route::get('thong-bao', [ThongBaoController::class, 'index'])->name('thong-bao.index');
-    Route::get('thong-bao/{thongBao}', [ThongBaoController::class, 'show'])->name('thong-bao.show');
 
     // Báo cáo đào tạo
     Route::prefix('bao-cao')->name('bao-cao.')->group(function () {
@@ -441,12 +510,25 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/my-registrations', [DangKyMonHocController::class, 'myRegistrations'])->name('my-registrations');
     });
 
+    // PHASE 5: Lớp học phần
+    Route::middleware('sinhvien.check')->prefix('lop-hoc-phan')->name('lop-hoc-phan.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'index'])->name('index');
+        Route::get('/{id}/lich-su-diem-danh', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'lichSuDiemDanh'])->name('lich-su-diem-danh');
+        Route::get('/{id}', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'show'])->name('show');
+    });
+
     // PHASE 5: Thời khóa biểu cá nhân
     Route::middleware('sinhvien.check')->prefix('thoi-khoa-bieu')->name('thoi-khoa-bieu.')->group(function () {
         Route::get('/', [ThoiKhoaBieuController::class, 'index'])->name('index');
         Route::get('/chi-tiet', [ThoiKhoaBieuController::class, 'chiTiet'])->name('chi-tiet');
         Route::get('/export-pdf', [ThoiKhoaBieuController::class, 'exportPDF'])->name('export-pdf');
     });
+
+    // PHASE 6: Lịch sử điểm danh
+    Route::middleware('sinhvien.check')->prefix('diem-danh')->name('diem-danh.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'tongHopDiemDanh'])->name('index');
+    });
+
     // PHASE 7: Xem điểm
     Route::middleware('sinhvien.check')->prefix('diem')->name('diem.')->group(function () {
         Route::get('/', [XemDiemController::class, 'index'])->name('index');
@@ -478,6 +560,15 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/{id}/pdf', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'exportPdf'])->name('pdf');
     });
 
+    // PHASE 9.5: Xuất dữ liệu (Export Data)
+    Route::middleware('sinhvien.check')->prefix('xuat-du-lieu')->name('xuat-du-lieu.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'index'])->name('index');
+        Route::get('/bang-diem/excel', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatBangDiemExcel'])->name('bang-diem.excel');
+        Route::get('/bang-diem/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatBangDiemPdf'])->name('bang-diem.pdf');
+        Route::get('/tkb/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatTKBPdf'])->name('tkb.pdf');
+        Route::get('/giay-xac-nhan/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'giayXacNhanPdf'])->name('giay-xac-nhan.pdf');
+    });
+
     // PHASE 10: Thông báo (chỉ xem)
     Route::middleware('sinhvien.check')->prefix('thong-bao')->name('thong-bao.')->group(function () {
         Route::get('/', [SinhVienThongBaoController::class, 'index'])->name('index');
@@ -485,5 +576,26 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::post('/{thongBao}/mark-read', [SinhVienThongBaoController::class, 'markAsRead'])->name('mark-read');
         Route::post('/mark-all-read', [SinhVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
         Route::get('/unread/count', [SinhVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
+    });
+
+    // TRA CỨU
+    Route::middleware('sinhvien.check')->prefix('tra-cuu')->name('tra-cuu.')->group(function () {
+        Route::get('/hoc-phan', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traHocPhan'])->name('hoc-phan');
+        Route::get('/giang-vien', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traGiangVien'])->name('giang-vien');
+        Route::get('/phong-hoc', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traPhongHoc'])->name('phong-hoc');
+    });
+
+    // PHASE 12: AI Chatbot (Sinh viên)
+    // FIX: Thêm rate limiting để tránh spam (30 requests/minute)
+    Route::middleware(['sinhvien.check', 'throttle:30,1'])->prefix('chatbot')->name('chatbot.')->group(function () {
+        Route::get('/', [ChatbotController::class, 'index'])->name('index');
+        Route::post('/conversation/create', [ChatbotController::class, 'createConversation'])->name('conversation.create');
+        Route::post('/message/send', [ChatbotController::class, 'sendMessage'])->name('message.send');
+        Route::get('/conversation/{conversationId}/messages', [ChatbotController::class, 'getMessages'])->name('conversation.messages');
+        Route::get('/conversation/{conversationId}', [ChatbotController::class, 'loadConversation'])->name('conversation.show');
+        Route::delete('/conversation/{conversationId}', [ChatbotController::class, 'deleteConversation'])->name('conversation.delete');
+        Route::post('/feedback', [ChatbotController::class, 'submitFeedback'])->name('feedback.submit');
+        Route::get('/history', [ChatbotController::class, 'history'])->name('history');
+        Route::get('/suggested-questions', [ChatbotController::class, 'getSuggestedQuestions'])->name('suggested-questions');
     });
 });

@@ -45,7 +45,7 @@ class VaiTroController extends Controller
     {
         $validated = $request->validate([
             'ma_vai_tro' => 'required|string|max:50|unique:vai_tro,ma_vai_tro|alpha_dash',
-            'ten_vai_tro' => 'required|string|max:255',
+            'ten_vai_tro' => 'required|string|max:255|unique:vai_tro,ten_vai_tro',
             'mo_ta' => 'nullable|string',
             'muc_do_uu_tien' => 'required|integer|min:1|max:100',
         ], [
@@ -54,6 +54,7 @@ class VaiTroController extends Controller
             'ma_vai_tro.alpha_dash' => 'Mã vai trò chỉ được chứa chữ cái, số, dấu gạch ngang và gạch dưới',
             'ma_vai_tro.max' => 'Mã vai trò không được quá 50 ký tự',
             'ten_vai_tro.required' => 'Tên vai trò không được để trống',
+            'ten_vai_tro.unique' => 'Tên vai trò đã tồn tại',
             'ten_vai_tro.max' => 'Tên vai trò không được quá 255 ký tự',
             'muc_do_uu_tien.required' => 'Mức độ ưu tiên không được để trống',
             'muc_do_uu_tien.integer' => 'Mức độ ưu tiên phải là số nguyên',
@@ -91,7 +92,7 @@ class VaiTroController extends Controller
     {
         $validated = $request->validate([
             'ma_vai_tro' => 'required|string|max:50|alpha_dash|unique:vai_tro,ma_vai_tro,' . $vaiTro->id,
-            'ten_vai_tro' => 'required|string|max:255',
+            'ten_vai_tro' => 'required|string|max:255|unique:vai_tro,ten_vai_tro,' . $vaiTro->id,
             'mo_ta' => 'nullable|string',
             'muc_do_uu_tien' => 'required|integer|min:1|max:100',
         ], [
@@ -100,6 +101,7 @@ class VaiTroController extends Controller
             'ma_vai_tro.alpha_dash' => 'Mã vai trò chỉ được chứa chữ cái, số, dấu gạch ngang và gạch dưới',
             'ma_vai_tro.max' => 'Mã vai trò không được quá 50 ký tự',
             'ten_vai_tro.required' => 'Tên vai trò không được để trống',
+            'ten_vai_tro.unique' => 'Tên vai trò đã tồn tại',
             'ten_vai_tro.max' => 'Tên vai trò không được quá 255 ký tự',
             'muc_do_uu_tien.required' => 'Mức độ ưu tiên không được để trống',
             'muc_do_uu_tien.integer' => 'Mức độ ưu tiên phải là số nguyên',
