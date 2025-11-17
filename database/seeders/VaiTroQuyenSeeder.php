@@ -118,6 +118,9 @@ class VaiTroQuyenSeeder extends Seeder
             ],
         ];
 
+        // Xóa dữ liệu cũ nếu có (để tránh duplicate khi chạy lại seeder)
+        DB::table('vai_tro_quyen')->truncate();
+        
         // Insert tất cả
         DB::table('vai_tro_quyen')->insert(array_merge(
             $adminQuyens,

@@ -67,6 +67,40 @@ class LichHocChiTietController extends Controller
                         ->exists();
 
                     if (!$exists) {
+                        // Kiểm tra xung đột phòng học
+                        // Chỉ kiểm tra với lịch học chi tiết khác (không kiểm tra với lịch học cố định vì đây là lịch được tạo từ lịch học cố định)
+                        if ($lichCoDinh->phong_hoc_id) {
+                            $lichHocChiTietTemp = new LichHocChiTiet([
+                                'lop_hoc_phan_id' => $lopHocPhan->id,
+                                'ngay_hoc' => $date->format('Y-m-d'),
+                                'tiet_bat_dau' => $lichCoDinh->tiet_bat_dau,
+                                'tiet_ket_thuc' => $lichCoDinh->tiet_ket_thuc,
+                                'phong_hoc_id' => $lichCoDinh->phong_hoc_id,
+                            ]);
+
+                            // Kiểm tra xung đột với lịch học chi tiết khác
+                            if ($lichHocChiTietTemp->kiemTraXungDotPhongTheoNgay()) {
+                                // Bỏ qua lịch này nếu bị trùng với lịch học chi tiết khác
+                                continue;
+                            }
+
+                            // Kiểm tra xung đột với lịch học cố định KHÁC (không phải lịch hiện tại)
+                            // Tức là kiểm tra xem có lịch học cố định khác cùng phòng, cùng thứ, trùng ca không
+                            $xungDotCoDinhKhac = LichHocCoDinh::where('phong_hoc_id', $lichCoDinh->phong_hoc_id)
+                                ->where('thu_trong_tuan', $thu)
+                                ->where('id', '!=', $lichCoDinh->id)
+                                ->where(function ($q) use ($lichCoDinh) {
+                                    $q->where('tiet_ket_thuc', '>=', $lichCoDinh->tiet_bat_dau)
+                                      ->where('tiet_bat_dau', '<=', $lichCoDinh->tiet_ket_thuc);
+                                })
+                                ->exists();
+
+                            if ($xungDotCoDinhKhac) {
+                                // Bỏ qua lịch này nếu bị trùng với lịch học cố định khác
+                                continue;
+                            }
+                        }
+
                         LichHocChiTiet::create([
                             'lich_hoc_co_dinh_id' => $lichCoDinh->id,
                             'lop_hoc_phan_id' => $lopHocPhan->id,
@@ -113,7 +147,20 @@ class LichHocChiTietController extends Controller
             'tiet_bat_dau' => 'required|integer|min:1|max:10',
             'tiet_ket_thuc' => 'required|integer|min:1|max:10|gte:tiet_bat_dau',
             'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => 'required|date_format:H:i|after:gio_bat_dau',
+            'gio_ket_thuc' => [
+                'required',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    $gioBatDau = $request->input('gio_bat_dau');
+                    if ($gioBatDau && $value) {
+                        $timeBatDau = \Carbon\Carbon::createFromFormat('H:i', $gioBatDau);
+                        $timeKetThuc = \Carbon\Carbon::createFromFormat('H:i', $value);
+                        if ($timeKetThuc->lte($timeBatDau)) {
+                            $fail('Giờ kết thúc phải sau giờ bắt đầu');
+                        }
+                    }
+                },
+            ],
             'phong_hoc_id' => 'nullable|exists:phong_hoc,id',
             'giang_vien_id' => 'required|exists:giang_vien,id',
             'hinh_thuc' => 'required|in:offline,online,hybrid',
@@ -126,8 +173,9 @@ class LichHocChiTietController extends Controller
             'tiet_ket_thuc.required' => 'Tiết kết thúc là bắt buộc',
             'tiet_ket_thuc.gte' => 'Tiết kết thúc phải lớn hơn hoặc bằng tiết bắt đầu',
             'gio_bat_dau.required' => 'Giờ bắt đầu là bắt buộc',
+            'gio_bat_dau.date_format' => 'Giờ bắt đầu phải có định dạng HH:mm',
             'gio_ket_thuc.required' => 'Giờ kết thúc là bắt buộc',
-            'gio_ket_thuc.after' => 'Giờ kết thúc phải sau giờ bắt đầu',
+            'gio_ket_thuc.date_format' => 'Giờ kết thúc phải có định dạng HH:mm',
             'giang_vien_id.required' => 'Giảng viên là bắt buộc',
             'hinh_thuc.required' => 'Hình thức học là bắt buộc',
         ]);
@@ -135,12 +183,12 @@ class LichHocChiTietController extends Controller
         $validated['lop_hoc_phan_id'] = $lopHocPhan->id;
         $validated['trang_thai'] = 'chua_day';
 
-        // Kiểm tra xung đột nếu có phòng học
+        // Kiểm tra xung đột nếu có phòng học (bao gồm cả lịch học cố định và lịch học chi tiết)
         if ($request->phong_hoc_id) {
             $lichHoc = new LichHocChiTiet($validated);
 
-            if ($lichHoc->kiemTraXungDotPhongTheoNgay()) {
-                return back()->withErrors(['phong_hoc_id' => 'Phòng học đã bị trùng lịch vào thời gian này'])->withInput();
+            if ($lichHoc->kiemTraXungDotPhongDayDu()) {
+                return back()->withErrors(['phong_hoc_id' => 'Phòng học đã bị trùng lịch vào thời gian này. Vui lòng chọn phòng hoặc ca khác.'])->withInput();
             }
         }
 
@@ -172,7 +220,20 @@ class LichHocChiTietController extends Controller
             'tiet_bat_dau' => 'required|integer|min:1|max:10',
             'tiet_ket_thuc' => 'required|integer|min:1|max:10|gte:tiet_bat_dau',
             'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => 'required|date_format:H:i|after:gio_bat_dau',
+            'gio_ket_thuc' => [
+                'required',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    $gioBatDau = $request->input('gio_bat_dau');
+                    if ($gioBatDau && $value) {
+                        $timeBatDau = \Carbon\Carbon::createFromFormat('H:i', $gioBatDau);
+                        $timeKetThuc = \Carbon\Carbon::createFromFormat('H:i', $value);
+                        if ($timeKetThuc->lte($timeBatDau)) {
+                            $fail('Giờ kết thúc phải sau giờ bắt đầu');
+                        }
+                    }
+                },
+            ],
             'phong_hoc_id' => 'nullable|exists:phong_hoc,id',
             'giang_vien_id' => 'required|exists:giang_vien,id',
             'hinh_thuc' => 'required|in:offline,online,hybrid',
@@ -181,14 +242,28 @@ class LichHocChiTietController extends Controller
             'tai_lieu_dinh_kem' => 'nullable|string',
             'trang_thai' => 'required|in:chua_day,dang_day,da_day,huy',
             'ghi_chu' => 'nullable|string',
+        ], [
+            'ngay_hoc.required' => 'Ngày học là bắt buộc',
+            'tiet_bat_dau.required' => 'Tiết bắt đầu là bắt buộc',
+            'tiet_ket_thuc.required' => 'Tiết kết thúc là bắt buộc',
+            'tiet_ket_thuc.gte' => 'Tiết kết thúc phải lớn hơn hoặc bằng tiết bắt đầu',
+            'gio_bat_dau.required' => 'Giờ bắt đầu là bắt buộc',
+            'gio_bat_dau.date_format' => 'Giờ bắt đầu phải có định dạng HH:mm',
+            'gio_ket_thuc.required' => 'Giờ kết thúc là bắt buộc',
+            'gio_ket_thuc.date_format' => 'Giờ kết thúc phải có định dạng HH:mm',
+            'giang_vien_id.required' => 'Giảng viên là bắt buộc',
+            'hinh_thuc.required' => 'Hình thức học là bắt buộc',
         ]);
 
-        // Kiểm tra xung đột nếu có phòng học (loại trừ chính nó)
+        // Kiểm tra xung đột nếu có phòng học (bao gồm cả lịch học cố định và lịch học chi tiết, loại trừ chính nó)
         if ($request->phong_hoc_id) {
             $lichHocTemp = new LichHocChiTiet($validated);
 
-            if ($lichHocTemp->kiemTraXungDotPhongTheoNgay($lichChiTiet->id)) {
-                return back()->withErrors(['phong_hoc_id' => 'Phòng học đã bị trùng lịch vào thời gian này'])->withInput();
+            // Loại trừ lịch học cố định mà lịch học chi tiết này được tạo từ đó (nếu có)
+            $excludeLichCoDinhId = $lichChiTiet->lich_hoc_co_dinh_id;
+
+            if ($lichHocTemp->kiemTraXungDotPhongDayDu($lichChiTiet->id, $excludeLichCoDinhId)) {
+                return back()->withErrors(['phong_hoc_id' => 'Phòng học đã bị trùng lịch vào thời gian này. Vui lòng chọn phòng hoặc ca khác.'])->withInput();
             }
         }
 

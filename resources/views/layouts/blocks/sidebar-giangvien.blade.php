@@ -82,6 +82,14 @@
                     </a>
                 </li>
 
+                <!-- 7. NHẬP ĐIỂM -->
+                <li class="sidebar-item {{ Request::is('giang-vien/nhap-diem*') ? 'active' : '' }}">
+                    <a href="{{ route('giangvien.nhap-diem.index') }}" class='sidebar-link'>
+                        <i class="bi bi-pencil-square"></i>
+                        <span>Nhập điểm</span>
+                    </a>
+                </li>
+
                 <!-- 8. KẾT QUẢ HỌC TẬP -->
                 <li class="sidebar-item {{ Request::is('giang-vien/ket-qua-hoc-tap*') ? 'active' : '' }}">
                     <a href="{{ route('giangvien.ket-qua-hoc-tap.index') }}" class='sidebar-link'>

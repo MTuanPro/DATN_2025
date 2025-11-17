@@ -187,7 +187,7 @@ class ScheduleController extends Controller
                 'gio_bat_dau' => $ct->gio_bat_dau ? Carbon::parse($ct->gio_bat_dau)->format('H:i') : null,
                 'gio_ket_thuc' => $ct->gio_ket_thuc ? Carbon::parse($ct->gio_ket_thuc)->format('H:i') : null,
                 'phong' => $ct->phongHoc->ten_phong ?? null,
-                'lop_hoc_phan' => $ct->lopHocPhan->ma_lop_hoc_phan ?? null,
+                'lop_hoc_phan' => $ct->lopHocPhan->ma_lop_hp ?? null,
                 'link_online' => $ct->link_online,
             ];
         }
@@ -210,7 +210,7 @@ class ScheduleController extends Controller
                         'gio_bat_dau' => $cd->gio_bat_dau ? Carbon::parse($cd->gio_bat_dau)->format('H:i') : null,
                         'gio_ket_thuc' => $cd->gio_ket_thuc ? Carbon::parse($cd->gio_ket_thuc)->format('H:i') : null,
                         'phong' => $cd->phongHoc->ten_phong ?? null,
-                        'lop_hoc_phan' => $cd->lopHocPhan->ma_lop_hoc_phan ?? null,
+                        'lop_hoc_phan' => $cd->lopHocPhan->ma_lop_hp ?? null,
                         'link_online' => $cd->link_online,
                     ];
                 }

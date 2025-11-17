@@ -62,6 +62,102 @@
                 </div>
             </div>
 
+            <!-- Cảnh báo đăng ký chưa được xếp lớp -->
+            @if (isset($dangKyTam) && $dangKyTam > 0)
+                <div class="alert alert-info">
+                    <h5 class="alert-heading"><i class="bi bi-clock-history"></i> Thông báo</h5>
+                    <p class="mb-0">Bạn có <strong>{{ $dangKyTam }}</strong> môn học đang chờ xếp lớp. Vui lòng đợi hệ thống xếp lớp tự động hoặc liên hệ phòng Đào tạo.</p>
+                </div>
+            @endif
+
+            <!-- Cảnh báo lớp chưa có lịch học cố định -->
+            @if (!empty($lopChuaCoLich))
+                <div class="alert alert-warning">
+                    <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Thông báo</h5>
+                    <p class="mb-2">Các lớp sau chưa có lịch học cố định, vui lòng liên hệ phòng Đào tạo:</p>
+                    <ul class="mb-0">
+                        @foreach ($lopChuaCoLich as $lop)
+                            <li>{{ $lop }}</li>
+                        @endforeach
+                    </ul>
+                </div>
+            @endif
+
+            <!-- Cảnh báo lớp có lịch nhưng trạng thái không đúng -->
+            @if (!empty($lopCoLichNhungTrangThaiSai))
+                <div class="alert alert-danger">
+                    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Cảnh báo</h5>
+                    <p class="mb-2">Các lớp sau đã có lịch học cố định nhưng trạng thái không đúng, vui lòng liên hệ phòng Đào tạo:</p>
+                    <ul class="mb-0">
+                        @foreach ($lopCoLichNhungTrangThaiSai as $lop)
+                            <li>
+                                <strong>{{ $lop['ma_lop_hp'] }}</strong> - {{ $lop['ten_mon'] }} 
+                                (Trạng thái: <span class="badge bg-secondary">{{ $lop['trang_thai'] }}</span>, 
+                                Số lịch: {{ $lop['so_lich_co_dinh'] }})
+                            </li>
+                        @endforeach
+                    </ul>
+                    <p class="mb-0 mt-2"><small>Lưu ý: Chỉ các lớp có trạng thái "da_xep_lop" hoặc "dang_hoc" mới được hiển thị trong thời khóa biểu.</small></p>
+                </div>
+            @endif
+
+            <!-- Debug Info -->
+            @if (isset($debugInfo) && config('app.debug'))
+                <div class="card mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">🔍 Thông tin Debug</h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row mb-3">
+                            <div class="col-md-6">
+                                <p class="mb-1"><strong>Tổng lớp đã xếp:</strong> {{ $debugInfo['tong_lop_da_xep'] ?? 0 }}</p>
+                                <p class="mb-1"><strong>Tổng lớp đăng ký:</strong> {{ $debugInfo['tong_lop_dang_ky'] ?? 0 }}</p>
+                                <p class="mb-1"><strong>Đăng ký tạm chờ xếp:</strong> {{ $debugInfo['dang_ky_tam_cho_xep'] ?? 0 }}</p>
+                                <p class="mb-1"><strong>Lớp có lịch:</strong> {{ $debugInfo['lop_co_lich'] ?? 0 }}</p>
+                                <p class="mb-1"><strong>Trạng thái học phí:</strong> {{ $debugInfo['hoc_phi_trang_thai'] ?? 'N/A' }}</p>
+                            </div>
+                        </div>
+                        
+                        @if (isset($debugInfo['chi_tiet']) && !empty($debugInfo['chi_tiet']))
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered">
+                                    <thead>
+                                        <tr>
+                                            <th>Mã lớp HP</th>
+                                            <th>Tên môn</th>
+                                            <th>Trạng thái</th>
+                                            <th>Số lịch cố định</th>
+                                            <th>Có lịch?</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        @foreach ($debugInfo['chi_tiet'] as $item)
+                                            <tr class="{{ $item['co_lich'] ? 'table-success' : 'table-warning' }}">
+                                                <td>{{ $item['ma_lop_hp'] }}</td>
+                                                <td>{{ $item['ten_mon'] }}</td>
+                                                <td>
+                                                    <span class="badge bg-{{ $item['trang_thai'] == 'da_xep_lop' || $item['trang_thai'] == 'dang_hoc' ? 'success' : 'secondary' }}">
+                                                        {{ $item['trang_thai'] }}
+                                                    </span>
+                                                </td>
+                                                <td>{{ $item['so_lich_co_dinh'] }}</td>
+                                                <td>
+                                                    @if ($item['co_lich'])
+                                                        <span class="badge bg-success">Có</span>
+                                                    @else
+                                                        <span class="badge bg-warning">Không</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endforeach
+                                    </tbody>
+                                </table>
+                            </div>
+                        @endif
+                    </div>
+                </div>
+            @endif
+
             <!-- Cảnh báo trùng lịch -->
             @if (!empty($trungLich))
                 <div class="alert alert-danger">

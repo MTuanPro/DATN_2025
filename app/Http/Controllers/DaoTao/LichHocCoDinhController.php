@@ -46,7 +46,20 @@ class LichHocCoDinhController extends Controller
             'tiet_bat_dau' => 'required|integer|min:1|max:10',
             'tiet_ket_thuc' => 'required|integer|min:1|max:10|gte:tiet_bat_dau',
             'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => 'required|date_format:H:i|after:gio_bat_dau',
+            'gio_ket_thuc' => [
+                'required',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    $gioBatDau = $request->input('gio_bat_dau');
+                    if ($gioBatDau && $value) {
+                        $timeBatDau = \Carbon\Carbon::createFromFormat('H:i', $gioBatDau);
+                        $timeKetThuc = \Carbon\Carbon::createFromFormat('H:i', $value);
+                        if ($timeKetThuc->lte($timeBatDau)) {
+                            $fail('Giờ kết thúc phải sau giờ bắt đầu');
+                        }
+                    }
+                },
+            ],
             'phong_hoc_id' => 'required|exists:phong_hoc,id',
             'giang_vien_id' => 'required|exists:giang_vien,id',
             'hinh_thuc' => 'required|in:offline,online,hybrid',
@@ -60,8 +73,9 @@ class LichHocCoDinhController extends Controller
             'tiet_ket_thuc.required' => 'Tiết kết thúc là bắt buộc',
             'tiet_ket_thuc.gte' => 'Tiết kết thúc phải lớn hơn hoặc bằng tiết bắt đầu',
             'gio_bat_dau.required' => 'Giờ bắt đầu là bắt buộc',
+            'gio_bat_dau.date_format' => 'Giờ bắt đầu phải có định dạng HH:mm',
             'gio_ket_thuc.required' => 'Giờ kết thúc là bắt buộc',
-            'gio_ket_thuc.after' => 'Giờ kết thúc phải sau giờ bắt đầu',
+            'gio_ket_thuc.date_format' => 'Giờ kết thúc phải có định dạng HH:mm',
             'phong_hoc_id.required' => 'Phòng học là bắt buộc',
             'giang_vien_id.required' => 'Giảng viên là bắt buộc',
             'hinh_thuc.required' => 'Hình thức học là bắt buộc',
@@ -109,12 +123,40 @@ class LichHocCoDinhController extends Controller
             'tiet_bat_dau' => 'required|integer|min:1|max:10',
             'tiet_ket_thuc' => 'required|integer|min:1|max:10|gte:tiet_bat_dau',
             'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => 'required|date_format:H:i|after:gio_bat_dau',
+            'gio_ket_thuc' => [
+                'required',
+                'date_format:H:i',
+                function ($attribute, $value, $fail) use ($request) {
+                    $gioBatDau = $request->input('gio_bat_dau');
+                    if ($gioBatDau && $value) {
+                        $timeBatDau = \Carbon\Carbon::createFromFormat('H:i', $gioBatDau);
+                        $timeKetThuc = \Carbon\Carbon::createFromFormat('H:i', $value);
+                        if ($timeKetThuc->lte($timeBatDau)) {
+                            $fail('Giờ kết thúc phải sau giờ bắt đầu');
+                        }
+                    }
+                },
+            ],
             'phong_hoc_id' => 'required|exists:phong_hoc,id',
             'giang_vien_id' => 'required|exists:giang_vien,id',
             'hinh_thuc' => 'required|in:offline,online,hybrid',
             'link_online' => 'nullable|url',
             'ghi_chu' => 'nullable|string',
+        ], [
+            'thu_trong_tuan.required' => 'Thứ trong tuần là bắt buộc',
+            'thu_trong_tuan.min' => 'Thứ phải từ 2 đến 8',
+            'thu_trong_tuan.max' => 'Thứ phải từ 2 đến 8',
+            'tiet_bat_dau.required' => 'Tiết bắt đầu là bắt buộc',
+            'tiet_ket_thuc.required' => 'Tiết kết thúc là bắt buộc',
+            'tiet_ket_thuc.gte' => 'Tiết kết thúc phải lớn hơn hoặc bằng tiết bắt đầu',
+            'gio_bat_dau.required' => 'Giờ bắt đầu là bắt buộc',
+            'gio_bat_dau.date_format' => 'Giờ bắt đầu phải có định dạng HH:mm',
+            'gio_ket_thuc.required' => 'Giờ kết thúc là bắt buộc',
+            'gio_ket_thuc.date_format' => 'Giờ kết thúc phải có định dạng HH:mm',
+            'phong_hoc_id.required' => 'Phòng học là bắt buộc',
+            'giang_vien_id.required' => 'Giảng viên là bắt buộc',
+            'hinh_thuc.required' => 'Hình thức học là bắt buộc',
+            'link_online.url' => 'Link online phải là URL hợp lệ',
         ]);
 
         // Kiểm tra xung đột (loại trừ chính nó)

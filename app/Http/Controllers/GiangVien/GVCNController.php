@@ -26,7 +26,7 @@ class GVCNController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         if (!$giangVien) {
-            return redirect()->route('giang-vien.dashboard')
+            return redirect()->route('giangvien.dashboard')
                 ->with('error', 'Không tìm thấy thông tin giảng viên!');
         }
 
@@ -56,7 +56,7 @@ class GVCNController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         if (!$giangVien) {
-            return redirect()->route('giang-vien.dashboard')
+            return redirect()->route('giangvien.dashboard')
                 ->with('error', 'Không tìm thấy thông tin giảng viên!');
         }
 
@@ -108,7 +108,7 @@ class GVCNController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         if (!$giangVien) {
-            return redirect()->route('giang-vien.dashboard')
+            return redirect()->route('giangvien.dashboard')
                 ->with('error', 'Không tìm thấy thông tin giảng viên!');
         }
 
@@ -175,7 +175,7 @@ class GVCNController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         if (!$giangVien) {
-            return redirect()->route('giang-vien.dashboard')
+            return redirect()->route('giangvien.dashboard')
                 ->with('error', 'Không tìm thấy thông tin giảng viên!');
         }
 
@@ -273,7 +273,7 @@ class GVCNController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         if (!$giangVien) {
-            return redirect()->route('giang-vien.dashboard')
+            return redirect()->route('giangvien.dashboard')
                 ->with('error', 'Không tìm thấy thông tin giảng viên!');
         }
 

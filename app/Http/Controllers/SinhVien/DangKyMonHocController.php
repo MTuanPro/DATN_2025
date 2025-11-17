@@ -40,32 +40,40 @@ class DangKyMonHocController extends Controller
             ->where('dang_mo_dang_ky', true)
             ->first();
 
-      if (!$hocKy) {
-    $hocKy = (object)[
-        'id' => null,
-        'ten_hoc_ky' => 'Không có học kỳ mở đăng ký',
-        'nam_hoc' => '', // ✅ thêm dòng này
-        'ngay_bat_dau_dang_ky' => now(),
-        'ngay_ket_thuc_dang_ky' => now(),
-    ];
+        // Debug: Kiểm tra học kỳ
+        $hocKyHienTai = HocKy::where('la_hoc_ky_hien_tai', true)->first();
+        $hocKyMoDangKy = HocKy::where('dang_mo_dang_ky', true)->first();
 
+        if (!$hocKy) {
+            $hocKy = (object)[
+                'id' => null,
+                'ten_hoc_ky' => 'Không có học kỳ mở đăng ký',
+                'nam_hoc' => '',
+                'ngay_bat_dau_dang_ky' => now(),
+                'ngay_ket_thuc_dang_ky' => now(),
+            ];
 
-    return view('sinhvien.dang-ky-mon-hoc.index', [
-        'hocKy' => $hocKy,
-        'message' => 'Hiện tại không có học kỳ nào mở đăng ký môn học.',
-        'tongTinChiDaDangKy' => 0,
-        'tinChiToiDa' => 24,
-        'chuongTrinhKhung' => collect(),
-        'dangKyCollection' => collect(),
-        'monDaDangKy' => [],
-        'monDaHoc' => [],
-        'monDaQua' => [],
-        'lopHocPhans' => collect(),
-        'sinhVien' => Auth::user()->sinhVien,
-    ]);
-}
+            $debugInfo = [
+                'hoc_ky_hien_tai' => $hocKyHienTai ? $hocKyHienTai->ten_hoc_ky . ' - ' . $hocKyHienTai->nam_hoc : 'Không có',
+                'hoc_ky_mo_dang_ky' => $hocKyMoDangKy ? $hocKyMoDangKy->ten_hoc_ky . ' - ' . $hocKyMoDangKy->nam_hoc : 'Không có',
+                'message' => 'Hiện tại không có học kỳ nào mở đăng ký môn học.',
+            ];
 
-
+            return view('sinhvien.dang-ky-mon-hoc.index', [
+                'hocKy' => $hocKy,
+                'message' => $debugInfo['message'],
+                'debugInfo' => $debugInfo,
+                'tongTinChiDaDangKy' => 0,
+                'tinChiToiDa' => 24,
+                'chuongTrinhKhung' => collect(),
+                'dangKyCollection' => collect(),
+                'monDaDangKy' => [],
+                'monDaHoc' => [],
+                'monDaQua' => [],
+                'lopHocPhans' => collect(),
+                'sinhVien' => Auth::user()->sinhVien,
+            ]);
+        }
 
         // Lấy danh sách lớp học phần đang mở trong học kỳ này
         $lopDangMo = LopHocPhan::where('hoc_ky_id', $hocKy->id)
@@ -76,14 +84,77 @@ class DangKyMonHocController extends Controller
 
         $monIdCoLopMo = $lopDangMo->keys()->toArray();
 
-        // Lấy chương trình khung của sinh viên - chỉ lấy môn có lớp học phần đang mở
-        // Chỉ hiển thị môn thuộc chương trình khung của sinh viên
-        $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
-            ->whereIn('mon_hoc_id', $monIdCoLopMo) // Chỉ lấy môn có lớp đang mở
-            ->with(['monHoc.khoa'])
-            ->orderBy('hoc_ky_goi_y', 'asc')
-            ->orderBy('thu_tu_hoc', 'asc')
-            ->get();
+        // Debug: Kiểm tra chuyên ngành và chương trình khung
+        $tongChuongTrinhKhung = 0;
+        $chuongTrinhKhungCoLopMo = 0;
+        
+        if ($sinhVien->chuyen_nganh_id) {
+            $tongChuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)->count();
+            $chuongTrinhKhungCoLopMo = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
+                ->whereIn('mon_hoc_id', $monIdCoLopMo)
+                ->count();
+        }
+
+        // Lấy chương trình khung của sinh viên
+        // Nếu có chuyên ngành: lấy theo chương trình khung
+        // Nếu không có chuyên ngành hoặc CTK rỗng: lấy tất cả môn có lớp đang mở
+        if ($sinhVien->chuyen_nganh_id) {
+            // Có chuyên ngành: lấy theo chương trình khung
+            $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
+                ->whereIn('mon_hoc_id', $monIdCoLopMo) // Chỉ lấy môn có lớp đang mở
+                ->with(['monHoc.khoa'])
+                ->orderBy('hoc_ky_goi_y', 'asc')
+                ->orderBy('thu_tu_hoc', 'asc')
+                ->get();
+            
+            // Nếu CTK rỗng hoặc không có môn nào có lớp mở, lấy tất cả môn có lớp đang mở
+            if ($chuongTrinhKhung->isEmpty() && !empty($monIdCoLopMo)) {
+                foreach ($monIdCoLopMo as $monId) {
+                    $monHoc = \App\Models\DaoTao\MonHoc::with('khoa')->find($monId);
+                    if ($monHoc) {
+                        // Tạo object giả tương tự ChuongTrinhKhung để hiển thị
+                        $chuongTrinhKhung->push((object)[
+                            'id' => null,
+                            'mon_hoc_id' => $monHoc->id,
+                            'monHoc' => $monHoc,
+                            'hoc_ky_goi_y' => 1,
+                            'thu_tu_hoc' => 1,
+                            'bat_buoc' => false,
+                        ]);
+                    }
+                }
+            }
+        } else {
+            // Không có chuyên ngành: tạo danh sách giả từ các môn có lớp đang mở
+            $chuongTrinhKhung = collect();
+            foreach ($monIdCoLopMo as $monId) {
+                $monHoc = \App\Models\DaoTao\MonHoc::with('khoa')->find($monId);
+                if ($monHoc) {
+                    // Tạo object giả tương tự ChuongTrinhKhung để hiển thị
+                    $chuongTrinhKhung->push((object)[
+                        'id' => null,
+                        'mon_hoc_id' => $monHoc->id,
+                        'monHoc' => $monHoc,
+                        'hoc_ky_goi_y' => 1,
+                        'thu_tu_hoc' => 1,
+                        'bat_buoc' => false,
+                    ]);
+                }
+            }
+        }
+
+        // Debug info
+        $debugInfo = [
+            'hoc_ky_id' => $hocKy->id,
+            'tong_lop_dang_mo' => $lopDangMo->count(),
+            'tong_mon_co_lop_mo' => count($monIdCoLopMo),
+            'tong_chuong_trinh_khung' => $tongChuongTrinhKhung,
+            'chuong_trinh_khung_co_lop_mo' => $chuongTrinhKhungCoLopMo,
+            'chuyen_nganh_id' => $sinhVien->chuyen_nganh_id,
+            'chuyen_nganh' => $sinhVien->chuyenNganh->ten_chuyen_nganh ?? 'Chưa có',
+            'co_chuyen_nganh' => $sinhVien->chuyen_nganh_id ? 'Có' : 'Không',
+            'so_mon_hien_thi' => $chuongTrinhKhung->count(),
+        ];
 
         // Lấy các môn đã đăng ký trong học kỳ này (lấy full collection để có ID)
         $dangKyCollection = DangKyMonHocTam::where('sinh_vien_id', $sinhVien->id)
@@ -134,7 +205,8 @@ class DangKyMonHocController extends Controller
             'lopHocPhans',
             'tongTinChiDaDangKy',
             'tinChiToiDa',
-            'sinhVien'
+            'sinhVien',
+            'debugInfo'
         ));
     }
 

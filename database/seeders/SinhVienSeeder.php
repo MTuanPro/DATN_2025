@@ -203,18 +203,30 @@ class SinhVienSeeder extends Seeder
             ->pluck('id', 'email')
             ->toArray();
 
-        // Tạo vai trò inserts
+        // Tạo vai trò inserts (chỉ cho các user chưa có vai trò này)
         $vaiTroInserts = [];
         $now = now();
+        
+        // Lấy danh sách các user đã có vai trò này
+        $userIds = array_values($insertedUsers);
+        $existingRoleMappings = DB::table('tai_khoan_vai_tro')
+            ->whereIn('tai_khoan_id', $userIds)
+            ->where('vai_tro_id', $vaiTroId)
+            ->pluck('tai_khoan_id')
+            ->toArray();
+        
         foreach ($insertedUsers as $email => $userId) {
-            $vaiTroInserts[] = [
-                'tai_khoan_id' => $userId,
-                'vai_tro_id' => $vaiTroId,
-                'ngay_gan' => $now,
-                'nguoi_gan_id' => 1, // Admin
-                'created_at' => $now,
-                'updated_at' => $now,
-            ];
+            // Chỉ thêm nếu chưa có vai trò này
+            if (!in_array($userId, $existingRoleMappings)) {
+                $vaiTroInserts[] = [
+                    'tai_khoan_id' => $userId,
+                    'vai_tro_id' => $vaiTroId,
+                    'ngay_gan' => $now,
+                    'nguoi_gan_id' => 1, // Admin
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ];
+            }
         }
 
         // Gán user_id cho sinh viên
@@ -223,7 +235,7 @@ class SinhVienSeeder extends Seeder
             // Giữ lại email vì bảng sinh_vien yêu cầu trường này
         }
 
-        // Insert vai trò batch
+        // Insert vai trò batch (chỉ những cái chưa tồn tại)
         if (!empty($vaiTroInserts)) {
             DB::table('tai_khoan_vai_tro')->insert($vaiTroInserts);
         }

@@ -42,19 +42,19 @@
                                     <select class="form-select @error('thu_trong_tuan') is-invalid @enderror"
                                         id="thu_trong_tuan" name="thu_trong_tuan" required>
                                         <option value="">-- Chọn thứ --</option>
-                                        <option value="2" {{ old('thu_trong_tuan') == 2 ? 'selected' : '' }}>Thứ 2
+                                        <option value="2" {{ (int)old('thu_trong_tuan', 0) === 2 ? 'selected' : '' }}>Thứ 2
                                         </option>
-                                        <option value="3" {{ old('thu_trong_tuan') == 3 ? 'selected' : '' }}>Thứ 3
+                                        <option value="3" {{ (int)old('thu_trong_tuan', 0) === 3 ? 'selected' : '' }}>Thứ 3
                                         </option>
-                                        <option value="4" {{ old('thu_trong_tuan') == 4 ? 'selected' : '' }}>Thứ 4
+                                        <option value="4" {{ (int)old('thu_trong_tuan', 0) === 4 ? 'selected' : '' }}>Thứ 4
                                         </option>
-                                        <option value="5" {{ old('thu_trong_tuan') == 5 ? 'selected' : '' }}>Thứ 5
+                                        <option value="5" {{ (int)old('thu_trong_tuan', 0) === 5 ? 'selected' : '' }}>Thứ 5
                                         </option>
-                                        <option value="6" {{ old('thu_trong_tuan') == 6 ? 'selected' : '' }}>Thứ 6
+                                        <option value="6" {{ (int)old('thu_trong_tuan', 0) === 6 ? 'selected' : '' }}>Thứ 6
                                         </option>
-                                        <option value="7" {{ old('thu_trong_tuan') == 7 ? 'selected' : '' }}>Thứ 7
+                                        <option value="7" {{ (int)old('thu_trong_tuan', 0) === 7 ? 'selected' : '' }}>Thứ 7
                                         </option>
-                                        <option value="8" {{ old('thu_trong_tuan') == 8 ? 'selected' : '' }}>Chủ nhật
+                                        <option value="8" {{ (int)old('thu_trong_tuan', 0) === 8 ? 'selected' : '' }}>Chủ nhật
                                         </option>
                                     </select>
                                     @error('thu_trong_tuan')
@@ -121,7 +121,7 @@
                                         <option value="">-- Chọn phòng học --</option>
                                         @foreach ($phongHocs as $phongHoc)
                                             <option value="{{ $phongHoc->id }}"
-                                                {{ old('phong_hoc_id') == $phongHoc->id ? 'selected' : '' }}>
+                                                {{ (int)old('phong_hoc_id', 0) === (int)$phongHoc->id ? 'selected' : '' }}>
                                                 {{ $phongHoc->ten_phong }} ({{ $phongHoc->suc_chua }} chỗ)
                                             </option>
                                         @endforeach
@@ -140,7 +140,7 @@
                                         <option value="">-- Chọn giảng viên --</option>
                                         @foreach ($giangViens as $giangVien)
                                             <option value="{{ $giangVien->id }}"
-                                                {{ old('giang_vien_id') == $giangVien->id ? 'selected' : '' }}>
+                                                {{ (int)old('giang_vien_id', 0) === (int)$giangVien->id ? 'selected' : '' }}>
                                                 {{ $giangVien->ho_ten }}
                                             </option>
                                         @endforeach
@@ -158,11 +158,11 @@
                                     <label for="hinh_thuc">Hình thức <span class="text-danger">*</span></label>
                                     <select class="form-select @error('hinh_thuc') is-invalid @enderror" id="hinh_thuc"
                                         name="hinh_thuc" required>
-                                        <option value="offline" {{ old('hinh_thuc') == 'offline' ? 'selected' : '' }}>
+                                        <option value="offline" {{ old('hinh_thuc', '') == 'offline' ? 'selected' : '' }}>
                                             Offline</option>
-                                        <option value="online" {{ old('hinh_thuc') == 'online' ? 'selected' : '' }}>Online
+                                        <option value="online" {{ old('hinh_thuc', '') == 'online' ? 'selected' : '' }}>Online
                                         </option>
-                                        <option value="hybrid" {{ old('hinh_thuc') == 'hybrid' ? 'selected' : '' }}>Hybrid
+                                        <option value="hybrid" {{ old('hinh_thuc', '') == 'hybrid' ? 'selected' : '' }}>Hybrid
                                         </option>
                                     </select>
                                     @error('hinh_thuc')

@@ -197,8 +197,8 @@ class ChuongTrinhDaoTaoTestSeeder extends Seeder
                     'suc_chua' => 50,
                     'so_luong_dang_ky' => 0,
                     'so_luong_toi_thieu' => 10,
-                    'hinh_thuc' => 'truc_tiep',
-                    'trang_thai_lop' => 'da_ket_thuc',
+                    'hinh_thuc' => 'offline',
+                    'trang_thai_lop' => 'ket_thuc',
                     'ngay_bat_dau' => now()->subMonths(6),
                     'ngay_ket_thuc' => now()->subMonths(1),
                 ]);

@@ -39,7 +39,12 @@ class ThoiKhoaBieuController extends Controller
             return view('sinhvien.thoi-khoa-bieu.index', [
                 'hocKy' => null,
                 'hocKys' => $hocKys,
-                'message' => 'Không tìm thấy học kỳ hiện tại.'
+                'message' => 'Không tìm thấy học kỳ hiện tại.',
+                'lopHocPhanSinhViens' => collect(), // Truyền collection rỗng
+                'thoiKhoaBieu' => [],
+                'trungLich' => [],
+                'sinhVien' => $sinhVien,
+                'coTheXemTKB' => false,
             ]);
         }
 
@@ -60,7 +65,11 @@ class ThoiKhoaBieuController extends Controller
                 'lyDoKhongXem' => $checkResult['ly_do'],
                 'hanXemTKB' => $checkResult['han_xem_tkb'],
                 'ngayXepLop' => $checkResult['ngay_xep_lop'],
-                'message' => $checkResult['ly_do']
+                'message' => $checkResult['ly_do'],
+                'lopHocPhanSinhViens' => collect(), // Truyền collection rỗng
+                'thoiKhoaBieu' => [],
+                'trungLich' => [],
+                'sinhVien' => $sinhVien,
             ]);
         }
 
@@ -72,10 +81,50 @@ class ThoiKhoaBieuController extends Controller
             ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
             ->with([
                 'lopHocPhan.monHoc',
+                'lopHocPhan.lichHocCoDinhs' => function ($query) {
+                    $query->orderBy('thu_trong_tuan')->orderBy('tiet_bat_dau');
+                },
                 'lopHocPhan.lichHocCoDinhs.phongHoc',
                 'lopHocPhan.lichHocCoDinhs.giangVien',
             ])
             ->get();
+
+        // Debug: Kiểm tra đăng ký tạm (chưa xếp lớp)
+        $dangKyTam = \App\Models\DangKyMonHocTam::where('sinh_vien_id', $sinhVien->id)
+            ->where('hoc_ky_id', $hocKy->id)
+            ->where('trang_thai', 'cho_xep_lop')
+            ->count();
+
+        // Debug: Kiểm tra tổng số lớp học phần sinh viên đã đăng ký (tất cả trạng thái)
+        $tongLopDangKy = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
+            ->whereHas('lopHocPhan', function ($query) use ($hocKy) {
+                $query->where('hoc_ky_id', $hocKy->id);
+            })
+            ->count();
+
+        // Debug: Lấy tất cả các lớp học phần (tất cả trạng thái) để debug
+        $tatCaLopHocPhanSinhViens = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
+            ->whereHas('lopHocPhan', function ($query) use ($hocKy) {
+                $query->where('hoc_ky_id', $hocKy->id);
+            })
+            ->with([
+                'lopHocPhan.monHoc',
+                'lopHocPhan.lichHocCoDinhs',
+            ])
+            ->get();
+
+        // Debug: Thống kê chi tiết
+        $debugChiTiet = [];
+        foreach ($tatCaLopHocPhanSinhViens as $lopSV) {
+            $soLichCoDinh = $lopSV->lopHocPhan->lichHocCoDinhs->count();
+            $debugChiTiet[] = [
+                'ma_lop_hp' => $lopSV->lopHocPhan->ma_lop_hp ?? 'N/A',
+                'ten_mon' => $lopSV->lopHocPhan->monHoc->ten_mon ?? 'N/A',
+                'trang_thai' => $lopSV->trang_thai,
+                'so_lich_co_dinh' => $soLichCoDinh,
+                'co_lich' => $soLichCoDinh > 0,
+            ];
+        }
 
         // Tạo ma trận thời khóa biểu (7 ngày x 12 tiết)
         $thoiKhoaBieu = [];
@@ -88,6 +137,12 @@ class ThoiKhoaBieuController extends Controller
         // Điền lịch cố định vào ma trận
         foreach ($lopHocPhanSinhViens as $lopSV) {
             $lopHocPhan = $lopSV->lopHocPhan;
+
+            // Kiểm tra xem lớp có lịch học cố định chưa
+            if ($lopHocPhan->lichHocCoDinhs->isEmpty()) {
+                // Nếu không có lịch học cố định, bỏ qua lớp này
+                continue;
+            }
 
             foreach ($lopHocPhan->lichHocCoDinhs as $lichCoDinh) {
                 $thuTrongTuan = $lichCoDinh->thu_trong_tuan;
@@ -102,7 +157,7 @@ class ThoiKhoaBieuController extends Controller
                     'so_tiet' => $soTiet,
                     'gio_bat_dau' => $lichCoDinh->gio_bat_dau,
                     'gio_ket_thuc' => $lichCoDinh->gio_ket_thuc,
-                    'loai_lop' => $lopHocPhan->loai_lop,
+                    'loai_lop' => $lopHocPhan->loai_lop ?? null,
                 ];
 
                 // Đánh dấu các tiết tiếp theo là đã có lịch
@@ -115,7 +170,39 @@ class ThoiKhoaBieuController extends Controller
         // Kiểm tra trùng lịch
         $trungLich = $this->kiemTraTrungLich($lopHocPhanSinhViens);
 
+        // Kiểm tra lớp nào chưa có lịch học cố định
+        $lopChuaCoLich = [];
+        foreach ($lopHocPhanSinhViens as $lopSV) {
+            if ($lopSV->lopHocPhan->lichHocCoDinhs->isEmpty()) {
+                $lopChuaCoLich[] = $lopSV->lopHocPhan->ma_lop_hp . ' - ' . $lopSV->lopHocPhan->monHoc->ten_mon;
+            }
+        }
+
+        // Kiểm tra lớp có lịch nhưng trạng thái không đúng (không được hiển thị)
+        $lopCoLichNhungTrangThaiSai = [];
+        foreach ($tatCaLopHocPhanSinhViens as $lopSV) {
+            $soLichCoDinh = $lopSV->lopHocPhan->lichHocCoDinhs->count();
+            if ($soLichCoDinh > 0 && !in_array($lopSV->trang_thai, ['da_xep_lop', 'dang_hoc'])) {
+                $lopCoLichNhungTrangThaiSai[] = [
+                    'ma_lop_hp' => $lopSV->lopHocPhan->ma_lop_hp ?? 'N/A',
+                    'ten_mon' => $lopSV->lopHocPhan->monHoc->ten_mon ?? 'N/A',
+                    'trang_thai' => $lopSV->trang_thai,
+                    'so_lich_co_dinh' => $soLichCoDinh,
+                ];
+            }
+        }
+
         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+
+        // Debug info
+        $debugInfo = [
+            'tong_lop_da_xep' => $lopHocPhanSinhViens->count(),
+            'tong_lop_dang_ky' => $tongLopDangKy,
+            'dang_ky_tam_cho_xep' => $dangKyTam,
+            'lop_co_lich' => $lopHocPhanSinhViens->count() - count($lopChuaCoLich),
+            'chi_tiet' => $debugChiTiet,
+            'hoc_phi_trang_thai' => $hocPhi->trang_thai ?? 'chua_co',
+        ];
 
         return view('sinhvien.thoi-khoa-bieu.index', compact(
             'hocKy',
@@ -124,7 +211,11 @@ class ThoiKhoaBieuController extends Controller
             'thoiKhoaBieu',
             'trungLich',
             'sinhVien',
-            'hocPhi'
+            'hocPhi',
+            'lopChuaCoLich',
+            'lopCoLichNhungTrangThaiSai',
+            'debugInfo',
+            'dangKyTam'
         ))->with('coTheXemTKB', true);
     }
 

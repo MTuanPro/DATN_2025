@@ -30,16 +30,9 @@ class AttendanceController extends Controller
             abort(403, 'Không tìm thấy hồ sơ giảng viên.');
         }
 
-        // Lấy các lớp được phân công theo chuyên môn
+        // Lấy các lớp được phân công (không lọc theo khoa để hiển thị tất cả lớp được phân công)
         $lopHocPhanIds = PhanCongGiangDay::where('giang_vien_id', $giangVien->id)
             ->pluck('lop_hoc_phan_id')
-            ->toArray();
-        
-        $lopHocPhanIds = \App\Models\LopHocPhan::whereIn('id', $lopHocPhanIds)
-            ->whereHas('monHoc', function($q) use ($giangVien) {
-                $q->whereNotNull('khoa_id')->where('khoa_id', $giangVien->khoa_id);
-            })
-            ->pluck('id')
             ->toArray();
 
         // Query buổi học
@@ -213,16 +206,9 @@ class AttendanceController extends Controller
             abort(403, 'Không tìm thấy hồ sơ giảng viên.');
         }
 
-        // Lấy các lớp được phân công theo chuyên môn
+        // Lấy các lớp được phân công (không lọc theo khoa để hiển thị tất cả lớp được phân công)
         $lopHocPhanIds = PhanCongGiangDay::where('giang_vien_id', $giangVien->id)
             ->pluck('lop_hoc_phan_id')
-            ->toArray();
-        
-        $lopHocPhanIds = \App\Models\LopHocPhan::whereIn('id', $lopHocPhanIds)
-            ->whereHas('monHoc', function($q) use ($giangVien) {
-                $q->whereNotNull('khoa_id')->where('khoa_id', $giangVien->khoa_id);
-            })
-            ->pluck('id')
             ->toArray();
 
         $danhSachLopHocPhan = \App\Models\LopHocPhan::with('monHoc')

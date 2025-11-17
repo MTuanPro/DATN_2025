@@ -42,6 +42,11 @@ class AdminSeeder extends Seeder
         // Lấy ID của vai trò admin
         $adminRole = DB::table('vai_tro')->where('ma_vai_tro', 'admin')->first();
 
+        if (!$adminRole) {
+            $this->command->error('Vai trò admin không tồn tại! Vui lòng chạy VaiTroSeeder trước.');
+            return;
+        }
+
         // Kiểm tra đã gán vai trò chưa
         $hasRole = DB::table('tai_khoan_vai_tro')
             ->where('tai_khoan_id', $adminId)

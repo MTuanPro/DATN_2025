@@ -42,6 +42,21 @@ class LoginController extends Controller
         $credentials = $request->only('email', 'password');
         $remember = $request->has('remember');
 
+        // Kiểm tra user tồn tại và có password
+        $user = User::where('email', $credentials['email'])->first();
+        if (!$user) {
+            return back()->withErrors([
+                'email' => 'Email hoặc mật khẩu không chính xác.',
+            ])->withInput($request->only('email'));
+        }
+
+        // Kiểm tra password không null
+        if (empty($user->password)) {
+            return back()->withErrors([
+                'email' => 'Tài khoản chưa được thiết lập mật khẩu. Vui lòng liên hệ quản trị viên.',
+            ])->withInput($request->only('email'));
+        }
+
         // Kiểm tra đăng nhập
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();

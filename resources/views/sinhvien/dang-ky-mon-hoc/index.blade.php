@@ -74,12 +74,23 @@
                     <div class="card">
                         <div class="card-body">
                             <h6 class="text-muted">Trạng thái</h6>
-                            @if (now()->between($hocKy->ngay_bat_dau_dang_ky, $hocKy->ngay_ket_thuc_dang_ky))
-                                <span class="badge bg-success">Đang mở đăng ký</span>
-                            @elseif(now() < $hocKy->ngay_bat_dau_dang_ky)
-                                <span class="badge bg-warning">Chưa mở</span>
+                            @php
+                                // Kiểm tra xem học kỳ có được mở đăng ký không
+                                $hocKyMoDangKy = \App\Models\HocKy::where('la_hoc_ky_hien_tai', true)
+                                    ->where('dang_mo_dang_ky', true)
+                                    ->first();
+                            @endphp
+                            @if ($hocKyMoDangKy && $hocKy->id == $hocKyMoDangKy->id)
+                                @if (now()->between($hocKy->ngay_bat_dau_dang_ky, $hocKy->ngay_ket_thuc_dang_ky))
+                                    <span class="badge bg-success">Đang mở đăng ký</span>
+                                @elseif(now() < $hocKy->ngay_bat_dau_dang_ky)
+                                    <span class="badge bg-warning">Chưa đến thời gian</span>
+                                @else
+                                    <span class="badge bg-danger">Đã hết thời gian</span>
+                                @endif
                             @else
                                 <span class="badge bg-danger">Đã đóng</span>
+                                <small class="d-block text-muted mt-1">Học kỳ chưa được mở đăng ký</small>
                             @endif
                         </div>
                     </div>
@@ -87,16 +98,31 @@
             </div>
 
             <!-- Debug Info -->
-            @if(config('app.debug'))
+            @if(isset($debugInfo) || config('app.debug'))
             <div class="card mb-3">
                 <div class="card-header bg-info text-white">
                     <h6 class="mb-0">🔍 Thông tin Debug</h6>
                 </div>
                 <div class="card-body">
-                    <p class="mb-1"><strong>Học kỳ ID:</strong> {{ $hocKy->id ?? 'N/A' }}</p>
-                    <p class="mb-1"><strong>Tổng lớp đang mở:</strong> {{ $lopHocPhans->count() }} môn học</p>
-                    <p class="mb-1"><strong>Môn trong CTK:</strong> {{ $chuongTrinhKhung->count() }} môn</p>
-                    <p class="mb-1"><strong>Chuyên ngành SV:</strong> {{ $sinhVien->chuyenNganh->ten_chuyen_nganh ?? 'Chưa có' }}</p>
+                    @if(isset($debugInfo))
+                        @if(isset($debugInfo['hoc_ky_hien_tai']))
+                            <p class="mb-1"><strong>Học kỳ hiện tại:</strong> {{ $debugInfo['hoc_ky_hien_tai'] }}</p>
+                            <p class="mb-1"><strong>Học kỳ mở đăng ký:</strong> {{ $debugInfo['hoc_ky_mo_dang_ky'] }}</p>
+                        @else
+                            <p class="mb-1"><strong>Học kỳ ID:</strong> {{ $debugInfo['hoc_ky_id'] ?? 'N/A' }}</p>
+                            <p class="mb-1"><strong>Tổng lớp đang mở:</strong> {{ $debugInfo['tong_lop_dang_mo'] ?? 0 }} lớp</p>
+                            <p class="mb-1"><strong>Tổng môn có lớp mở:</strong> {{ $debugInfo['tong_mon_co_lop_mo'] ?? 0 }} môn</p>
+                            <p class="mb-1"><strong>Tổng CTK của chuyên ngành:</strong> {{ $debugInfo['tong_chuong_trinh_khung'] ?? 0 }} môn</p>
+                            <p class="mb-1"><strong>CTK có lớp mở:</strong> {{ $debugInfo['chuong_trinh_khung_co_lop_mo'] ?? 0 }} môn</p>
+                            <p class="mb-1"><strong>Chuyên ngành ID:</strong> {{ $debugInfo['chuyen_nganh_id'] ?? 'N/A' }}</p>
+                            <p class="mb-1"><strong>Chuyên ngành:</strong> {{ $debugInfo['chuyen_nganh'] ?? 'Chưa có' }}</p>
+                        @endif
+                    @else
+                        <p class="mb-1"><strong>Học kỳ ID:</strong> {{ $hocKy->id ?? 'N/A' }}</p>
+                        <p class="mb-1"><strong>Tổng lớp đang mở:</strong> {{ $lopHocPhans->count() }} môn học</p>
+                        <p class="mb-1"><strong>Môn trong CTK:</strong> {{ $chuongTrinhKhung->count() }} môn</p>
+                        <p class="mb-1"><strong>Chuyên ngành SV:</strong> {{ $sinhVien->chuyenNganh->ten_chuyen_nganh ?? 'Chưa có' }}</p>
+                    @endif
                     @if($lopHocPhans->isNotEmpty())
                         <details class="mt-2">
                             <summary class="text-primary" style="cursor: pointer;">Xem danh sách lớp đang mở</summary>

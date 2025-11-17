@@ -98,9 +98,22 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr>
-                                                <td colspan="4" class="text-center">Chưa có lịch dạy</td>
-                                            </tr>
+                                            @forelse($lichDayTuanNay ?? [] as $lich)
+                                                <tr>
+                                                    <td>{{ \Carbon\Carbon::parse($lich->ngay_hoc)->format('d/m/Y') }}<br>
+                                                        <small class="text-muted">{{ \Carbon\Carbon::parse($lich->ngay_hoc)->locale('vi')->dayName }}</small>
+                                                    </td>
+                                                    <td>Tiết {{ $lich->tiet_bat_dau }}-{{ $lich->tiet_ket_thuc }}</td>
+                                                    <td>{{ $lich->lopHocPhan->ten_lop_hp ?? $lich->lopHocPhan->ma_lop_hp }}<br>
+                                                        <small class="text-muted">{{ $lich->lopHocPhan->monHoc->ten_mon ?? '' }}</small>
+                                                    </td>
+                                                    <td>{{ $lich->phongHoc->ten_phong ?? 'Online' }}</td>
+                                                </tr>
+                                            @empty
+                                                <tr>
+                                                    <td colspan="4" class="text-center">Chưa có lịch dạy tuần này</td>
+                                                </tr>
+                                            @endforelse
                                         </tbody>
                                     </table>
                                 </div>
@@ -115,7 +128,22 @@
                                 <h4>Điểm danh gần đây</h4>
                             </div>
                             <div class="card-body">
-                                <p>Chưa có dữ liệu điểm danh</p>
+                                @forelse($diemDanhGanDay ?? [] as $lich)
+                                    <div class="d-flex justify-content-between align-items-center mb-3 pb-3 border-bottom">
+                                        <div>
+                                            <h6 class="mb-1">{{ $lich->lopHocPhan->monHoc->ten_mon ?? '' }}</h6>
+                                            <p class="text-muted mb-0 small">
+                                                {{ \Carbon\Carbon::parse($lich->ngay_hoc)->format('d/m/Y') }} - 
+                                                {{ $lich->diemDanh->count() ?? 0 }} SV điểm danh
+                                            </p>
+                                        </div>
+                                        <a href="{{ route('giangvien.diem-danh.show', $lich->id) }}" class="btn btn-sm btn-primary">
+                                            Xem
+                                        </a>
+                                    </div>
+                                @empty
+                                    <p class="text-muted mb-0">Chưa có dữ liệu điểm danh</p>
+                                @endforelse
                             </div>
                         </div>
                     </div>
@@ -127,12 +155,28 @@
                         <h4>Thông báo</h4>
                     </div>
                     <div class="card-content pb-4">
-                        <div class="recent-message d-flex px-4 py-3">
-                            <div class="name ms-4">
-                                <h5 class="mb-1">Chưa có thông báo mới</h5>
-                                <h6 class="text-muted mb-0">Bạn đã xem tất cả thông báo</h6>
+                        @forelse($thongBaoMoi ?? [] as $nguoiNhan)
+                            <div class="recent-message d-flex px-4 py-3 border-bottom">
+                                <div class="name ms-4">
+                                    <h5 class="mb-1">{{ Str::limit($nguoiNhan->thongBao->tieu_de ?? '', 30) }}</h5>
+                                    <h6 class="text-muted mb-0">{{ \Carbon\Carbon::parse($nguoiNhan->created_at)->diffForHumans() }}</h6>
+                                </div>
                             </div>
-                        </div>
+                        @empty
+                            <div class="recent-message d-flex px-4 py-3">
+                                <div class="name ms-4">
+                                    <h5 class="mb-1">Chưa có thông báo mới</h5>
+                                    <h6 class="text-muted mb-0">Bạn đã xem tất cả thông báo</h6>
+                                </div>
+                            </div>
+                        @endforelse
+                        @if(isset($thongBaoMoi) && $thongBaoMoi->count() > 0)
+                            <div class="px-4 py-2">
+                                <a href="{{ route('giangvien.thong-bao.index') }}" class="btn btn-sm btn-outline-primary w-100">
+                                    Xem tất cả
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
                 <div class="card">

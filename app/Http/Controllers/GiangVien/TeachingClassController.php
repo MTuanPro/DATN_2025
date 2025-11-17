@@ -38,7 +38,8 @@ class TeachingClassController extends Controller
         $query = PhanCongGiangDay::with([
             'lopHocPhan.monHoc',
             'lopHocPhan.hocKy',
-            'lopHocPhan.giangVienChinh.giangVien'
+            'lopHocPhan.giangVienChinh.giangVien',
+            'giangVien'
         ])
         ->where('giang_vien_id', $giangVien->id)
         // Chỉ lấy lớp có môn học hợp lệ

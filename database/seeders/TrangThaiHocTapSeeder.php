@@ -17,10 +17,13 @@ class TrangThaiHocTapSeeder extends Seeder
         ];
 
         foreach ($data as $item) {
-            DB::table('trang_thai_hoc_tap')->insert(array_merge($item, [
-                'created_at' => now(),
-                'updated_at' => now(),
-            ]));
+            DB::table('trang_thai_hoc_tap')->updateOrInsert(
+                ['ten_trang_thai' => $item['ten_trang_thai']],
+                array_merge($item, [
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ])
+            );
         }
     }
 }

@@ -27,8 +27,8 @@ class LichHocCoDinh extends Model
     ];
 
     protected $casts = [
-        'gio_bat_dau' => 'datetime:H:i',
-        'gio_ket_thuc' => 'datetime:H:i',
+        'gio_bat_dau' => 'datetime',
+        'gio_ket_thuc' => 'datetime',
     ];
 
     /**
