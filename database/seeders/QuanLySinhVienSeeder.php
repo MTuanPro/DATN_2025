@@ -54,6 +54,7 @@ class QuanLySinhVienSeeder extends Seeder
         $this->call(TrinhDoSeeder::class);
         $this->call(TrangThaiHocTapSeeder::class);
         $this->call(PhongHocSeeder::class);
+        $this->call(CaHocSeeder::class); // Seeder cho ca học
         $this->command->info('✅ Hoàn thành PHASE 3');
         $this->command->newLine();
 

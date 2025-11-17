@@ -19,12 +19,6 @@ use Illuminate\Support\Collection;
  */
 class XepLopHocPhanService 
 {
-    protected $hocPhiService;
-
-    public function __construct(HocPhiService $hocPhiService)
-    {
-        $this->hocPhiService = $hocPhiService;
-    }
 
     /**
      * Xếp lớp tự động cho sinh viên
@@ -219,20 +213,11 @@ class XepLopHocPhanService
             $dangKy->trang_thai = 'da_xep_lop';
             $dangKy->save();
 
-            // 4. PHASE 8: Tính học phí tự động khi xếp lớp thành công
-            try {
-                $this->hocPhiService->tinhHocPhiKhiDangKy(
-                    $dangKy->sinh_vien_id,
-                    $lop->hoc_ky_id,
-                    [$lopHocPhanSinhVien->id] // Pass as array
-                );
-                Log::info("Đã tính học phí cho sinh viên {$dangKy->sinh_vien_id} môn {$lop->mon_hoc_id}");
-            } catch (\Exception $e) {
-                // Log lỗi nhưng không rollback vì xếp lớp đã thành công
-                Log::error("Lỗi tính học phí: " . $e->getMessage());
-            }
-
             DB::commit();
+            
+            // 4. PHASE 8: Học phí sẽ được tính TỰ ĐỘNG qua LopHocPhanSinhVienObserver
+            // Không cần gọi thủ công ở đây nữa
+            Log::info("✅ Đã xếp lớp sinh viên {$dangKy->sinh_vien_id} vào lớp {$lop->ma_lop_hp}");
         } catch (QueryException $e) {
             DB::rollBack();
             Log::error("Lỗi khi thêm sinh viên vào lớp: " . $e->getMessage());

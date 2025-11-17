@@ -16,6 +16,7 @@ class LichThi extends Model
         'lop_hoc_phan_id',
         'loai_thi',
         'ngay_thi',
+        'ca_hoc_id',
         'gio_bat_dau',
         'gio_ket_thuc',
         'phong_thi_id',
@@ -82,6 +83,12 @@ class LichThi extends Model
     public function giamThi2()
     {
         return $this->belongsTo(GiangVien::class, 'giam_thi_2_id');
+    }
+
+    // Ca học/thi
+    public function caHoc()
+    {
+        return $this->belongsTo(CaHoc::class, 'ca_hoc_id');
     }
 
     /**

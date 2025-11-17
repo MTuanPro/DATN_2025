@@ -82,13 +82,25 @@ class HocKyController extends Controller
                     ->with('error', 'Học kỳ này đã tồn tại trong năm học ' . $validated['nam_hoc']);
             }
 
-            // Nếu đặt là học kỳ hiện tại, bỏ cờ của các học kỳ khác
-            if ($request->has('la_hoc_ky_hien_tai') && $request->la_hoc_ky_hien_tai) {
-                HocKy::where('la_hoc_ky_hien_tai', true)->update(['la_hoc_ky_hien_tai' => false]);
-            }
-
             // Xử lý checkbox boolean
             $validated['la_hoc_ky_hien_tai'] = $request->has('la_hoc_ky_hien_tai') ? true : false;
+            
+            // Nếu đặt là học kỳ hiện tại, bỏ cờ và đóng đăng ký của các học kỳ khác
+            if ($validated['la_hoc_ky_hien_tai']) {
+                $cacHocKyKhac = HocKy::where('la_hoc_ky_hien_tai', true)->get();
+                
+                foreach ($cacHocKyKhac as $hocKyKhac) {
+                    $hocKyKhac->update([
+                        'la_hoc_ky_hien_tai' => false,
+                        'dang_mo_dang_ky' => false
+                    ]);
+                    
+                    // Đóng đăng ký TẤT CẢ lớp học phần của học kỳ đó
+                    \App\Models\LopHocPhan::where('hoc_ky_id', $hocKyKhac->id)
+                        ->where('trang_thai_lop', 'mo_dang_ky')
+                        ->update(['trang_thai_lop' => 'dang_hoc']);
+                }
+            }
 
             HocKy::create($validated);
 
@@ -157,9 +169,36 @@ class HocKyController extends Controller
                     ->with('error', 'Học kỳ này đã tồn tại trong năm học ' . $validated['nam_hoc']);
             }
 
-            // Nếu đặt là học kỳ hiện tại, bỏ cờ của các học kỳ khác
-            if ($request->la_hoc_ky_hien_tai && !$hocKy->la_hoc_ky_hien_tai) {
-                HocKy::where('la_hoc_ky_hien_tai', true)->update(['la_hoc_ky_hien_tai' => false]);
+            // Xử lý checkbox boolean
+            $validated['la_hoc_ky_hien_tai'] = $request->has('la_hoc_ky_hien_tai') ? true : false;
+            
+            // Nếu đặt là học kỳ hiện tại, bỏ cờ và đóng đăng ký của các học kỳ khác
+            if ($validated['la_hoc_ky_hien_tai'] && !$hocKy->la_hoc_ky_hien_tai) {
+                $cacHocKyKhac = HocKy::where('id', '!=', $hocKy->id)
+                    ->where('la_hoc_ky_hien_tai', true)
+                    ->get();
+                
+                foreach ($cacHocKyKhac as $hocKyKhac) {
+                    $hocKyKhac->update([
+                        'la_hoc_ky_hien_tai' => false,
+                        'dang_mo_dang_ky' => false
+                    ]);
+                    
+                    // Đóng đăng ký TẤT CẢ lớp học phần của học kỳ đó
+                    \App\Models\LopHocPhan::where('hoc_ky_id', $hocKyKhac->id)
+                        ->where('trang_thai_lop', 'mo_dang_ky')
+                        ->update(['trang_thai_lop' => 'dang_hoc']);
+                }
+            }
+            
+            // Nếu BỎ cờ hiện tại, cũng phải đóng đăng ký của học kỳ này và tất cả lớp học phần
+            if (!$validated['la_hoc_ky_hien_tai'] && $hocKy->la_hoc_ky_hien_tai) {
+                $validated['dang_mo_dang_ky'] = false;
+                
+                // Đóng đăng ký TẤT CẢ lớp học phần của học kỳ này
+                \App\Models\LopHocPhan::where('hoc_ky_id', $hocKy->id)
+                    ->where('trang_thai_lop', 'mo_dang_ky')
+                    ->update(['trang_thai_lop' => 'dang_hoc']);
             }
 
             $hocKy->update($validated);
@@ -205,16 +244,32 @@ class HocKyController extends Controller
     {
         DB::beginTransaction();
         try {
-            // Bỏ cờ của tất cả học kỳ khác
-            HocKy::where('la_hoc_ky_hien_tai', true)->update(['la_hoc_ky_hien_tai' => false]);
+            // Bỏ cờ "hiện tại" và ĐÓNG đăng ký của tất cả học kỳ khác
+            $cacHocKyKhac = HocKy::where('id', '!=', $hocKy->id)->get();
+            
+            foreach ($cacHocKyKhac as $hocKyKhac) {
+                $hocKyKhac->update([
+                    'la_hoc_ky_hien_tai' => false,
+                    'dang_mo_dang_ky' => false
+                ]);
+                
+                // Đóng đăng ký TẤT CẢ lớp học phần của học kỳ đó
+                \App\Models\LopHocPhan::where('hoc_ky_id', $hocKyKhac->id)
+                    ->where('trang_thai_lop', 'mo_dang_ky')
+                    ->update(['trang_thai_lop' => 'dang_hoc']);
+            }
 
-            // Đặt học kỳ này là hiện tại
+            // Đặt học kỳ này là hiện tại (KHÔNG tự động mở đăng ký)
             $hocKy->update(['la_hoc_ky_hien_tai' => true]);
 
             DB::commit();
-            return back()->with('success', 'Đã thiết lập học kỳ hiện tại!');
+            
+            Log::info('Đã thiết lập học kỳ hiện tại: ' . $hocKy->ten_hoc_ky . ', đóng đăng ký các học kỳ và lớp học phần khác');
+            
+            return back()->with('success', 'Đã thiết lập học kỳ hiện tại! (Các học kỳ và lớp học phần khác đã tự động đóng đăng ký)');
         } catch (\Exception $e) {
             DB::rollback();
+            Log::error('Lỗi khi thiết lập học kỳ hiện tại: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
     }
@@ -236,16 +291,44 @@ class HocKyController extends Controller
 
         DB::beginTransaction();
         try {
-            // Toggle trạng thái mở/đóng đăng ký
-            $hocKy->update([
-                'dang_mo_dang_ky' => !$hocKy->dang_mo_dang_ky
-            ]);
+            $newStatus = !$hocKy->dang_mo_dang_ky;
+            
+            // Nếu đang MỞ đăng ký cho học kỳ này
+            if ($newStatus) {
+                // Đóng đăng ký TẤT CẢ các học kỳ khác
+                $cacHocKyKhac = HocKy::where('id', '!=', $hocKy->id)
+                    ->where('dang_mo_dang_ky', true)
+                    ->get();
+                
+                foreach ($cacHocKyKhac as $hocKyKhac) {
+                    // Đóng đăng ký học kỳ
+                    $hocKyKhac->update(['dang_mo_dang_ky' => false]);
+                    
+                    // Đóng đăng ký TẤT CẢ lớp học phần của học kỳ đó
+                    \App\Models\LopHocPhan::where('hoc_ky_id', $hocKyKhac->id)
+                        ->where('trang_thai_lop', 'mo_dang_ky')
+                        ->update(['trang_thai_lop' => 'dang_hoc']);
+                }
+                
+                Log::info('Đã đóng đăng ký các học kỳ và lớp học phần khác khi mở đăng ký học kỳ: ' . $hocKy->ten_hoc_ky);
+            } else {
+                // Nếu đang ĐÓNG đăng ký học kỳ này
+                // Đóng đăng ký TẤT CẢ lớp học phần của học kỳ này
+                \App\Models\LopHocPhan::where('hoc_ky_id', $hocKy->id)
+                    ->where('trang_thai_lop', 'mo_dang_ky')
+                    ->update(['trang_thai_lop' => 'dang_hoc']);
+                
+                Log::info('Đã đóng đăng ký tất cả lớp học phần của học kỳ: ' . $hocKy->ten_hoc_ky);
+            }
+            
+            // Cập nhật trạng thái của học kỳ hiện tại
+            $hocKy->update(['dang_mo_dang_ky' => $newStatus]);
 
             DB::commit();
             
-            $message = $hocKy->dang_mo_dang_ky 
-                ? 'Đã mở đăng ký môn học cho học kỳ này!' 
-                : 'Đã đóng đăng ký môn học cho học kỳ này!';
+            $message = $newStatus
+                ? 'Đã mở đăng ký môn học cho học kỳ này! (Các học kỳ và lớp học phần khác đã tự động đóng đăng ký)' 
+                : 'Đã đóng đăng ký môn học cho học kỳ này! (Tất cả lớp học phần đã tự động đóng đăng ký)';
             
             return back()->with('success', $message);
         } catch (\Exception $e) {

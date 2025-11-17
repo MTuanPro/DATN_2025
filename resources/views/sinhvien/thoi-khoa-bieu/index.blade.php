@@ -165,7 +165,7 @@
                     <ul class="mb-0">
                         @foreach ($trungLich as $trung)
                             <li>
-                                <strong>{{ $trung['thu'] }}, Tiết {{ $trung['tiet'] }}:</strong>
+                                <strong>{{ $trung['thu'] }}, {{ $trung['ca_hoc'] ?? 'Ca học' }}:</strong>
                                 {{ $trung['mon_1'] }} và {{ $trung['mon_2'] }}
                             </li>
                         @endforeach
@@ -185,8 +185,8 @@
                         <table class="table table-bordered table-hover mb-0" style="font-size: 0.85rem;">
                             <thead class="table-dark">
                                 <tr class="text-center">
-                                    <th style="width: 70px; position: sticky; left: 0; background: #212529; z-index: 10;">
-                                        Tiết</th>
+                                    <th style="width: 120px; position: sticky; left: 0; background: #212529; z-index: 10;">
+                                        <i class="bi bi-clock-history"></i> Ca học</th>
                                     <th style="min-width: 150px;">Thứ 2</th>
                                     <th style="min-width: 150px;">Thứ 3</th>
                                     <th style="min-width: 150px;">Thứ 4</th>
@@ -197,58 +197,80 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @for ($tiet = 1; $tiet <= 12; $tiet++)
-                                    <tr>
-                                        <td class="text-center align-middle fw-bold bg-light"
-                                            style="position: sticky; left: 0; z-index: 5;">
-                                            {{ $tiet }}
-                                        </td>
-                                        @for ($thu = 2; $thu <= 8; $thu++)
-                                            @php
-                                                $lich = $thoiKhoaBieu[$thu][$tiet] ?? null;
-                                            @endphp
+                                @if(isset($caHocs) && $caHocs->count() > 0)
+                                    @foreach ($caHocs as $caHoc)
+                                        <tr>
+                                            <td class="text-center align-middle fw-bold bg-light"
+                                                style="position: sticky; left: 0; z-index: 5;">
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <span class="badge bg-primary mb-1">{{ $caHoc->ten_ca }}</span>
+                                                    <small class="text-muted" style="font-size: 0.75rem;">
+                                                        <i class="bi bi-clock"></i> 
+                                                        {{ \Carbon\Carbon::parse($caHoc->gio_bat_dau)->format('H:i') }} - 
+                                                        {{ \Carbon\Carbon::parse($caHoc->gio_ket_thuc)->format('H:i') }}
+                                                    </small>
+                                                </div>
+                                            </td>
+                                            @for ($thu = 2; $thu <= 8; $thu++)
+                                                @php
+                                                    $lich = $thoiKhoaBieu[$thu][$caHoc->id] ?? null;
+                                                @endphp
 
-                                            @if ($lich === 'span')
-                                                {{-- Cell đã được merge --}}
-                                            @elseif($lich)
-                                                <td rowspan="{{ $lich['so_tiet'] }}" class="align-middle p-0"
-                                                    style="{{ $lich['loai_lop'] == 'ly_thuyet' ? 'background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 4px solid #2196F3;' : 'background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-left: 4px solid #FF9800;' }}">
-                                                    <div class="p-3">
-                                                        <div class="d-flex align-items-start mb-2">
-                                                            <span
-                                                                class="badge {{ $lich['loai_lop'] == 'ly_thuyet' ? 'bg-primary' : 'bg-warning text-dark' }} me-2">
-                                                                {{ $lich['loai_lop'] == 'ly_thuyet' ? 'LT' : 'TH' }}
-                                                            </span>
-                                                            <strong class="flex-grow-1"
-                                                                style="font-size: 0.9rem;">{{ $lich['mon_hoc'] }}</strong>
+                                                @if($lich)
+                                                    <td class="align-middle p-0"
+                                                        style="{{ $lich['loai_lop'] == 'ly_thuyet' ? 'background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%); border-left: 4px solid #2196F3;' : 'background: linear-gradient(135deg, #fff3e0 0%, #ffe0b2 100%); border-left: 4px solid #FF9800;' }}">
+                                                        <div class="p-3">
+                                                            <div class="d-flex align-items-start mb-2">
+                                                                <span
+                                                                    class="badge {{ $lich['loai_lop'] == 'ly_thuyet' ? 'bg-primary' : 'bg-warning text-dark' }} me-2">
+                                                                    {{ $lich['loai_lop'] == 'ly_thuyet' ? 'LT' : 'TH' }}
+                                                                </span>
+                                                                <strong class="flex-grow-1"
+                                                                    style="font-size: 0.9rem;">{{ $lich['mon_hoc'] }}</strong>
+                                                            </div>
+                                                            <div class="text-muted" style="font-size: 0.8rem;">
+                                                                <div class="mb-1">
+                                                                    <i class="bi bi-code-square text-secondary"></i>
+                                                                    <code
+                                                                        class="bg-white px-1 rounded">{{ $lich['ma_mon'] }}</code>
+                                                                </div>
+                                                                <div class="mb-1">
+                                                                    <i class="bi bi-door-closed text-success"></i>
+                                                                    {{ $lich['phong'] }}
+                                                                </div>
+                                                                <div class="mb-1">
+                                                                    <i class="bi bi-person-fill text-primary"></i>
+                                                                    {{ $lich['giang_vien'] }}
+                                                                </div>
+                                                                @if(isset($lich['ca_hoc']))
+                                                                    <div class="mb-1">
+                                                                        <i class="bi bi-clock-history text-info"></i>
+                                                                        <span class="badge bg-info bg-opacity-10 text-info">
+                                                                            {{ $lich['ca_hoc']->ten_ca }}
+                                                                        </span>
+                                                                    </div>
+                                                                @endif
+                                                                <div class="text-primary fw-bold">
+                                                                    <i class="bi bi-clock-fill"></i> 
+                                                                    {{ \Carbon\Carbon::parse($lich['gio_bat_dau'])->format('H:i') }}
+                                                                    - {{ \Carbon\Carbon::parse($lich['gio_ket_thuc'])->format('H:i') }}
+                                                                </div>
+                                                            </div>
                                                         </div>
-                                                        <div class="text-muted" style="font-size: 0.8rem;">
-                                                            <div class="mb-1">
-                                                                <i class="bi bi-code-square text-secondary"></i>
-                                                                <code
-                                                                    class="bg-white px-1 rounded">{{ $lich['ma_mon'] }}</code>
-                                                            </div>
-                                                            <div class="mb-1">
-                                                                <i class="bi bi-door-closed text-success"></i>
-                                                                {{ $lich['phong'] }}
-                                                            </div>
-                                                            <div class="mb-1">
-                                                                <i class="bi bi-person-fill text-primary"></i>
-                                                                {{ $lich['giang_vien'] }}
-                                                            </div>
-                                                            <div class="text-primary fw-bold">
-                                                                <i class="bi bi-clock-fill"></i> {{ $lich['gio_bat_dau'] }}
-                                                                - {{ $lich['gio_ket_thuc'] }}
-                                                            </div>
-                                                        </div>
-                                                    </div>
-                                                </td>
-                                            @else
-                                                <td class="bg-light bg-opacity-25"></td>
-                                            @endif
-                                        @endfor
+                                                    </td>
+                                                @else
+                                                    <td class="bg-light bg-opacity-25"></td>
+                                                @endif
+                                            @endfor
+                                        </tr>
+                                    @endforeach
+                                @else
+                                    <tr>
+                                        <td colspan="8" class="text-center text-muted py-4">
+                                            <i class="bi bi-info-circle"></i> Chưa có ca học nào được thiết lập
+                                        </td>
                                     </tr>
-                                @endfor
+                                @endif
                             </tbody>
                         </table>
                     </div>

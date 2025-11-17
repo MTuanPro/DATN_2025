@@ -189,12 +189,26 @@ class HocPhiController extends Controller
 
             // Update status
             $hocPhi->updateTrangThai();
+            
+            // Update chi tiết học phí môn thành đã thanh toán (nếu thanh toán đủ)
+            if ($hocPhi->so_tien_con_lai == 0) {
+                ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                    ->where('trang_thai', 'chua_thanh_toan')
+                    ->update(['trang_thai' => 'da_thanh_toan']);
+            }
 
             DB::commit();
+            
+            // Lấy thông tin sinh viên để redirect đến trang thời khóa biểu
+            $sinhVien = $hocPhi->sinhVien;
+            $hocKy = $hocPhi->hocKy;
 
             return redirect()
                 ->route('dao-tao.hoc-phi.show', $id)
-                ->with('success', 'Ghi nhận thanh toán thành công! Mã giao dịch: ' . $lichSu->ma_giao_dich);
+                ->with('success', 'Ghi nhận thanh toán thành công! Mã giao dịch: ' . $lichSu->ma_giao_dich)
+                ->with('show_timetable', true)
+                ->with('sinh_vien_id', $sinhVien->id)
+                ->with('hoc_ky_id', $hocKy->id);
         } catch (\Exception $e) {
             DB::rollBack();
             

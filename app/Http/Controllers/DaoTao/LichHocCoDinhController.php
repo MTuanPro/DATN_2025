@@ -16,7 +16,7 @@ class LichHocCoDinhController extends Controller
      */
     public function index(LopHocPhan $lopHocPhan)
     {
-        $lichHocs = LichHocCoDinh::with(['phongHoc', 'giangVien'])
+        $lichHocs = LichHocCoDinh::with(['phongHoc', 'giangVien', 'caHoc'])
             ->where('lop_hoc_phan_id', $lopHocPhan->id)
             ->orderBy('thu_trong_tuan')
             ->orderBy('tiet_bat_dau')
@@ -32,74 +32,300 @@ class LichHocCoDinhController extends Controller
     {
         $phongHocs = PhongHoc::orderBy('ten_phong')->get();
         $giangViens = GiangVien::orderBy('ho_ten')->get();
+        $caHocs = \App\Models\CaHoc::where('trang_thai', true)
+            ->orderBy('thu_tu')
+            ->get();
 
-        return view('daotao.lich-hoc-co-dinh.create', compact('lopHocPhan', 'phongHocs', 'giangViens'));
+        return view('daotao.lich-hoc-co-dinh.create', compact('lopHocPhan', 'phongHocs', 'giangViens', 'caHocs'));
     }
 
     /**
-     * Lưu lịch học cố định mới
+     * Lưu lịch học cố định mới - TẠO NHIỀU BUỔI HỌC TỰ ĐỘNG
      */
     public function store(Request $request, LopHocPhan $lopHocPhan)
     {
         $validated = $request->validate([
-            'thu_trong_tuan' => 'required|integer|min:2|max:8',
-            'tiet_bat_dau' => 'required|integer|min:1|max:10',
-            'tiet_ket_thuc' => 'required|integer|min:1|max:10|gte:tiet_bat_dau',
-            'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => [
-                'required',
-                'date_format:H:i',
-                function ($attribute, $value, $fail) use ($request) {
-                    $gioBatDau = $request->input('gio_bat_dau');
-                    if ($gioBatDau && $value) {
-                        $timeBatDau = \Carbon\Carbon::createFromFormat('H:i', $gioBatDau);
-                        $timeKetThuc = \Carbon\Carbon::createFromFormat('H:i', $value);
-                        if ($timeKetThuc->lte($timeBatDau)) {
-                            $fail('Giờ kết thúc phải sau giờ bắt đầu');
-                        }
-                    }
-                },
-            ],
+            'ca_hoc_id' => 'required|exists:ca_hoc,id',
+            'so_buoi_hoc' => 'required|integer|min:1|max:50',
+            'ngay_bat_dau_lich' => 'required|date',
+            'thu_trong_tuan' => 'required|array|min:1',
+            'thu_trong_tuan.*' => 'integer|min:2|max:8',
             'phong_hoc_id' => 'required|exists:phong_hoc,id',
             'giang_vien_id' => 'required|exists:giang_vien,id',
             'hinh_thuc' => 'required|in:offline,online,hybrid',
             'link_online' => 'nullable|url',
             'ghi_chu' => 'nullable|string',
         ], [
-            'thu_trong_tuan.required' => 'Thứ trong tuần là bắt buộc',
-            'thu_trong_tuan.min' => 'Thứ phải từ 2 đến 8',
-            'thu_trong_tuan.max' => 'Thứ phải từ 2 đến 8',
-            'tiet_bat_dau.required' => 'Tiết bắt đầu là bắt buộc',
-            'tiet_ket_thuc.required' => 'Tiết kết thúc là bắt buộc',
-            'tiet_ket_thuc.gte' => 'Tiết kết thúc phải lớn hơn hoặc bằng tiết bắt đầu',
-            'gio_bat_dau.required' => 'Giờ bắt đầu là bắt buộc',
-            'gio_bat_dau.date_format' => 'Giờ bắt đầu phải có định dạng HH:mm',
-            'gio_ket_thuc.required' => 'Giờ kết thúc là bắt buộc',
-            'gio_ket_thuc.date_format' => 'Giờ kết thúc phải có định dạng HH:mm',
+            'ca_hoc_id.required' => 'Ca học là bắt buộc',
+            'ca_hoc_id.exists' => 'Ca học không tồn tại',
+            'so_buoi_hoc.required' => 'Số buổi học là bắt buộc',
+            'so_buoi_hoc.min' => 'Số buổi học tối thiểu là 1',
+            'so_buoi_hoc.max' => 'Số buổi học tối đa là 50',
+            'ngay_bat_dau_lich.required' => 'Ngày bắt đầu là bắt buộc',
+            'ngay_bat_dau_lich.date' => 'Ngày bắt đầu phải là ngày hợp lệ',
+            'thu_trong_tuan.required' => 'Vui lòng chọn ít nhất một thứ trong tuần',
+            'thu_trong_tuan.min' => 'Vui lòng chọn ít nhất một thứ trong tuần',
             'phong_hoc_id.required' => 'Phòng học là bắt buộc',
             'giang_vien_id.required' => 'Giảng viên là bắt buộc',
             'hinh_thuc.required' => 'Hình thức học là bắt buộc',
             'link_online.url' => 'Link online phải là URL hợp lệ',
         ]);
 
-        $validated['lop_hoc_phan_id'] = $lopHocPhan->id;
+        try {
+            \DB::beginTransaction();
+            
+            \Log::info('Bắt đầu tạo lịch học tự động', [
+                'lop_hoc_phan_id' => $lopHocPhan->id,
+                'ca_hoc_id' => $validated['ca_hoc_id'],
+                'so_buoi_hoc' => $validated['so_buoi_hoc'],
+                'ngay_bat_dau' => $validated['ngay_bat_dau_lich'],
+                'thu_trong_tuan' => $validated['thu_trong_tuan'],
+            ]);
 
-        // Kiểm tra xung đột
-        $lichHoc = new LichHocCoDinh($validated);
+            // Lấy thông tin ca học
+            $caHoc = \App\Models\CaHoc::findOrFail($validated['ca_hoc_id']);
+            
+            // Tính tiết bắt đầu và kết thúc dựa trên ca học (giả sử mỗi ca = 2 tiết)
+            $tietBatDau = ($caHoc->thu_tu * 2) - 1;
+            $tietKetThuc = $caHoc->thu_tu * 2;
 
-        if ($lichHoc->kiemTraXungDotPhong()) {
-            return back()->withErrors(['phong_hoc_id' => 'Phòng học đã bị trùng lịch vào thời gian này'])->withInput();
-        }
+            // Sắp xếp các thứ trong tuần
+            $thuList = collect($validated['thu_trong_tuan'])->sort()->values()->toArray();
+            
+            // Tạo danh sách các ngày học
+            $ngayHocList = $this->generateScheduleDates(
+                $validated['ngay_bat_dau_lich'],
+                $validated['so_buoi_hoc'],
+                $thuList,
+                $lopHocPhan->ngay_ket_thuc
+            );
 
-        if ($lichHoc->kiemTraXungDotGiangVien()) {
-            return back()->withErrors(['giang_vien_id' => 'Giảng viên đã có lịch dạy vào thời gian này'])->withInput();
-        }
+            if (count($ngayHocList) < $validated['so_buoi_hoc']) {
+                \DB::rollBack();
+                
+                // Tính toán thông tin chi tiết để hiển thị
+                $ngayBatDauFormatted = \Carbon\Carbon::parse($validated['ngay_bat_dau_lich'])->format('d/m/Y');
+                $ngayKetThucFormatted = \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc)->format('d/m/Y');
+                $soNgayConLai = \Carbon\Carbon::parse($validated['ngay_bat_dau_lich'])->diffInDays($lopHocPhan->ngay_ket_thuc);
+                $thuNames = [2 => 'Thứ 2', 3 => 'Thứ 3', 4 => 'Thứ 4', 5 => 'Thứ 5', 6 => 'Thứ 6', 7 => 'Thứ 7', 8 => 'Chủ nhật'];
+                $thuSelected = collect($thuList)->map(function($thu) use ($thuNames) {
+                    return $thuNames[$thu] ?? '';
+                })->filter()->join(', ');
+                
+                $errorMessage = "Không thể tạo đủ {$validated['so_buoi_hoc']} buổi học trong khoảng thời gian của lớp học phần.\n\n";
+                $errorMessage .= "📅 Thông tin:\n";
+                $errorMessage .= "• Ngày bắt đầu: {$ngayBatDauFormatted}\n";
+                $errorMessage .= "• Ngày kết thúc lớp: {$ngayKetThucFormatted}\n";
+                $errorMessage .= "• Số ngày còn lại: {$soNgayConLai} ngày\n";
+                $errorMessage .= "• Các thứ đã chọn: {$thuSelected}\n";
+                $errorMessage .= "• Chỉ tạo được: " . count($ngayHocList) . " buổi\n\n";
+                $errorMessage .= "💡 Giải pháp:\n";
+                $errorMessage .= "• Chọn ngày bắt đầu sớm hơn (trước {$ngayBatDauFormatted})\n";
+                $errorMessage .= "• Hoặc giảm số buổi học xuống " . count($ngayHocList) . " buổi\n";
+                $errorMessage .= "• Hoặc kiểm tra lại ngày kết thúc của lớp học phần";
+                
+                return back()
+                    ->withErrors(['ngay_bat_dau_lich' => $errorMessage])
+                    ->withInput();
+            }
 
-        LichHocCoDinh::create($validated);
+            // Kiểm tra xung đột cho TẤT CẢ các buổi học trước khi tạo
+            // Kiểm tra với LichHocChiTiet vì đây là lịch học theo ngày cụ thể
+            $conflicts = [];
+            foreach ($ngayHocList as $index => $ngayHoc) {
+                $ngayHocDate = $ngayHoc['ngay']->format('Y-m-d');
+                
+                // Kiểm tra xung đột phòng học (kiểm tra với các lịch chi tiết đã tồn tại)
+                $conflictPhong = \App\Models\LichHocChiTiet::where('phong_hoc_id', $validated['phong_hoc_id'])
+                    ->where('ngay_hoc', $ngayHocDate)
+                    ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
+                        $q->where(function ($q2) use ($tietBatDau, $tietKetThuc) {
+                            $q2->where('tiet_ket_thuc', '>=', $tietBatDau)
+                               ->where('tiet_bat_dau', '<=', $tietKetThuc);
+                        });
+                    })
+                    ->exists();
+                
+                if ($conflictPhong) {
+                    $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Phòng học đã bị trùng lịch";
+                }
+
+                // Kiểm tra xung đột giảng viên (kiểm tra với các lịch chi tiết đã tồn tại)
+                $conflictGiangVien = \App\Models\LichHocChiTiet::where('giang_vien_id', $validated['giang_vien_id'])
+                    ->where('ngay_hoc', $ngayHocDate)
+                    ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
+                        $q->where(function ($q2) use ($tietBatDau, $tietKetThuc) {
+                            $q2->where('tiet_ket_thuc', '>=', $tietBatDau)
+                               ->where('tiet_bat_dau', '<=', $tietKetThuc);
+                        });
+                    })
+                    ->exists();
+                
+                if ($conflictGiangVien) {
+                    $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Giảng viên đã có lịch dạy";
+                }
+            }
+            
+            \Log::info('Kết quả kiểm tra xung đột', [
+                'so_buoi_kiem_tra' => count($ngayHocList),
+                'so_xung_dot' => count($conflicts),
+                'xung_dot' => $conflicts
+            ]);
+
+            if (!empty($conflicts)) {
+                \DB::rollBack();
+                return back()
+                    ->withErrors(['general' => 'Phát hiện xung đột lịch:<br>- ' . implode('<br>- ', $conflicts)])
+                    ->withInput();
+            }
+
+            // Tạo các LichHocCoDinh cho từng thứ trong tuần (nếu chưa tồn tại)
+            // LichHocCoDinh là lịch cố định theo tuần, không phải theo ngày
+            $lichHocCoDinhMap = []; // Map: thu_trong_tuan => LichHocCoDinh
+            $createdLichCoDinh = 0;
+            
+            foreach ($thuList as $thu) {
+                // Kiểm tra xem đã có lịch cố định cho thứ này chưa
+                $lichCoDinh = LichHocCoDinh::where('lop_hoc_phan_id', $lopHocPhan->id)
+                    ->where('thu_trong_tuan', $thu)
+                    ->where('tiet_bat_dau', $tietBatDau)
+                    ->where('tiet_ket_thuc', $tietKetThuc)
+                    ->first();
+                
+                if (!$lichCoDinh) {
+                    // Tạo mới lịch cố định cho thứ này
+                    $lichCoDinh = LichHocCoDinh::create([
+                        'lop_hoc_phan_id' => $lopHocPhan->id,
+                        'ca_hoc_id' => $validated['ca_hoc_id'],
+                        'thu_trong_tuan' => $thu,
+                        'tiet_bat_dau' => $tietBatDau,
+                        'tiet_ket_thuc' => $tietKetThuc,
+                        'gio_bat_dau' => $caHoc->gio_bat_dau,
+                        'gio_ket_thuc' => $caHoc->gio_ket_thuc,
+                        'phong_hoc_id' => $validated['phong_hoc_id'],
+                        'giang_vien_id' => $validated['giang_vien_id'],
+                        'hinh_thuc' => $validated['hinh_thuc'],
+                        'link_online' => $validated['link_online'],
+                        'ghi_chu' => $validated['ghi_chu'],
+                    ]);
+                    $createdLichCoDinh++;
+                }
+                
+                $lichHocCoDinhMap[$thu] = $lichCoDinh;
+            }
+            
+            // Tạo các LichHocChiTiet cho từng ngày cụ thể
+            $createdLichChiTiet = 0;
+            foreach ($ngayHocList as $ngayHoc) {
+                try {
+                    $lichCoDinh = $lichHocCoDinhMap[$ngayHoc['thu']];
+                    
+                    \App\Models\LichHocChiTiet::create([
+                        'lich_hoc_co_dinh_id' => $lichCoDinh->id,
+                        'lop_hoc_phan_id' => $lopHocPhan->id,
+                        'ca_hoc_id' => $validated['ca_hoc_id'],
+                        'ngay_hoc' => $ngayHoc['ngay']->format('Y-m-d'),
+                        'tiet_bat_dau' => $tietBatDau,
+                        'tiet_ket_thuc' => $tietKetThuc,
+                        'gio_bat_dau' => $caHoc->gio_bat_dau,
+                        'gio_ket_thuc' => $caHoc->gio_ket_thuc,
+                        'phong_hoc_id' => $validated['phong_hoc_id'],
+                        'giang_vien_id' => $validated['giang_vien_id'],
+                        'hinh_thuc' => $validated['hinh_thuc'],
+                        'link_online' => $validated['link_online'],
+                        'ghi_chu' => $validated['ghi_chu'],
+                        'trang_thai' => 'chua_day',
+                    ]);
+                    $createdLichChiTiet++;
+                } catch (\Exception $e) {
+                    \Log::error('Lỗi khi tạo lịch học chi tiết', [
+                        'ngay_hoc' => $ngayHoc['ngay_str'],
+                        'thu' => $ngayHoc['thu'],
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    throw $e;
+                }
+            }
+            
+            $created = $createdLichChiTiet;
+
+            \DB::commit();
+            
+            \Log::info('Tạo lịch học tự động thành công', [
+                'lop_hoc_phan_id' => $lopHocPhan->id,
+                'so_lich_co_dinh_da_tao' => $createdLichCoDinh,
+                'so_lich_chi_tiet_da_tao' => $createdLichChiTiet
+            ]);
+
+            $message = "Đã tạo thành công {$createdLichChiTiet} buổi học chi tiết";
+            if ($createdLichCoDinh > 0) {
+                $message .= " và {$createdLichCoDinh} lịch học cố định";
+            }
+            $message .= "!";
 
         return redirect()
             ->route('dao-tao.lop-hoc-phan.lich-co-dinh', $lopHocPhan)
-            ->with('success', 'Thêm lịch cố định thành công!');
+                ->with('success', $message);
+
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            \DB::rollBack();
+            \Log::warning('Validation error khi tạo lịch học tự động', [
+                'errors' => $e->errors()
+            ]);
+            throw $e; // Re-throw để Laravel xử lý validation errors
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Lỗi khi tạo lịch học tự động', [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return back()
+                ->withErrors(['general' => 'Có lỗi xảy ra khi tạo lịch học: ' . $e->getMessage() . '. Vui lòng kiểm tra log để biết thêm chi tiết.'])
+                ->withInput();
+        }
+    }
+
+    /**
+     * Tạo danh sách các ngày học theo pattern
+     */
+    private function generateScheduleDates($ngayBatDau, $soBuoiHoc, $thuList, $ngayKetThuc)
+    {
+        $ngayHocList = [];
+        $currentDate = \Carbon\Carbon::parse($ngayBatDau);
+        $endDate = \Carbon\Carbon::parse($ngayKetThuc);
+        $maxIterations = 365; // Tránh vòng lặp vô hạn
+        $iterations = 0;
+
+        while (count($ngayHocList) < $soBuoiHoc && $iterations < $maxIterations) {
+            if ($currentDate->gt($endDate)) {
+                // Đã vượt quá ngày kết thúc của lớp học phần
+                break;
+            }
+
+            // Lấy thứ trong tuần (Carbon: 1=Monday, 7=Sunday)
+            $dayOfWeek = $currentDate->dayOfWeek;
+            // Chuyển đổi: Carbon (1=T2,...,0=CN) -> Hệ thống (2=T2,...,8=CN)
+            $thuTrongTuan = $dayOfWeek === 0 ? 8 : $dayOfWeek + 1;
+
+            // Kiểm tra nếu thứ hiện tại nằm trong danh sách được chọn
+            if (in_array($thuTrongTuan, $thuList)) {
+                $ngayHocList[] = [
+                    'ngay' => $currentDate->copy(),
+                    'ngay_str' => $currentDate->format('d/m/Y'),
+                    'thu' => $thuTrongTuan
+                ];
+            }
+
+            // Chuyển sang ngày tiếp theo
+            $currentDate->addDay();
+            $iterations++;
+        }
+
+        return $ngayHocList;
     }
 
     /**
@@ -178,16 +404,50 @@ class LichHocCoDinhController extends Controller
     }
 
     /**
-     * Xóa lịch học cố định
+     * Xóa lịch học cố định và tất cả lịch học chi tiết liên quan
      */
     public function destroy(LichHocCoDinh $lichCoDinh)
     {
+        try {
+            \DB::beginTransaction();
+            
         $lopHocPhanId = $lichCoDinh->lop_hoc_phan_id;
+            
+            // Xóa tất cả lịch học chi tiết liên quan
+            $soLichChiTiet = \App\Models\LichHocChiTiet::where('lich_hoc_co_dinh_id', $lichCoDinh->id)->count();
+            \App\Models\LichHocChiTiet::where('lich_hoc_co_dinh_id', $lichCoDinh->id)->delete();
+            
+            // Xóa lịch học cố định
         $lichCoDinh->delete();
+            
+            \DB::commit();
+            
+            \Log::info('Đã xóa lịch học cố định và lịch học chi tiết', [
+                'lich_hoc_co_dinh_id' => $lichCoDinh->id,
+                'so_lich_chi_tiet_da_xoa' => $soLichChiTiet
+            ]);
+            
+            $message = 'Đã xóa lịch học cố định thành công';
+            if ($soLichChiTiet > 0) {
+                $message .= " và {$soLichChiTiet} buổi học chi tiết liên quan";
+            }
 
         return redirect()
             ->route('dao-tao.lop-hoc-phan.lich-co-dinh', $lopHocPhanId)
-            ->with('success', 'Đã xóa lịch học cố định thành công');
+                ->with('success', $message);
+                
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            \Log::error('Lỗi khi xóa lịch học cố định', [
+                'lich_hoc_co_dinh_id' => $lichCoDinh->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()
+                ->route('dao-tao.lop-hoc-phan.lich-co-dinh', $lichCoDinh->lop_hoc_phan_id)
+                ->with('error', 'Có lỗi xảy ra khi xóa lịch học: ' . $e->getMessage());
+        }
     }
 
     /**

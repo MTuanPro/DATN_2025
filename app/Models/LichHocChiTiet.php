@@ -15,6 +15,7 @@ class LichHocChiTiet extends Model
     protected $fillable = [
         'lich_hoc_co_dinh_id',
         'lop_hoc_phan_id',
+        'ca_hoc_id',
         'ngay_hoc',
         'tiet_bat_dau',
         'tiet_ket_thuc',
@@ -66,6 +67,14 @@ class LichHocChiTiet extends Model
     public function giangVien()
     {
         return $this->belongsTo(GiangVien::class, 'giang_vien_id');
+    }
+
+    /**
+     * Quan hệ với CaHoc
+     */
+    public function caHoc()
+    {
+        return $this->belongsTo(CaHoc::class, 'ca_hoc_id');
     }
 
     /**

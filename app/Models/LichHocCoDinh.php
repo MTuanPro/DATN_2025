@@ -14,6 +14,7 @@ class LichHocCoDinh extends Model
 
     protected $fillable = [
         'lop_hoc_phan_id',
+        'ca_hoc_id',
         'thu_trong_tuan',
         'tiet_bat_dau',
         'tiet_ket_thuc',
@@ -53,6 +54,14 @@ class LichHocCoDinh extends Model
     public function giangVien()
     {
         return $this->belongsTo(GiangVien::class, 'giang_vien_id');
+    }
+
+    /**
+     * Quan hệ với CaHoc
+     */
+    public function caHoc()
+    {
+        return $this->belongsTo(CaHoc::class, 'ca_hoc_id');
     }
 
     /**

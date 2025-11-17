@@ -136,6 +136,17 @@ class LopHocPhanController extends Controller
         $validated['nhom_lop'] = $nhomLop;
         $validated['so_luong_dang_ky'] = 0; // Đặt giá trị mặc định
         
+        // Kiểm tra nếu trạng thái là "Mở đăng ký" thì học kỳ phải đang mở đăng ký
+        if ($validated['trang_thai_lop'] === 'mo_dang_ky') {
+            $hocKy = HocKy::find($validated['hoc_ky_id']);
+            
+            if (!$hocKy->dang_mo_dang_ky) {
+                return back()->withInput()->withErrors([
+                    'trang_thai_lop' => 'Không thể mở đăng ký lớp học phần này vì học kỳ "' . $hocKy->ten_hoc_ky . '" chưa mở đăng ký. Vui lòng mở đăng ký học kỳ trước!'
+                ]);
+            }
+        }
+        
         LopHocPhan::create($validated);
 
         return redirect()->route('dao-tao.lop-hoc-phan.index')
@@ -212,6 +223,18 @@ class LopHocPhanController extends Controller
         }
 
         $validated['nhom_lop'] = $nhomLop;
+        
+        // Kiểm tra nếu trạng thái là "Mở đăng ký" thì học kỳ phải đang mở đăng ký
+        if ($validated['trang_thai_lop'] === 'mo_dang_ky') {
+            $hocKy = HocKy::find($validated['hoc_ky_id']);
+            
+            if (!$hocKy->dang_mo_dang_ky) {
+                return back()->withInput()->withErrors([
+                    'trang_thai_lop' => 'Không thể mở đăng ký lớp học phần này vì học kỳ "' . $hocKy->ten_hoc_ky . '" chưa mở đăng ký. Vui lòng mở đăng ký học kỳ trước!'
+                ]);
+            }
+        }
+        
         $lopHocPhan->update($validated);
 
         return redirect()->route('dao-tao.lop-hoc-phan.index')

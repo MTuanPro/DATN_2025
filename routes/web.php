@@ -212,6 +212,9 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('dao-tao.')->group(function () {
     Route::get('/dashboard', [DaoTaoDashboardController::class, 'index'])->name('dashboard');
 
+    // Quản lý Ca học
+    Route::resource('ca-hoc', \App\Http\Controllers\DaoTao\CaHocController::class);
+    Route::post('ca-hoc/{caHoc}/toggle-status', [\App\Http\Controllers\DaoTao\CaHocController::class, 'toggleStatus'])->name('ca-hoc.toggle-status');
 
     // PHASE 1: Danh mục
     Route::resource('khoa', KhoaController::class);

@@ -169,17 +169,9 @@ class HocPhiService
      */
     private function calculateHanDong($hocKyId)
     {
-        $hocKy = HocKy::find($hocKyId);
-        
-        if (!$hocKy) {
-            // Default: 30 days from now
-            return now()->addDays(30)->toDateString();
-        }
-
-        // Set deadline to 2 weeks after semester start
-        return $hocKy->ngay_bat_dau 
-            ? date('Y-m-d', strtotime($hocKy->ngay_bat_dau . ' + 14 days'))
-            : now()->addDays(30)->toDateString();
+        // Hạn đóng = ngày xếp lớp (now) + 14 ngày (2 tuần)
+        // Đảm bảo sinh viên có đủ 2 tuần để đóng học phí sau khi xếp lớp
+        return now()->addDays(14)->toDateString();
     }
 
     /**

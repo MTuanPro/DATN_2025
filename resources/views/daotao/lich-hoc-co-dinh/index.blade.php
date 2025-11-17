@@ -50,49 +50,83 @@
                             <a href="{{ route('dao-tao.lop-hoc-phan.lich-co-dinh.create', $lopHocPhan) }}">Thêm mới</a>
                         </div>
                     @else
+                        <div class="alert alert-info mb-3">
+                            <i class="bi bi-info-circle"></i> Tổng số: <strong>{{ $lichHocs->count() }}</strong> buổi học
+                        </div>
+
                         <div class="table-responsive">
-                            <table class="table table-hover">
-                                <thead>
+                            <table class="table table-hover table-striped">
+                                <thead class="table-light">
                                     <tr>
-                                        <th>Thứ</th>
-                                        <th>Tiết</th>
-                                        <th>Giờ học</th>
-                                        <th>Phòng</th>
-                                        <th>Giảng viên</th>
-                                        <th>Hình thức</th>
-                                        <th>Thao tác</th>
+                                        <th width="5%">#</th>
+                                        <th width="10%">Thứ</th>
+                                        <th width="15%">Ca học</th>
+                                        <th width="15%">Giờ học</th>
+                                        <th width="15%">Phòng</th>
+                                        <th width="20%">Giảng viên</th>
+                                        <th width="10%">Hình thức</th>
+                                        <th width="10%">Thao tác</th>
                                     </tr>
                                 </thead>
                                 <tbody>
-                                    @foreach ($lichHocs as $lichHoc)
+                                    @foreach ($lichHocs as $index => $lichHoc)
                                         <tr>
+                                            <td>{{ $index + 1 }}</td>
                                             <td><strong>{{ $lichHoc->ten_thu }}</strong></td>
-                                            <td>{{ $lichHoc->tiet_bat_dau }} - {{ $lichHoc->tiet_ket_thuc }}</td>
-                                            <td>{{ Carbon\Carbon::parse($lichHoc->gio_bat_dau)->format('H:i') }} -
-                                                {{ Carbon\Carbon::parse($lichHoc->gio_ket_thuc)->format('H:i') }}</td>
-                                            <td>{{ $lichHoc->phongHoc->ten_phong ?? '-' }}</td>
-                                            <td>{{ $lichHoc->giangVien->ho_ten ?? '-' }}</td>
+                                            <td>
+                                                @if($lichHoc->caHoc)
+                                                    <span class="badge bg-primary">
+                                                        <i class="bi bi-clock"></i> {{ $lichHoc->caHoc->ten_ca }}
+                                                    </span>
+                                                @else
+                                                    <span class="text-muted">Tiết {{ $lichHoc->tiet_bat_dau }}-{{ $lichHoc->tiet_ket_thuc }}</span>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-clock-history"></i>
+                                                {{ Carbon\Carbon::parse($lichHoc->gio_bat_dau)->format('H:i') }} - 
+                                                {{ Carbon\Carbon::parse($lichHoc->gio_ket_thuc)->format('H:i') }}
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-door-open"></i>
+                                                {{ $lichHoc->phongHoc->ten_phong ?? '-' }}
+                                                @if($lichHoc->phongHoc)
+                                                    <small class="text-muted">({{ $lichHoc->phongHoc->suc_chua }} chỗ)</small>
+                                                @endif
+                                            </td>
+                                            <td>
+                                                <i class="bi bi-person"></i>
+                                                {{ $lichHoc->giangVien->ho_ten ?? '-' }}
+                                            </td>
                                             <td>
                                                 @if ($lichHoc->hinh_thuc == 'offline')
-                                                    <span class="badge bg-primary">Offline</span>
+                                                    <span class="badge bg-primary">
+                                                        <i class="bi bi-building"></i> Offline
+                                                    </span>
                                                 @elseif($lichHoc->hinh_thuc == 'online')
-                                                    <span class="badge bg-success">Online</span>
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-camera-video"></i> Online
+                                                    </span>
                                                 @else
-                                                    <span class="badge bg-info">Hybrid</span>
+                                                    <span class="badge bg-info">
+                                                        <i class="bi bi-laptop"></i> Hybrid
+                                                    </span>
                                                 @endif
                                             </td>
                                             <td>
                                                 <div class="btn-group" role="group">
                                                     <a href="{{ route('dao-tao.lich-co-dinh.edit', $lichHoc) }}"
-                                                        class="btn btn-sm btn-warning">
-                                                        <i class="bi bi-pencil"></i>
+                                                        class="btn btn-sm btn-outline-warning"
+                                                        title="Sửa">
+                                                        <i class="bi bi-pencil-square"></i>
                                                     </a>
                                                     <form action="{{ route('dao-tao.lich-co-dinh.destroy', $lichHoc) }}"
                                                         method="POST"
-                                                        onsubmit="return confirm('Bạn có chắc chắn muốn xóa?')">
+                                                        style="display: inline;"
+                                                        onsubmit="return confirm('⚠️ Bạn có chắc chắn muốn xóa buổi học này?')">
                                                         @csrf
                                                         @method('DELETE')
-                                                        <button type="submit" class="btn btn-sm btn-danger">
+                                                        <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa">
                                                             <i class="bi bi-trash"></i>
                                                         </button>
                                                     </form>

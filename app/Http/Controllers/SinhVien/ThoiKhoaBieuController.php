@@ -86,6 +86,7 @@ class ThoiKhoaBieuController extends Controller
                 },
                 'lopHocPhan.lichHocCoDinhs.phongHoc',
                 'lopHocPhan.lichHocCoDinhs.giangVien',
+                'lopHocPhan.lichHocCoDinhs.caHoc',
             ])
             ->get();
 
@@ -126,15 +127,20 @@ class ThoiKhoaBieuController extends Controller
             ];
         }
 
-        // Tạo ma trận thời khóa biểu (7 ngày x 12 tiết)
+        // Lấy danh sách ca học đang hoạt động
+        $caHocs = \App\Models\CaHoc::where('trang_thai', true)
+            ->orderBy('thu_tu')
+            ->get();
+
+        // Tạo ma trận thời khóa biểu theo ca học (7 ngày x số ca học)
         $thoiKhoaBieu = [];
         for ($thu = 2; $thu <= 8; $thu++) {
-            for ($tiet = 1; $tiet <= 12; $tiet++) {
-                $thoiKhoaBieu[$thu][$tiet] = null;
+            foreach ($caHocs as $caHoc) {
+                $thoiKhoaBieu[$thu][$caHoc->id] = null;
             }
         }
 
-        // Điền lịch cố định vào ma trận
+        // Điền lịch cố định vào ma trận theo ca học
         foreach ($lopHocPhanSinhViens as $lopSV) {
             $lopHocPhan = $lopSV->lopHocPhan;
 
@@ -146,10 +152,25 @@ class ThoiKhoaBieuController extends Controller
 
             foreach ($lopHocPhan->lichHocCoDinhs as $lichCoDinh) {
                 $thuTrongTuan = $lichCoDinh->thu_trong_tuan;
-                $tietBatDau = $lichCoDinh->tiet_bat_dau;
-                $soTiet = $lichCoDinh->tiet_ket_thuc - $lichCoDinh->tiet_bat_dau + 1;
+                
+                // Lấy ca học từ lịch cố định
+                if (!$lichCoDinh->ca_hoc_id) {
+                    continue; // Bỏ qua nếu không có ca học
+                }
+                
+                $caHocId = $lichCoDinh->ca_hoc_id;
+                $caHoc = $lichCoDinh->caHoc;
+                
+                if (!$caHoc) {
+                    continue;
+                }
 
-                $thoiKhoaBieu[$thuTrongTuan][$tietBatDau] = [
+                // Tính số tiết (để hiển thị rowspan nếu cần)
+                $tietBatDau = $lichCoDinh->tiet_bat_dau;
+                $tietKetThuc = $lichCoDinh->tiet_ket_thuc;
+                $soTiet = $tietKetThuc - $tietBatDau + 1;
+
+                $thoiKhoaBieu[$thuTrongTuan][$caHocId] = [
                     'mon_hoc' => $lopHocPhan->monHoc->ten_mon,
                     'ma_mon' => $lopHocPhan->monHoc->ma_mon,
                     'phong' => $lichCoDinh->phongHoc->ten_phong ?? 'TBA',
@@ -158,12 +179,9 @@ class ThoiKhoaBieuController extends Controller
                     'gio_bat_dau' => $lichCoDinh->gio_bat_dau,
                     'gio_ket_thuc' => $lichCoDinh->gio_ket_thuc,
                     'loai_lop' => $lopHocPhan->loai_lop ?? null,
+                    'ca_hoc' => $caHoc,
+                    'ca_hoc_id' => $caHocId,
                 ];
-
-                // Đánh dấu các tiết tiếp theo là đã có lịch
-                for ($i = 1; $i < $soTiet; $i++) {
-                    $thoiKhoaBieu[$thuTrongTuan][$tietBatDau + $i] = 'span';
-                }
             }
         }
 
@@ -215,7 +233,8 @@ class ThoiKhoaBieuController extends Controller
             'lopChuaCoLich',
             'lopCoLichNhungTrangThaiSai',
             'debugInfo',
-            'dangKyTam'
+            'dangKyTam',
+            'caHocs'
         ))->with('coTheXemTKB', true);
     }
 
@@ -268,54 +287,43 @@ class ThoiKhoaBieuController extends Controller
             ];
         }
 
-        // Tính hạn đóng học phí (1 tuần sau ngày xếp lớp)
-        $hanDongHocPhi = Carbon::parse($ngayXepLop)->addWeek();
+        // Tính hạn đóng học phí (2 tuần sau ngày xếp lớp)
+        $hanDongHocPhi = Carbon::parse($ngayXepLop)->addWeeks(2);
 
-        // ✅ QUY TẮC CHÍNH: Chỉ xem được TKB khi:
-        // 1. Đã qua 1 tuần kể từ ngày xếp lớp VÀ
-        // 2. Đã đóng đủ học phí
+        // ✅ QUY TẮC CHÍNH: 
+        // 1. Nếu đã đóng đủ học phí → XEM ĐƯỢC TKB NGAY (không cần chờ)
+        // 2. Nếu chưa đóng học phí → Có 2 tuần để đóng, sau đó mới được xem
 
-        // Trường hợp 1: ĐÃ ĐÓNG ĐỦ HỌC PHÍ
+        // Trường hợp 1: ĐÃ ĐÓNG ĐỦ HỌC PHÍ → XEM ĐƯỢC TKB NGAY
         if ($hocPhi->trang_thai == 'da_nop_du') {
-            // Kiểm tra đã qua 1 tuần chưa
-            if (now()->gte($hanDongHocPhi)) {
-                // ✅ Đã đóng học phí VÀ đã qua 1 tuần → XEM ĐƯỢC TKB
-                return [
-                    'co_the_xem' => true,
-                    'ly_do' => '',
-                    'han_xem_tkb' => $hanDongHocPhi,
-                    'ngay_xep_lop' => Carbon::parse($ngayXepLop)
-                ];
-            } else {
-                // Đã đóng học phí nhưng chưa qua 1 tuần → VẪN CHƯA XEM ĐƯỢC
-                $soNgayConLai = now()->diffInDays($hanDongHocPhi, false);
-                return [
-                    'co_the_xem' => false,
-                    'ly_do' => "Bạn đã đóng học phí. Thời khóa biểu sẽ xuất hiện sau {$soNgayConLai} ngày (ngày " . $hanDongHocPhi->format('d/m/Y') . ").",
-                    'han_xem_tkb' => $hanDongHocPhi,
-                    'ngay_xep_lop' => Carbon::parse($ngayXepLop),
-                    'da_dong_hoc_phi' => true
-                ];
-            }
+            // ✅ Đã đóng đủ học phí → XEM ĐƯỢC TKB NGAY
+            return [
+                'co_the_xem' => true,
+                'ly_do' => '',
+                'han_xem_tkb' => $hanDongHocPhi,
+                'ngay_xep_lop' => Carbon::parse($ngayXepLop),
+                'da_dong_hoc_phi' => true
+            ];
         }
 
-        // Trường hợp 2: CHƯA ĐÓNG HỌC PHÍ
+        // Trường hợp 2: CHƯA ĐÓNG HỌC PHÍ (hoặc chỉ đóng một phần)
         if (now()->lt($hanDongHocPhi)) {
-            // Chưa qua 1 tuần → Thời gian đóng học phí
+            // Trong thời gian đóng học phí (2 tuần)
             $soNgayConLai = now()->diffInDays($hanDongHocPhi, false);
+            $trangThaiText = $hocPhi->trang_thai == 'da_nop_mot_phan' ? 'đã đóng một phần' : 'chưa đóng';
             return [
                 'co_the_xem' => false,
-                'ly_do' => "Bạn có {$soNgayConLai} ngày để đóng học phí. Thời khóa biểu sẽ xuất hiện sau khi đóng học phí và qua hạn 1 tuần (ngày " . $hanDongHocPhi->format('d/m/Y') . ").",
+                'ly_do' => "Bạn {$trangThaiText} học phí. Bạn có {$soNgayConLai} ngày để đóng đủ học phí. Thời khóa biểu sẽ xuất hiện ngay sau khi đóng đủ học phí. Hạn đóng: " . $hanDongHocPhi->format('d/m/Y'),
                 'han_xem_tkb' => $hanDongHocPhi,
                 'ngay_xep_lop' => Carbon::parse($ngayXepLop),
                 'trong_thoi_gian_dong' => true
             ];
         }
 
-        // Trường hợp 3: Đã qua 1 tuần NHƯNG chưa đóng học phí → KHÔNG XEM ĐƯỢC
+        // Trường hợp 3: Đã qua hạn đóng học phí (2 tuần) NHƯNG chưa đóng đủ → KHÔNG XEM ĐƯỢC
         return [
             'co_the_xem' => false,
-            'ly_do' => "Bạn đã quá hạn đóng học phí. Vui lòng đóng học phí để xem thời khóa biểu. Hạn đóng: " . $hanDongHocPhi->format('d/m/Y'),
+            'ly_do' => "Bạn đã quá hạn đóng học phí. Vui lòng đóng đủ học phí để xem thời khóa biểu. Hạn đóng: " . $hanDongHocPhi->format('d/m/Y'),
             'han_xem_tkb' => $hanDongHocPhi,
             'ngay_xep_lop' => Carbon::parse($ngayXepLop),
             'qua_han' => true
@@ -323,7 +331,7 @@ class ThoiKhoaBieuController extends Controller
     }
 
     /**
-     * Kiểm tra trùng lịch
+     * Kiểm tra trùng lịch (theo ca học)
      */
     private function kiemTraTrungLich($lopHocPhanSinhViens)
     {
@@ -332,12 +340,19 @@ class ThoiKhoaBieuController extends Controller
 
         foreach ($lopHocPhanSinhViens as $lopSV) {
             foreach ($lopSV->lopHocPhan->lichHocCoDinhs as $lichCoDinh) {
-                $key = $lichCoDinh->thu_trong_tuan . '_' . $lichCoDinh->tiet_bat_dau;
+                // Kiểm tra trùng lịch theo ca học thay vì tiết
+                if (!$lichCoDinh->ca_hoc_id) {
+                    continue; // Bỏ qua nếu không có ca học
+                }
+                
+                $key = $lichCoDinh->thu_trong_tuan . '_' . $lichCoDinh->ca_hoc_id;
 
                 if (isset($lichHoc[$key])) {
+                    $caHocTen = $lichCoDinh->caHoc ? $lichCoDinh->caHoc->ten_ca : 'Ca ' . $lichCoDinh->ca_hoc_id;
                     $trungLich[] = [
                         'thu' => $lichCoDinh->getTenThuAttribute(),
-                        'tiet' => $lichCoDinh->tiet_bat_dau,
+                        'ca_hoc' => $caHocTen,
+                        'ca_hoc_id' => $lichCoDinh->ca_hoc_id,
                         'mon_1' => $lichHoc[$key],
                         'mon_2' => $lopSV->lopHocPhan->monHoc->ten_mon,
                     ];

@@ -154,6 +154,128 @@
                     </div>
                 </div>
             </div>
+            
+            {{-- Hiển thị thời khóa biểu sau thanh toán thành công --}}
+            @if(session('show_timetable') && session('sinh_vien_id') && session('hoc_ky_id'))
+                <div class="row mt-4">
+                    <div class="col-12">
+                        <div class="card border-success">
+                            <div class="card-header bg-success text-white">
+                                <h4 class="mb-0">
+                                    <i class="bi bi-calendar-check"></i> Thời khóa biểu của sinh viên
+                                </h4>
+                            </div>
+                            <div class="card-body">
+                                <div class="alert alert-success">
+                                    <i class="bi bi-check-circle-fill"></i> 
+                                    <strong>Thanh toán thành công!</strong> Dưới đây là thời khóa biểu của sinh viên.
+                                </div>
+                                
+                                @php
+                                    $sinhVienId = session('sinh_vien_id');
+                                    $hocKyId = session('hoc_ky_id');
+                                    
+                                    // Lấy thời khóa biểu của sinh viên
+                                    $lopHocPhanSinhViens = \App\Models\LopHocPhanSinhVien::where('sinh_vien_id', $sinhVienId)
+                                        ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                                        ->whereHas('lopHocPhan', function($q) use ($hocKyId) {
+                                            $q->where('hoc_ky_id', $hocKyId);
+                                        })
+                                        ->with(['lopHocPhan.monHoc', 'lopHocPhan.lichHocCoDinhs'])
+                                        ->get();
+                                    
+                                    // Tạo lịch theo thứ
+                                    $lichTheoThu = [];
+                                    foreach ($lopHocPhanSinhViens as $lhpSv) {
+                                        foreach ($lhpSv->lopHocPhan->lichHocCoDinhs as $lich) {
+                                            $thu = $lich->thu_trong_tuan;
+                                            if (!isset($lichTheoThu[$thu])) {
+                                                $lichTheoThu[$thu] = [];
+                                            }
+                                            $lichTheoThu[$thu][] = [
+                                                'mon_hoc' => $lhpSv->lopHocPhan->monHoc,
+                                                'lop_hp' => $lhpSv->lopHocPhan,
+                                                'lich' => $lich
+                                            ];
+                                        }
+                                    }
+                                    ksort($lichTheoThu);
+                                    
+                                    $thuTrongTuan = [
+                                        2 => 'Thứ 2',
+                                        3 => 'Thứ 3',
+                                        4 => 'Thứ 4',
+                                        5 => 'Thứ 5',
+                                        6 => 'Thứ 6',
+                                        7 => 'Thứ 7',
+                                        8 => 'Chủ nhật'
+                                    ];
+                                @endphp
+                                
+                                <div class="table-responsive">
+                                    <table class="table table-bordered table-hover">
+                                        <thead class="table-light">
+                                            <tr>
+                                                <th>Thứ</th>
+                                                <th>Môn học</th>
+                                                <th>Mã lớp</th>
+                                                <th>Tiết</th>
+                                                <th>Phòng</th>
+                                                <th>Ghi chú</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            @forelse($lichTheoThu as $thu => $cacLich)
+                                                @foreach($cacLich as $index => $item)
+                                                    <tr>
+                                                        @if($index === 0)
+                                                            <td rowspan="{{ count($cacLich) }}" class="align-middle">
+                                                                <strong>{{ $thuTrongTuan[$thu] ?? 'N/A' }}</strong>
+                                                            </td>
+                                                        @endif
+                                                        <td>
+                                                            <strong>{{ $item['mon_hoc']->ten_mon }}</strong>
+                                                            <br>
+                                                            <small class="text-muted">{{ $item['mon_hoc']->ma_mon }}</small>
+                                                        </td>
+                                                        <td>{{ $item['lop_hp']->ma_lop_hp }}</td>
+                                                        <td>
+                                                            <span class="badge bg-info">
+                                                                Tiết {{ $item['lich']->tiet_bat_dau }} - {{ $item['lich']->tiet_ket_thuc }}
+                                                            </span>
+                                                        </td>
+                                                        <td>
+                                                            @if($item['lich']->phongHoc)
+                                                                {{ $item['lich']->phongHoc->ten_phong }}
+                                                            @else
+                                                                <span class="text-muted">Chưa xếp phòng</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>{{ $item['lich']->ghi_chu ?? '-' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            @empty
+                                                <tr>
+                                                    <td colspan="6" class="text-center text-muted">
+                                                        Chưa có lịch học
+                                                    </td>
+                                                </tr>
+                                            @endforelse
+                                        </tbody>
+                                    </table>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <p class="text-muted mb-0">
+                                        <i class="bi bi-info-circle"></i> 
+                                        Sinh viên có thể xem thời khóa biểu chi tiết tại trang cá nhân của mình.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
         </section>
     </div>
 @endsection

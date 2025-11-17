@@ -33,13 +33,13 @@
 
                 {{-- 1. DANH MỤC & CTĐT --}}
                 <li
-                    class="sidebar-item has-sub {{ Request::is('dao-tao/khoa', 'dao-tao/khoa/*', 'dao-tao/nganh*', 'dao-tao/chuyen-nganh*', 'dao-tao/mon-hoc*', 'dao-tao/chuong-trinh-khung*', 'dao-tao/trinh-do*', 'dao-tao/trang-thai-hoc-tap*', 'dao-tao/phong-hoc*') ? 'active' : '' }}">
+                    class="sidebar-item has-sub {{ Request::is('dao-tao/khoa', 'dao-tao/khoa/*', 'dao-tao/nganh*', 'dao-tao/chuyen-nganh*', 'dao-tao/mon-hoc*', 'dao-tao/chuong-trinh-khung*', 'dao-tao/trinh-do*', 'dao-tao/trang-thai-hoc-tap*', 'dao-tao/phong-hoc*', 'dao-tao/ca-hoc*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-folder-fill"></i>
                         <span>Danh mục & CTĐT</span>
                     </a>
                     <ul
-                        class="submenu {{ Request::is('dao-tao/khoa', 'dao-tao/khoa/*', 'dao-tao/nganh*', 'dao-tao/chuyen-nganh*', 'dao-tao/mon-hoc*', 'dao-tao/chuong-trinh-khung*', 'dao-tao/trinh-do*', 'dao-tao/trang-thai-hoc-tap*', 'dao-tao/phong-hoc*') ? 'active' : '' }}">
+                        class="submenu {{ Request::is('dao-tao/khoa', 'dao-tao/khoa/*', 'dao-tao/nganh*', 'dao-tao/chuyen-nganh*', 'dao-tao/mon-hoc*', 'dao-tao/chuong-trinh-khung*', 'dao-tao/trinh-do*', 'dao-tao/trang-thai-hoc-tap*', 'dao-tao/phong-hoc*', 'dao-tao/ca-hoc*') ? 'active' : '' }}">
                         <li class="submenu-item {{ Request::is('dao-tao/khoa', 'dao-tao/khoa/*') ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.khoa.index') }}">Quản lý Khoa</a></li>
                         <li class="submenu-item {{ Request::is('dao-tao/nganh*') ? 'active' : '' }}"><a
@@ -55,6 +55,9 @@
                                 học tập</a></li>
                         <li class="submenu-item {{ Request::is('dao-tao/phong-hoc*') ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.phong-hoc.index') }}">Quản lý Phòng học</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/ca-hoc*') ? 'active' : '' }}"><a
+                                href="{{ route('dao-tao.ca-hoc.index') }}"><i class="bi bi-clock-history"></i> Quản lý Ca học</a>
                         </li>
                         <li class="submenu-item {{ Request::is('dao-tao/mon-hoc*') ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.mon-hoc.index') }}">Quản lý Môn học</a>
