@@ -77,12 +77,11 @@
                     <ul
                         class="submenu {{ Request::is('sinh-vien/thoi-khoa-bieu*', 'sinh-vien/lich-thi*') ? 'active' : '' }}">
                         <li
-                            class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu') && !Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
+                            class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu') && !Request::is('sinh-vien/thoi-khoa-bieu/lich-hoc') ? 'active' : '' }}">
                             <a href="{{ route('sinh-vien.thoi-khoa-bieu.index') }}">Thời khóa biểu</a>
                         </li>
-                        <li
-                            class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu/chi-tiet') ? 'active' : '' }}">
-                            <a href="{{ route('sinh-vien.thoi-khoa-bieu.chi-tiet') }}">Lịch học chi tiết</a>
+                        <li class="submenu-item {{ Request::is('sinh-vien/thoi-khoa-bieu/lich-hoc') ? 'active' : '' }}">
+                            <a href="{{ route('sinh-vien.thoi-khoa-bieu.lich-hoc') }}">Lịch học</a>
                         </li>
                         <li class="submenu-item {{ Request::is('sinh-vien/lich-thi*') ? 'active' : '' }}">
                             <a href="{{ route('sinh-vien.lich-thi.index') }}">Lịch thi</a>

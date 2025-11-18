@@ -62,6 +62,7 @@ class LichHocChiTietSeeder extends Seeder
                                 'tiet_ket_thuc' => $lichCoDinh->tiet_ket_thuc,
                                 'gio_bat_dau' => $lichCoDinh->gio_bat_dau,
                                 'gio_ket_thuc' => $lichCoDinh->gio_ket_thuc,
+                                'ca_hoc_id' => $lichCoDinh->ca_hoc_id,
                                 'phong_hoc_id' => $lichCoDinh->phong_hoc_id,
                                 'giang_vien_id' => $lichCoDinh->giang_vien_id,
                                 'hinh_thuc' => $lichCoDinh->hinh_thuc,

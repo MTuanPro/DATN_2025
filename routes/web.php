@@ -529,7 +529,7 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
     // PHASE 5: Thời khóa biểu cá nhân
     Route::middleware('sinhvien.check')->prefix('thoi-khoa-bieu')->name('thoi-khoa-bieu.')->group(function () {
         Route::get('/', [ThoiKhoaBieuController::class, 'index'])->name('index');
-        Route::get('/chi-tiet', [ThoiKhoaBieuController::class, 'chiTiet'])->name('chi-tiet');
+        Route::get('/lich-hoc', [ThoiKhoaBieuController::class, 'lichHoc'])->name('lich-hoc');
         Route::get('/export-pdf', [ThoiKhoaBieuController::class, 'exportPDF'])->name('export-pdf');
     });
 

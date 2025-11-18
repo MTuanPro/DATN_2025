@@ -409,12 +409,24 @@ class UserController extends Controller
         }
 
         try {
-            $newStatus = $user->trang_thai === 'hoat_dong' ? 'khoa' : 'hoat_dong';
+            // Logic toggle: 
+            // - hoat_dong → khoa (khóa tài khoản)
+            // - khoa → hoat_dong (mở khóa tài khoản)
+            // - ngung_hoat_dong → hoat_dong (kích hoạt lại tài khoản)
+            if ($user->trang_thai === 'hoat_dong') {
+                $newStatus = 'khoa';
+                $message = 'Đã khóa tài khoản!';
+            } else {
+                // Nếu là khoa hoặc ngung_hoat_dong thì chuyển về hoat_dong
+                $newStatus = 'hoat_dong';
+                $message = $user->trang_thai === 'khoa' ? 'Đã mở khóa tài khoản!' : 'Đã kích hoạt lại tài khoản!';
+            }
+            
             $user->update(['trang_thai' => $newStatus]);
 
             return response()->json([
                 'success' => true,
-                'message' => $newStatus === 'khoa' ? 'Đã khóa tài khoản!' : 'Đã mở khóa tài khoản!',
+                'message' => $message,
                 'status' => $newStatus
             ]);
         } catch (\Exception $e) {

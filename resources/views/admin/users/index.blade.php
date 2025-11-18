@@ -157,7 +157,7 @@
                                                         class="btn btn-sm btn-{{ $user->trang_thai == 'hoat_dong' ? 'danger' : 'success' }} toggle-status"
                                                         data-user-id="{{ $user->id }}"
                                                         data-current-status="{{ $user->trang_thai }}"
-                                                        title="{{ $user->trang_thai == 'hoat_dong' ? 'Khóa' : 'Mở khóa' }}">
+                                                        title="{{ $user->trang_thai == 'hoat_dong' ? 'Khóa' : ($user->trang_thai == 'khoa' ? 'Mở khóa' : 'Kích hoạt lại') }}">
                                                         <i
                                                             class="bi bi-{{ $user->trang_thai == 'hoat_dong' ? 'lock' : 'unlock' }}"></i>
                                                     </button>

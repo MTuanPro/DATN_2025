@@ -8,6 +8,7 @@ use App\Models\HocKy;
 use App\Models\KetQuaHocTap;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\DaoTao\MonHoc;
+use App\Services\DiemService;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +23,7 @@ class BangDiemSeeder extends Seeder
 
         $hocKys = HocKy::all();
         $sinhViens = SinhVien::all();
+        $diemService = new DiemService();
 
         $count = 0;
 
@@ -83,12 +85,28 @@ class BangDiemSeeder extends Seeder
                 // Tính điểm trung bình tích lũy (lấy từ tất cả học kỳ trước đó + học kỳ hiện tại)
                 $diemTrungBinhTichLuy = $this->tinhDiemTrungBinhTichLuy($sinhVien->id, $hocKy->id, $diemTrungBinhHocKy);
 
+                // Tính điểm trung bình hệ 10 từ điểm hệ 4
+                $diemTrungBinhHe10 = $diemTrungBinhHocKy !== null 
+                    ? $diemService->chuyenDoiHe4SangHe10($diemTrungBinhHocKy) 
+                    : null;
+
+                // Tính xếp loại học tập
+                $xepLoaiHocTap = $diemTrungBinhHocKy !== null 
+                    ? BangDiem::tinhXepLoai($diemTrungBinhHocKy, $tongTinChiDat, $tongTinChiDangKy) 
+                    : null;
+
                 BangDiem::create([
                     'sinh_vien_id' => $sinhVien->id,
                     'hoc_ky_id' => $hocKy->id,
+                    'tong_tin_chi_dang_ky' => $tongTinChiDangKy,
+                    'tong_tin_chi_dat' => $tongTinChiDat,
                     'diem_trung_binh_hoc_ky' => $diemTrungBinhHocKy,
                     'diem_trung_binh_tich_luy' => $diemTrungBinhTichLuy,
-                    'tong_tin_chi_dat' => $tongTinChiDat,
+                    'diem_trung_binh_he_10' => $diemTrungBinhHe10,
+                    'diem_trung_binh_he_4' => $diemTrungBinhHocKy,
+                    'xep_loai_hoc_tap' => $xepLoaiHocTap,
+                    'da_cong_bo' => false,
+                    'ngay_cong_bo' => null,
                 ]);
 
                 $count++;

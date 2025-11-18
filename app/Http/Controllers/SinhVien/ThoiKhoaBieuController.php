@@ -127,6 +127,10 @@ class ThoiKhoaBieuController extends Controller
             ];
         }
 
+        // Kiểm tra chế độ xem: 'co_dinh' (lịch cố định), 'full' (toàn bộ học kỳ), hoặc filter thời gian
+        $viewMode = $request->get('view_mode', 'co_dinh');
+        $thoiGianFilter = $request->get('thoi_gian', null);
+        
         // Lấy danh sách ca học đang hoạt động
         $caHocs = \App\Models\CaHoc::where('trang_thai', true)
             ->orderBy('thu_tu')
@@ -140,48 +144,183 @@ class ThoiKhoaBieuController extends Controller
             }
         }
 
-        // Điền lịch cố định vào ma trận theo ca học
-        foreach ($lopHocPhanSinhViens as $lopSV) {
-            $lopHocPhan = $lopSV->lopHocPhan;
-
-            // Kiểm tra xem lớp có lịch học cố định chưa
-            if ($lopHocPhan->lichHocCoDinhs->isEmpty()) {
-                // Nếu không có lịch học cố định, bỏ qua lớp này
-                continue;
+        // Tính toán khoảng thời gian nếu có filter thời gian
+        $startDate = null;
+        $endDate = null;
+        if ($thoiGianFilter) {
+            $now = Carbon::now();
+            switch ($thoiGianFilter) {
+                case '7_ngay_toi':
+                    $startDate = $now->copy();
+                    $endDate = $now->copy()->addDays(7);
+                    break;
+                case '14_ngay_toi':
+                    $startDate = $now->copy();
+                    $endDate = $now->copy()->addDays(14);
+                    break;
+                case '30_ngay_toi':
+                    $startDate = $now->copy();
+                    $endDate = $now->copy()->addDays(30);
+                    break;
+                case '60_ngay_toi':
+                    $startDate = $now->copy();
+                    $endDate = $now->copy()->addDays(60);
+                    break;
+                case '90_ngay_toi':
+                    $startDate = $now->copy();
+                    $endDate = $now->copy()->addDays(90);
+                    break;
+                case '7_ngay_truoc':
+                    $startDate = $now->copy()->subDays(7);
+                    $endDate = $now->copy();
+                    break;
+                case '14_ngay_truoc':
+                    $startDate = $now->copy()->subDays(14);
+                    $endDate = $now->copy();
+                    break;
+                case '30_ngay_truoc':
+                    $startDate = $now->copy()->subDays(30);
+                    $endDate = $now->copy();
+                    break;
+                case '60_ngay_truoc':
+                    $startDate = $now->copy()->subDays(60);
+                    $endDate = $now->copy();
+                    break;
+                case '90_ngay_truoc':
+                    $startDate = $now->copy()->subDays(90);
+                    $endDate = $now->copy();
+                    break;
             }
+        }
 
-            foreach ($lopHocPhan->lichHocCoDinhs as $lichCoDinh) {
-                $thuTrongTuan = $lichCoDinh->thu_trong_tuan;
-                
-                // Lấy ca học từ lịch cố định
-                if (!$lichCoDinh->ca_hoc_id) {
-                    continue; // Bỏ qua nếu không có ca học
+        // Lấy lịch học chi tiết
+        $lichHocChiTietFull = collect();
+        $lopHocPhanIds = $lopHocPhanSinhViens->pluck('lop_hoc_phan_id');
+        $thoiKhoaBieuTheoNgay = []; // Ma trận theo ngày và ca học
+        
+        if ($viewMode === 'full' || $thoiGianFilter) {
+            $query = LichHocChiTiet::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
+                ->where('trang_thai', '!=', 'huy');
+            
+            if ($thoiGianFilter && $startDate && $endDate) {
+                // Nếu có filter thời gian, lấy trong khoảng đó
+                $query->whereBetween('ngay_hoc', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')]);
+            } elseif ($viewMode === 'full') {
+                // Nếu không có filter, lấy toàn bộ học kỳ
+                $query->whereBetween('ngay_hoc', [$hocKy->ngay_bat_dau, $hocKy->ngay_ket_thuc]);
+            }
+            
+            $lichHocChiTietFull = $query->with([
+                    'lopHocPhan.monHoc',
+                    'giangVien',
+                    'phongHoc',
+                    'caHoc',
+                ])
+                ->orderBy('ngay_hoc')
+                ->orderBy('gio_bat_dau')
+                ->get();
+            
+            // Tạo ma trận theo ngày và ca học (cho chế độ hiển thị theo ngày)
+            foreach ($lichHocChiTietFull as $lich) {
+                $ngayHoc = Carbon::parse($lich->ngay_hoc)->format('Y-m-d');
+                $caHocId = $lich->ca_hoc_id;
+                if (!$caHocId && $lich->caHoc) {
+                    $caHocId = $lich->caHoc->id;
                 }
                 
-                $caHocId = $lichCoDinh->ca_hoc_id;
-                $caHoc = $lichCoDinh->caHoc;
+                if (!$caHocId) {
+                    continue;
+                }
                 
-                if (!$caHoc) {
+                if (!isset($thoiKhoaBieuTheoNgay[$ngayHoc])) {
+                    $thoiKhoaBieuTheoNgay[$ngayHoc] = [];
+                }
+                
+                if (!isset($thoiKhoaBieuTheoNgay[$ngayHoc][$caHocId])) {
+                    $thoiKhoaBieuTheoNgay[$ngayHoc][$caHocId] = [];
+                }
+                
+                $thoiKhoaBieuTheoNgay[$ngayHoc][$caHocId][] = $lich;
+            }
+        }
+
+        // Điền lịch vào ma trận
+        if ($viewMode === 'co_dinh' && !$thoiGianFilter) {
+            // Lịch cố định (lặp lại theo tuần) - chỉ khi không có filter thời gian
+            foreach ($lopHocPhanSinhViens as $lopSV) {
+                $lopHocPhan = $lopSV->lopHocPhan;
+
+                // Kiểm tra xem lớp có lịch học cố định chưa
+                if ($lopHocPhan->lichHocCoDinhs->isEmpty()) {
                     continue;
                 }
 
-                // Tính số tiết (để hiển thị rowspan nếu cần)
-                $tietBatDau = $lichCoDinh->tiet_bat_dau;
-                $tietKetThuc = $lichCoDinh->tiet_ket_thuc;
-                $soTiet = $tietKetThuc - $tietBatDau + 1;
+                foreach ($lopHocPhan->lichHocCoDinhs as $lichCoDinh) {
+                    $thuTrongTuan = $lichCoDinh->thu_trong_tuan;
+                    
+                    // Lấy ca học từ lịch cố định
+                    if (!$lichCoDinh->ca_hoc_id) {
+                        continue;
+                    }
+                    
+                    $caHocId = $lichCoDinh->ca_hoc_id;
+                    $caHoc = $lichCoDinh->caHoc;
+                    
+                    if (!$caHoc) {
+                        continue;
+                    }
 
-                $thoiKhoaBieu[$thuTrongTuan][$caHocId] = [
-                    'mon_hoc' => $lopHocPhan->monHoc->ten_mon,
-                    'ma_mon' => $lopHocPhan->monHoc->ma_mon,
-                    'phong' => $lichCoDinh->phongHoc->ten_phong ?? 'TBA',
-                    'giang_vien' => $lichCoDinh->giangVien->ho_ten ?? 'TBA',
-                    'so_tiet' => $soTiet,
-                    'gio_bat_dau' => $lichCoDinh->gio_bat_dau,
-                    'gio_ket_thuc' => $lichCoDinh->gio_ket_thuc,
-                    'loai_lop' => $lopHocPhan->loai_lop ?? null,
-                    'ca_hoc' => $caHoc,
-                    'ca_hoc_id' => $caHocId,
-                ];
+                    $thoiKhoaBieu[$thuTrongTuan][$caHocId] = [
+                        'mon_hoc' => $lopHocPhan->monHoc->ten_mon,
+                        'ma_mon' => $lopHocPhan->monHoc->ma_mon,
+                        'phong' => $lichCoDinh->phongHoc->ten_phong ?? 'TBA',
+                        'giang_vien' => $lichCoDinh->giangVien->ho_ten ?? 'TBA',
+                        'so_tiet' => $lichCoDinh->tiet_ket_thuc - $lichCoDinh->tiet_bat_dau + 1,
+                        'gio_bat_dau' => $lichCoDinh->gio_bat_dau,
+                        'gio_ket_thuc' => $lichCoDinh->gio_ket_thuc,
+                        'loai_lop' => $lopHocPhan->loai_lop ?? null,
+                        'ca_hoc' => $caHoc,
+                        'ca_hoc_id' => $caHocId,
+                    ];
+                }
+            }
+        } else {
+            // Lịch đầy đủ hoặc có filter thời gian: Nhóm theo thứ trong tuần và ca học
+            foreach ($lichHocChiTietFull as $lich) {
+                $ngayHoc = Carbon::parse($lich->ngay_hoc);
+                $thuTrongTuan = $ngayHoc->dayOfWeek; // 0 = CN, 1 = T2, ..., 6 = T7
+                $thuTrongTuan = $thuTrongTuan == 0 ? 8 : $thuTrongTuan + 1; // Chuyển sang hệ 2-8
+                
+                $caHocId = $lich->ca_hoc_id;
+                if (!$caHocId && $lich->caHoc) {
+                    $caHocId = $lich->caHoc->id;
+                }
+                
+                if (!$caHocId) {
+                    continue;
+                }
+
+                // Nhóm các lịch học cùng thứ và ca lại với nhau
+                $key = $thuTrongTuan . '_' . $caHocId;
+                if (!isset($thoiKhoaBieu[$thuTrongTuan][$caHocId])) {
+                    $lopHocPhan = $lich->lopHocPhan;
+                    $thoiKhoaBieu[$thuTrongTuan][$caHocId] = [
+                        'mon_hoc' => $lopHocPhan->monHoc->ten_mon ?? 'N/A',
+                        'ma_mon' => $lopHocPhan->monHoc->ma_mon ?? 'N/A',
+                        'phong' => $lich->phongHoc->ten_phong ?? 'TBA',
+                        'giang_vien' => $lich->giangVien->ho_ten ?? 'TBA',
+                        'so_tiet' => $lich->so_tiet ?? 1,
+                        'gio_bat_dau' => $lich->gio_bat_dau ?? $lich->caHoc->gio_bat_dau ?? null,
+                        'gio_ket_thuc' => $lich->gio_ket_thuc ?? $lich->caHoc->gio_ket_thuc ?? null,
+                        'loai_lop' => $lopHocPhan->loai_lop ?? null,
+                        'ca_hoc' => $lich->caHoc,
+                        'ca_hoc_id' => $caHocId,
+                        'lich_list' => [], // Danh sách các lịch học trong thứ và ca này
+                        'is_full' => true, // Đánh dấu là lịch đầy đủ
+                    ];
+                }
+                // Thêm lịch vào danh sách
+                $thoiKhoaBieu[$thuTrongTuan][$caHocId]['lich_list'][] = $lich;
             }
         }
 
@@ -234,7 +373,13 @@ class ThoiKhoaBieuController extends Controller
             'lopCoLichNhungTrangThaiSai',
             'debugInfo',
             'dangKyTam',
-            'caHocs'
+            'caHocs',
+            'viewMode',
+            'lichHocChiTietFull',
+            'thoiGianFilter',
+            'startDate',
+            'endDate',
+            'thoiKhoaBieuTheoNgay'
         ))->with('coTheXemTKB', true);
     }
 
@@ -366,57 +511,127 @@ class ThoiKhoaBieuController extends Controller
     }
 
     /**
-     * Xem lịch chi tiết theo tuần
+     * Xem lịch học dạng bảng với filter thời gian
      */
-    public function chiTiet(Request $request)
+    public function lichHoc(Request $request)
     {
         $sinhVien = Auth::user()->sinhVien;
 
-        // Lấy học kỳ
-        $hocKyId = $request->get('hoc_ky_id');
-        $selectedHocKy = $hocKyId
-            ? HocKy::find($hocKyId)
-            : HocKy::where('la_hoc_ky_hien_tai', true)->first();
-
-        if (!$selectedHocKy) {
-            $selectedHocKy = HocKy::orderBy('nam_hoc', 'desc')->first();
+        if (!$sinhVien) {
+            return redirect()->route('sinh-vien.dashboard')
+                ->with('error', 'Không tìm thấy thông tin sinh viên!');
         }
 
-        // Lấy tuần (mặc định tuần 1)
-        $tuan = $request->get('tuan', 1);
+        // Lấy học kỳ hiện tại hoặc chọn
+        $hocKy = null;
+        if ($request->filled('hoc_ky_id')) {
+            $hocKy = HocKy::find($request->hoc_ky_id);
+        } else {
+            $hocKy = HocKy::where('la_hoc_ky_hien_tai', true)->first();
+        }
+
+        if (!$hocKy) {
+            $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+            return view('sinhvien.thoi-khoa-bieu.lich-hoc', [
+                'hocKy' => null,
+                'hocKys' => $hocKys,
+                'lichHocList' => collect(),
+                'thoiGianFilter' => $request->get('thoi_gian', '7_ngay_toi'),
+            ]);
+        }
+
+        // Lấy filter thời gian
+        $thoiGianFilter = $request->get('thoi_gian', '7_ngay_toi');
+        
+        // Tính toán khoảng thời gian dựa trên filter
+        $now = Carbon::now();
+        $startDate = null;
+        $endDate = null;
+
+        switch ($thoiGianFilter) {
+            case '7_ngay_toi':
+                $startDate = $now->copy();
+                $endDate = $now->copy()->addDays(7);
+                break;
+            case '14_ngay_toi':
+                $startDate = $now->copy();
+                $endDate = $now->copy()->addDays(14);
+                break;
+            case '30_ngay_toi':
+                $startDate = $now->copy();
+                $endDate = $now->copy()->addDays(30);
+                break;
+            case '60_ngay_toi':
+                $startDate = $now->copy();
+                $endDate = $now->copy()->addDays(60);
+                break;
+            case '90_ngay_toi':
+                $startDate = $now->copy();
+                $endDate = $now->copy()->addDays(90);
+                break;
+            case '7_ngay_truoc':
+                $startDate = $now->copy()->subDays(7);
+                $endDate = $now->copy();
+                break;
+            case '14_ngay_truoc':
+                $startDate = $now->copy()->subDays(14);
+                $endDate = $now->copy();
+                break;
+            case '30_ngay_truoc':
+                $startDate = $now->copy()->subDays(30);
+                $endDate = $now->copy();
+                break;
+            case '60_ngay_truoc':
+                $startDate = $now->copy()->subDays(60);
+                $endDate = $now->copy();
+                break;
+            case '90_ngay_truoc':
+                $startDate = $now->copy()->subDays(90);
+                $endDate = $now->copy();
+                break;
+            default:
+                $startDate = $now->copy();
+                $endDate = $now->copy()->addDays(7);
+        }
 
         // Lấy các lớp học phần của sinh viên trong học kỳ
         $lopHocPhanIds = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
-            ->whereHas('lopHocPhan', function ($query) use ($selectedHocKy) {
-                $query->where('hoc_ky_id', $selectedHocKy->id);
+            ->whereHas('lopHocPhan', function ($query) use ($hocKy) {
+                $query->where('hoc_ky_id', $hocKy->id);
             })
             ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
             ->pluck('lop_hoc_phan_id');
 
-        // Tính ngày bắt đầu và kết thúc của tuần
-        $startOfWeek = now()->startOfWeek()->addWeeks($tuan - 1);
-        $endOfWeek = $startOfWeek->copy()->endOfWeek();
-
-        // Lấy lịch học chi tiết cho tuần này
-        $lichHoc = LichHocChiTiet::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-            ->whereBetween('ngay_hoc', [$startOfWeek, $endOfWeek])
+        // Lấy lịch học chi tiết trong khoảng thời gian
+        $lichHocList = LichHocChiTiet::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
+            ->whereBetween('ngay_hoc', [$startDate->format('Y-m-d'), $endDate->format('Y-m-d')])
+            ->where('trang_thai', '!=', 'huy') // Chỉ lấy lịch chưa bị hủy
             ->with([
                 'lopHocPhan.monHoc',
+                'lopHocPhan.lopHocPhanSinhViens' => function($q) use ($sinhVien) {
+                    $q->where('sinh_vien_id', $sinhVien->id);
+                },
                 'giangVien',
                 'phongHoc',
+                'caHoc',
             ])
-            ->get();
+            ->orderBy('ngay_hoc')
+            ->orderBy('gio_bat_dau')
+            ->paginate(10);
 
         // Danh sách học kỳ cho bộ lọc
-        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
 
-        return view('sinhvien.thoi-khoa-bieu.chi-tiet', compact(
-            'lichHoc',
-            'selectedHocKy',
-            'tuan',
-            'hocKys'
+        return view('sinhvien.thoi-khoa-bieu.lich-hoc', compact(
+            'lichHocList',
+            'hocKy',
+            'hocKys',
+            'thoiGianFilter',
+            'startDate',
+            'endDate'
         ));
     }
+
 
     /**
      * Xuất PDF thời khóa biểu
@@ -466,11 +681,15 @@ class ThoiKhoaBieuController extends Controller
                 $tietBatDau = $lichCoDinh->tiet_bat_dau;
                 $soTiet = $lichCoDinh->tiet_ket_thuc - $lichCoDinh->tiet_bat_dau + 1;
 
+                // Tạo object giả để view PDF có thể truy cập các quan hệ
+                $lichHocObject = (object) [
+                    'lopHocPhan' => $lopSV->lopHocPhan,
+                    'lichHocCoDinh' => $lichCoDinh,
+                ];
+
                 $thoiKhoaBieu[$thuTrongTuan][$tietBatDau] = [
-                    'mon_hoc' => $lopSV->lopHocPhan->monHoc->ten_mon,
-                    'phong' => $lichCoDinh->phongHoc->ten_phong ?? 'TBA',
-                    'giang_vien' => $lichCoDinh->giangVien->ho_ten ?? 'TBA',
-                    'so_tiet' => $soTiet,
+                    'lich' => $lichHocObject,
+                    'rowspan' => $soTiet,
                 ];
 
                 for ($i = 1; $i < $soTiet; $i++) {

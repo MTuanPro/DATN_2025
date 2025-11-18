@@ -57,7 +57,7 @@
                                 href="{{ route('dao-tao.phong-hoc.index') }}">Quản lý Phòng học</a>
                         </li>
                         <li class="submenu-item {{ Request::is('dao-tao/ca-hoc*') ? 'active' : '' }}"><a
-                                href="{{ route('dao-tao.ca-hoc.index') }}"><i class="bi bi-clock-history"></i> Quản lý Ca học</a>
+                                href="{{ route('dao-tao.ca-hoc.index') }}"><i class=""></i> Quản lý Ca học</a>
                         </li>
                         <li class="submenu-item {{ Request::is('dao-tao/mon-hoc*') ? 'active' : '' }}"><a
                                 href="{{ route('dao-tao.mon-hoc.index') }}">Quản lý Môn học</a>
@@ -112,30 +112,37 @@
                 </li>
 
                 {{-- 5. LỚP HỌC PHẦN --}}
-                <li
-                    class="sidebar-item has-sub {{ Request::is('dao-tao/lop-hoc-phan*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*') ? 'active' : '' }}">
+                @php
+                    $isLopHocPhan = Request::is('dao-tao/lop-hoc-phan*') && 
+                                   !Request::is('dao-tao/lop-hoc-phan/*/lich-co-dinh*') && 
+                                   !Request::is('dao-tao/lop-hoc-phan/*/lich-chi-tiet*');
+                @endphp
+                <li class="sidebar-item has-sub {{ $isLopHocPhan ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-book"></i>
                         <span>Lớp học phần</span>
                     </a>
-                    <ul
-                        class="submenu {{ Request::is('dao-tao/lop-hoc-phan*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*') ? 'active' : '' }}">
-                        <li
-                            class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan*') && Request::segment(3) !== 'xem-lich' ? 'active' : '' }}">
+                    <ul class="submenu {{ $isLopHocPhan ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan') || (Request::is('dao-tao/lop-hoc-phan/*') && Request::segment(3) !== 'lich-co-dinh' && Request::segment(3) !== 'lich-chi-tiet' && Request::segment(3) !== 'phan-cong' && Request::segment(3) !== 'cau-hinh-diem') ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học phần</a>
                         </li>
                     </ul>
                 </li>
 
                 {{-- 6. THỜI KHÓA BIỂU --}}
-                <li
-                    class="sidebar-item has-sub {{ Request::is('dao-tao/thoi-khoa-bieu*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
+                @php
+                    $isThoiKhoaBieu = Request::is('dao-tao/thoi-khoa-bieu*') || 
+                                      Request::is('dao-tao/lop-hoc-phan/*/lich-co-dinh*') || 
+                                      Request::is('dao-tao/lop-hoc-phan/*/lich-chi-tiet*') ||
+                                      (Request::is('dao-tao/lich-co-dinh*') && !Request::is('dao-tao/lop-hoc-phan/*/lich-co-dinh*')) ||
+                                      (Request::is('dao-tao/lich-chi-tiet*') && !Request::is('dao-tao/lop-hoc-phan/*/lich-chi-tiet*'));
+                @endphp
+                <li class="sidebar-item has-sub {{ $isThoiKhoaBieu ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-calendar-check"></i>
                         <span>Thời khóa biểu</span>
                     </a>
-                    <ul
-                        class="submenu {{ Request::is('dao-tao/thoi-khoa-bieu*', 'dao-tao/lich-co-dinh*', 'dao-tao/lich-chi-tiet*', 'dao-tao/lop-hoc-phan*') ? 'active' : '' }}">
+                    <ul class="submenu {{ $isThoiKhoaBieu ? 'active' : '' }}">
                         <li class="submenu-item {{ Request::is('dao-tao/thoi-khoa-bieu/lich-theo-phong') ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.thoi-khoa-bieu.lich-theo-phong') }}">Lịch theo Phòng học</a>
                         </li>
