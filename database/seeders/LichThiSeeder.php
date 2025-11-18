@@ -8,6 +8,7 @@ use App\Models\LopHocPhan;
 use App\Models\HocKy;
 use App\Models\DanhMuc\PhongHoc;
 use App\Models\GiangVien;
+use App\Models\CaHoc;
 use Carbon\Carbon;
 
 class LichThiSeeder extends Seeder
@@ -52,6 +53,9 @@ class LichThiSeeder extends Seeder
             return;
         }
 
+        // Lấy ca học
+        $caHocs = CaHoc::where('trang_thai', true)->orderBy('thu_tu')->get();
+
         $this->command->info('Bắt đầu tạo dữ liệu lịch thi mẫu...');
 
         $lichThiData = [];
@@ -69,6 +73,9 @@ class LichThiSeeder extends Seeder
                 ['15:30', '17:30'], // Ca chiều muộn
             ];
             $caThi = $caThiOptions[array_rand($caThiOptions)];
+            
+            // Tìm ca học phù hợp dựa trên giờ bắt đầu
+            $caHoc = $this->timCaHocTheoGio($caHocs, $caThi[0]);
 
             // Chọn phòng thi ngẫu nhiên
             $phongHoc = $phongHocs->random();
@@ -115,6 +122,7 @@ class LichThiSeeder extends Seeder
                 'ngay_thi' => $ngayThi->format('Y-m-d'),
                 'gio_bat_dau' => $caThi[0],
                 'gio_ket_thuc' => $caThi[1],
+                'ca_hoc_id' => $caHoc ? $caHoc->id : null,
                 'phong_thi_id' => $phongHoc->id,
                 'so_sinh_vien_du_thi' => $soSinhVienDuThi,
                 'giam_thi_1_id' => $giamThi[0]->id,
@@ -220,12 +228,17 @@ class LichThiSeeder extends Seeder
             ? Carbon::now()->addWeeks(6)  // Thi giữa kỳ sau 6 tuần
             : Carbon::now()->addWeeks(12); // Thi cuối kỳ sau 12 tuần
 
+        // Tìm ca học
+        $caHocs = CaHoc::where('trang_thai', true)->orderBy('thu_tu')->get();
+        $caHoc = $this->timCaHocTheoGio($caHocs, '07:00');
+
         LichThi::create([
             'lop_hoc_phan_id' => $lopHocPhan->id,
             'loai_thi' => $loaiThi,
             'ngay_thi' => $ngayThi,
             'gio_bat_dau' => '07:00',
             'gio_ket_thuc' => '09:00',
+            'ca_hoc_id' => $caHoc ? $caHoc->id : null,
             'phong_thi_id' => $phongHoc->id,
             'so_sinh_vien_du_thi' => rand(20, 50),
             'giam_thi_1_id' => $giangViens[0]->id,
@@ -233,5 +246,39 @@ class LichThiSeeder extends Seeder
             'hinh_thuc' => 'offline',
             'ghi_chu' => 'Sinh viên cần mang theo thẻ sinh viên và CMND/CCCD.',
         ]);
+    }
+
+    /**
+     * Tìm ca học phù hợp dựa trên giờ bắt đầu
+     */
+    private function timCaHocTheoGio($caHocs, $gioBatDau)
+    {
+        $gioBatDauTime = strtotime($gioBatDau);
+        
+        foreach ($caHocs as $caHoc) {
+            $caBatDau = strtotime($caHoc->gio_bat_dau);
+            $caKetThuc = strtotime($caHoc->gio_ket_thuc);
+            
+            // Nếu giờ bắt đầu nằm trong khoảng ca học
+            if ($gioBatDauTime >= $caBatDau && $gioBatDauTime <= $caKetThuc) {
+                return $caHoc;
+            }
+        }
+        
+        // Nếu không tìm thấy, tìm ca học gần nhất
+        $caHocGanNhat = null;
+        $khoangCachNhoNhat = PHP_INT_MAX;
+        
+        foreach ($caHocs as $caHoc) {
+            $caBatDau = strtotime($caHoc->gio_bat_dau);
+            $khoangCach = abs($gioBatDauTime - $caBatDau);
+            
+            if ($khoangCach < $khoangCachNhoNhat) {
+                $khoangCachNhoNhat = $khoangCach;
+                $caHocGanNhat = $caHoc;
+            }
+        }
+        
+        return $caHocGanNhat;
     }
 }

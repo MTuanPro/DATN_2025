@@ -69,7 +69,7 @@ class QuyenController extends Controller
 
         Quyen::create($validated);
 
-        return redirect()->route('quyen.index')
+        return redirect()->route('admin.quyen.index')
             ->with('success', 'Thêm quyền thành công!');
     }
 
@@ -105,7 +105,7 @@ class QuyenController extends Controller
 
         $quyen->update($validated);
 
-        return redirect()->route('quyen.index')
+        return redirect()->route('admin.quyen.index')
             ->with('success', 'Cập nhật quyền thành công!');
     }
 
@@ -116,13 +116,13 @@ class QuyenController extends Controller
     {
         // Kiểm tra xem quyền có đang được gán cho vai trò nào không
         if ($quyen->vaiTros()->count() > 0) {
-            return redirect()->route('quyen.index')
+            return redirect()->route('admin.quyen.index')
                 ->with('error', 'Không thể xóa quyền đang được gán cho vai trò!');
         }
 
         $quyen->delete();
 
-        return redirect()->route('quyen.index')
+        return redirect()->route('admin.quyen.index')
             ->with('success', 'Xóa quyền thành công!');
     }
 }

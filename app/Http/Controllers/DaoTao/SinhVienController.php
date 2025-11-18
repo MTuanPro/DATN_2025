@@ -98,7 +98,17 @@ class SinhVienController extends Controller
         $validated = $request->validate([
             'ma_sinh_vien' => 'required|string|max:255|unique:sinh_vien,ma_sinh_vien',
             'ho_ten' => 'required|string|max:255',
-            'email' => 'required|email|unique:sinh_vien,email',
+            'email' => [
+                'required',
+                'email',
+                'unique:sinh_vien,email',
+                function ($attribute, $value, $fail) {
+                    // Kiểm tra email đã tồn tại trong bảng users
+                    if (User::where('email', $value)->exists()) {
+                        $fail('Email này đã được sử dụng cho tài khoản khác trong hệ thống.');
+                    }
+                },
+            ],
             'ngay_sinh' => 'required|date',
             'gioi_tinh' => 'required|in:nam,nu,khac',
             'so_dien_thoai' => 'required|string|max:15',
@@ -119,7 +129,9 @@ class SinhVienController extends Controller
         ], [
             'ma_sinh_vien.required' => 'Mã sinh viên là bắt buộc',
             'ma_sinh_vien.unique' => 'Mã sinh viên đã tồn tại',
-            'email.unique' => 'Email đã tồn tại',
+            'email.required' => 'Email là bắt buộc',
+            'email.email' => 'Email không đúng định dạng',
+            'email.unique' => 'Email đã tồn tại trong danh sách sinh viên',
             'can_cuoc_cong_dan.unique' => 'Số CCCD đã tồn tại',
         ]);
 
@@ -145,12 +157,6 @@ class SinhVienController extends Controller
 
         DB::beginTransaction();
         try {
-            // Kiểm tra email đã tồn tại trong bảng users chưa
-            $existingUser = User::where('email', $validated['email'])->first();
-            if ($existingUser) {
-                return back()->withInput()->with('error', 'Email này đã được sử dụng cho tài khoản khác!');
-            }
-
             // Xử lý upload ảnh
             if ($request->hasFile('anh_dai_dien')) {
                 $validated['anh_dai_dien'] = $request->file('anh_dai_dien')->store('sinh-vien', 'public');

@@ -57,18 +57,29 @@ class LoginController extends Controller
             ])->withInput($request->only('email'));
         }
 
+        // Kiểm tra trạng thái tài khoản TRƯỚC KHI đăng nhập
+        if ($user->trang_thai === 'khoa') {
+            return back()->withErrors([
+                'email' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
+            ])->withInput($request->only('email'));
+        }
+
+        if ($user->trang_thai === 'ngung_hoat_dong') {
+            return back()->withErrors([
+                'email' => 'Tài khoản của bạn đã bị ngừng hoạt động. Vui lòng liên hệ quản trị viên.',
+            ])->withInput($request->only('email'));
+        }
+
+        // Kiểm tra email đã xác thực chưa
+        if (empty($user->email_verified_at)) {
+            return back()->withErrors([
+                'email' => 'Email của bạn chưa được xác thực. Vui lòng xác thực email trước khi đăng nhập.',
+            ])->withInput($request->only('email'));
+        }
+
         // Kiểm tra đăng nhập
         if (Auth::attempt($credentials, $remember)) {
             $request->session()->regenerate();
-
-            // Kiểm tra trạng thái tài khoản
-            $user = Auth::user();
-            if ($user->trang_thai === 'khoa') {
-                Auth::logout();
-                return back()->withErrors([
-                    'email' => 'Tài khoản của bạn đã bị khóa. Vui lòng liên hệ quản trị viên.',
-                ])->withInput($request->only('email'));
-            }
 
             // Cập nhật thời gian đăng nhập cuối
             $user->update([

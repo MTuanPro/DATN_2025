@@ -7,6 +7,7 @@ use App\Models\LichHocCoDinh;
 use App\Models\LopHocPhan;
 use App\Models\DaoTao\PhongHoc;
 use App\Models\GiangVien;
+use App\Models\CaHoc;
 
 class LichHocCoDinhSeeder extends Seeder
 {
@@ -19,6 +20,7 @@ class LichHocCoDinhSeeder extends Seeder
         $lopHocPhans = LopHocPhan::take(5)->get();
         $phongHocs = PhongHoc::all();
         $giangViens = GiangVien::all();
+        $caHocs = CaHoc::where('trang_thai', true)->orderBy('thu_tu')->get();
 
         if ($lopHocPhans->isEmpty() || $phongHocs->isEmpty() || $giangViens->isEmpty()) {
             $this->command->warn('Cần có dữ liệu Lớp học phần, Phòng học và Giảng viên trước!');
@@ -63,6 +65,9 @@ class LichHocCoDinhSeeder extends Seeder
             foreach ($schedule as $buoi) {
                 $phongHoc = $phongHocs->random();
                 $giangVien = $giangViens->random();
+                
+                // Tìm ca học phù hợp dựa trên giờ bắt đầu
+                $caHoc = $this->timCaHocTheoGio($caHocs, $buoi['gio_bd']);
 
                 $lichHocs[] = [
                     'lop_hoc_phan_id' => $lopHocPhan->id,
@@ -71,6 +76,7 @@ class LichHocCoDinhSeeder extends Seeder
                     'tiet_ket_thuc' => $buoi['tiet_kt'],
                     'gio_bat_dau' => $buoi['gio_bd'],
                     'gio_ket_thuc' => $buoi['gio_kt'],
+                    'ca_hoc_id' => $caHoc ? $caHoc->id : null,
                     'phong_hoc_id' => $phongHoc->id,
                     'giang_vien_id' => $giangVien->id,
                     'hinh_thuc' => ['offline', 'online', 'hybrid'][array_rand(['offline', 'online', 'hybrid'])],
@@ -92,5 +98,39 @@ class LichHocCoDinhSeeder extends Seeder
         }
 
         $this->command->info('Đã tạo ' . count($lichHocs) . ' lịch học cố định!');
+    }
+
+    /**
+     * Tìm ca học phù hợp dựa trên giờ bắt đầu
+     */
+    private function timCaHocTheoGio($caHocs, $gioBatDau)
+    {
+        $gioBatDauTime = strtotime($gioBatDau);
+        
+        foreach ($caHocs as $caHoc) {
+            $caBatDau = strtotime($caHoc->gio_bat_dau);
+            $caKetThuc = strtotime($caHoc->gio_ket_thuc);
+            
+            // Nếu giờ bắt đầu nằm trong khoảng ca học
+            if ($gioBatDauTime >= $caBatDau && $gioBatDauTime <= $caKetThuc) {
+                return $caHoc;
+            }
+        }
+        
+        // Nếu không tìm thấy, tìm ca học gần nhất
+        $caHocGanNhat = null;
+        $khoangCachNhoNhat = PHP_INT_MAX;
+        
+        foreach ($caHocs as $caHoc) {
+            $caBatDau = strtotime($caHoc->gio_bat_dau);
+            $khoangCach = abs($gioBatDauTime - $caBatDau);
+            
+            if ($khoangCach < $khoangCachNhoNhat) {
+                $khoangCachNhoNhat = $khoangCach;
+                $caHocGanNhat = $caHoc;
+            }
+        }
+        
+        return $caHocGanNhat;
     }
 }
