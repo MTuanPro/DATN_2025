@@ -167,10 +167,6 @@
                                                     class="btn btn-sm btn-secondary" title="Phân công GV">
                                                     <i class="bi bi-person-badge"></i>
                                                 </a>
-                                                <a href="{{ route('dao-tao.lop-hoc-phan.cau-hinh-diem', $lhp->id) }}"
-                                                    class="btn btn-sm btn-warning" title="Cấu hình điểm">
-                                                    <i class="bi bi-sliders"></i>
-                                                </a>
                                                 <a href="{{ route('dao-tao.lop-hoc-phan.edit', $lhp->id) }}"
                                                     class="btn btn-sm btn-primary" title="Sửa">
                                                     <i class="bi bi-pencil"></i>

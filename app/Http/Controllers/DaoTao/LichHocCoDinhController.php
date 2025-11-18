@@ -35,8 +35,12 @@ class LichHocCoDinhController extends Controller
         $caHocs = \App\Models\CaHoc::where('trang_thai', true)
             ->orderBy('thu_tu')
             ->get();
+        
+        // Lấy giảng viên chính từ phân công (nếu có) để làm giá trị mặc định
+        $giangVienChinh = $lopHocPhan->giangVienChinh;
+        $giangVienChinhId = $giangVienChinh ? $giangVienChinh->giang_vien_id : null;
 
-        return view('daotao.lich-hoc-co-dinh.create', compact('lopHocPhan', 'phongHocs', 'giangViens', 'caHocs'));
+        return view('daotao.lich-hoc-co-dinh.create', compact('lopHocPhan', 'phongHocs', 'giangViens', 'caHocs', 'giangVienChinhId'));
     }
 
     /**
@@ -335,8 +339,15 @@ class LichHocCoDinhController extends Controller
     {
         $phongHocs = PhongHoc::orderBy('ten_phong')->get();
         $giangViens = GiangVien::orderBy('ho_ten')->get();
+        $caHocs = \App\Models\CaHoc::where('trang_thai', true)
+            ->orderBy('thu_tu')
+            ->get();
+        
+        // Lấy giảng viên chính từ phân công (nếu có) để hiển thị gợi ý
+        $giangVienChinh = $lichCoDinh->lopHocPhan->giangVienChinh;
+        $giangVienChinhId = $giangVienChinh ? $giangVienChinh->giang_vien_id : null;
 
-        return view('daotao.lich-hoc-co-dinh.edit', compact('lichCoDinh', 'phongHocs', 'giangViens'));
+        return view('daotao.lich-hoc-co-dinh.edit', compact('lichCoDinh', 'phongHocs', 'giangViens', 'caHocs', 'giangVienChinhId'));
     }
 
     /**
@@ -346,23 +357,7 @@ class LichHocCoDinhController extends Controller
     {
         $validated = $request->validate([
             'thu_trong_tuan' => 'required|integer|min:2|max:8',
-            'tiet_bat_dau' => 'required|integer|min:1|max:10',
-            'tiet_ket_thuc' => 'required|integer|min:1|max:10|gte:tiet_bat_dau',
-            'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => [
-                'required',
-                'date_format:H:i',
-                function ($attribute, $value, $fail) use ($request) {
-                    $gioBatDau = $request->input('gio_bat_dau');
-                    if ($gioBatDau && $value) {
-                        $timeBatDau = \Carbon\Carbon::createFromFormat('H:i', $gioBatDau);
-                        $timeKetThuc = \Carbon\Carbon::createFromFormat('H:i', $value);
-                        if ($timeKetThuc->lte($timeBatDau)) {
-                            $fail('Giờ kết thúc phải sau giờ bắt đầu');
-                        }
-                    }
-                },
-            ],
+            'ca_hoc_id' => 'required|exists:ca_hoc,id',
             'phong_hoc_id' => 'required|exists:phong_hoc,id',
             'giang_vien_id' => 'required|exists:giang_vien,id',
             'hinh_thuc' => 'required|in:offline,online,hybrid',
@@ -372,18 +367,23 @@ class LichHocCoDinhController extends Controller
             'thu_trong_tuan.required' => 'Thứ trong tuần là bắt buộc',
             'thu_trong_tuan.min' => 'Thứ phải từ 2 đến 8',
             'thu_trong_tuan.max' => 'Thứ phải từ 2 đến 8',
-            'tiet_bat_dau.required' => 'Tiết bắt đầu là bắt buộc',
-            'tiet_ket_thuc.required' => 'Tiết kết thúc là bắt buộc',
-            'tiet_ket_thuc.gte' => 'Tiết kết thúc phải lớn hơn hoặc bằng tiết bắt đầu',
-            'gio_bat_dau.required' => 'Giờ bắt đầu là bắt buộc',
-            'gio_bat_dau.date_format' => 'Giờ bắt đầu phải có định dạng HH:mm',
-            'gio_ket_thuc.required' => 'Giờ kết thúc là bắt buộc',
-            'gio_ket_thuc.date_format' => 'Giờ kết thúc phải có định dạng HH:mm',
+            'ca_hoc_id.required' => 'Ca học là bắt buộc',
+            'ca_hoc_id.exists' => 'Ca học không tồn tại',
             'phong_hoc_id.required' => 'Phòng học là bắt buộc',
             'giang_vien_id.required' => 'Giảng viên là bắt buộc',
             'hinh_thuc.required' => 'Hình thức học là bắt buộc',
             'link_online.url' => 'Link online phải là URL hợp lệ',
         ]);
+
+        // Lấy thông tin ca học để điền vào các trường tiet và gio
+        $caHoc = \App\Models\CaHoc::findOrFail($validated['ca_hoc_id']);
+        
+        // Tính tiết bắt đầu và kết thúc dựa trên ca học (mỗi ca = 2 tiết)
+        // Ca 1: tiết 1-2, Ca 2: tiết 3-4, Ca 3: tiết 5-6, v.v.
+        $validated['tiet_bat_dau'] = ($caHoc->thu_tu * 2) - 1;
+        $validated['tiet_ket_thuc'] = $caHoc->thu_tu * 2;
+        $validated['gio_bat_dau'] = $caHoc->gio_bat_dau;
+        $validated['gio_ket_thuc'] = $caHoc->gio_ket_thuc;
 
         // Kiểm tra xung đột (loại trừ chính nó)
         $lichHocTemp = new LichHocCoDinh($validated);
@@ -396,11 +396,52 @@ class LichHocCoDinhController extends Controller
             return back()->withErrors(['giang_vien_id' => 'Giảng viên đã có lịch dạy vào thời gian này'])->withInput();
         }
 
+        // Lưu giá trị cũ để so sánh
+        $thuTrongTuanCu = $lichCoDinh->thu_trong_tuan;
+        $caHocIdCu = $lichCoDinh->ca_hoc_id;
+        
+        // Kiểm tra xem thu_trong_tuan có thay đổi không
+        $thuTrongTuanThayDoi = $thuTrongTuanCu != $validated['thu_trong_tuan'];
+        
+        // Cập nhật LichHocCoDinh trước
         $lichCoDinh->update($validated);
+        
+        // Nếu thứ thay đổi, xóa các LichHocChiTiet chưa dạy và tạo lại dựa trên thứ mới
+        if ($thuTrongTuanThayDoi) {
+            // Đếm số buổi học chi tiết hiện có (chưa dạy) để tạo lại
+            $soBuoiHocHienCo = \App\Models\LichHocChiTiet::where('lich_hoc_co_dinh_id', $lichCoDinh->id)
+                ->where('trang_thai', '!=', 'da_day')
+                ->count();
+            
+            // Xóa các LichHocChiTiet chưa dạy (vì chúng không còn phù hợp với thứ mới)
+            $soLichChiTietXoa = \App\Models\LichHocChiTiet::where('lich_hoc_co_dinh_id', $lichCoDinh->id)
+                ->where('trang_thai', '!=', 'da_day') // Chỉ xóa các buổi chưa dạy
+                ->delete();
+            
+            if ($soLichChiTietXoa > 0) {
+                \Log::info('Đã xóa LichHocChiTiet khi thu_trong_tuan thay đổi', [
+                    'lich_hoc_co_dinh_id' => $lichCoDinh->id,
+                    'thu_cu' => $thuTrongTuanCu,
+                    'thu_moi' => $validated['thu_trong_tuan'],
+                    'so_lich_chi_tiet_da_xoa' => $soLichChiTietXoa
+                ]);
+                
+                // Tự động tạo lại các buổi học chi tiết dựa trên thứ mới
+                $this->taoLaiLichHocChiTiet($lichCoDinh, $soBuoiHocHienCo);
+            }
+        }
+        
+        // Refresh model để có dữ liệu mới nhất (quan trọng để observer có thể lấy đúng giá trị)
+        $lichCoDinh->refresh();
+
+        $message = 'Đã cập nhật lịch học cố định thành công';
+        if ($thuTrongTuanThayDoi) {
+            $message .= '. Các buổi học chi tiết chưa dạy đã được tự động tạo lại dựa trên thứ mới.';
+        }
 
         return redirect()
             ->route('dao-tao.lop-hoc-phan.lich-co-dinh', $lichCoDinh->lop_hoc_phan_id)
-            ->with('success', 'Đã cập nhật lịch học cố định thành công');
+            ->with('success', $message);
     }
 
     /**
@@ -447,6 +488,118 @@ class LichHocCoDinhController extends Controller
             return redirect()
                 ->route('dao-tao.lop-hoc-phan.lich-co-dinh', $lichCoDinh->lop_hoc_phan_id)
                 ->with('error', 'Có lỗi xảy ra khi xóa lịch học: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Tạo lại lịch học chi tiết khi thứ trong tuần thay đổi
+     */
+    private function taoLaiLichHocChiTiet(LichHocCoDinh $lichCoDinh, $soBuoiHocCanTao)
+    {
+        try {
+            $lopHocPhan = $lichCoDinh->lopHocPhan;
+            if (!$lopHocPhan) {
+                \Log::warning('Không tìm thấy lớp học phần', [
+                    'lich_hoc_co_dinh_id' => $lichCoDinh->id
+                ]);
+                return;
+            }
+
+            // Lấy ngày bắt đầu và kết thúc của lớp học phần
+            $ngayBatDau = \Carbon\Carbon::parse($lopHocPhan->ngay_bat_dau);
+            $ngayKetThuc = \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc);
+            
+            // Bắt đầu từ ngày hôm nay hoặc ngày bắt đầu lớp học phần (lấy ngày nào muộn hơn)
+            $ngayBatDauLich = \Carbon\Carbon::now()->gt($ngayBatDau) ? \Carbon\Carbon::now() : $ngayBatDau;
+            
+            // Tạo danh sách ngày học dựa trên thứ mới
+            $thuList = [$lichCoDinh->thu_trong_tuan];
+            $ngayHocList = $this->generateScheduleDates(
+                $ngayBatDauLich->format('Y-m-d'),
+                $soBuoiHocCanTao,
+                $thuList,
+                $ngayKetThuc->format('Y-m-d')
+            );
+
+            if (empty($ngayHocList)) {
+                \Log::warning('Không thể tạo lịch học chi tiết mới', [
+                    'lich_hoc_co_dinh_id' => $lichCoDinh->id,
+                    'thu_trong_tuan' => $lichCoDinh->thu_trong_tuan,
+                    'ngay_bat_dau' => $ngayBatDauLich->format('Y-m-d'),
+                    'ngay_ket_thuc' => $ngayKetThuc->format('Y-m-d')
+                ]);
+                return;
+            }
+
+            // Tạo các LichHocChiTiet mới
+            $createdCount = 0;
+            foreach ($ngayHocList as $ngayHoc) {
+                // Kiểm tra xem đã có lịch học chi tiết cho ngày này chưa
+                $exists = \App\Models\LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhan->id)
+                    ->where('ngay_hoc', $ngayHoc['ngay']->format('Y-m-d'))
+                    ->where('tiet_bat_dau', $lichCoDinh->tiet_bat_dau)
+                    ->where('tiet_ket_thuc', $lichCoDinh->tiet_ket_thuc)
+                    ->exists();
+
+                if (!$exists) {
+                    // Kiểm tra xung đột trước khi tạo
+                    $conflictPhong = \App\Models\LichHocChiTiet::where('phong_hoc_id', $lichCoDinh->phong_hoc_id)
+                        ->where('ngay_hoc', $ngayHoc['ngay']->format('Y-m-d'))
+                        ->where(function ($q) use ($lichCoDinh) {
+                            $q->where(function ($q2) use ($lichCoDinh) {
+                                $q2->where('tiet_ket_thuc', '>=', $lichCoDinh->tiet_bat_dau)
+                                   ->where('tiet_bat_dau', '<=', $lichCoDinh->tiet_ket_thuc);
+                            });
+                        })
+                        ->exists();
+
+                    $conflictGiangVien = \App\Models\LichHocChiTiet::where('giang_vien_id', $lichCoDinh->giang_vien_id)
+                        ->where('ngay_hoc', $ngayHoc['ngay']->format('Y-m-d'))
+                        ->where(function ($q) use ($lichCoDinh) {
+                            $q->where(function ($q2) use ($lichCoDinh) {
+                                $q2->where('tiet_ket_thuc', '>=', $lichCoDinh->tiet_bat_dau)
+                                   ->where('tiet_bat_dau', '<=', $lichCoDinh->tiet_ket_thuc);
+                            });
+                        })
+                        ->exists();
+
+                    if (!$conflictPhong && !$conflictGiangVien) {
+                        \App\Models\LichHocChiTiet::create([
+                            'lich_hoc_co_dinh_id' => $lichCoDinh->id,
+                            'lop_hoc_phan_id' => $lopHocPhan->id,
+                            'ca_hoc_id' => $lichCoDinh->ca_hoc_id,
+                            'ngay_hoc' => $ngayHoc['ngay']->format('Y-m-d'),
+                            'tiet_bat_dau' => $lichCoDinh->tiet_bat_dau,
+                            'tiet_ket_thuc' => $lichCoDinh->tiet_ket_thuc,
+                            'gio_bat_dau' => $lichCoDinh->gio_bat_dau,
+                            'gio_ket_thuc' => $lichCoDinh->gio_ket_thuc,
+                            'phong_hoc_id' => $lichCoDinh->phong_hoc_id,
+                            'giang_vien_id' => $lichCoDinh->giang_vien_id,
+                            'hinh_thuc' => $lichCoDinh->hinh_thuc,
+                            'link_online' => $lichCoDinh->link_online,
+                            'ghi_chu' => $lichCoDinh->ghi_chu,
+                            'trang_thai' => 'chua_day',
+                        ]);
+                        $createdCount++;
+                    }
+                }
+            }
+
+            if ($createdCount > 0) {
+                \Log::info('Đã tự động tạo lại LichHocChiTiet khi thứ thay đổi', [
+                    'lich_hoc_co_dinh_id' => $lichCoDinh->id,
+                    'thu_moi' => $lichCoDinh->thu_trong_tuan,
+                    'so_lich_chi_tiet_da_tao' => $createdCount,
+                    'so_lich_chi_tiet_can_tao' => $soBuoiHocCanTao
+                ]);
+            }
+
+        } catch (\Exception $e) {
+            \Log::error('Lỗi khi tạo lại lịch học chi tiết', [
+                'lich_hoc_co_dinh_id' => $lichCoDinh->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
         }
     }
 

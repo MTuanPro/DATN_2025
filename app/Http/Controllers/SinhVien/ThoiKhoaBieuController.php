@@ -297,13 +297,13 @@ class ThoiKhoaBieuController extends Controller
         // Trường hợp 1: ĐÃ ĐÓNG ĐỦ HỌC PHÍ → XEM ĐƯỢC TKB NGAY
         if ($hocPhi->trang_thai == 'da_nop_du') {
             // ✅ Đã đóng đủ học phí → XEM ĐƯỢC TKB NGAY
-            return [
-                'co_the_xem' => true,
-                'ly_do' => '',
-                'han_xem_tkb' => $hanDongHocPhi,
-                'ngay_xep_lop' => Carbon::parse($ngayXepLop),
-                'da_dong_hoc_phi' => true
-            ];
+                return [
+                    'co_the_xem' => true,
+                    'ly_do' => '',
+                    'han_xem_tkb' => $hanDongHocPhi,
+                    'ngay_xep_lop' => Carbon::parse($ngayXepLop),
+                    'da_dong_hoc_phi' => true
+                ];
         }
 
         // Trường hợp 2: CHƯA ĐÓNG HỌC PHÍ (hoặc chỉ đóng một phần)

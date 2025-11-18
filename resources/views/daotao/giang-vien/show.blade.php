@@ -94,7 +94,15 @@
                             <div class="row mb-3">
                                 <div class="col-md-4 fw-bold">Ngày sinh:</div>
                                 <div class="col-md-8">
-                                    {{ $giangVien->ngay_sinh ? $giangVien->ngay_sinh->format('d/m/Y') : 'N/A' }}
+                                    @if ($giangVien->ngay_sinh)
+                                        @if ($giangVien->ngay_sinh instanceof \Carbon\Carbon)
+                                            {{ $giangVien->ngay_sinh->format('d/m/Y') }}
+                                        @else
+                                            {{ \Carbon\Carbon::parse($giangVien->ngay_sinh)->format('d/m/Y') }}
+                                        @endif
+                                    @else
+                                        <span class="text-muted">N/A</span>
+                                    @endif
                                 </div>
                             </div>
                             <div class="row mb-3">

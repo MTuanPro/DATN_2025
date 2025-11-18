@@ -150,4 +150,55 @@ class User extends Authenticatable
     {
         return $this->hasOne(\App\Models\GiangVien::class, 'user_id');
     }
+
+    /**
+     * Lấy ảnh đại diện từ bảng tương ứng với vai trò
+     * Lưu ý: Accessor này sẽ tự động load relationships nếu chưa được load
+     */
+    public function getAnhDaiDienAttribute()
+    {
+        // Lấy roles (có thể cache để tối ưu)
+        if (!$this->relationLoaded('vaiTro')) {
+            $this->load('vaiTro');
+        }
+        $roles = $this->vaiTro->pluck('ma_vai_tro')->toArray();
+        
+        if (in_array('giang_vien', $roles)) {
+            if (!$this->relationLoaded('giangVien')) {
+                $this->load('giangVien');
+            }
+            if ($this->giangVien && $this->giangVien->anh_dai_dien) {
+                return $this->giangVien->anh_dai_dien;
+            }
+        }
+        
+        if (in_array('sinh_vien', $roles)) {
+            if (!$this->relationLoaded('sinhVien')) {
+                $this->load('sinhVien');
+            }
+            if ($this->sinhVien && $this->sinhVien->anh_dai_dien) {
+                return $this->sinhVien->anh_dai_dien;
+            }
+        }
+        
+        if (in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)) {
+            if (!$this->relationLoaded('daoTao')) {
+                $this->load('daoTao');
+            }
+            if ($this->daoTao && $this->daoTao->anh_dai_dien) {
+                return $this->daoTao->anh_dai_dien;
+            }
+        }
+        
+        if (in_array('admin', $roles)) {
+            if (!$this->relationLoaded('admin')) {
+                $this->load('admin');
+            }
+            if ($this->admin && $this->admin->anh_dai_dien) {
+                return $this->admin->anh_dai_dien;
+            }
+        }
+        
+        return null;
+    }
 }

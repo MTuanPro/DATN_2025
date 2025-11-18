@@ -223,6 +223,11 @@
                         <button type="button" class="btn btn-success" onclick="luuTatCaDiem()">
                             <i class="bi bi-save-fill"></i> Lưu tất cả điểm
                         </button>
+                        @if($laGiangVienChinh)
+                        <button type="button" class="btn btn-primary" onclick="guiDiemChoDaoTao()">
+                            <i class="bi bi-send"></i> Gửi điểm cho đào tạo
+                        </button>
+                        @endif
                         @endif
                     </div>
                 @endif
@@ -370,6 +375,84 @@
                 console.error('Error:', error);
                 Swal.fire('Lỗi!', 'Có lỗi xảy ra khi lưu điểm', 'error');
             });
+    }
+
+    // Gửi điểm cho đào tạo
+    function guiDiemChoDaoTao() {
+        Swal.fire({
+            title: 'Xác nhận gửi điểm',
+            text: 'Bạn có chắc muốn gửi điểm cho đào tạo để duyệt? Sau khi gửi, bạn sẽ không thể sửa điểm nữa.',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            confirmButtonText: 'Có, gửi điểm',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                // Gửi request
+                fetch('{{ route("giangvien.nhap-diem.gui-dao-tao", $lopHocPhan->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({})
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Thành công!', data.message, 'success')
+                            .then(() => location.reload());
+                    } else {
+                        // Nếu cần confirm (còn sinh viên chưa có điểm)
+                        if (data.can_confirm) {
+                            Swal.fire({
+                                title: 'Xác nhận',
+                                text: data.message,
+                                icon: 'warning',
+                                showCancelButton: true,
+                                confirmButtonColor: '#3085d6',
+                                cancelButtonColor: '#d33',
+                                confirmButtonText: 'Vẫn gửi',
+                                cancelButtonText: 'Hủy'
+                            }).then((confirmResult) => {
+                                if (confirmResult.isConfirmed) {
+                                    // Gửi lại với confirm
+                                    fetch('{{ route("giangvien.nhap-diem.gui-dao-tao", $lopHocPhan->id) }}', {
+                                        method: 'POST',
+                                        headers: {
+                                            'Content-Type': 'application/json',
+                                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                                        },
+                                        body: JSON.stringify({ confirm: true })
+                                    })
+                                    .then(response => response.json())
+                                    .then(data => {
+                                        if (data.success) {
+                                            Swal.fire('Thành công!', data.message, 'success')
+                                                .then(() => location.reload());
+                                        } else {
+                                            Swal.fire('Lỗi!', data.message, 'error');
+                                        }
+                                    })
+                                    .catch(error => {
+                                        console.error('Error:', error);
+                                        Swal.fire('Lỗi!', 'Có lỗi xảy ra khi gửi điểm', 'error');
+                                    });
+                                }
+                            });
+                        } else {
+                            Swal.fire('Lỗi!', data.message, 'error');
+                        }
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Lỗi!', 'Có lỗi xảy ra khi gửi điểm', 'error');
+                });
+            }
+        });
     }
 </script>
 @endpush

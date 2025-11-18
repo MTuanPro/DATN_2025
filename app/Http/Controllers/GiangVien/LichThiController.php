@@ -5,9 +5,15 @@ namespace App\Http\Controllers\GiangVien;
 use App\Http\Controllers\Controller;
 use App\Models\LichThi;
 use App\Models\LopHocPhan;
+use App\Models\LopHocPhanSinhVien;
+use App\Models\DiemDanh;
+use App\Models\CauHinhDauDiem;
+use App\Models\NhapDiem;
+use App\Models\LichHocChiTiet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\DB;
 
 class LichThiController extends Controller
 {
@@ -142,7 +148,101 @@ class LichThiController extends Controller
             'lichThiSinhViens.phongThi'
         ]);
 
-        return view('giangvien.lich-thi.show', compact('lichThi', 'isGiamThi'));
+        // Kiểm tra điều kiện dự thi cho từng sinh viên
+        $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->where('ngay_hoc', '<=', now()->toDateString())
+            ->where('trang_thai', '!=', 'huy')
+            ->count();
+
+        $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->orderBy('id')
+            ->get();
+
+        $danhSachSinhVienDiThi = [];
+
+        foreach ($lichThi->lichThiSinhViens as $item) {
+            // Lấy LopHocPhanSinhVien để kiểm tra điều kiện
+            $lopHocPhanSinhVien = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+                ->where('sinh_vien_id', $item->sinh_vien_id)
+                ->first();
+
+            if (!$lopHocPhanSinhVien) {
+                continue;
+            }
+
+            // 1. Kiểm tra chuyên cần (vắng quá 25% = có mặt < 75%)
+            $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVien->id)
+                ->selectRaw('
+                    COUNT(*) as tong_buoi_diem_danh,
+                    SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
+                    SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang,
+                    SUM(CASE WHEN trang_thai = "nghi_phep" THEN 1 ELSE 0 END) as nghi_phep
+                ')
+                ->first();
+
+            $coMat = $diemDanhStats ? ($diemDanhStats->co_mat ?? 0) : 0;
+            $vang = $diemDanhStats ? ($diemDanhStats->vang ?? 0) : 0;
+            $nghiPhep = $diemDanhStats ? ($diemDanhStats->nghi_phep ?? 0) : 0;
+            
+            $tyLeCoMat = $tongBuoiHoc > 0 
+                ? round(($coMat / $tongBuoiHoc) * 100, 1) 
+                : 0;
+            
+            $khongDatChuyenCan = $tyLeCoMat < 75;
+
+            // 2. Kiểm tra điểm trung bình các đầu điểm < 5
+            $diemTrungBinh = null;
+            $khongDatDiem = false;
+
+            if ($cauHinhs->isNotEmpty()) {
+                $tongDiem = 0;
+                $tongTyLe = 0;
+                $coDiem = false;
+
+                foreach ($cauHinhs as $cauHinh) {
+                    $diems = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVien->id)
+                        ->where('cau_hinh_id', $cauHinh->id)
+                        ->get();
+
+                    if ($diems->isEmpty()) {
+                        continue;
+                    }
+
+                    $coDiem = true;
+                    $diemTrungBinhDauDiem = $diems->avg('diem_so');
+                    
+                    if ($diemTrungBinhDauDiem !== null) {
+                        $tongDiem += $diemTrungBinhDauDiem * ($cauHinh->ty_le / 100);
+                        $tongTyLe += $cauHinh->ty_le;
+                    }
+                }
+
+                if ($coDiem && $tongTyLe > 0) {
+                    if ($tongTyLe < 100) {
+                        $diemTrungBinh = round(($tongDiem / $tongTyLe) * 100, 2);
+                    } else {
+                        $diemTrungBinh = round($tongDiem, 2);
+                    }
+                    
+                    $khongDatDiem = $diemTrungBinh < 5;
+                }
+            }
+
+            // Không được đi thi nếu: vắng quá 25% HOẶC điểm < 5
+            $khongDuocDiThi = $khongDatChuyenCan || $khongDatDiem;
+
+            $danhSachSinhVienDiThi[] = [
+                'lich_thi_sinh_vien' => $item,
+                'ty_le_co_mat' => $tyLeCoMat,
+                'khong_dat_chuyen_can' => $khongDatChuyenCan,
+                'diem_trung_binh' => $diemTrungBinh,
+                'khong_dat_diem' => $khongDatDiem,
+                'khong_duoc_di_thi' => $khongDuocDiThi,
+                'ly_do' => $this->taoLyDoKhongDuocDiThi($khongDatChuyenCan, $khongDatDiem, $tyLeCoMat, $diemTrungBinh),
+            ];
+        }
+
+        return view('giangvien.lich-thi.show', compact('lichThi', 'isGiamThi', 'danhSachSinhVienDiThi', 'tongBuoiHoc'));
     }
 
     /**
@@ -297,5 +397,222 @@ class LichThiController extends Controller
         }
 
         return response()->download($path);
+    }
+
+    /**
+     * Danh sách lịch thi để xuất danh sách sinh viên đi thi
+     */
+    public function indexXuatDanhSachThi(Request $request)
+    {
+        $giangVien = Auth::user()->giangVien;
+
+        if (!$giangVien) {
+            return redirect()->route('giangvien.dashboard')
+                ->with('error', 'Không tìm thấy thông tin giảng viên!');
+        }
+
+        // Lấy các lớp học phần mà giảng viên phụ trách
+        $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
+
+        $query = LichThi::with([
+            'lopHocPhan.monHoc', 
+            'lopHocPhan.hocKy',
+            'phongHoc',
+            'caHoc'
+        ])
+            ->whereIn('lop_hoc_phan_id', $lopHocPhanIds);
+
+        // Lọc theo loại thi
+        if ($request->filled('loai_thi')) {
+            $query->where('loai_thi', $request->loai_thi);
+        }
+
+        // Lọc theo học kỳ
+        if ($request->filled('hoc_ky_id')) {
+            $query->whereHas('lopHocPhan', function($q) use ($request) {
+                $q->where('hoc_ky_id', $request->hoc_ky_id);
+            });
+        }
+
+        // Tìm kiếm theo tên môn
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->whereHas('lopHocPhan.monHoc', function ($q) use ($search) {
+                $q->where('ten_mon', 'like', "%{$search}%")
+                  ->orWhere('ma_mon', 'like', "%{$search}%");
+            });
+        }
+
+        $lichThis = $query->orderBy('ngay_thi', 'desc')
+                          ->orderBy('gio_bat_dau', 'asc')
+                          ->paginate(15);
+
+        $hocKys = \App\Models\HocKy::orderBy('nam_hoc', 'desc')
+            ->orderBy('ten_hoc_ky', 'desc')
+            ->get();
+
+        return view('giangvien.xuat-danh-sach-thi.index', compact('lichThis', 'hocKys'));
+    }
+
+    /**
+     * Xuất danh sách sinh viên đi thi (kiểm tra điều kiện)
+     */
+    public function xuatDanhSachSinhVienDiThi(LichThi $lichThi)
+    {
+        $giangVien = Auth::user()->giangVien;
+
+        if (!$giangVien) {
+            return redirect()->route('giangvien.dashboard')
+                ->with('error', 'Không tìm thấy thông tin giảng viên!');
+        }
+
+        // Kiểm tra quyền (phải là GV phụ trách lớp)
+        $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
+
+        if (!$lopHocPhanIds->contains($lichThi->lop_hoc_phan_id)) {
+            return redirect()->route('giangvien.lich-thi.index')
+                ->with('error', 'Bạn không có quyền xem danh sách sinh viên đi thi của lớp này!');
+        }
+
+        $lichThi->load(['lopHocPhan.monHoc', 'lopHocPhan.hocKy']);
+
+        // Lấy tất cả sinh viên trong lớp học phần
+        $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
+            ->with(['sinhVien.lopHanhChinh'])
+            ->get();
+
+        // Đếm tổng số buổi học đã diễn ra
+        $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->where('ngay_hoc', '<=', now()->toDateString())
+            ->where('trang_thai', '!=', 'huy')
+            ->count();
+
+        // Lấy cấu hình đầu điểm
+        $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->orderBy('id')
+            ->get();
+
+        $danhSachSinhVien = [];
+
+        foreach ($sinhViens as $sv) {
+            // 1. Kiểm tra chuyên cần (vắng quá 25% = có mặt < 75%)
+            $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $sv->id)
+                ->selectRaw('
+                    COUNT(*) as tong_buoi_diem_danh,
+                    SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
+                    SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang,
+                    SUM(CASE WHEN trang_thai = "nghi_phep" THEN 1 ELSE 0 END) as nghi_phep
+                ')
+                ->first();
+
+            $coMat = $diemDanhStats ? ($diemDanhStats->co_mat ?? 0) : 0;
+            $vang = $diemDanhStats ? ($diemDanhStats->vang ?? 0) : 0;
+            $nghiPhep = $diemDanhStats ? ($diemDanhStats->nghi_phep ?? 0) : 0;
+            
+            // Tính tỷ lệ có mặt
+            $tyLeCoMat = $tongBuoiHoc > 0 
+                ? round(($coMat / $tongBuoiHoc) * 100, 1) 
+                : 0;
+            
+            // Vắng quá 25% = có mặt < 75%
+            $khongDatChuyenCan = $tyLeCoMat < 75;
+
+            // 2. Kiểm tra điểm trung bình các đầu điểm < 5
+            $diemTrungBinh = null;
+            $khongDatDiem = false;
+
+            if ($cauHinhs->isNotEmpty()) {
+                $tongDiem = 0;
+                $tongTyLe = 0;
+                $coDiem = false;
+
+                foreach ($cauHinhs as $cauHinh) {
+                    // Lấy điểm đã nhập
+                    $diems = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $sv->id)
+                        ->where('cau_hinh_id', $cauHinh->id)
+                        ->get();
+
+                    if ($diems->isEmpty()) {
+                        continue;
+                    }
+
+                    $coDiem = true;
+                    
+                    // Tính điểm trung bình của đầu điểm
+                    $diemTrungBinhDauDiem = $diems->avg('diem_so');
+                    
+                    if ($diemTrungBinhDauDiem !== null) {
+                        $tongDiem += $diemTrungBinhDauDiem * ($cauHinh->ty_le / 100);
+                        $tongTyLe += $cauHinh->ty_le;
+                    }
+                }
+
+                // Tính điểm trung bình (chuẩn hóa về thang 10 nếu tổng tỷ lệ < 100%)
+                if ($coDiem && $tongTyLe > 0) {
+                    if ($tongTyLe < 100) {
+                        $diemTrungBinh = round(($tongDiem / $tongTyLe) * 100, 2);
+                    } else {
+                        $diemTrungBinh = round($tongDiem, 2);
+                    }
+                    
+                    // Không đạt nếu điểm < 5
+                    $khongDatDiem = $diemTrungBinh < 5;
+                }
+            }
+
+            // Không được đi thi nếu: vắng quá 25% HOẶC điểm < 5
+            $khongDuocDiThi = $khongDatChuyenCan || $khongDatDiem;
+
+            $danhSachSinhVien[] = [
+                'sinh_vien' => $sv->sinhVien,
+                'lop_hanh_chinh' => $sv->sinhVien->lopHanhChinh,
+                'tong_buoi_hoc' => $tongBuoiHoc,
+                'co_mat' => $coMat,
+                'vang' => $vang,
+                'nghi_phep' => $nghiPhep,
+                'ty_le_co_mat' => $tyLeCoMat,
+                'khong_dat_chuyen_can' => $khongDatChuyenCan,
+                'diem_trung_binh' => $diemTrungBinh,
+                'khong_dat_diem' => $khongDatDiem,
+                'khong_duoc_di_thi' => $khongDuocDiThi,
+                'ly_do' => $this->taoLyDoKhongDuocDiThi($khongDatChuyenCan, $khongDatDiem, $tyLeCoMat, $diemTrungBinh),
+            ];
+        }
+
+        // Sắp xếp: sinh viên không được đi thi lên đầu
+        usort($danhSachSinhVien, function($a, $b) {
+            if ($a['khong_duoc_di_thi'] && !$b['khong_duoc_di_thi']) {
+                return -1;
+            }
+            if (!$a['khong_duoc_di_thi'] && $b['khong_duoc_di_thi']) {
+                return 1;
+            }
+            return strcmp($a['sinh_vien']->ho_ten, $b['sinh_vien']->ho_ten);
+        });
+
+        return view('giangvien.lich-thi.xuat-danh-sach-di-thi', compact(
+            'lichThi',
+            'danhSachSinhVien',
+            'tongBuoiHoc'
+        ));
+    }
+
+    /**
+     * Tạo lý do không được đi thi
+     */
+    private function taoLyDoKhongDuocDiThi($khongDatChuyenCan, $khongDatDiem, $tyLeCoMat, $diemTrungBinh)
+    {
+        $lyDo = [];
+
+        if ($khongDatChuyenCan) {
+            $lyDo[] = "Vắng quá 25% số buổi học (Tỷ lệ có mặt: {$tyLeCoMat}%)";
+        }
+
+        if ($khongDatDiem && $diemTrungBinh !== null) {
+            $lyDo[] = "Điểm trung bình các đầu điểm không đạt 5 điểm (Điểm: {$diemTrungBinh})";
+        }
+
+        return implode('; ', $lyDo);
     }
 }

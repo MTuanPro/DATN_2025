@@ -10,6 +10,8 @@ use App\Models\LopHocPhan;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\NhapDiem;
 use App\Models\PhanCongGiangDay;
+use App\Models\ThongBao;
+use App\Models\NguoiNhanThongBao;
 use App\Services\DiemService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
@@ -49,13 +51,13 @@ class NhapDiemController extends Controller
                 
                 // Đếm số sinh viên
                 $tongSV = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lhp->id)
-                    ->where('trang_thai', 'dang_hoc')
+                    ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                     ->count();
 
                 // Đếm số sinh viên đã có điểm
                 $svCoDiem = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($lhp) {
                     $q->where('lop_hoc_phan_id', $lhp->id)
-                        ->where('trang_thai', 'dang_hoc');
+                        ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']);
                 })
                     ->whereNotNull('diem_he_10')
                     ->count();
@@ -103,9 +105,9 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             ->orderBy('id')
             ->get();
 
-        // Lấy danh sách sinh viên
+        // Lấy danh sách sinh viên (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
         $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
-            ->where('trang_thai', 'dang_hoc')
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->with(['sinhVien', 'ketQuaHocTap'])
             ->orderBy('sinh_vien_id')
             ->get();
@@ -330,6 +332,125 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Gửi điểm cho đào tạo để duyệt
+     */
+    public function guiDiemChoDaoTao(Request $request, $lopHocPhanId)
+    {
+        $giangVien = Auth::user()->giangVien;
+
+        // Kiểm tra quyền (phải là GV chính)
+        $gvChinh = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->where('giang_vien_id', $giangVien->id)
+            ->where('vai_tro', 'giang_vien_chinh')
+            ->first();
+
+        if (!$gvChinh) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Chỉ giảng viên chính mới có quyền gửi điểm cho đào tạo'
+            ], 403);
+        }
+
+        $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy'])->find($lopHocPhanId);
+
+        // Kiểm tra trạng thái
+        if ($lopHocPhan->trang_thai_lop === 'da_khoa_diem' || $lopHocPhan->trang_thai_lop === 'da_duyet_diem') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Điểm đã được gửi hoặc đã được duyệt'
+            ], 400);
+        }
+
+        // Kiểm tra tất cả sinh viên đã có điểm chưa
+        $tongSinhVien = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
+            ->count();
+
+        $sinhVienCoDiem = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($lopHocPhanId) {
+            $q->where('lop_hoc_phan_id', $lopHocPhanId)
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']);
+        })
+            ->whereNotNull('diem_he_10')
+            ->count();
+
+        if ($sinhVienCoDiem < $tongSinhVien) {
+            $soThieu = $tongSinhVien - $sinhVienCoDiem;
+            // Cho phép gửi nếu confirm
+            if (!$request->has('confirm')) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Còn {$soThieu} sinh viên chưa có điểm. Bạn có chắc muốn gửi điểm?",
+                    'can_confirm' => true,
+                ], 400);
+            }
+        }
+
+        try {
+            DB::beginTransaction();
+
+            // Đặt trạng thái là đã khóa điểm (chờ duyệt)
+            $lopHocPhan->update([
+                'trang_thai_lop' => 'da_khoa_diem',
+            ]);
+
+            // Gửi thông báo cho đào tạo
+            $this->guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien);
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đã gửi điểm cho đào tạo thành công. Chờ đào tạo duyệt.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Gửi thông báo cho đào tạo khi giảng viên gửi điểm
+     */
+    private function guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien)
+    {
+        // Lấy tất cả tài khoản đào tạo
+        $daoTaos = \App\Models\DaoTao::with('user')->get();
+
+        if ($daoTaos->isEmpty()) {
+            return;
+        }
+
+        // Tạo thông báo
+        $thongBao = ThongBao::create([
+            'tieu_de' => 'Giảng viên gửi điểm lớp ' . $lopHocPhan->ma_lop_hp,
+            'noi_dung' => "Giảng viên {$giangVien->ho_ten} đã gửi điểm lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->monHoc->ten_mon} ({$lopHocPhan->hocKy->ten_hoc_ky}) để duyệt. Vui lòng truy cập phần 'Duyệt điểm' để xem và duyệt.",
+            'loai_nguon' => 'thu_cong',
+            'loai_thong_bao' => 'diem',
+            'muc_do_quan_trong' => 'quan_trong',
+            'doi_tuong' => 'dao_tao',
+            'nguoi_gui_id' => $giangVien->user_id ?? Auth::id(),
+            'ngay_gui' => now(),
+            'lien_ket_loai' => 'diem',
+            'lien_ket_id' => $lopHocPhan->id,
+        ]);
+
+        // Gửi cho tất cả đào tạo
+        foreach ($daoTaos as $daoTao) {
+            if ($daoTao->user) {
+                NguoiNhanThongBao::create([
+                    'thong_bao_id' => $thongBao->id,
+                    'nguoi_nhan_id' => $daoTao->user_id,
+                    'da_doc' => false,
+                ]);
+            }
         }
     }
 }

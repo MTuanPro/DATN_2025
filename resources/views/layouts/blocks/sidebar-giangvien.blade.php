@@ -91,11 +91,19 @@
                 </li>
 
                 <!-- 8. KẾT QUẢ HỌC TẬP -->
-                <li class="sidebar-item {{ Request::is('giang-vien/ket-qua-hoc-tap*') ? 'active' : '' }}">
-                    <a href="{{ route('giangvien.ket-qua-hoc-tap.index') }}" class='sidebar-link'>
+                <li class="sidebar-item has-sub {{ Request::is('giang-vien/ket-qua-hoc-tap*') || Request::is('giang-vien/xuat-danh-sach-thi*') ? 'active' : '' }}">
+                    <a href="#" class='sidebar-link'>
                         <i class="bi bi-trophy"></i>
                         <span>Kết quả học tập</span>
                     </a>
+                    <ul class="submenu {{ Request::is('giang-vien/ket-qua-hoc-tap*') || Request::is('giang-vien/xuat-danh-sach-thi*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('giang-vien/ket-qua-hoc-tap*') && !Request::is('giang-vien/xuat-danh-sach-thi*') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.ket-qua-hoc-tap.index') }}">Kết quả học tập</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('giang-vien/xuat-danh-sach-thi*') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.xuat-danh-sach-thi.index') }}">Xuất danh sách thi</a>
+                        </li>
+                    </ul>
                 </li>
 
                 <!-- 9. THI & ĐỀ THI -->

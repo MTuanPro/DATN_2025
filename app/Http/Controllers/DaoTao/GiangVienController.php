@@ -94,6 +94,16 @@ class GiangVienController extends Controller
 
         DB::beginTransaction();
         try {
+            // Kiểm tra email đã tồn tại trong bảng users chưa (nếu chọn tạo tài khoản)
+            if ($request->tao_tai_khoan) {
+                $existingUser = User::where('email', $validated['email'])->first();
+                if ($existingUser) {
+                    DB::rollBack();
+                    return back()->withInput()
+                        ->with('error', 'Email này đã được sử dụng cho tài khoản khác. Vui lòng sử dụng email khác hoặc bỏ chọn "Tạo tài khoản đăng nhập".');
+                }
+            }
+
             // Upload ảnh đại diện
             $anhDaiDien = null;
             if ($request->hasFile('anh_dai_dien')) {
@@ -125,6 +135,9 @@ class GiangVienController extends Controller
                 'ho_ten' => $validated['ho_ten'],
                 'email' => $validated['email'],
                 'so_dien_thoai' => $validated['so_dien_thoai'],
+                'ngay_sinh' => $validated['ngay_sinh'] ?? null,
+                'gioi_tinh' => $validated['gioi_tinh'] ?? null,
+                'dia_chi' => $validated['dia_chi'] ?? null,
                 'trinh_do_id' => $validated['trinh_do_id'],
                 'chuyen_mon' => $validated['chuyen_mon'],
                 'khoa_id' => $validated['khoa_id'],
@@ -230,26 +243,99 @@ class GiangVienController extends Controller
     }
 
     /**
-     * Xóa giảng viên
+     * Xóa giảng viên (xóa thực sự khỏi database)
      */
     public function destroy(GiangVien $giangVien)
     {
+        DB::beginTransaction();
         try {
+            // Kiểm tra ràng buộc trước khi xóa
+            $canXoa = true;
+            $lyDoKhongXoa = [];
+
+            // Kiểm tra giảng viên có đang là trưởng khoa không
+            $khoaTruongKhoa = \App\Models\DaoTao\Khoa::where('truong_khoa_id', $giangVien->id)->first();
+            if ($khoaTruongKhoa) {
+                $canXoa = false;
+                $lyDoKhongXoa[] = "Giảng viên đang là trưởng khoa '{$khoaTruongKhoa->ten_khoa}'. Vui lòng thay đổi trưởng khoa trước khi xóa.";
+            }
+
+            // Kiểm tra giảng viên có đang chủ nhiệm lớp hành chính không
+            $lopHanhChinh = \App\Models\DaoTao\LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)->count();
+            if ($lopHanhChinh > 0) {
+                $canXoa = false;
+                $lyDoKhongXoa[] = "Giảng viên đang chủ nhiệm {$lopHanhChinh} lớp hành chính. Vui lòng thay đổi chủ nhiệm trước khi xóa.";
+            }
+
+            // Kiểm tra giảng viên có đang chủ nhiệm sinh viên không
+            $sinhVienChuNhiem = \App\Models\DaoTao\SinhVien::where('giang_vien_chu_nhiem_id', $giangVien->id)->count();
+            if ($sinhVienChuNhiem > 0) {
+                $canXoa = false;
+                $lyDoKhongXoa[] = "Giảng viên đang chủ nhiệm {$sinhVienChuNhiem} sinh viên. Vui lòng thay đổi chủ nhiệm trước khi xóa.";
+            }
+
+            if (!$canXoa) {
+                DB::rollBack();
+                return back()->with('error', implode(' ', $lyDoKhongXoa));
+            }
+
+            // Xóa các bản ghi liên quan trước
+            // Xóa phân công giảng dạy (lop_hoc_phan_giang_vien) - có onDelete('cascade') nhưng để chắc chắn
+            DB::table('lop_hoc_phan_giang_vien')->where('giang_vien_id', $giangVien->id)->delete();
+
+            // Xóa lịch học chi tiết trước (vì có foreign key constraint)
+            $soLichChiTiet = \App\Models\LichHocChiTiet::where('giang_vien_id', $giangVien->id)->count();
+            if ($soLichChiTiet > 0) {
+                \App\Models\LichHocChiTiet::where('giang_vien_id', $giangVien->id)->delete();
+                \Log::info('Đã xóa lịch học chi tiết khi xóa giảng viên', [
+                    'giang_vien_id' => $giangVien->id,
+                    'so_lich_chi_tiet' => $soLichChiTiet
+                ]);
+            }
+
+            // Xóa lịch học cố định (vì có foreign key constraint)
+            $soLichCoDinh = \App\Models\LichHocCoDinh::where('giang_vien_id', $giangVien->id)->count();
+            if ($soLichCoDinh > 0) {
+                // Xóa lịch học chi tiết liên quan trước
+                $lichCoDinhIds = \App\Models\LichHocCoDinh::where('giang_vien_id', $giangVien->id)->pluck('id');
+                \App\Models\LichHocChiTiet::whereIn('lich_hoc_co_dinh_id', $lichCoDinhIds)->delete();
+                
+                // Sau đó xóa lịch học cố định
+                \App\Models\LichHocCoDinh::where('giang_vien_id', $giangVien->id)->delete();
+                \Log::info('Đã xóa lịch học cố định khi xóa giảng viên', [
+                    'giang_vien_id' => $giangVien->id,
+                    'so_lich_co_dinh' => $soLichCoDinh
+                ]);
+            }
+
+            // Set null cho các trường liên quan
+            DB::table('lop_hanh_chinh')->where('giang_vien_chu_nhiem_id', $giangVien->id)->update(['giang_vien_chu_nhiem_id' => null]);
+            DB::table('sinh_vien')->where('giang_vien_chu_nhiem_id', $giangVien->id)->update(['giang_vien_chu_nhiem_id' => null]);
+            DB::table('khoa')->where('truong_khoa_id', $giangVien->id)->update(['truong_khoa_id' => null]);
+
             // Xóa ảnh đại diện
             if ($giangVien->anh_dai_dien) {
                 Storage::disk('public')->delete($giangVien->anh_dai_dien);
             }
 
-            // Xóa user nếu có
+            // Xóa user nếu có (cascade sẽ tự động xóa)
             if ($giangVien->user_id) {
                 $giangVien->user->delete();
             }
 
-            $giangVien->delete();
+            // Xóa thực sự khỏi database (force delete)
+            $giangVien->forceDelete();
 
+            DB::commit();
             return redirect()->route('dao-tao.giang-vien.index')
                 ->with('success', 'Xóa giảng viên thành công!');
         } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Lỗi khi xóa giảng viên', [
+                'giang_vien_id' => $giangVien->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
     }

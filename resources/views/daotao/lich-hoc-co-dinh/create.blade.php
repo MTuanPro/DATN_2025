@@ -93,7 +93,7 @@
                                                 data-gio-ket-thuc="{{ $caHoc->gio_ket_thuc }}"
                                                 {{ (int)old('ca_hoc_id', 0) === (int)$caHoc->id ? 'selected' : '' }}>
                                                 {{ $caHoc->ten_ca }} ({{ date('H:i', strtotime($caHoc->gio_bat_dau)) }} - {{ date('H:i', strtotime($caHoc->gio_ket_thuc)) }})
-                                            </option>
+                                        </option>
                                         @endforeach
                                     </select>
                                     @error('ca_hoc_id')
@@ -227,14 +227,22 @@
                                         <option value="">-- Chọn giảng viên --</option>
                                         @foreach ($giangViens as $giangVien)
                                             <option value="{{ $giangVien->id }}"
-                                                {{ (int)old('giang_vien_id', 0) === (int)$giangVien->id ? 'selected' : '' }}>
+                                                {{ (int)old('giang_vien_id', $giangVienChinhId ?? 0) === (int)$giangVien->id ? 'selected' : '' }}>
                                                 {{ $giangVien->ho_ten }}
+                                                @if (isset($giangVienChinhId) && $giangVien->id == $giangVienChinhId)
+                                                    (Giảng viên chính)
+                                                @endif
                                             </option>
                                         @endforeach
                                     </select>
                                     @error('giang_vien_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    @if (isset($giangVienChinhId))
+                                        <small class="form-text text-muted">
+                                            <i class="bi bi-info-circle"></i> Đã tự động chọn giảng viên chính từ phân công. Bạn có thể thay đổi nếu cần.
+                                        </small>
+                                    @endif
                                 </div>
                             </div>
                         </div>

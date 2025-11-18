@@ -206,8 +206,11 @@ class LichHocChiTietController extends Controller
     {
         $phongHocs = PhongHoc::orderBy('ten_phong')->get();
         $giangViens = GiangVien::orderBy('ho_ten')->get();
+        $caHocs = \App\Models\CaHoc::where('trang_thai', true)
+            ->orderBy('thu_tu')
+            ->get();
 
-        return view('daotao.lich-hoc-chi-tiet.edit', compact('lichChiTiet', 'phongHocs', 'giangViens'));
+        return view('daotao.lich-hoc-chi-tiet.edit', compact('lichChiTiet', 'phongHocs', 'giangViens', 'caHocs'));
     }
 
     /**
@@ -217,23 +220,7 @@ class LichHocChiTietController extends Controller
     {
         $validated = $request->validate([
             'ngay_hoc' => 'required|date',
-            'tiet_bat_dau' => 'required|integer|min:1|max:10',
-            'tiet_ket_thuc' => 'required|integer|min:1|max:10|gte:tiet_bat_dau',
-            'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => [
-                'required',
-                'date_format:H:i',
-                function ($attribute, $value, $fail) use ($request) {
-                    $gioBatDau = $request->input('gio_bat_dau');
-                    if ($gioBatDau && $value) {
-                        $timeBatDau = \Carbon\Carbon::createFromFormat('H:i', $gioBatDau);
-                        $timeKetThuc = \Carbon\Carbon::createFromFormat('H:i', $value);
-                        if ($timeKetThuc->lte($timeBatDau)) {
-                            $fail('Giờ kết thúc phải sau giờ bắt đầu');
-                        }
-                    }
-                },
-            ],
+            'ca_hoc_id' => 'required|exists:ca_hoc,id',
             'phong_hoc_id' => 'nullable|exists:phong_hoc,id',
             'giang_vien_id' => 'required|exists:giang_vien,id',
             'hinh_thuc' => 'required|in:offline,online,hybrid',
@@ -244,16 +231,18 @@ class LichHocChiTietController extends Controller
             'ghi_chu' => 'nullable|string',
         ], [
             'ngay_hoc.required' => 'Ngày học là bắt buộc',
-            'tiet_bat_dau.required' => 'Tiết bắt đầu là bắt buộc',
-            'tiet_ket_thuc.required' => 'Tiết kết thúc là bắt buộc',
-            'tiet_ket_thuc.gte' => 'Tiết kết thúc phải lớn hơn hoặc bằng tiết bắt đầu',
-            'gio_bat_dau.required' => 'Giờ bắt đầu là bắt buộc',
-            'gio_bat_dau.date_format' => 'Giờ bắt đầu phải có định dạng HH:mm',
-            'gio_ket_thuc.required' => 'Giờ kết thúc là bắt buộc',
-            'gio_ket_thuc.date_format' => 'Giờ kết thúc phải có định dạng HH:mm',
+            'ca_hoc_id.required' => 'Ca học là bắt buộc',
+            'ca_hoc_id.exists' => 'Ca học không tồn tại',
             'giang_vien_id.required' => 'Giảng viên là bắt buộc',
             'hinh_thuc.required' => 'Hình thức học là bắt buộc',
         ]);
+
+        // Lấy thông tin ca học để điền vào các trường tiet và gio
+        $caHoc = \App\Models\CaHoc::findOrFail($validated['ca_hoc_id']);
+        $validated['tiet_bat_dau'] = $caHoc->tiet_bat_dau;
+        $validated['tiet_ket_thuc'] = $caHoc->tiet_ket_thuc;
+        $validated['gio_bat_dau'] = $caHoc->gio_bat_dau;
+        $validated['gio_ket_thuc'] = $caHoc->gio_ket_thuc;
 
         // Kiểm tra xung đột nếu có phòng học (bao gồm cả lịch học cố định và lịch học chi tiết, loại trừ chính nó)
         if ($request->phong_hoc_id) {

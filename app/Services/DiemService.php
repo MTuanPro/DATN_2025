@@ -146,19 +146,23 @@ return 0;
     }
 
     /**
-     * Tính tổng tín chỉ đạt
+     * Tính tổng tín chỉ đạt trong học kỳ
      */
-    public function tinhTongTinChiDat($sinhVienId)
+    public function tinhTongTinChiDat($sinhVienId, $hocKyId = null)
     {
-        return KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId) {
+        $query = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $hocKyId) {
             $q->where('sinh_vien_id', $sinhVienId)
-                ->whereHas('lopHocPhan', function ($q2) {
+                ->whereHas('lopHocPhan', function ($q2) use ($hocKyId) {
                     $q2->where('trang_thai_lop', 'da_duyet_diem');
+                    if ($hocKyId) {
+                        $q2->where('hoc_ky_id', $hocKyId);
+                    }
                 });
         })
             ->where('qua_mon', true)
-            ->with('lopHocPhanSinhVien.lopHocPhan.monHoc')
-            ->get()
+            ->with('lopHocPhanSinhVien.lopHocPhan.monHoc');
+
+        return $query->get()
             ->sum(function ($kq) {
                 return $kq->lopHocPhanSinhVien->lopHocPhan->monHoc->so_tin_chi;
             });
@@ -186,14 +190,14 @@ return 0;
     public function capNhatBangDiem($sinhVienId, $hocKyId)
     {
         $tinChiDangKy = $this->tinhTongTinChiDangKy($sinhVienId, $hocKyId);
-        $tinChiDat = $this->tinhTongTinChiDat($sinhVienId);
+        $tinChiDat = $this->tinhTongTinChiDat($sinhVienId, $hocKyId);
         $gpaHocKy = $this->tinhGPAHocKy($sinhVienId, $hocKyId);
         
         // Tính điểm TB hệ 10 từ GPA hệ 4
         $diemTBHe10 = $this->chuyenDoiHe4SangHe10($gpaHocKy);
         
         // Xếp loại
-$xepLoai = BangDiem::tinhXepLoai($gpaHocKy, $tinChiDat, $tinChiDangKy);
+        $xepLoai = BangDiem::tinhXepLoai($gpaHocKy, $tinChiDat, $tinChiDangKy);
 
         BangDiem::updateOrCreate(
             [

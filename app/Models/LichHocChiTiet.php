@@ -90,9 +90,17 @@ class LichHocChiTiet extends Model
      */
     public function kiemTraXungDotPhongTheoNgay($excludeId = null)
     {
+        // Kiểm tra dữ liệu đầu vào
+        if (!$this->phong_hoc_id || !$this->ngay_hoc || 
+            !isset($this->tiet_bat_dau) || !isset($this->tiet_ket_thuc)) {
+            return false;
+        }
+
         $query = self::where('phong_hoc_id', $this->phong_hoc_id)
             ->where('ngay_hoc', $this->ngay_hoc)
             ->where('trang_thai', '!=', 'huy')
+            ->whereNotNull('tiet_bat_dau')
+            ->whereNotNull('tiet_ket_thuc')
             ->where(function ($q) {
                 $q->whereBetween('tiet_bat_dau', [$this->tiet_bat_dau, $this->tiet_ket_thuc])
                     ->orWhereBetween('tiet_ket_thuc', [$this->tiet_bat_dau, $this->tiet_ket_thuc])
@@ -114,9 +122,17 @@ class LichHocChiTiet extends Model
      */
     public function kiemTraXungDotGiangVienTheoNgay($excludeId = null)
     {
+        // Kiểm tra dữ liệu đầu vào
+        if (!$this->giang_vien_id || !$this->ngay_hoc || 
+            !isset($this->tiet_bat_dau) || !isset($this->tiet_ket_thuc)) {
+            return false;
+        }
+
         $query = self::where('giang_vien_id', $this->giang_vien_id)
             ->where('ngay_hoc', $this->ngay_hoc)
             ->where('trang_thai', '!=', 'huy')
+            ->whereNotNull('tiet_bat_dau')
+            ->whereNotNull('tiet_ket_thuc')
             ->where(function ($q) {
                 $q->whereBetween('tiet_bat_dau', [$this->tiet_bat_dau, $this->tiet_ket_thuc])
                     ->orWhereBetween('tiet_ket_thuc', [$this->tiet_bat_dau, $this->tiet_ket_thuc])

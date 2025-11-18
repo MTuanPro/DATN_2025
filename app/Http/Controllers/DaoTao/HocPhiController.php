@@ -189,7 +189,7 @@ class HocPhiController extends Controller
 
             // Update status
             $hocPhi->updateTrangThai();
-            
+
             // Update chi tiết học phí môn thành đã thanh toán (nếu thanh toán đủ)
             if ($hocPhi->so_tien_con_lai == 0) {
                 ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)

@@ -115,14 +115,31 @@
         <div class="dropdown">
             <a href="#" class="d-flex align-items-center text-decoration-none dropdown-toggle" id="userDropdown"
                 data-bs-toggle="dropdown" aria-expanded="false">
-                @if(auth()->user()->anh_dai_dien)
-                    <img src="{{ asset('storage/' . auth()->user()->anh_dai_dien) }}" alt="user" width="36" height="36"
-                        class="rounded-circle me-2">
+                @php
+                    $user = auth()->user();
+                    $anhDaiDien = $user->anh_dai_dien;
+                    $hoTen = $user->name ?? 'User';
+                    
+                    // Lấy tên từ bảng tương ứng
+                    $roles = $user->vaiTro()->pluck('ma_vai_tro')->toArray();
+                    if (in_array('giang_vien', $roles) && $user->giangVien) {
+                        $hoTen = $user->giangVien->ho_ten;
+                    } elseif (in_array('sinh_vien', $roles) && $user->sinhVien) {
+                        $hoTen = $user->sinhVien->ho_ten;
+                    } elseif ((in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)) && $user->daoTao) {
+                        $hoTen = $user->daoTao->ho_ten;
+                    } elseif (in_array('admin', $roles) && $user->admin) {
+                        $hoTen = $user->admin->ho_ten;
+                    }
+                @endphp
+                @if($anhDaiDien)
+                    <img src="{{ asset('storage/' . $anhDaiDien) }}" alt="user" width="36" height="36"
+                        class="rounded-circle me-2" style="object-fit: cover;">
                 @else
                     <img src="{{ asset('assets/images/faces/1.jpg') }}" alt="user" width="36" height="36"
                         class="rounded-circle me-2">
                 @endif
-                <span class="d-none d-md-inline">{{ auth()->user()->name ?? 'User' }}</span>
+                <span class="d-none d-md-inline">{{ $hoTen }}</span>
             </a>
             <ul class="dropdown-menu dropdown-menu-end" aria-labelledby="userDropdown">
                 <li><a class="dropdown-item" href="{{ route('profile.show') }}"><i class="bi bi-person me-2"></i>Hồ Sơ</a></li>

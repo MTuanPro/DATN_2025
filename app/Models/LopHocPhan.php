@@ -184,6 +184,8 @@ class LopHocPhan extends Model
             'dang_hoc' => 'Đang học',
             'ket_thuc' => 'Kết thúc',
             'huy' => 'Hủy',
+            'da_khoa_diem' => 'Đã khóa điểm',
+            'da_duyet_diem' => 'Đã duyệt điểm',
         ];
 
         return $trangThai[$this->trang_thai_lop] ?? $this->trang_thai_lop;

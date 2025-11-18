@@ -43,17 +43,9 @@ class StoreLichThiRequest extends FormRequest
             ],
             'loai_thi' => 'required|in:giua_ky,cuoi_ky,thi_lai',
             'ngay_thi' => 'required|date|after_or_equal:today',
-            'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => [
-                'required',
-                'date_format:H:i',
-                function ($attribute, $value, $fail) {
-                    $gioBatDau = $this->input('gio_bat_dau');
-                    if ($gioBatDau && strtotime($value) <= strtotime($gioBatDau)) {
-                        $fail('Giờ kết thúc phải sau giờ bắt đầu.');
-                    }
-                },
-            ],
+            'ca_hoc_id' => 'required|exists:ca_hoc,id',
+            'gio_bat_dau' => 'nullable|date_format:H:i',
+            'gio_ket_thuc' => 'nullable|date_format:H:i',
             'phong_thi_id' => [
                 'nullable',
                 'exists:phong_hoc,id',

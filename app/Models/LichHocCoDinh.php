@@ -99,8 +99,16 @@ class LichHocCoDinh extends Model
      */
     public function kiemTraXungDotPhong($excludeId = null)
     {
+        // Kiểm tra dữ liệu đầu vào
+        if (!$this->phong_hoc_id || !$this->thu_trong_tuan || 
+            !isset($this->tiet_bat_dau) || !isset($this->tiet_ket_thuc)) {
+            return false;
+        }
+
         $query = self::where('phong_hoc_id', $this->phong_hoc_id)
             ->where('thu_trong_tuan', $this->thu_trong_tuan)
+            ->whereNotNull('tiet_bat_dau')
+            ->whereNotNull('tiet_ket_thuc')
             ->where(function ($q) {
                 // Logic tương tự kiemTraTrungTiet: trùng nếu !(end1 < start2 || start1 > end2)
                 // Tức là: trùng nếu end1 >= start2 AND start1 <= end2
@@ -127,8 +135,16 @@ class LichHocCoDinh extends Model
      */
     public function kiemTraXungDotGiangVien($excludeId = null)
     {
+        // Kiểm tra dữ liệu đầu vào
+        if (!$this->giang_vien_id || !$this->thu_trong_tuan || 
+            !isset($this->tiet_bat_dau) || !isset($this->tiet_ket_thuc)) {
+            return false;
+        }
+
         $query = self::where('giang_vien_id', $this->giang_vien_id)
             ->where('thu_trong_tuan', $this->thu_trong_tuan)
+            ->whereNotNull('tiet_bat_dau')
+            ->whereNotNull('tiet_ket_thuc')
             ->where(function ($q) {
                 // Logic tương tự kiemTraTrungTiet: trùng nếu !(end1 < start2 || start1 > end2)
                 // Tức là: trùng nếu end1 >= start2 AND start1 <= end2

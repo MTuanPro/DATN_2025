@@ -215,6 +215,10 @@
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">Danh sách sinh viên dự thi ({{ $lichThi->lichThiSinhViens->count() }} sinh viên)</h5>
                 <div>
+                    <a href="{{ route('giangvien.lich-thi.xuat-danh-sach-di-thi', $lichThi) }}" 
+                       class="btn btn-sm btn-warning">
+                        <i class="bi bi-file-earmark-check"></i> Xuất danh sách đi thi
+                    </a>
                     <button onclick="window.print()" class="btn btn-sm btn-primary">
                         <i class="bi bi-printer"></i> In danh sách
                     </button>
@@ -225,7 +229,7 @@
                 </div>
             </div>
             <div class="card-body">
-                @if($lichThi->lichThiSinhViens->isEmpty())
+                @if(empty($danhSachSinhVienDiThi))
                     <div class="alert alert-warning text-center">
                         <i class="bi bi-exclamation-triangle"></i> Chưa có sinh viên nào được phân phòng thi.
                     </div>
@@ -251,22 +255,47 @@
                                     <th>Họ tên</th>
                                     <th>Lớp hành chính</th>
                                     <th>Phòng thi</th>
+                                    <th>Điều kiện</th>
                                     <th>Trạng thái</th>
                                 </tr>
                             </thead>
                             <tbody id="tableBody">
-                                @foreach($lichThi->lichThiSinhViens->sortBy('so_bao_danh') as $index => $item)
-                                <tr data-phong="{{ $item->phong_thi_id }}">
+                                @foreach($danhSachSinhVienDiThi as $index => $item)
+                                @php
+                                    $lichThiSV = $item['lich_thi_sinh_vien'];
+                                @endphp
+                                <tr data-phong="{{ $lichThiSV->phong_thi_id }}" 
+                                    class="{{ $item['khong_duoc_di_thi'] ? 'table-danger' : '' }}">
                                     <td>{{ $index + 1 }}</td>
-                                    <td><strong class="text-primary">{{ $item->so_bao_danh }}</strong></td>
-                                    <td>{{ $item->sinhVien->ma_sinh_vien }}</td>
-                                    <td>{{ $item->sinhVien->ho_ten }}</td>
-                                    <td>{{ $item->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
-                                    <td>{{ $item->phongThi->ten_phong ?? 'Chưa xác định' }}</td>
+                                    <td><strong class="text-primary">{{ $lichThiSV->so_bao_danh }}</strong></td>
+                                    <td>{{ $lichThiSV->sinhVien->ma_sinh_vien }}</td>
+                                    <td>{{ $lichThiSV->sinhVien->ho_ten }}</td>
+                                    <td>{{ $lichThiSV->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                                    <td>{{ $lichThiSV->phongThi->ten_phong ?? 'Chưa xác định' }}</td>
                                     <td>
-                                        @if($item->trang_thai === 'du_thi')
+                                        @if($item['khong_duoc_di_thi'])
+                                            <span class="badge bg-danger" title="{{ $item['ly_do'] }}">
+                                                <i class="bi bi-x-circle"></i> Không đủ điều kiện
+                                            </span>
+                                            <br>
+                                            <small class="text-danger">{{ $item['ly_do'] }}</small>
+                                        @else
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Đủ điều kiện
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">
+                                                Chuyên cần: {{ $item['ty_le_co_mat'] }}%
+                                                @if($item['diem_trung_binh'] !== null)
+                                                    | Điểm: {{ number_format($item['diem_trung_binh'], 2) }}
+                                                @endif
+                                            </small>
+                                        @endif
+                                    </td>
+                                    <td>
+                                        @if($lichThiSV->trang_thai === 'du_thi')
                                             <span class="badge bg-success">Dự thi</span>
-                                        @elseif($item->trang_thai === 'vang_co_phep')
+                                        @elseif($lichThiSV->trang_thai === 'vang_co_phep')
                                             <span class="badge bg-warning text-dark">Vắng có phép</span>
                                         @else
                                             <span class="badge bg-danger">Vắng không phép</span>

@@ -276,6 +276,7 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::delete('phan-cong/{phanCong}', [PhanCongGiangDayController::class, 'destroy'])->name('phan-cong.destroy');
 
     // Cấu hình đầu điểm
+    Route::get('cau-hinh-diem', [CauHinhDauDiemController::class, 'listLopHocPhan'])->name('cau-hinh-diem.list');
     Route::get('lop-hoc-phan/{lopHocPhan}/cau-hinh-diem', [CauHinhDauDiemController::class, 'index'])->name('lop-hoc-phan.cau-hinh-diem');
     Route::post('lop-hoc-phan/{lopHocPhan}/cau-hinh-diem', [CauHinhDauDiemController::class, 'store'])->name('lop-hoc-phan.cau-hinh-diem.store');
     Route::put('cau-hinh-diem/{cauHinhDiem}', [CauHinhDauDiemController::class, 'update'])->name('cau-hinh-diem.update');
@@ -440,6 +441,12 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     Route::post('lich-thi/{lichThi}/xac-nhan-coi-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'xacNhanCoiThi'])->name('lich-thi.xac-nhan-coi-thi');
     Route::get('lich-thi/{lichThi}/download-de-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'downloadDeThi'])->name('lich-thi.download-de-thi');
     Route::get('lich-thi/{lichThi}/download-dap-an', [\App\Http\Controllers\GiangVien\LichThiController::class, 'downloadDapAn'])->name('lich-thi.download-dap-an');
+    Route::get('lich-thi/{lichThi}/xuat-danh-sach-di-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'xuatDanhSachSinhVienDiThi'])->name('lich-thi.xuat-danh-sach-di-thi');
+    
+    // Xuất danh sách thi
+    Route::prefix('xuat-danh-sach-thi')->name('xuat-danh-sach-thi.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\GiangVien\LichThiController::class, 'indexXuatDanhSachThi'])->name('index');
+    });
 
     // Lịch dạy cá nhân
     Route::get('/lich-day', [ScheduleController::class, 'index'])->name('schedule.index');
@@ -462,6 +469,7 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     
     // Nhập điểm
     Route::prefix('nhap-diem')->name('nhap-diem.')->group(function () {
+        Route::post('/{lopHocPhan}/gui-dao-tao', [NhapDiemController::class, 'guiDiemChoDaoTao'])->name('gui-dao-tao');
         Route::get('/', [NhapDiemController::class, 'index'])->name('index');
         Route::get('/{lopHocPhan}', [NhapDiemController::class, 'show'])->name('show');
         Route::post('/store', [NhapDiemController::class, 'nhapDiem'])->name('store');

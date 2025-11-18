@@ -18,6 +18,44 @@ class CauHinhDauDiemController extends Controller
     }
 
     /**
+     * Hiển thị danh sách lớp học phần để cấu hình đầu điểm
+     */
+    public function listLopHocPhan(Request $request)
+    {
+        $query = LopHocPhan::with(['monHoc', 'hocKy']);
+
+        // Lọc theo học kỳ
+        if ($request->filled('hoc_ky_id')) {
+            $query->where('hoc_ky_id', $request->hoc_ky_id);
+        }
+
+        // Tìm kiếm
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('ma_lop_hp', 'LIKE', "%{$search}%")
+                    ->orWhere('ten_lop_hp', 'LIKE', "%{$search}%");
+            });
+        }
+
+        $lopHocPhans = $query->orderBy('created_at', 'desc')->paginate(15);
+
+        // Kiểm tra đã cấu hình chưa
+        foreach ($lopHocPhans as $lop) {
+            $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lop->id)->get();
+            $lop->da_cau_hinh = $cauHinhs->isNotEmpty();
+            $lop->tong_ty_le = $cauHinhs->sum('ty_le');
+            $lop->so_dau_diem = $cauHinhs->count();
+        }
+
+        $hocKys = \App\Models\HocKy::orderBy('nam_hoc', 'desc')
+            ->orderBy('ten_hoc_ky', 'desc')
+            ->get();
+
+        return view('daotao.cau-hinh-dau-diem.list-lop-hoc-phan', compact('lopHocPhans', 'hocKys'));
+    }
+
+    /**
      * Hiển thị danh sách cấu hình đầu điểm của lớp học phần
      */
     public function index($lopHocPhanId)

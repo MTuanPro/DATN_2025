@@ -180,10 +180,10 @@
                 </li>
 
                 {{-- 9. CẤU HÌNH ĐIỂM --}}
-                <li class="sidebar-item">
-                    <a href="#" class="sidebar-link">
+                <li class="sidebar-item {{ Request::is('dao-tao/cau-hinh-diem*') || Request::is('dao-tao/lop-hoc-phan/*/cau-hinh-diem*') ? 'active' : '' }}">
+                    <a href="{{ route('dao-tao.cau-hinh-diem.list') }}" class="sidebar-link">
                         <i class="bi bi-sliders"></i>
-                        <span>Cấu hình điểm <!-- Đang cập nhật --></span>
+                        <span>Cấu hình điểm</span>
                     </a>
                 </li>
 

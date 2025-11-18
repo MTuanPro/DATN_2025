@@ -84,7 +84,14 @@
                             </tr>
                             <tr>
                                 <th>Giờ thi:</th>
-                                <td>{{ $lichThi->gio_bat_dau }} - {{ $lichThi->gio_ket_thuc }}</td>
+                                <td>
+                                    @if($lichThi->caHoc)
+                                        <strong>{{ $lichThi->caHoc->ten_ca }}</strong><br>
+                                        <small class="text-muted">{{ $lichThi->gio_bat_dau }} - {{ $lichThi->gio_ket_thuc }}</small>
+                                    @else
+                                        {{ $lichThi->gio_bat_dau }} - {{ $lichThi->gio_ket_thuc }}
+                                    @endif
+                                </td>
                             </tr>
                             <tr>
                                 <th>Phòng thi:</th>
@@ -177,38 +184,106 @@
             </div>
         </div>
 
+        <!-- Điều kiện đi thi -->
+        <div class="alert alert-info">
+            <h5><i class="bi bi-info-circle"></i> Điều kiện đi thi:</h5>
+            <ul class="mb-0">
+                <li>Tỷ lệ có mặt phải đạt tối thiểu <strong>75%</strong> (không vắng quá 25% số buổi học)</li>
+                <li>Điểm trung bình các đầu điểm phải đạt tối thiểu <strong>5.0 điểm</strong></li>
+            </ul>
+            <p class="mb-0 mt-2"><strong>Lưu ý:</strong> Sinh viên không đạt một trong hai điều kiện trên sẽ <span class="text-danger"><strong>KHÔNG ĐƯỢC ĐI THI</strong></span>.</p>
+        </div>
+
         <!-- Danh sách sinh viên dự thi -->
         <div class="card">
             <div class="card-header">
-                <h5 class="card-title">Danh sách sinh viên dự thi ({{ $lichThi->lopHocPhan->lopHocPhanSinhViens->count() }} sinh viên)</h5>
+                <h5 class="card-title">Danh sách sinh viên dự thi ({{ count($danhSachSinhVienDiThi) }} sinh viên)</h5>
             </div>
             <div class="card-body">
-                <div class="table-responsive">
-                    <table class="table table-hover">
-                        <thead>
-                            <tr>
-                                <th>STT</th>
-                                <th>MSSV</th>
-                                <th>Họ tên</th>
-                                <th>Lớp</th>
-                                <th>Email</th>
-                                <th>SĐT</th>
-                            </tr>
-                        </thead>
-                        <tbody>
-                            @foreach($lichThi->lopHocPhan->lopHocPhanSinhViens as $index => $lhpsv)
-                            <tr>
-                                <td>{{ $index + 1 }}</td>
-                                <td>{{ $lhpsv->sinhVien->ma_sinh_vien }}</td>
-                                <td>{{ $lhpsv->sinhVien->ho_ten }}</td>
-                                <td>{{ $lhpsv->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
-                                <td>{{ $lhpsv->sinhVien->email }}</td>
-                                <td>{{ $lhpsv->sinhVien->so_dien_thoai }}</td>
-                            </tr>
-                            @endforeach
-                        </tbody>
-                    </table>
-                </div>
+                @if(empty($danhSachSinhVienDiThi))
+                    <div class="alert alert-warning text-center">
+                        <i class="bi bi-exclamation-triangle"></i> Chưa có sinh viên nào trong lớp học phần.
+                    </div>
+                @else
+                    <div class="table-responsive">
+                        <table class="table table-hover">
+                            <thead>
+                                <tr>
+                                    <th>STT</th>
+                                    <th>MSSV</th>
+                                    <th>Họ tên</th>
+                                    <th>Lớp</th>
+                                    <th>Email</th>
+                                    <th>SĐT</th>
+                                    <th>Điều kiện</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach($danhSachSinhVienDiThi as $index => $item)
+                                @php
+                                    $lhpsv = $item['lop_hoc_phan_sinh_vien'];
+                                @endphp
+                                <tr class="{{ $item['khong_duoc_di_thi'] ? 'table-danger' : '' }}">
+                                    <td>{{ $index + 1 }}</td>
+                                    <td>{{ $lhpsv->sinhVien->ma_sinh_vien }}</td>
+                                    <td>{{ $lhpsv->sinhVien->ho_ten }}</td>
+                                    <td>{{ $lhpsv->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                                    <td>{{ $lhpsv->sinhVien->email }}</td>
+                                    <td>{{ $lhpsv->sinhVien->so_dien_thoai }}</td>
+                                    <td>
+                                        @if($item['khong_duoc_di_thi'])
+                                            <span class="badge bg-danger" title="{{ $item['ly_do'] }}">
+                                                <i class="bi bi-x-circle"></i> Không đủ điều kiện
+                                            </span>
+                                            <br>
+                                            <small class="text-danger">{{ $item['ly_do'] }}</small>
+                                        @else
+                                            <span class="badge bg-success">
+                                                <i class="bi bi-check-circle"></i> Đủ điều kiện
+                                            </span>
+                                            <br>
+                                            <small class="text-muted">
+                                                Chuyên cần: {{ $item['ty_le_co_mat'] }}%
+                                                @if($item['diem_trung_binh'] !== null)
+                                                    | Điểm: {{ number_format($item['diem_trung_binh'], 2) }}
+                                                @endif
+                                            </small>
+                                        @endif
+                                    </td>
+                                </tr>
+                                @endforeach
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- Thống kê -->
+                    <div class="row mt-4">
+                        <div class="col-md-4">
+                            <div class="card bg-success text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Được đi thi</h5>
+                                    <h2 class="mb-0">{{ count(array_filter($danhSachSinhVienDiThi, fn($sv) => !$sv['khong_duoc_di_thi'])) }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-danger text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Không được đi thi</h5>
+                                    <h2 class="mb-0">{{ count(array_filter($danhSachSinhVienDiThi, fn($sv) => $sv['khong_duoc_di_thi'])) }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-md-4">
+                            <div class="card bg-info text-white">
+                                <div class="card-body">
+                                    <h5 class="card-title">Tổng số</h5>
+                                    <h2 class="mb-0">{{ count($danhSachSinhVienDiThi) }}</h2>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endif
             </div>
         </div>
     </section>

@@ -50,15 +50,15 @@ class DuyetDiemController extends Controller
         }
 
         $lopHocPhans = $query->get()->map(function ($lhp) {
-            // Đếm số sinh viên
+            // Đếm số sinh viên (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
             $tongSV = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lhp->id)
-                ->where('trang_thai', 'dang_hoc')
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                 ->count();
 
             // Đếm số sinh viên đã có điểm
             $svCoDiem = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($lhp) {
                 $q->where('lop_hoc_phan_id', $lhp->id)
-                    ->where('trang_thai', 'dang_hoc');
+                    ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']);
             })
                 ->whereNotNull('diem_he_10')
                 ->count();
@@ -66,7 +66,7 @@ class DuyetDiemController extends Controller
             // Điểm trung bình lớp
             $diemTB = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($lhp) {
                 $q->where('lop_hoc_phan_id', $lhp->id)
-                    ->where('trang_thai', 'dang_hoc');
+                    ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']);
             })
                 ->whereNotNull('diem_he_10')
                 ->avg('diem_he_10');
@@ -105,9 +105,9 @@ class DuyetDiemController extends Controller
             ->orderBy('id')
             ->get();
 
-        // Lấy danh sách sinh viên
+        // Lấy danh sách sinh viên (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
         $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
-            ->where('trang_thai', 'dang_hoc')
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->with(['sinhVien', 'ketQuaHocTap'])
             ->orderBy('sinh_vien_id')
             ->get();
@@ -177,7 +177,7 @@ $lopHocPhan->update([
 
                 // Cập nhật bảng điểm cho từng sinh viên
                 $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
-                    ->where('trang_thai', 'dang_hoc')
+                    ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                     ->get();
 
                 foreach ($sinhViens as $sv) {
@@ -222,9 +222,9 @@ $lopHocPhan->update([
      */
     private function guiThongBaoCongBoDiem($lopHocPhan)
     {
-        // Lấy danh sách sinh viên
+        // Lấy danh sách sinh viên (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
         $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
-            ->where('trang_thai', 'dang_hoc')
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->with('sinhVien.user')
             ->get();
 
@@ -232,9 +232,15 @@ $lopHocPhan->update([
         $thongBao = ThongBao::create([
             'tieu_de' => 'Công bố điểm môn ' . $lopHocPhan->monHoc->ten_mon,
             'noi_dung' => "Điểm môn {$lopHocPhan->monHoc->ten_mon} - Lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->hocKy->ten_hoc_ky} đã được công bố. Vui lòng truy cập để xem chi tiết.",
+            'loai_nguon' => 'thu_cong',
             'loai_thong_bao' => 'diem',
-            'muc_do_quan_trong' => 'cao',
+            'muc_do_quan_trong' => 'quan_trong',
+            'doi_tuong' => 'lop_hoc_phan',
+            'doi_tuong_cu_the_id' => $lopHocPhan->id,
             'nguoi_gui_id' => Auth::id(),
+            'ngay_gui' => now(),
+            'lien_ket_loai' => 'diem',
+            'lien_ket_id' => $lopHocPhan->id,
         ]);
 
         // Gửi cho từng sinh viên
@@ -255,7 +261,7 @@ $lopHocPhan->update([
     private function guiThongBaoTraVeDiem($lopHocPhan, $lyDo)
     {
         // Lấy giảng viên chính
-$phanCong = $lopHocPhan->lopHocPhanGiangVien()
+        $phanCong = \App\Models\PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhan->id)
             ->where('vai_tro', 'giang_vien_chinh')
             ->with('giangVien.user')
             ->first();
@@ -268,9 +274,15 @@ $phanCong = $lopHocPhan->lopHocPhanGiangVien()
         $thongBao = ThongBao::create([
             'tieu_de' => 'Trả về điểm lớp ' . $lopHocPhan->ma_lop_hp,
             'noi_dung' => "Điểm lớp {$lopHocPhan->ma_lop_hp} đã được trả về để chỉnh sửa.\n\nLý do: {$lyDo}",
+            'loai_nguon' => 'thu_cong',
             'loai_thong_bao' => 'diem',
-            'muc_do_quan_trong' => 'cao',
+            'muc_do_quan_trong' => 'quan_trong',
+            'doi_tuong' => 'lop_hoc_phan',
+            'doi_tuong_cu_the_id' => $lopHocPhan->id,
             'nguoi_gui_id' => Auth::id(),
+            'ngay_gui' => now(),
+            'lien_ket_loai' => 'diem',
+            'lien_ket_id' => $lopHocPhan->id,
         ]);
 
         // Gửi cho giảng viên

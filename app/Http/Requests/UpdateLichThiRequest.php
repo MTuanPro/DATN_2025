@@ -23,17 +23,9 @@ class UpdateLichThiRequest extends FormRequest
             'lop_hoc_phan_id' => 'required|exists:lop_hoc_phan,id',
             'loai_thi' => 'required|in:giua_ky,cuoi_ky,thi_lai',
             'ngay_thi' => 'required|date',
-            'gio_bat_dau' => 'required|date_format:H:i',
-            'gio_ket_thuc' => [
-                'required',
-                'date_format:H:i',
-                function ($attribute, $value, $fail) {
-                    $gioBatDau = $this->input('gio_bat_dau');
-                    if ($gioBatDau && strtotime($value) <= strtotime($gioBatDau)) {
-                        $fail('Giờ kết thúc phải sau giờ bắt đầu.');
-                    }
-                },
-            ],
+            'ca_hoc_id' => 'required|exists:ca_hoc,id',
+            'gio_bat_dau' => 'nullable|date_format:H:i',
+            'gio_ket_thuc' => 'nullable|date_format:H:i',
             'phong_thi_id' => 'nullable|exists:phong_hoc,id',
             'so_sinh_vien_du_thi' => 'nullable|integer|min:0',
             'giam_thi_1_id' => 'nullable|exists:giang_vien,id',

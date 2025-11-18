@@ -5,9 +5,15 @@ namespace App\Http\Controllers\DaoTao;
 use App\Http\Controllers\Controller;
 use App\Models\LichThi;
 use App\Models\LopHocPhan;
+use App\Models\LopHocPhanSinhVien;
 use App\Models\DanhMuc\PhongHoc;
 use App\Models\GiangVien;
 use App\Models\HocKy;
+use App\Models\CaHoc;
+use App\Models\DiemDanh;
+use App\Models\CauHinhDauDiem;
+use App\Models\NhapDiem;
+use App\Models\LichHocChiTiet;
 use App\Http\Requests\StoreLichThiRequest;
 use App\Http\Requests\UpdateLichThiRequest;
 use Illuminate\Http\Request;
@@ -83,8 +89,9 @@ class LichThiController extends Controller
         $phongHocs = PhongHoc::all();
         $giangViens = GiangVien::with('user')->get();
         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
+        $caHocs = CaHoc::getCaHocHoatDong();
 
-        return view('daotao.lich-thi.create', compact('lopHocPhans', 'phongHocs', 'giangViens', 'hocKys'));
+        return view('daotao.lich-thi.create', compact('lopHocPhans', 'phongHocs', 'giangViens', 'hocKys', 'caHocs'));
     }
 
     /**
@@ -111,15 +118,24 @@ class LichThiController extends Controller
                            $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
             }
 
-            // 3. Kiểm tra trùng lịch thi sinh viên (sinh viên không được thi 2 môn cùng lúc)
+            // 3. Lấy thông tin ca học và tính giờ từ ca học
+            if (!$request->ca_hoc_id) {
+                $errors[] = 'Vui lòng chọn ca thi';
+            } else {
+                $caHoc = CaHoc::findOrFail($request->ca_hoc_id);
+                $gioBatDau = $caHoc->gio_bat_dau;
+                $gioKetThuc = $caHoc->gio_ket_thuc;
+            }
+
+            // 4. Kiểm tra trùng lịch thi sinh viên (sinh viên không được thi 2 môn cùng lúc)
             $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id')->toArray();
             
-            if (!empty($sinhVienIds)) {
+            if (!empty($sinhVienIds) && isset($gioBatDau) && isset($gioKetThuc)) {
                 $trungLichSinhVien = LichThi::kiemTraXungDotSinhVien(
                     $sinhVienIds,
                     $request->ngay_thi,
-                    $request->gio_bat_dau,
-                    $request->gio_ket_thuc
+                    $gioBatDau,
+                    $gioKetThuc
                 );
 
                 if ($trungLichSinhVien) {
@@ -127,7 +143,7 @@ class LichThiController extends Controller
                 }
             }
 
-            // 4. Kiểm tra sức chứa phòng
+            // 5. Kiểm tra sức chứa phòng
             if ($request->phong_thi_id) {
                 $phongHoc = PhongHoc::find($request->phong_thi_id);
                 $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
@@ -146,6 +162,13 @@ class LichThiController extends Controller
             }
 
             $data = $request->validated();
+
+            // Lấy giờ từ ca học và thêm vào data
+            if (isset($caHoc)) {
+                $data['ca_hoc_id'] = $caHoc->id;
+                $data['gio_bat_dau'] = $gioBatDau;
+                $data['gio_ket_thuc'] = $gioKetThuc;
+            }
 
             // Xử lý upload file đề thi (timestamp + slug)
             if ($request->hasFile('de_thi_file')) {
@@ -226,14 +249,129 @@ class LichThiController extends Controller
         $lichThi->load([
             'lopHocPhan.monHoc', 
             'lopHocPhan.hocKy',
-            'lopHocPhan.lopHocPhanSinhViens.sinhVien', 
+            'lopHocPhan.lopHocPhanSinhViens.sinhVien.lopHanhChinh', 
             'hocKy',
             'phongThi', 
             'giamThi1', 
-            'giamThi2'
+            'giamThi2',
+            'caHoc'
         ]);
+
+        // Kiểm tra điều kiện dự thi cho từng sinh viên
+        $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->where('ngay_hoc', '<=', now()->toDateString())
+            ->where('trang_thai', '!=', 'huy')
+            ->count();
+
+        $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->orderBy('id')
+            ->get();
+
+        $danhSachSinhVienDiThi = [];
+
+        foreach ($lichThi->lopHocPhan->lopHocPhanSinhViens as $lhpsv) {
+            // 1. Kiểm tra chuyên cần (vắng quá 25% = có mặt < 75%)
+            $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
+                ->selectRaw('
+                    COUNT(*) as tong_buoi_diem_danh,
+                    SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
+                    SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang,
+                    SUM(CASE WHEN trang_thai = "nghi_phep" THEN 1 ELSE 0 END) as nghi_phep
+                ')
+                ->first();
+
+            $coMat = $diemDanhStats ? ($diemDanhStats->co_mat ?? 0) : 0;
+            $vang = $diemDanhStats ? ($diemDanhStats->vang ?? 0) : 0;
+            $nghiPhep = $diemDanhStats ? ($diemDanhStats->nghi_phep ?? 0) : 0;
+            
+            $tyLeCoMat = $tongBuoiHoc > 0 
+                ? round(($coMat / $tongBuoiHoc) * 100, 1) 
+                : 0;
+            
+            $khongDatChuyenCan = $tyLeCoMat < 75;
+
+            // 2. Kiểm tra điểm trung bình các đầu điểm < 5
+            $diemTrungBinh = null;
+            $khongDatDiem = false;
+
+            if ($cauHinhs->isNotEmpty()) {
+                $tongDiem = 0;
+                $tongTyLe = 0;
+                $coDiem = false;
+
+                foreach ($cauHinhs as $cauHinh) {
+                    $diems = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
+                        ->where('cau_hinh_id', $cauHinh->id)
+                        ->get();
+
+                    if ($diems->isEmpty()) {
+                        continue;
+                    }
+
+                    $coDiem = true;
+                    $diemTrungBinhDauDiem = $diems->avg('diem_so');
+                    
+                    if ($diemTrungBinhDauDiem !== null) {
+                        $tongDiem += $diemTrungBinhDauDiem * ($cauHinh->ty_le / 100);
+                        $tongTyLe += $cauHinh->ty_le;
+                    }
+                }
+
+                if ($coDiem && $tongTyLe > 0) {
+                    if ($tongTyLe < 100) {
+                        $diemTrungBinh = round(($tongDiem / $tongTyLe) * 100, 2);
+                    } else {
+                        $diemTrungBinh = round($tongDiem, 2);
+                    }
+                    
+                    $khongDatDiem = $diemTrungBinh < 5;
+                }
+            }
+
+            // Không được đi thi nếu: vắng quá 25% HOẶC điểm < 5
+            $khongDuocDiThi = $khongDatChuyenCan || $khongDatDiem;
+
+            $danhSachSinhVienDiThi[] = [
+                'lop_hoc_phan_sinh_vien' => $lhpsv,
+                'ty_le_co_mat' => $tyLeCoMat,
+                'khong_dat_chuyen_can' => $khongDatChuyenCan,
+                'diem_trung_binh' => $diemTrungBinh,
+                'khong_dat_diem' => $khongDatDiem,
+                'khong_duoc_di_thi' => $khongDuocDiThi,
+                'ly_do' => $this->taoLyDoKhongDuocDiThi($khongDatChuyenCan, $khongDatDiem, $tyLeCoMat, $diemTrungBinh),
+            ];
+        }
+
+        // Sắp xếp: sinh viên không được đi thi lên đầu
+        usort($danhSachSinhVienDiThi, function($a, $b) {
+            if ($a['khong_duoc_di_thi'] && !$b['khong_duoc_di_thi']) {
+                return -1;
+            }
+            if (!$a['khong_duoc_di_thi'] && $b['khong_duoc_di_thi']) {
+                return 1;
+            }
+            return strcmp($a['lop_hoc_phan_sinh_vien']->sinhVien->ho_ten, $b['lop_hoc_phan_sinh_vien']->sinhVien->ho_ten);
+        });
         
-        return view('daotao.lich-thi.show', compact('lichThi'));
+        return view('daotao.lich-thi.show', compact('lichThi', 'danhSachSinhVienDiThi', 'tongBuoiHoc'));
+    }
+
+    /**
+     * Tạo lý do không được đi thi
+     */
+    private function taoLyDoKhongDuocDiThi($khongDatChuyenCan, $khongDatDiem, $tyLeCoMat, $diemTrungBinh)
+    {
+        $lyDo = [];
+
+        if ($khongDatChuyenCan) {
+            $lyDo[] = "Vắng quá 25% số buổi học (Tỷ lệ có mặt: {$tyLeCoMat}%)";
+        }
+
+        if ($khongDatDiem && $diemTrungBinh !== null) {
+            $lyDo[] = "Điểm trung bình các đầu điểm không đạt 5 điểm (Điểm: {$diemTrungBinh})";
+        }
+
+        return implode('; ', $lyDo);
     }
 
     /**
@@ -242,11 +380,12 @@ class LichThiController extends Controller
     public function edit(LichThi $lichThi)
     {
         $lopHocPhans = LopHocPhan::with('monHoc', 'hocKy')->get();
-    $phongHocs = PhongHoc::all();
+        $phongHocs = PhongHoc::all();
         $giangViens = GiangVien::with('user')->get();
-    $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+        $hocKys = HocKy::orderBy('nam_hoc', 'desc')->get();
+        $caHocs = CaHoc::getCaHocHoatDong();
 
-        return view('daotao.lich-thi.edit', compact('lichThi', 'lopHocPhans', 'phongHocs', 'giangViens', 'hocKys'));
+        return view('daotao.lich-thi.edit', compact('lichThi', 'lopHocPhans', 'phongHocs', 'giangViens', 'hocKys', 'caHocs'));
     }
 
     /**
@@ -274,28 +413,39 @@ class LichThiController extends Controller
                            $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
             }
 
-            // 3. Kiểm tra trùng lịch thi sinh viên
-            $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id')->toArray();
-            
-            $trungLichSinhVien = LichThi::kiemTraXungDotSinhVien(
-                $sinhVienIds,
-                $request->ngay_thi,
-                $request->gio_bat_dau,
-                $request->gio_ket_thuc,
-                $lichThi->id
-            );
-
-            if ($trungLichSinhVien) {
-                $errorMessages[] = 'Có sinh viên trong lớp đã có lịch thi trùng giờ (Môn: ' . $trungLichSinhVien->lopHocPhan->monHoc->ten_mon . ' vào ' . $trungLichSinhVien->gio_bat_dau . '-' . $trungLichSinhVien->gio_ket_thuc . ')!';
+            // 3. Lấy thông tin ca học và tính giờ từ ca học
+            if (!$request->ca_hoc_id) {
+                $errorMessages[] = 'Vui lòng chọn ca thi';
+            } else {
+                $caHoc = CaHoc::findOrFail($request->ca_hoc_id);
+                $gioBatDau = $caHoc->gio_bat_dau;
+                $gioKetThuc = $caHoc->gio_ket_thuc;
             }
 
-            // 4. Kiểm tra trùng phòng thi (loại trừ bản ghi hiện tại)
-            if ($request->phong_thi_id) {
+            // 4. Kiểm tra trùng lịch thi sinh viên
+            $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id')->toArray();
+            
+            if (!empty($sinhVienIds) && isset($gioBatDau) && isset($gioKetThuc)) {
+                $trungLichSinhVien = LichThi::kiemTraXungDotSinhVien(
+                    $sinhVienIds,
+                    $request->ngay_thi,
+                    $gioBatDau,
+                    $gioKetThuc,
+                    $lichThi->id
+                );
+
+                if ($trungLichSinhVien) {
+                    $errorMessages[] = 'Có sinh viên trong lớp đã có lịch thi trùng giờ (Môn: ' . $trungLichSinhVien->lopHocPhan->monHoc->ten_mon . ' vào ' . $trungLichSinhVien->gio_bat_dau . '-' . $trungLichSinhVien->gio_ket_thuc . ')!';
+                }
+            }
+
+            // 5. Kiểm tra trùng phòng thi (loại trừ bản ghi hiện tại)
+            if ($request->phong_thi_id && isset($gioBatDau) && isset($gioKetThuc)) {
                 $trungPhong = LichThi::kiemTraXungDotPhong(
                     $request->phong_thi_id,
                     $request->ngay_thi,
-                    $request->gio_bat_dau,
-                    $request->gio_ket_thuc,
+                    $gioBatDau,
+                    $gioKetThuc,
                     $lichThi->id
                 );
 
@@ -304,7 +454,7 @@ class LichThiController extends Controller
                     $errorMessages[] = 'Phòng thi đã có lịch thi trùng thời gian!';
                 }
 
-                // 5. Kiểm tra sức chứa phòng
+                // 6. Kiểm tra sức chứa phòng
                 $phongHoc = PhongHoc::find($request->phong_thi_id);
                 
                 if ($phongHoc) {
@@ -321,15 +471,15 @@ class LichThiController extends Controller
                 }
             }
 
-            // 6. Kiểm tra trùng lịch giám thị
+            // 7. Kiểm tra trùng lịch giám thị
             $giamThiIds = array_filter([$request->giam_thi_1_id, $request->giam_thi_2_id]);
             
-            if (!empty($giamThiIds)) {
+            if (!empty($giamThiIds) && isset($gioBatDau) && isset($gioKetThuc)) {
                 $trungGiamThi = LichThi::kiemTraXungDotGiamThi(
                     $giamThiIds,
                     $request->ngay_thi,
-                    $request->gio_bat_dau,
-                    $request->gio_ket_thuc,
+                    $gioBatDau,
+                    $gioKetThuc,
                     $lichThi->id
                 );
 
@@ -373,6 +523,13 @@ class LichThiController extends Controller
             }
 
             $data = $request->validated();
+
+            // Lấy giờ từ ca học và thêm vào data
+            if (isset($caHoc)) {
+                $data['ca_hoc_id'] = $caHoc->id;
+                $data['gio_bat_dau'] = $gioBatDau;
+                $data['gio_ket_thuc'] = $gioKetThuc;
+            }
 
             // Xử lý upload file đề thi (timestamp + tên gốc)
             if ($request->hasFile('de_thi_file')) {

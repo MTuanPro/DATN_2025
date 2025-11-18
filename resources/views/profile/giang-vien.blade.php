@@ -114,7 +114,7 @@
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">Ngày Sinh</label>
                                                         <input type="date" class="form-control" name="ngay_sinh"
-                                                            value="{{ old('ngay_sinh', $giangVien->ngay_sinh instanceof \Carbon\Carbon ? $giangVien->ngay_sinh->format('Y-m-d') : $giangVien->ngay_sinh) }}">
+                                                            value="{{ old('ngay_sinh', $giangVien->ngay_sinh ? (\Carbon\Carbon::parse($giangVien->ngay_sinh)->format('Y-m-d')) : '') }}">
                                                     </div>
 
                                                     <div class="col-md-6 mb-3">
@@ -147,7 +147,7 @@
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">Ngày Vào Trường</label>
                                                         <input type="date" class="form-control" name="ngay_vao_truong"
-                                                            value="{{ old('ngay_vao_truong', $giangVien->ngay_vao_truong instanceof \Carbon\Carbon ? $giangVien->ngay_vao_truong->format('Y-m-d') : $giangVien->ngay_vao_truong) }}">
+                                                            value="{{ old('ngay_vao_truong', $giangVien->ngay_vao_truong ? (\Carbon\Carbon::parse($giangVien->ngay_vao_truong)->format('Y-m-d')) : '') }}">
                                                     </div>
                                                 </div>
                                             </div>

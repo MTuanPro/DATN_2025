@@ -146,32 +146,32 @@
                             <label class="form-label small">Tên khóa học</label>
                             <div class="input-group">
                                 <span class="input-group-text"><i class="bi bi-search"></i></span>
-                                <input type="text" name="keyword" class="form-control" value="{{ request('keyword') }}"
-                                    placeholder="Tìm theo tên khóa học...">
-                            </div>
+                <input type="text" name="keyword" class="form-control" value="{{ request('keyword') }}"
+                    placeholder="Tìm theo tên khóa học...">
+            </div>
                         </div>
                         <div class="col-lg-2 col-md-6">
                             <label class="form-label small">Trạng thái</label>
-                            <select name="trang_thai" class="form-select">
+                <select name="trang_thai" class="form-select">
                                 <option value="">-- Tất cả --</option>
-                                <option value="dang_hoc" {{ request('trang_thai') == 'dang_hoc' ? 'selected' : '' }}>Đang học</option>
+                    <option value="dang_hoc" {{ request('trang_thai') == 'dang_hoc' ? 'selected' : '' }}>Đang học</option>
                                 <option value="da_tot_nghiep" {{ request('trang_thai') == 'da_tot_nghiep' ? 'selected' : '' }}>Đã tốt nghiệp</option>
-                            </select>
-                        </div>
+                </select>
+            </div>
                         <div class="col-lg-2 col-md-6">
                             <label class="form-label small">Sắp xếp theo</label>
-                            <select name="sort" class="form-select">
+                <select name="sort" class="form-select">
                                 <option value="nam_bat_dau" {{ request('sort') == 'nam_bat_dau' ? 'selected' : '' }}>Năm bắt đầu</option>
                                 <option value="ten_khoa_hoc" {{ request('sort') == 'ten_khoa_hoc' ? 'selected' : '' }}>Tên khóa học</option>
-                            </select>
-                        </div>
+                </select>
+            </div>
                         <div class="col-lg-2 col-md-6">
                             <label class="form-label small">Thứ tự</label>
-                            <select name="direction" class="form-select">
+                <select name="direction" class="form-select">
                                 <option value="desc" {{ request('direction') == 'desc' ? 'selected' : '' }}>Giảm dần</option>
-                                <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>Tăng dần</option>
-                            </select>
-                        </div>
+                    <option value="asc" {{ request('direction') == 'asc' ? 'selected' : '' }}>Tăng dần</option>
+                </select>
+            </div>
                         <div class="col-lg-3 col-md-12">
                             <label class="form-label small d-none d-lg-block">&nbsp;</label>
                             <div class="d-flex gap-2">
@@ -208,15 +208,15 @@
                                             </div>
                                             <div>
                                                 <h6 class="mb-1 fw-bold">{{ $kh->ten_khoa_hoc }}</h6>
-                                                @if ($kh->trang_thai == 'dang_hoc')
+                            @if ($kh->trang_thai == 'dang_hoc')
                                                     <span class="badge bg-success px-2 py-1">
                                                         <i class="bi bi-check-circle"></i> Đang học
                                                     </span>
-                                                @else
+                            @else
                                                     <span class="badge bg-secondary px-2 py-1">
                                                         <i class="bi bi-mortarboard"></i> Đã tốt nghiệp
                                                     </span>
-                                                @endif
+                            @endif
                                             </div>
                                         </div>
                                     </div>
@@ -266,12 +266,12 @@
                                               style="display: none;">
                                             @csrf
                                             @method('DELETE')
-                                        </form>
+                            </form>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    @empty
+                @empty
                         <div class="text-center py-5">
                             <div class="mb-3">
                                 <i class="bi bi-calendar-x text-muted" style="font-size: 4rem;"></i>
@@ -282,7 +282,7 @@
                                 <i class="bi bi-plus-circle"></i> Thêm Khóa học đầu tiên
                             </a>
                         </div>
-                    @endforelse
+                @endforelse
                 </div>
 
                 @if($khoaHocs->hasPages())
@@ -293,8 +293,8 @@
                                 trong tổng số {{ $khoaHocs->total() }} khóa học
                             </div>
                             <div>
-                                {{ $khoaHocs->appends(request()->query())->links() }}
-                            </div>
+            {{ $khoaHocs->appends(request()->query())->links() }}
+        </div>
                         </div>
                     </div>
                 @endif

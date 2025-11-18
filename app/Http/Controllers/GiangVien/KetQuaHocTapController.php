@@ -59,14 +59,14 @@ class KetQuaHocTapController extends Controller
 
         // Thống kê cho mỗi lớp
         foreach ($lopHocPhans as $lop) {
-            // Tổng sinh viên
+            // Tổng sinh viên (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
             $tongSV = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $lop->id)
-                ->where('trang_thai', 'dang_hoc')
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                 ->count();
             
             // Sinh viên đã có điểm (có ít nhất 1 điểm đã nhập)
             $svCoDiem = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $lop->id)
-                ->where('trang_thai', 'dang_hoc')
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                 ->whereHas('nhapDiems')
                 ->count();
             
@@ -104,9 +104,9 @@ class KetQuaHocTapController extends Controller
                 ->with('error', 'Lớp học phần chưa có cấu hình đầu điểm');
         }
 
-        // Lấy danh sách sinh viên từ lop_hoc_phan_sinh_vien
+        // Lấy danh sách sinh viên từ lop_hoc_phan_sinh_vien (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
         $danhSachSinhVien = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $id)
-            ->where('trang_thai', 'dang_hoc')
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->with(['sinhVien', 'ketQuaHocTap'])
             ->get()
             ->map(function ($lhpsv) use ($cauHinhs) {
@@ -166,9 +166,9 @@ class KetQuaHocTapController extends Controller
                 ->with('error', 'Lớp học phần chưa có cấu hình đầu điểm');
         }
 
-        // Lấy danh sách sinh viên có điểm
+        // Lấy danh sách sinh viên có điểm (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
         $danhSachSinhVien = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $id)
-            ->where('trang_thai', 'dang_hoc')
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->with(['sinhVien', 'ketQuaHocTap'])
             ->get()
             ->filter(function ($lhpsv) {
@@ -249,7 +249,7 @@ class KetQuaHocTapController extends Controller
         $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $id)->get();
 
         $danhSachSinhVien = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $id)
-            ->where('trang_thai', 'dang_hoc')
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->with(['sinhVien', 'ketQuaHocTap'])
             ->get();
 

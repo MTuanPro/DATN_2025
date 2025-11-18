@@ -38,7 +38,7 @@
                         @method('PUT')
 
                         <div class="row">
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="form-group">
                                     <label for="thu_trong_tuan">Thứ <span class="text-danger">*</span></label>
                                     <select class="form-select @error('thu_trong_tuan') is-invalid @enderror"
@@ -72,57 +72,46 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-4">
+                            <div class="col-md-6">
                                 <div class="form-group">
-                                    <label for="tiet_bat_dau">Tiết bắt đầu <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control @error('tiet_bat_dau') is-invalid @enderror"
-                                        id="tiet_bat_dau" name="tiet_bat_dau"
-                                        value="{{ old('tiet_bat_dau', $lichCoDinh->tiet_bat_dau) }}" min="1"
-                                        max="10" required>
-                                    @error('tiet_bat_dau')
+                                    <label for="ca_hoc_id">Ca học <span class="text-danger">*</span></label>
+                                    <select class="form-select @error('ca_hoc_id') is-invalid @enderror" id="ca_hoc_id"
+                                        name="ca_hoc_id" required>
+                                        <option value="">-- Chọn ca học --</option>
+                                        @foreach ($caHocs as $caHoc)
+                                            <option value="{{ $caHoc->id }}"
+                                                {{ old('ca_hoc_id', $lichCoDinh->ca_hoc_id) == $caHoc->id ? 'selected' : '' }}
+                                                data-tiet-bat-dau="{{ $caHoc->tiet_bat_dau }}"
+                                                data-tiet-ket-thuc="{{ $caHoc->tiet_ket_thuc }}"
+                                                data-gio-bat-dau="{{ \Carbon\Carbon::parse($caHoc->gio_bat_dau)->format('H:i') }}"
+                                                data-gio-ket-thuc="{{ \Carbon\Carbon::parse($caHoc->gio_ket_thuc)->format('H:i') }}">
+                                                {{ $caHoc->ten_ca }} ({{ \Carbon\Carbon::parse($caHoc->gio_bat_dau)->format('H:i') }} -
+                                                {{ \Carbon\Carbon::parse($caHoc->gio_ket_thuc)->format('H:i') }})
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('ca_hoc_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
-                                </div>
-                            </div>
-
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label for="tiet_ket_thuc">Tiết kết thúc <span class="text-danger">*</span></label>
-                                    <input type="number" class="form-control @error('tiet_ket_thuc') is-invalid @enderror"
-                                        id="tiet_ket_thuc" name="tiet_ket_thuc"
-                                        value="{{ old('tiet_ket_thuc', $lichCoDinh->tiet_ket_thuc) }}" min="1"
-                                        max="10" required>
-                                    @error('tiet_ket_thuc')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                    <small class="form-text text-muted">
+                                        <i class="bi bi-info-circle"></i> Thông tin tiết và giờ sẽ được tự động điền từ ca học
+                                    </small>
                                 </div>
                             </div>
                         </div>
 
+                        {{-- Hiển thị thông tin ca học đã chọn (chỉ để xem) --}}
+                        <div class="row mb-3" id="caHocInfo" style="display: none;">
+                            <div class="col-12">
+                                <div class="alert alert-info mb-0">
                         <div class="row">
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="gio_bat_dau">Giờ bắt đầu <span class="text-danger">*</span></label>
-                                    <input type="time" class="form-control @error('gio_bat_dau') is-invalid @enderror"
-                                        id="gio_bat_dau" name="gio_bat_dau"
-                                        value="{{ old('gio_bat_dau', \Carbon\Carbon::parse($lichCoDinh->gio_bat_dau)->format('H:i')) }}"
-                                        required>
-                                    @error('gio_bat_dau')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
+                                        <div class="col-md-3">
+                                            <strong>Tiết:</strong> <span id="displayTiet">-</span>
+                                        </div>
+                                        <div class="col-md-3">
+                                            <strong>Giờ:</strong> <span id="displayGio">-</span>
                                 </div>
                             </div>
-
-                            <div class="col-md-6">
-                                <div class="form-group">
-                                    <label for="gio_ket_thuc">Giờ kết thúc <span class="text-danger">*</span></label>
-                                    <input type="time" class="form-control @error('gio_ket_thuc') is-invalid @enderror"
-                                        id="gio_ket_thuc" name="gio_ket_thuc"
-                                        value="{{ old('gio_ket_thuc', \Carbon\Carbon::parse($lichCoDinh->gio_ket_thuc)->format('H:i')) }}"
-                                        required>
-                                    @error('gio_ket_thuc')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
                                 </div>
                             </div>
                         </div>
@@ -157,12 +146,26 @@
                                             <option value="{{ $giangVien->id }}"
                                                 {{ old('giang_vien_id', $lichCoDinh->giang_vien_id) == $giangVien->id ? 'selected' : '' }}>
                                                 {{ $giangVien->ho_ten }}
+                                                @if (isset($giangVienChinhId) && $giangVien->id == $giangVienChinhId)
+                                                    (Giảng viên chính)
+                                                @endif
                                             </option>
                                         @endforeach
                                     </select>
                                     @error('giang_vien_id')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    @if (isset($giangVienChinhId) && $lichCoDinh->giang_vien_id != $giangVienChinhId)
+                                        @php
+                                            $giangVienChinh = $lichCoDinh->lopHocPhan->giangVienChinh;
+                                        @endphp
+                                        <small class="form-text text-info">
+                                            <i class="bi bi-info-circle"></i> Giảng viên chính của lớp: 
+                                            @if ($giangVienChinh)
+                                                <strong>{{ $giangVienChinh->giangVien->ho_ten }}</strong>
+                                            @endif
+                                        </small>
+                                    @endif
                                 </div>
                             </div>
                         </div>
@@ -222,4 +225,37 @@
             </div>
         </section>
     </div>
+
+    @push('scripts')
+        <script>
+            document.addEventListener('DOMContentLoaded', function() {
+                const caHocSelect = document.getElementById('ca_hoc_id');
+                const caHocInfo = document.getElementById('caHocInfo');
+                const displayTiet = document.getElementById('displayTiet');
+                const displayGio = document.getElementById('displayGio');
+
+                function updateCaHocInfo() {
+                    const selectedOption = caHocSelect.options[caHocSelect.selectedIndex];
+                    if (selectedOption.value) {
+                        const tietBatDau = selectedOption.getAttribute('data-tiet-bat-dau');
+                        const tietKetThuc = selectedOption.getAttribute('data-tiet-ket-thuc');
+                        const gioBatDau = selectedOption.getAttribute('data-gio-bat-dau');
+                        const gioKetThuc = selectedOption.getAttribute('data-gio-ket-thuc');
+
+                        displayTiet.textContent = `${tietBatDau} - ${tietKetThuc}`;
+                        displayGio.textContent = `${gioBatDau} - ${gioKetThuc}`;
+                        caHocInfo.style.display = 'block';
+                    } else {
+                        caHocInfo.style.display = 'none';
+                    }
+                }
+
+                // Cập nhật khi chọn ca học
+                caHocSelect.addEventListener('change', updateCaHocInfo);
+
+                // Cập nhật khi trang load (nếu đã có ca học được chọn)
+                updateCaHocInfo();
+            });
+        </script>
+    @endpush
 @endsection

@@ -27,8 +27,13 @@ class ProfileController extends Controller
                 return view('profile.sinh-vien', $data);
 
             case 'giang_vien':
-            case 'giang_vien':
-                $giangVien = $user->fresh()->giangVien;
+                // Load relationship để đảm bảo có dữ liệu mới nhất
+                $user->load('giangVien');
+                $giangVien = $user->giangVien;
+                if (!$giangVien) {
+                    return redirect()->route('giangvien.dashboard')
+                        ->with('error', 'Không tìm thấy thông tin giảng viên.');
+                }
                 $data['giangVien'] = $giangVien;
                 return view('profile.giang-vien', $data);
 
@@ -108,16 +113,13 @@ class ProfileController extends Controller
         // Xử lý upload avatar
         $avatarPath = null;
         if ($request->hasFile('anh_dai_dien')) {
-            // Xóa ảnh cũ nếu có
-            if ($user->anh_dai_dien && Storage::disk('public')->exists($user->anh_dai_dien)) {
-                Storage::disk('public')->delete($user->anh_dai_dien);
+            // Lấy ảnh cũ từ bảng tương ứng để xóa
+            $anhCu = $user->anh_dai_dien;
+            if ($anhCu && Storage::disk('public')->exists($anhCu)) {
+                Storage::disk('public')->delete($anhCu);
             }
 
             $avatarPath = $request->file('anh_dai_dien')->store('avatars', 'public');
-
-            // Cập nhật ảnh đại diện vào bảng users
-            $user->anh_dai_dien = $avatarPath;
-            $user->save();
         }
 
         // Đổi mật khẩu nếu có nhập mật khẩu mới
@@ -188,11 +190,22 @@ class ProfileController extends Controller
                 break;
 
             case 'giang_vien':
-                if ($request->filled('ngay_sinh')) $data['ngay_sinh'] = $request->ngay_sinh;
-                if ($request->filled('gioi_tinh')) $data['gioi_tinh'] = $request->gioi_tinh;
-                if ($request->filled('dia_chi')) $data['dia_chi'] = $request->dia_chi;
-                if ($request->filled('chuyen_mon')) $data['chuyen_mon'] = $request->chuyen_mon;
-                if ($request->filled('ngay_vao_truong')) $data['ngay_vao_truong'] = $request->ngay_vao_truong;
+                // Cập nhật các trường (cho phép null/empty)
+                if ($request->has('ngay_sinh')) {
+                    $data['ngay_sinh'] = $request->ngay_sinh ?: null;
+                }
+                if ($request->has('gioi_tinh')) {
+                    $data['gioi_tinh'] = $request->gioi_tinh ?: null;
+                }
+                if ($request->has('dia_chi')) {
+                    $data['dia_chi'] = $request->dia_chi ?: null;
+                }
+                if ($request->has('chuyen_mon')) {
+                    $data['chuyen_mon'] = $request->chuyen_mon ?: null;
+                }
+                if ($request->has('ngay_vao_truong')) {
+                    $data['ngay_vao_truong'] = $request->ngay_vao_truong ?: null;
+                }
 
                 DB::table('giang_vien')->where('user_id', $user->id)->update($data);
                 break;

@@ -103,25 +103,23 @@
                             </div>
                         </div>
 
-                        <div class="col-md-2">
+                        <div class="col-md-4">
                             <div class="form-group">
-                                <label for="gio_bat_dau">Giờ bắt đầu <span class="text-danger">*</span></label>
-                                <input type="time" name="gio_bat_dau" id="gio_bat_dau" class="form-control @error('gio_bat_dau') is-invalid @enderror" 
-                                       value="{{ old('gio_bat_dau') }}" required>
-                                @error('gio_bat_dau')
+                                <label for="ca_hoc_id">Ca thi <span class="text-danger">*</span></label>
+                                <select name="ca_hoc_id" id="ca_hoc_id" class="form-select @error('ca_hoc_id') is-invalid @enderror" required>
+                                    <option value="">-- Chọn ca thi --</option>
+                                    @foreach($caHocs as $caHoc)
+                                        <option value="{{ $caHoc->id }}" {{ old('ca_hoc_id') == $caHoc->id ? 'selected' : '' }}
+                                                data-gio-bat-dau="{{ $caHoc->gio_bat_dau }}"
+                                                data-gio-ket-thuc="{{ $caHoc->gio_ket_thuc }}">
+                                            {{ $caHoc->ten_ca }} ({{ $caHoc->getFormattedTimeRange() }})
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('ca_hoc_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-2">
-                            <div class="form-group">
-                                <label for="gio_ket_thuc">Giờ kết thúc <span class="text-danger">*</span></label>
-                                <input type="time" name="gio_ket_thuc" id="gio_ket_thuc" class="form-control @error('gio_ket_thuc') is-invalid @enderror" 
-                                       value="{{ old('gio_ket_thuc') }}" required>
-                                @error('gio_ket_thuc')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <small class="form-text text-muted" id="ca_hoc_preview"></small>
                             </div>
                         </div>
 
@@ -267,6 +265,27 @@
 
 @push('scripts')
 <script>
+    // Hiển thị thông tin ca học khi chọn
+    document.getElementById('ca_hoc_id').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const preview = document.getElementById('ca_hoc_preview');
+        
+        if (selectedOption.value) {
+            const gioBatDau = selectedOption.getAttribute('data-gio-bat-dau');
+            const gioKetThuc = selectedOption.getAttribute('data-gio-ket-thuc');
+            preview.textContent = `Giờ thi: ${gioBatDau} - ${gioKetThuc}`;
+            preview.style.color = '#28a745';
+        } else {
+            preview.textContent = '';
+        }
+    });
+    
+    // Trigger khi load trang (nếu có old value)
+    document.addEventListener('DOMContentLoaded', function() {
+        document.getElementById('ca_hoc_id').dispatchEvent(new Event('change'));
+        document.getElementById('hinh_thuc').dispatchEvent(new Event('change'));
+    });
+
     // Ẩn/hiện link online dựa vào hình thức thi
     document.getElementById('hinh_thuc').addEventListener('change', function() {
         const linkOnlineDiv = document.getElementById('link_online').closest('.col-md-6');
@@ -284,11 +303,6 @@
                 linkOnlineInput.removeAttribute('required');
             }
         }
-    });
-    
-    // Trigger khi load trang (nếu có old value)
-    document.addEventListener('DOMContentLoaded', function() {
-        document.getElementById('hinh_thuc').dispatchEvent(new Event('change'));
     });
 </script>
 @endpush
