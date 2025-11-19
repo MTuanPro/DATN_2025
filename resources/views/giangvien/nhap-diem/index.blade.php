@@ -87,17 +87,25 @@
                                                 </div>
                                             </td>
                                             <td>
-                                                @if ($lhp['da_khoa_diem'])
+                                                @if (isset($lhp['da_ket_thuc']) && $lhp['da_ket_thuc'])
+                                                    <span class="badge bg-dark">Kết thúc</span>
+                                                @elseif ($lhp['da_khoa_diem'])
                                                     <span class="badge bg-danger">Đã khóa điểm</span>
                                                 @else
                                                     <span class="badge bg-success">Đang mở</span>
                                                 @endif
                                             </td>
                                             <td>
-                                                <a href="{{ route('giangvien.nhap-diem.show', $lhp['id']) }}" 
-                                                   class="btn btn-sm btn-primary">
-                                                    <i class="bi bi-pencil-square"></i> Nhập điểm
-                                                </a>
+                                                @if (isset($lhp['da_ket_thuc']) && $lhp['da_ket_thuc'])
+                                                    <button class="btn btn-sm btn-secondary" disabled title="Lớp đã kết thúc">
+                                                        <i class="bi bi-lock"></i> Đã kết thúc
+                                                    </button>
+                                                @else
+                                                    <a href="{{ route('giangvien.nhap-diem.show', $lhp['id']) }}" 
+                                                       class="btn btn-sm btn-primary">
+                                                        <i class="bi bi-pencil-square"></i> Nhập điểm
+                                                    </a>
+                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach

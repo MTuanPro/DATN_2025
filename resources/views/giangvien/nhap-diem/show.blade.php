@@ -111,11 +111,28 @@
     @endif
 
     <!-- Thông báo khi đã duyệt nhưng vẫn cho phép sửa -->
-    @if(isset($daDuyetDiem) && $daDuyetDiem)
+    @if(isset($daDuyetDiem) && $daDuyetDiem && $dangDienRa)
     <section class="section">
         <div class="alert alert-info alert-dismissible fade show" role="alert">
             <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Điểm đã được duyệt</h5>
             <p class="mb-0">Điểm đã được đào tạo duyệt. Bạn vẫn có thể chỉnh sửa điểm và gửi lại cho đào tạo phê duyệt lại.</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </section>
+    @endif
+
+    <!-- Thông báo khi lớp đã kết thúc -->
+    @if(isset($daKetThuc) && $daKetThuc)
+    <section class="section">
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> Lớp học phần đã kết thúc</h5>
+            <p class="mb-0">
+                <strong>Trạng thái:</strong> <span class="badge bg-danger">{{ $lopHocPhan->ten_trang_thai }}</span>
+                @if($lopHocPhan->ngay_ket_thuc)
+                    <br><strong>Ngày kết thúc:</strong> {{ $lopHocPhan->ngay_ket_thuc->format('d/m/Y') }}
+                @endif
+            </p>
+            <p class="mb-0 mt-2"><strong>Bạn không thể sửa điểm sau khi lớp học phần đã kết thúc.</strong> Vui lòng liên hệ phòng đào tạo nếu cần chỉnh sửa.</p>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     </section>
@@ -126,7 +143,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Nhập điểm sinh viên</h5>
-                @if(!$daKhoaDiem)
+                @if(!$daKhoaDiem && $dangDienRa)
                 <div class="d-flex gap-2">
                     <a href="{{ route('giangvien.nhap-diem.download-template', $lopHocPhan->id) }}" class="btn btn-sm btn-info">
                         <i class="bi bi-download"></i> Tải template Excel
@@ -160,7 +177,7 @@
                                         </th>
                                     @endforeach
                                     <th width="80" class="text-center" rowspan="2">Điểm TK</th>
-                                    @if(!$daKhoaDiem)
+                                    @if(!$daKhoaDiem && $dangDienRa)
                                     <th width="100" class="text-center" rowspan="2">Thao tác</th>
                                     @endif
                                 </tr>
@@ -204,7 +221,7 @@
                                                 $value = $diemMap[$key] ?? '';
                                             @endphp
                                             <td class="text-center">
-                                                @if($daKhoaDiem)
+                                                @if($daKhoaDiem || $daKetThuc)
                                                     {{ $value !== '' ? number_format($value, 2) : '-' }}
                                                 @else
                                                     <input type="number" 
@@ -230,7 +247,7 @@
                                         </strong>
                                     </td>
                                     
-                                    @if(!$daKhoaDiem)
+                                    @if(!$daKhoaDiem && $dangDienRa)
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-primary btn-luu-sv" 
                                             data-sv-id="{{ $lhpsv->id }}">
@@ -248,7 +265,7 @@
                         <a href="{{ route('giangvien.nhap-diem.index') }}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> Quay lại
                         </a>
-                        @if(!$daKhoaDiem)
+                        @if(!$daKhoaDiem && $dangDienRa)
                         <button type="button" class="btn btn-success" onclick="luuTatCaDiem()">
                             <i class="bi bi-save-fill"></i> Lưu tất cả điểm
                         </button>

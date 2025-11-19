@@ -256,27 +256,39 @@
 
                         <div class="list-group" style="max-height: 600px; overflow-y: auto;">
                             @forelse($nguoiNhans as $nguoiNhan)
-                                <div class="list-group-item d-flex justify-content-between align-items-start">
-                                    <div class="ms-2 me-auto">
-                                        <div class="fw-bold">{{ $nguoiNhan->user->name }}</div>
-                                        <small class="text-muted">{{ $nguoiNhan->user->email }}</small>
+                                @if($nguoiNhan->nguoiNhan)
+                                    <div class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div class="ms-2 me-auto">
+                                            <div class="fw-bold">{{ $nguoiNhan->nguoiNhan->name }}</div>
+                                            <small class="text-muted">{{ $nguoiNhan->nguoiNhan->email }}</small>
+                                            @if ($nguoiNhan->da_doc)
+                                                <br><small class="text-success">
+                                                    <i class="bi bi-check-circle"></i>
+                                                    {{ $nguoiNhan->ngay_doc ? $nguoiNhan->ngay_doc->format('d/m/Y H:i') : '' }}
+                                                </small>
+                                            @else
+                                                <br><small class="text-muted">
+                                                    <i class="bi bi-circle"></i> Chưa đọc
+                                                </small>
+                                            @endif
+                                        </div>
                                         @if ($nguoiNhan->da_doc)
-                                            <br><small class="text-success">
-                                                <i class="bi bi-check-circle"></i>
-                                                {{ $nguoiNhan->ngay_doc ? $nguoiNhan->ngay_doc->format('d/m/Y H:i') : '' }}
-                                            </small>
+                                            <span class="badge bg-success rounded-pill">Đã đọc</span>
                                         @else
-                                            <br><small class="text-muted">
-                                                <i class="bi bi-circle"></i> Chưa đọc
-                                            </small>
+                                            <span class="badge bg-secondary rounded-pill">Chưa đọc</span>
                                         @endif
                                     </div>
-                                    @if ($nguoiNhan->da_doc)
-                                        <span class="badge bg-success rounded-pill">Đã đọc</span>
-                                    @else
-                                        <span class="badge bg-secondary rounded-pill">Chưa đọc</span>
-                                    @endif
-                                </div>
+                                @else
+                                    <div class="list-group-item d-flex justify-content-between align-items-start">
+                                        <div class="ms-2 me-auto">
+                                            <div class="fw-bold text-muted">
+                                                <i class="bi bi-exclamation-triangle"></i> Người dùng không tồn tại
+                                            </div>
+                                            <small class="text-muted">ID: {{ $nguoiNhan->nguoi_nhan_id }}</small>
+                                        </div>
+                                        <span class="badge bg-warning rounded-pill">Lỗi</span>
+                                    </div>
+                                @endif
                             @empty
                                 <div class="text-center text-muted py-3">
                                     Không có người nhận

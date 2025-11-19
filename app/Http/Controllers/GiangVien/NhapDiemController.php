@@ -62,6 +62,16 @@ class NhapDiemController extends Controller
                     ->whereNotNull('diem_he_10')
                     ->count();
 
+                // Kiểm tra lớp đã kết thúc chưa
+                $daKetThuc = $lhp->daKetThuc();
+                $dangDienRa = $lhp->dangDienRa();
+                
+                // Xác định trạng thái hiển thị
+                $trangThaiHienThi = $lhp->trang_thai_lop;
+                if ($daKetThuc) {
+                    $trangThaiHienThi = 'ket_thuc';
+                }
+
                 return [
                     'id' => $lhp->id,
                     'ma_lop_hp' => $lhp->ma_lop_hp,
@@ -72,8 +82,11 @@ class NhapDiemController extends Controller
                     'tong_sv' => $tongSV,
                     'sv_co_diem' => $svCoDiem,
                     'ty_le' => $tongSV > 0 ? round($svCoDiem / $tongSV * 100, 1) : 0,
-                    'trang_thai' => $lhp->trang_thai_lop,
+                    'trang_thai' => $trangThaiHienThi,
+                    'trang_thai_lop' => $lhp->trang_thai_lop, // Giữ nguyên để kiểm tra logic khác
                     'da_khoa_diem' => $lhp->trang_thai_lop === 'da_khoa_diem',
+                    'da_ket_thuc' => $daKetThuc,
+                    'dang_dien_ra' => $dangDienRa,
                 ];
             });
 
@@ -122,6 +135,10 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         $daKhoaDiem = $lopHocPhan->trang_thai_lop === 'da_khoa_diem';
         $daDuyetDiem = $lopHocPhan->trang_thai_lop === 'da_duyet_diem';
         $laGiangVienChinh = $duocPhanCong->vai_tro === 'giang_vien_chinh';
+        
+        // Kiểm tra lớp đã kết thúc chưa (dựa vào ngày kết thúc)
+        $daKetThuc = $lopHocPhan->daKetThuc();
+        $dangDienRa = $lopHocPhan->dangDienRa();
 
         return view('giangvien.nhap-diem.show', compact(
             'lopHocPhan',
@@ -130,7 +147,9 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             'nhapDiems',
             'daKhoaDiem',
             'daDuyetDiem',
-            'laGiangVienChinh'
+            'laGiangVienChinh',
+            'daKetThuc',
+            'dangDienRa'
         ));
     }
 
@@ -166,7 +185,15 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         // Kiểm tra lớp đã khóa điểm chưa
         $lopHocPhan = LopHocPhan::find($lhpsv->lop_hoc_phan_id);
 
-        // Cho phép sửa điểm trong mọi trường hợp (kể cả khi đã duyệt)
+        // Kiểm tra lớp đã kết thúc chưa - không cho phép sửa điểm sau khi lớp kết thúc
+        if ($lopHocPhan->daKetThuc()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lớp học phần đã kết thúc. Bạn không thể sửa điểm sau khi lớp kết thúc.'
+            ], 403);
+        }
+
+        // Cho phép sửa điểm trong mọi trường hợp (kể cả khi đã duyệt) nếu lớp chưa kết thúc
         // Giảng viên có thể sửa và gửi lại cho đào tạo phê duyệt lại
 
         // Kiểm tra cột điểm hợp lệ
@@ -236,6 +263,14 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         }
 
         $lopHocPhan = LopHocPhan::find($lopHocPhanId);
+
+        // Kiểm tra lớp đã kết thúc chưa - không cho phép khóa điểm sau khi lớp kết thúc
+        if ($lopHocPhan->daKetThuc()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lớp học phần đã kết thúc. Bạn không thể khóa điểm sau khi lớp kết thúc.'
+            ], 403);
+        }
 
         // Kiểm tra tất cả sinh viên đã có điểm chưa
         $tongSinhVien = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
@@ -356,8 +391,16 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
 
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy'])->find($lopHocPhanId);
 
+        // Kiểm tra lớp đã kết thúc chưa - không cho phép gửi điểm sau khi lớp kết thúc
+        if ($lopHocPhan->daKetThuc()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lớp học phần đã kết thúc. Bạn không thể gửi điểm sau khi lớp kết thúc.'
+            ], 403);
+        }
+
         // Cho phép gửi lại điểm ngay cả khi đã duyệt (để giảng viên có thể sửa và gửi lại)
-        // Không cần kiểm tra trạng thái, luôn cho phép gửi
+        // Không cần kiểm tra trạng thái, luôn cho phép gửi (nếu lớp chưa kết thúc)
 
         // Kiểm tra tất cả sinh viên đã có điểm chưa
         $tongSinhVien = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
@@ -599,7 +642,15 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
 
         $lopHocPhan = LopHocPhan::find($lopHocPhanId);
 
-        // Cho phép import điểm trong mọi trường hợp (kể cả khi đã duyệt)
+        // Kiểm tra lớp đã kết thúc chưa - không cho phép import điểm sau khi lớp kết thúc
+        if ($lopHocPhan->daKetThuc()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Lớp học phần đã kết thúc. Bạn không thể import điểm sau khi lớp kết thúc.'
+            ], 403);
+        }
+
+        // Cho phép import điểm trong mọi trường hợp (kể cả khi đã duyệt) nếu lớp chưa kết thúc
         // Giảng viên có thể sửa và gửi lại cho đào tạo phê duyệt lại
 
         try {

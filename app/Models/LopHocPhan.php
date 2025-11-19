@@ -168,6 +168,32 @@ class LopHocPhan extends Model
     }
 
     /**
+     * Kiểm tra lớp đã kết thúc chưa (dựa vào trạng thái hoặc ngày kết thúc)
+     */
+    public function daKetThuc()
+    {
+        // Nếu trạng thái là 'ket_thuc' thì coi như đã kết thúc
+        if ($this->trang_thai_lop === 'ket_thuc') {
+            return true;
+        }
+        
+        // Nếu có ngày kết thúc và đã qua ngày đó thì cũng coi như đã kết thúc
+        if ($this->ngay_ket_thuc && now()->isAfter($this->ngay_ket_thuc)) {
+            return true;
+        }
+        
+        return false;
+    }
+
+    /**
+     * Kiểm tra lớp đang diễn ra (chưa kết thúc)
+     */
+    public function dangDienRa()
+    {
+        return !$this->daKetThuc();
+    }
+
+    /**
      * Lấy tên đầy đủ (Mã + Tên môn + Tên lớp)
      */
     public function getTenDayDuAttribute()
