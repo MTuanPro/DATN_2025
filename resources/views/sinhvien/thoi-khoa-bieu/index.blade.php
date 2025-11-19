@@ -57,14 +57,14 @@
                                     </label>
                                     <div class="btn-group w-100" role="group">
                                         <input type="radio" class="btn-check" name="view_mode_radio" id="view_co_dinh" 
-                                               value="co_dinh" {{ ($viewMode ?? 'co_dinh') == 'co_dinh' && !$thoiGianFilter ? 'checked' : '' }}
+                                               value="co_dinh" {{ ($viewMode ?? 'co_dinh') == 'co_dinh' && empty($thoiGianFilter ?? null) ? 'checked' : '' }}
                                                onchange="changeViewMode('co_dinh', '')">
                                         <label class="btn btn-outline-primary" for="view_co_dinh">
                                             <i class="bi bi-arrow-repeat"></i> Lịch cố định
                                         </label>
 
                                         <input type="radio" class="btn-check" name="view_mode_radio" id="view_full" 
-                                               value="full" {{ ($viewMode ?? 'co_dinh') == 'full' && !$thoiGianFilter ? 'checked' : '' }}
+                                               value="full" {{ ($viewMode ?? 'co_dinh') == 'full' && empty($thoiGianFilter ?? null) ? 'checked' : '' }}
                                                onchange="changeViewMode('full', '')">
                                         <label class="btn btn-outline-primary" for="view_full">
                                             <i class="bi bi-calendar-range"></i> Toàn bộ học kỳ
@@ -290,6 +290,10 @@
                                                             @foreach ($lichs as $lich)
                                                                 @php
                                                                     $lopHocPhan = $lich->lopHocPhan;
+                                                                    // Bỏ qua nếu không có lớp học phần hoặc môn học
+                                                                    if (!$lopHocPhan || !$lopHocPhan->monHoc) {
+                                                                        continue;
+                                                                    }
                                                                     $loaiLop = $lopHocPhan->loai_lop ?? null;
                                                                 @endphp
                                                                 <div class="mb-2 p-2 rounded" 
@@ -493,11 +497,14 @@
                                 </thead>
                                 <tbody>
                                     @foreach ($lopHocPhanSinhViens as $index => $lopSV)
+                                        @if(!$lopSV->lopHocPhan || !$lopSV->lopHocPhan->monHoc)
+                                            @continue
+                                        @endif
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
-                                            <td><code>{{ $lopSV->lopHocPhan->monHoc->ma_mon }}</code></td>
-                                            <td>{{ $lopSV->lopHocPhan->monHoc->ten_mon }}</td>
-                                            <td>{{ $lopSV->lopHocPhan->monHoc->so_tin_chi }}</td>
+                                            <td><code>{{ $lopSV->lopHocPhan->monHoc->ma_mon ?? 'N/A' }}</code></td>
+                                            <td>{{ $lopSV->lopHocPhan->monHoc->ten_mon ?? 'Môn học đã bị xóa' }}</td>
+                                            <td>{{ $lopSV->lopHocPhan->monHoc->so_tin_chi ?? 0 }}</td>
                                             <td>{{ $lopSV->lopHocPhan->ma_lop_hoc_phan }}</td>
                                             <td>
                                                 @if ($lopSV->lopHocPhan->giangVienChinh)
@@ -518,7 +525,7 @@
                                     <tr>
                                         <td colspan="3" class="text-end"><strong>Tổng tín chỉ:</strong></td>
                                         <td colspan="4">
-                                            <strong>{{ $lopHocPhanSinhViens->sum(fn($item) => $item->lopHocPhan->monHoc->so_tin_chi) }}
+                                            <strong>{{ $lopHocPhanSinhViens->sum(fn($item) => $item->lopHocPhan->monHoc->so_tin_chi ?? 0) }}
                                                 TC</strong>
                                         </td>
                                     </tr>
