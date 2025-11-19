@@ -118,7 +118,9 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             ->groupBy('lop_hoc_phan_sinh_vien_id');
 
         // Kiểm tra trạng thái
-        $daKhoaDiem = $lopHocPhan->trang_thai_lop === 'da_khoa_diem' || $lopHocPhan->trang_thai_lop === 'da_duyet_diem';
+        // Chỉ chặn sửa khi đang chờ duyệt (da_khoa_diem), không chặn khi đã duyệt (cho phép sửa lại)
+        $daKhoaDiem = $lopHocPhan->trang_thai_lop === 'da_khoa_diem';
+        $daDuyetDiem = $lopHocPhan->trang_thai_lop === 'da_duyet_diem';
         $laGiangVienChinh = $duocPhanCong->vai_tro === 'giang_vien_chinh';
 
         return view('giangvien.nhap-diem.show', compact(
@@ -127,6 +129,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             'sinhViens',
             'nhapDiems',
             'daKhoaDiem',
+            'daDuyetDiem',
             'laGiangVienChinh'
         ));
     }
@@ -163,12 +166,8 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         // Kiểm tra lớp đã khóa điểm chưa
         $lopHocPhan = LopHocPhan::find($lhpsv->lop_hoc_phan_id);
 
-        if ($lopHocPhan->trang_thai_lop === 'da_khoa_diem' || $lopHocPhan->trang_thai_lop === 'da_duyet_diem') {
-            return response()->json([
-                'success' => false,
-'message' => 'Lớp đã khóa điểm, không thể sửa'
-            ], 400);
-        }
+        // Cho phép sửa điểm trong mọi trường hợp (kể cả khi đã duyệt)
+        // Giảng viên có thể sửa và gửi lại cho đào tạo phê duyệt lại
 
         // Kiểm tra cột điểm hợp lệ
         $cauHinh = CauHinhDauDiem::find($validated['cau_hinh_id']);
@@ -357,13 +356,8 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
 
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy'])->find($lopHocPhanId);
 
-        // Kiểm tra trạng thái
-        if ($lopHocPhan->trang_thai_lop === 'da_khoa_diem' || $lopHocPhan->trang_thai_lop === 'da_duyet_diem') {
-            return response()->json([
-                'success' => false,
-                'message' => 'Điểm đã được gửi hoặc đã được duyệt'
-            ], 400);
-        }
+        // Cho phép gửi lại điểm ngay cả khi đã duyệt (để giảng viên có thể sửa và gửi lại)
+        // Không cần kiểm tra trạng thái, luôn cho phép gửi
 
         // Kiểm tra tất cả sinh viên đã có điểm chưa
         $tongSinhVien = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
@@ -392,19 +386,28 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         try {
             DB::beginTransaction();
 
+            // Lưu trạng thái cũ để biết có phải gửi lại không
+            $trangThaiCu = $lopHocPhan->trang_thai_lop;
+
             // Đặt trạng thái là đã khóa điểm (chờ duyệt)
+            // Nếu đã duyệt trước đó, reset về chờ duyệt lại và xóa lý do trả về nếu có
             $lopHocPhan->update([
                 'trang_thai_lop' => 'da_khoa_diem',
+                'ly_do_tra_ve' => null, // Xóa lý do trả về nếu có
             ]);
 
             // Gửi thông báo cho đào tạo
-            $this->guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien);
+            $this->guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien, $trangThaiCu === 'da_duyet_diem');
 
             DB::commit();
 
+            $message = $trangThaiCu === 'da_duyet_diem' 
+                ? 'Đã gửi lại điểm cho đào tạo thành công. Chờ đào tạo duyệt lại.'
+                : 'Đã gửi điểm cho đào tạo thành công. Chờ đào tạo duyệt.';
+
             return response()->json([
                 'success' => true,
-                'message' => 'Đã gửi điểm cho đào tạo thành công. Chờ đào tạo duyệt.'
+                'message' => $message
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -419,7 +422,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     /**
      * Gửi thông báo cho đào tạo khi giảng viên gửi điểm
      */
-    private function guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien)
+    private function guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien, $laGuiLai = false)
     {
         // Lấy tất cả tài khoản đào tạo
         $daoTaos = \App\Models\DaoTao::with('user')->get();
@@ -429,9 +432,17 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         }
 
         // Tạo thông báo
+        $tieuDe = $laGuiLai 
+            ? 'Giảng viên gửi lại điểm lớp ' . $lopHocPhan->ma_lop_hp
+            : 'Giảng viên gửi điểm lớp ' . $lopHocPhan->ma_lop_hp;
+        
+        $noiDung = $laGuiLai
+            ? "Giảng viên {$giangVien->ho_ten} đã chỉnh sửa và gửi lại điểm lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->monHoc->ten_mon} ({$lopHocPhan->hocKy->ten_hoc_ky}) để duyệt lại. Vui lòng truy cập phần 'Duyệt điểm' để xem và duyệt."
+            : "Giảng viên {$giangVien->ho_ten} đã gửi điểm lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->monHoc->ten_mon} ({$lopHocPhan->hocKy->ten_hoc_ky}) để duyệt. Vui lòng truy cập phần 'Duyệt điểm' để xem và duyệt.";
+
         $thongBao = ThongBao::create([
-            'tieu_de' => 'Giảng viên gửi điểm lớp ' . $lopHocPhan->ma_lop_hp,
-            'noi_dung' => "Giảng viên {$giangVien->ho_ten} đã gửi điểm lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->monHoc->ten_mon} ({$lopHocPhan->hocKy->ten_hoc_ky}) để duyệt. Vui lòng truy cập phần 'Duyệt điểm' để xem và duyệt.",
+            'tieu_de' => $tieuDe,
+            'noi_dung' => $noiDung,
             'loai_nguon' => 'thu_cong',
             'loai_thong_bao' => 'diem',
             'muc_do_quan_trong' => 'quan_trong',
@@ -451,6 +462,254 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
                     'da_doc' => false,
                 ]);
             }
+        }
+    }
+
+    /**
+     * Download template Excel để nhập điểm
+     */
+    public function downloadTemplate($lopHocPhanId)
+    {
+        $giangVien = Auth::user()->giangVien;
+
+        // Kiểm tra quyền
+        $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->where('giang_vien_id', $giangVien->id)
+            ->exists();
+
+        if (!$duocPhanCong) {
+            return redirect()->route('giangvien.nhap-diem.index')
+                ->with('error', 'Bạn không có quyền truy cập lớp này');
+        }
+
+        $lopHocPhan = LopHocPhan::with(['monHoc'])->find($lopHocPhanId);
+        $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->orderBy('id')
+            ->get();
+
+        $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
+            ->with(['sinhVien'])
+            ->orderBy('sinh_vien_id')
+            ->get();
+
+        // Tạo file Excel
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        $sheet->setTitle('Nhập điểm');
+
+        // Header row
+        $headers = ['STT', 'MSSV', 'Họ tên'];
+        $colIndex = 4; // Bắt đầu từ cột D
+
+        foreach ($cauHinhs as $cauHinh) {
+            if ($cauHinh->so_cot > 1) {
+                for ($cot = 1; $cot <= $cauHinh->so_cot; $cot++) {
+                    $headers[] = $cauHinh->ten_dau_diem . ' - Cột ' . $cot;
+                }
+            } else {
+                $headers[] = $cauHinh->ten_dau_diem;
+            }
+        }
+
+        // Ghi header
+        $sheet->fromArray([$headers], null, 'A1');
+
+        // Style header
+        $headerStyle = [
+            'font' => ['bold' => true, 'color' => ['rgb' => 'FFFFFF']],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '4472C4']
+            ],
+            'alignment' => ['horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER],
+        ];
+        $sheet->getStyle('A1:' . \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers)) . '1')->applyFromArray($headerStyle);
+
+        // Ghi dữ liệu sinh viên
+        $row = 2;
+        foreach ($sinhViens as $index => $lhpsv) {
+            $rowData = [
+                $index + 1,
+                $lhpsv->sinhVien->ma_sinh_vien,
+                $lhpsv->sinhVien->ho_ten,
+            ];
+
+            // Lấy điểm đã nhập
+            $nhapDiems = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)->get();
+            $diemMap = [];
+            foreach ($nhapDiems as $diem) {
+                $key = $diem->cau_hinh_id . '_' . $diem->cot_diem;
+                $diemMap[$key] = $diem->diem_so;
+            }
+
+            // Thêm điểm vào row
+            foreach ($cauHinhs as $cauHinh) {
+                for ($cot = 1; $cot <= $cauHinh->so_cot; $cot++) {
+                    $key = $cauHinh->id . '_' . $cot;
+                    $rowData[] = $diemMap[$key] ?? '';
+                }
+            }
+
+            $sheet->fromArray([$rowData], null, 'A' . $row);
+            $row++;
+        }
+
+        // Auto size columns
+        foreach (range('A', \PhpOffice\PhpSpreadsheet\Cell\Coordinate::stringFromColumnIndex(count($headers))) as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+
+        // Tạo file và download
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $fileName = 'Template_Nhap_Diem_' . $lopHocPhan->ma_lop_hp . '_' . date('YmdHis') . '.xlsx';
+        $tempFile = tempnam(sys_get_temp_dir(), 'excel_');
+        $writer->save($tempFile);
+
+        return response()->download($tempFile, $fileName)->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Import điểm từ Excel
+     */
+    public function importExcel(Request $request, $lopHocPhanId)
+    {
+        $giangVien = Auth::user()->giangVien;
+
+        // Kiểm tra quyền
+        $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->where('giang_vien_id', $giangVien->id)
+            ->exists();
+
+        if (!$duocPhanCong) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Bạn không có quyền nhập điểm lớp này'
+            ], 403);
+        }
+
+        // Validate file
+        $validated = $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:5120',
+        ], [
+            'file.required' => 'Vui lòng chọn file Excel',
+            'file.mimes' => 'File phải có định dạng Excel (.xlsx, .xls)',
+            'file.max' => 'File không được vượt quá 5MB',
+        ]);
+
+        $lopHocPhan = LopHocPhan::find($lopHocPhanId);
+
+        // Cho phép import điểm trong mọi trường hợp (kể cả khi đã duyệt)
+        // Giảng viên có thể sửa và gửi lại cho đào tạo phê duyệt lại
+
+        try {
+            DB::beginTransaction();
+
+            // Đọc file Excel
+            $file = $request->file('file');
+            $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+            $worksheet = $spreadsheet->getActiveSheet();
+            $data = $worksheet->toArray();
+
+            // Bỏ qua header (dòng đầu tiên)
+            array_shift($data);
+
+            // Lấy cấu hình đầu điểm
+            $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhanId)
+                ->orderBy('id')
+                ->get();
+
+            // Lấy danh sách sinh viên
+            $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
+                ->with(['sinhVien'])
+                ->get()
+                ->keyBy(function ($item) {
+                    return $item->sinhVien->ma_sinh_vien;
+                });
+
+            $imported = 0;
+            $errors = [];
+            $colIndex = 3; // Bắt đầu từ cột D (index 3)
+
+            foreach ($data as $rowNum => $row) {
+                $rowNum += 2; // +2 vì bỏ header và index bắt đầu từ 0
+
+                // Bỏ qua dòng trống
+                if (empty($row[0]) || empty($row[1])) {
+                    continue;
+                }
+
+                $maSV = trim($row[1]);
+                $sinhVien = $sinhViens->get($maSV);
+
+                if (!$sinhVien) {
+                    $errors[] = "Dòng {$rowNum}: Không tìm thấy sinh viên có MSSV: {$maSV}";
+                    continue;
+                }
+
+                $colIndex = 3; // Reset về cột D
+                foreach ($cauHinhs as $cauHinh) {
+                    for ($cot = 1; $cot <= $cauHinh->so_cot; $cot++) {
+                        $diemValue = $row[$colIndex] ?? null;
+                        $colIndex++;
+
+                        // Bỏ qua nếu không có giá trị
+                        if ($diemValue === null || $diemValue === '') {
+                            continue;
+                        }
+
+                        // Validate điểm
+                        $diemSo = is_numeric($diemValue) ? (float)$diemValue : null;
+                        if ($diemSo === null || $diemSo < 0 || $diemSo > 10) {
+                            $errors[] = "Dòng {$rowNum} - {$cauHinh->ten_dau_diem} (Cột {$cot}): Điểm không hợp lệ ({$diemValue})";
+                            continue;
+                        }
+
+                        // Lưu điểm
+                        try {
+                            NhapDiem::updateOrCreate(
+                                [
+                                    'lop_hoc_phan_sinh_vien_id' => $sinhVien->id,
+                                    'cau_hinh_id' => $cauHinh->id,
+                                    'cot_diem' => $cot,
+                                ],
+                                [
+                                    'diem_so' => $diemSo,
+                                ]
+                            );
+
+                            // Tự động tính điểm tổng
+                            $this->diemService->tinhDiemTong($sinhVien->id);
+                            $imported++;
+                        } catch (\Exception $e) {
+                            $errors[] = "Dòng {$rowNum} - {$cauHinh->ten_dau_diem} (Cột {$cot}): " . $e->getMessage();
+                        }
+                    }
+                }
+            }
+
+            DB::commit();
+
+            $message = "Import thành công {$imported} điểm.";
+            if (count($errors) > 0) {
+                $message .= " Có " . count($errors) . " lỗi.";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'imported' => $imported,
+                'errors' => array_slice($errors, 0, 10), // Chỉ hiển thị 10 lỗi đầu
+                'total_errors' => count($errors),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi import: ' . $e->getMessage()
+            ], 500);
         }
     }
 }
