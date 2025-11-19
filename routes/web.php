@@ -475,6 +475,8 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
         Route::post('/store', [NhapDiemController::class, 'nhapDiem'])->name('store');
         Route::post('/{lopHocPhan}/khoa', [NhapDiemController::class, 'khoaDiem'])->name('khoa');
         Route::post('/{lopHocPhan}/mo-khoa', [NhapDiemController::class, 'moKhoaDiem'])->name('mo-khoa');
+        Route::get('/{lopHocPhan}/download-template', [NhapDiemController::class, 'downloadTemplate'])->name('download-template');
+        Route::post('/{lopHocPhan}/import-excel', [NhapDiemController::class, 'importExcel'])->name('import-excel');
     });
 
     // PHASE 8: Xem kết quả học tập

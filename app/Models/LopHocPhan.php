@@ -28,6 +28,7 @@ class LopHocPhan extends Model
         'ngay_ket_thuc',
         'ghi_chu',
         'trang_thai_lop',
+        'ly_do_tra_ve',
     ];
 
     protected $casts = [

@@ -98,13 +98,42 @@
     </section>
     @endif
 
+    <!-- Thông báo khi đào tạo trả về -->
+    @if($lopHocPhan->trang_thai_lop === 'dang_hoc' && $lopHocPhan->ly_do_tra_ve)
+    <section class="section">
+        <div class="alert alert-warning alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Điểm đã được trả về để chỉnh sửa</h5>
+            <p class="mb-0"><strong>Lý do:</strong> {{ $lopHocPhan->ly_do_tra_ve }}</p>
+            <p class="mb-0 mt-2">Vui lòng chỉnh sửa điểm và gửi lại cho đào tạo để duyệt.</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </section>
+    @endif
+
+    <!-- Thông báo khi đã duyệt nhưng vẫn cho phép sửa -->
+    @if(isset($daDuyetDiem) && $daDuyetDiem)
+    <section class="section">
+        <div class="alert alert-info alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Điểm đã được duyệt</h5>
+            <p class="mb-0">Điểm đã được đào tạo duyệt. Bạn vẫn có thể chỉnh sửa điểm và gửi lại cho đào tạo phê duyệt lại.</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </section>
+    @endif
+
     <!-- Form nhập điểm -->
     <section class="section">
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-pencil-square"></i> Nhập điểm sinh viên</h5>
                 @if(!$daKhoaDiem)
-                <div>
+                <div class="d-flex gap-2">
+                    <a href="{{ route('giangvien.nhap-diem.download-template', $lopHocPhan->id) }}" class="btn btn-sm btn-info">
+                        <i class="bi bi-download"></i> Tải template Excel
+                    </a>
+                    <button type="button" class="btn btn-sm btn-primary" onclick="showImportModal()">
+                        <i class="bi bi-upload"></i> Import Excel
+                    </button>
                     <button type="button" class="btn btn-sm btn-success" onclick="luuTatCaDiem()">
                         <i class="bi bi-save"></i> Lưu tất cả
                     </button>
@@ -225,7 +254,14 @@
                         </button>
                         @if($laGiangVienChinh)
                         <button type="button" class="btn btn-primary" onclick="guiDiemChoDaoTao()">
-                            <i class="bi bi-send"></i> Gửi điểm cho đào tạo
+                            <i class="bi bi-send"></i> 
+                            @if(isset($daDuyetDiem) && $daDuyetDiem)
+                                Gửi lại điểm cho đào tạo
+                            @elseif($lopHocPhan->trang_thai_lop === 'dang_hoc' && $lopHocPhan->ly_do_tra_ve)
+                                Gửi lại điểm cho đào tạo
+                            @else
+                                Gửi điểm cho đào tạo
+                            @endif
                         </button>
                         @endif
                         @endif
@@ -379,14 +415,24 @@
 
     // Gửi điểm cho đào tạo
     function guiDiemChoDaoTao() {
+        @if(isset($daDuyetDiem) && $daDuyetDiem)
+        const title = 'Xác nhận gửi lại điểm';
+        const text = 'Bạn có chắc muốn gửi lại điểm cho đào tạo để duyệt lại? Điểm sẽ được chuyển sang trạng thái chờ duyệt.';
+        const confirmText = 'Có, gửi lại điểm';
+        @else
+        const title = 'Xác nhận gửi điểm';
+        const text = 'Bạn có chắc muốn gửi điểm cho đào tạo để duyệt? Sau khi gửi, bạn sẽ không thể sửa điểm cho đến khi đào tạo duyệt hoặc trả về.';
+        const confirmText = 'Có, gửi điểm';
+        @endif
+        
         Swal.fire({
-            title: 'Xác nhận gửi điểm',
-            text: 'Bạn có chắc muốn gửi điểm cho đào tạo để duyệt? Sau khi gửi, bạn sẽ không thể sửa điểm nữa.',
+            title: title,
+            text: text,
             icon: 'question',
             showCancelButton: true,
             confirmButtonColor: '#3085d6',
             cancelButtonColor: '#d33',
-            confirmButtonText: 'Có, gửi điểm',
+            confirmButtonText: confirmText,
             cancelButtonText: 'Hủy'
         }).then((result) => {
             if (result.isConfirmed) {
@@ -452,6 +498,103 @@
                     Swal.fire('Lỗi!', 'Có lỗi xảy ra khi gửi điểm', 'error');
                 });
             }
+        });
+    }
+
+    // Hiển thị modal import Excel
+    function showImportModal() {
+        Swal.fire({
+            title: 'Import điểm từ Excel',
+            html: `
+                <form id="importForm" enctype="multipart/form-data">
+                    <div class="mb-3">
+                        <label for="excelFile" class="form-label">Chọn file Excel</label>
+                        <input type="file" class="form-control" id="excelFile" name="file" accept=".xlsx,.xls" required>
+                        <small class="text-muted">Chấp nhận: .xlsx, .xls (Tối đa 5MB)</small>
+                    </div>
+                    <div class="alert alert-info">
+                        <strong><i class="bi bi-info-circle"></i> Lưu ý:</strong>
+                        <ul class="mb-0">
+                            <li>File phải có định dạng giống template Excel</li>
+                            <li>Dòng đầu tiên là header (STT, MSSV, Họ tên, ...)</li>
+                            <li>Dữ liệu bắt đầu từ dòng thứ 2</li>
+                            <li>Điểm phải trong khoảng 0-10</li>
+                            <li>MSSV phải khớp với danh sách sinh viên</li>
+                        </ul>
+                    </div>
+                </form>
+            `,
+            showCancelButton: true,
+            confirmButtonText: 'Import',
+            cancelButtonText: 'Hủy',
+            confirmButtonColor: '#3085d6',
+            cancelButtonColor: '#d33',
+            didOpen: () => {
+                // Focus vào input file
+                document.getElementById('excelFile').focus();
+            },
+            preConfirm: () => {
+                const fileInput = document.getElementById('excelFile');
+                if (!fileInput.files || !fileInput.files[0]) {
+                    Swal.showValidationMessage('Vui lòng chọn file Excel');
+                    return false;
+                }
+                return fileInput.files[0];
+            }
+        }).then((result) => {
+            if (result.isConfirmed && result.value) {
+                importExcel(result.value);
+            }
+        });
+    }
+
+    // Import Excel
+    function importExcel(file) {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('_token', '{{ csrf_token() }}');
+
+        Swal.fire({
+            title: 'Đang import điểm...',
+            html: 'Vui lòng đợi trong giây lát',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        fetch('{{ route("giangvien.nhap-diem.import-excel", $lopHocPhan->id) }}', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                let message = data.message;
+                if (data.errors && data.errors.length > 0) {
+                    message += '\n\nLỗi:\n' + data.errors.slice(0, 5).join('\n');
+                    if (data.total_errors > 5) {
+                        message += `\n... và ${data.total_errors - 5} lỗi khác`;
+                    }
+                }
+                Swal.fire({
+                    title: 'Thành công!',
+                    text: message,
+                    icon: 'success',
+                    confirmButtonText: 'OK'
+                }).then(() => {
+                    location.reload();
+                });
+            } else {
+                Swal.fire('Lỗi!', data.message, 'error');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Lỗi!', 'Có lỗi xảy ra khi import Excel', 'error');
         });
     }
 </script>
