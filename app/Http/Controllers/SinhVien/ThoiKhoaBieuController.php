@@ -45,6 +45,8 @@ class ThoiKhoaBieuController extends Controller
                 'trungLich' => [],
                 'sinhVien' => $sinhVien,
                 'coTheXemTKB' => false,
+                'viewMode' => $request->get('view_mode', 'co_dinh'),
+                'thoiGianFilter' => $request->get('thoi_gian', null),
             ]);
         }
 
@@ -70,6 +72,8 @@ class ThoiKhoaBieuController extends Controller
                 'thoiKhoaBieu' => [],
                 'trungLich' => [],
                 'sinhVien' => $sinhVien,
+                'viewMode' => $request->get('view_mode', 'co_dinh'),
+                'thoiGianFilter' => $request->get('thoi_gian', null),
             ]);
         }
 
@@ -270,9 +274,14 @@ class ThoiKhoaBieuController extends Controller
                         continue;
                     }
 
+                    // Kiểm tra xem môn học có tồn tại không (có thể đã bị xóa)
+                    if (!$lopHocPhan->monHoc) {
+                        continue;
+                    }
+
                     $thoiKhoaBieu[$thuTrongTuan][$caHocId] = [
-                        'mon_hoc' => $lopHocPhan->monHoc->ten_mon,
-                        'ma_mon' => $lopHocPhan->monHoc->ma_mon,
+                        'mon_hoc' => $lopHocPhan->monHoc->ten_mon ?? 'N/A',
+                        'ma_mon' => $lopHocPhan->monHoc->ma_mon ?? 'N/A',
                         'phong' => $lichCoDinh->phongHoc->ten_phong ?? 'TBA',
                         'giang_vien' => $lichCoDinh->giangVien->ho_ten ?? 'TBA',
                         'so_tiet' => $lichCoDinh->tiet_ket_thuc - $lichCoDinh->tiet_bat_dau + 1,
@@ -304,6 +313,12 @@ class ThoiKhoaBieuController extends Controller
                 $key = $thuTrongTuan . '_' . $caHocId;
                 if (!isset($thoiKhoaBieu[$thuTrongTuan][$caHocId])) {
                     $lopHocPhan = $lich->lopHocPhan;
+                    
+                    // Kiểm tra xem môn học có tồn tại không (có thể đã bị xóa)
+                    if (!$lopHocPhan || !$lopHocPhan->monHoc) {
+                        continue;
+                    }
+                    
                     $thoiKhoaBieu[$thuTrongTuan][$caHocId] = [
                         'mon_hoc' => $lopHocPhan->monHoc->ten_mon ?? 'N/A',
                         'ma_mon' => $lopHocPhan->monHoc->ma_mon ?? 'N/A',
@@ -331,7 +346,8 @@ class ThoiKhoaBieuController extends Controller
         $lopChuaCoLich = [];
         foreach ($lopHocPhanSinhViens as $lopSV) {
             if ($lopSV->lopHocPhan->lichHocCoDinhs->isEmpty()) {
-                $lopChuaCoLich[] = $lopSV->lopHocPhan->ma_lop_hp . ' - ' . $lopSV->lopHocPhan->monHoc->ten_mon;
+                $tenMon = $lopSV->lopHocPhan->monHoc->ten_mon ?? 'Môn học đã bị xóa';
+                $lopChuaCoLich[] = $lopSV->lopHocPhan->ma_lop_hp . ' - ' . $tenMon;
             }
         }
 
@@ -494,15 +510,17 @@ class ThoiKhoaBieuController extends Controller
 
                 if (isset($lichHoc[$key])) {
                     $caHocTen = $lichCoDinh->caHoc ? $lichCoDinh->caHoc->ten_ca : 'Ca ' . $lichCoDinh->ca_hoc_id;
+                    $tenMon = $lopSV->lopHocPhan->monHoc->ten_mon ?? 'Môn học đã bị xóa';
                     $trungLich[] = [
                         'thu' => $lichCoDinh->getTenThuAttribute(),
                         'ca_hoc' => $caHocTen,
                         'ca_hoc_id' => $lichCoDinh->ca_hoc_id,
                         'mon_1' => $lichHoc[$key],
-                        'mon_2' => $lopSV->lopHocPhan->monHoc->ten_mon,
+                        'mon_2' => $tenMon,
                     ];
                 } else {
-                    $lichHoc[$key] = $lopSV->lopHocPhan->monHoc->ten_mon;
+                    $tenMon = $lopSV->lopHocPhan->monHoc->ten_mon ?? 'Môn học đã bị xóa';
+                    $lichHoc[$key] = $tenMon;
                 }
             }
         }

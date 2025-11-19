@@ -15,6 +15,10 @@
     <link rel="stylesheet" href="{{ asset('assets/css/app.css') }}">
     <link rel="shortcut icon" href="{{ asset('assets/images/favicon.svg') }}" type="image/x-icon">
 
+    <!-- Select2 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+    <link href="https://cdn.jsdelivr.net/npm/select2-bootstrap-5-theme@1.3.0/dist/select2-bootstrap-5-theme.min.css" rel="stylesheet" />
+
     @stack('styles')
 
     <style>
@@ -417,6 +421,38 @@
             border-color: #404040 #404040 #2d2d2d;
             color: #ffffff;
         }
+
+        /* Select2 Dark Mode */
+        body.dark-mode .select2-container--bootstrap-5 .select2-selection {
+            background-color: #3a3a3a !important;
+            border-color: #555 !important;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .select2-container--bootstrap-5 .select2-selection--single .select2-selection__rendered {
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .select2-dropdown {
+            background-color: #2d2d2d !important;
+            border-color: #404040 !important;
+        }
+
+        body.dark-mode .select2-results__option {
+            background-color: #2d2d2d !important;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .select2-results__option--highlighted {
+            background-color: #435ebe !important;
+            color: #ffffff !important;
+        }
+
+        body.dark-mode .select2-search--dropdown .select2-search__field {
+            background-color: #3a3a3a !important;
+            color: #ffffff !important;
+            border-color: #555 !important;
+        }
     </style>
 </head>
 
@@ -441,6 +477,52 @@
     
     <!-- SweetAlert2 -->
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <!-- jQuery -->
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+    <!-- Select2 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+    <!-- Khởi tạo Select2 cho tất cả select -->
+    <script>
+        // Hàm khởi tạo Select2
+        function initSelect2() {
+            $('select:not(.no-select2):not(.select2-hidden-accessible)').select2({
+                theme: 'bootstrap-5',
+                language: {
+                    noResults: function() {
+                        return "Không tìm thấy kết quả";
+                    },
+                    searching: function() {
+                        return "Đang tìm kiếm...";
+                    }
+                },
+                placeholder: function() {
+                    return $(this).find('option[value=""]').text() || '-- Chọn --';
+                },
+                allowClear: true,
+                width: '100%'
+            });
+        }
+
+        // Khởi tạo khi DOM ready
+        $(document).ready(function() {
+            initSelect2();
+        });
+
+        // Khởi tạo lại khi modal được mở (cho các select trong modal)
+        $(document).on('shown.bs.modal', '.modal', function() {
+            initSelect2();
+        });
+
+        // Khởi tạo lại cho các select được tạo động
+        $(document).on('DOMNodeInserted', function(e) {
+            if ($(e.target).find('select:not(.no-select2):not(.select2-hidden-accessible)').length > 0) {
+                initSelect2();
+            }
+        });
+    </script>
 
     @stack('scripts')
 </body>

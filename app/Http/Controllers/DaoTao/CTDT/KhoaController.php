@@ -5,7 +5,11 @@ namespace App\Http\Controllers\DaoTao\CTDT;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\DaoTao\Khoa;
+use App\Models\DaoTao\Nganh;
+use App\Models\DaoTao\ChuyenNganh;
+use App\Models\GiangVien;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class KhoaController extends Controller
 {
@@ -144,7 +148,87 @@ public function create()
             abort(403, 'Bạn không có quyền xóa khoa');
         }
 
-        Khoa::destroy($id);
-        return redirect()->route('dao-tao.khoa.index')->with('success', 'Xóa khoa thành công!');
+        $khoa = Khoa::findOrFail($id);
+
+        // Sử dụng transaction để đảm bảo tính toàn vẹn dữ liệu
+        DB::beginTransaction();
+        try {
+            // Tạm thời disable foreign key checks để có thể xóa
+            DB::statement('SET FOREIGN_KEY_CHECKS=0');
+
+            // 1. Xóa tất cả chuyên ngành và chương trình khung liên quan
+            $nganhs = Nganh::where('khoa_id', $id)->get();
+            foreach ($nganhs as $nganh) {
+                // Xóa tất cả chuyên ngành thuộc ngành này
+                $chuyenNganhs = ChuyenNganh::where('nganh_id', $nganh->id)->get();
+                foreach ($chuyenNganhs as $chuyenNganh) {
+                    // Xóa chương trình khung (force delete để xóa vĩnh viễn)
+                    $chuongTrinhKhung = $chuyenNganh->chuongTrinhKhung;
+                    foreach ($chuongTrinhKhung as $ctk) {
+                        $ctk->forceDelete();
+                    }
+                    // Xóa chuyên ngành (force delete để xóa vĩnh viễn)
+                    $chuyenNganh->forceDelete();
+                }
+                // Xóa ngành
+                $nganh->delete();
+            }
+
+            // 2. Xử lý giảng viên: Tạm thời xóa foreign key constraint, set null, rồi tạo lại với nullable
+            // Lấy tên foreign key constraint
+            $foreignKeyName = DB::select("
+                SELECT CONSTRAINT_NAME 
+                FROM INFORMATION_SCHEMA.KEY_COLUMN_USAGE 
+                WHERE TABLE_NAME = 'giang_vien' 
+                AND COLUMN_NAME = 'khoa_id' 
+                AND REFERENCED_TABLE_NAME = 'khoa'
+                AND TABLE_SCHEMA = DATABASE()
+            ");
+            
+            $constraintName = null;
+            if (!empty($foreignKeyName)) {
+                $constraintName = $foreignKeyName[0]->CONSTRAINT_NAME;
+                // Xóa foreign key constraint
+                DB::statement("ALTER TABLE giang_vien DROP FOREIGN KEY {$constraintName}");
+            }
+            
+            // Tạm thời thay đổi cột thành nullable
+            DB::statement("ALTER TABLE giang_vien MODIFY COLUMN khoa_id BIGINT UNSIGNED NULL");
+            
+            // Set null cho tất cả giảng viên thuộc khoa này
+            // (Không xóa giảng viên vì họ có thể liên quan đến nhiều thứ khác như lớp hành chính, lớp học phần)
+            GiangVien::where('khoa_id', $id)->update(['khoa_id' => null]);
+            
+            // Tạo lại foreign key constraint với nullable (vì đã có giảng viên với khoa_id = null)
+            if ($constraintName) {
+                DB::statement("ALTER TABLE giang_vien ADD CONSTRAINT {$constraintName} FOREIGN KEY (khoa_id) REFERENCES khoa(id) ON DELETE SET NULL");
+            }
+
+            // 3. Set null truong_khoa_id nếu khoa này có trưởng khoa
+            if ($khoa->truong_khoa_id) {
+                $khoa->truong_khoa_id = null;
+                $khoa->save();
+            }
+
+            // 4. Xóa tất cả môn học thuộc khoa này (force delete để xóa vĩnh viễn)
+            $monHocs = \App\Models\DaoTao\MonHoc::where('khoa_id', $id)->get();
+            foreach ($monHocs as $monHoc) {
+                $monHoc->forceDelete();
+            }
+
+            // 5. Xóa khoa
+            $khoa->delete();
+
+            // Bật lại foreign key checks
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+            DB::commit();
+            return redirect()->route('dao-tao.khoa.index')->with('success', 'Xóa khoa và tất cả dữ liệu liên quan thành công!');
+        } catch (\Exception $e) {
+            // Đảm bảo bật lại foreign key checks nếu có lỗi
+            DB::statement('SET FOREIGN_KEY_CHECKS=1');
+            DB::rollBack();
+            return redirect()->route('dao-tao.khoa.index')->with('error', 'Có lỗi xảy ra khi xóa khoa: ' . $e->getMessage());
+        }
     }
 }
