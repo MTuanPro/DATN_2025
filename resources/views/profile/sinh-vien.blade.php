@@ -20,7 +20,7 @@
                 </div>
             </div>
         </div>
-
+<!-- sửa giao diện -->
         <section class="section">
             @if (session('success'))
                 <div class="alert alert-success alert-dismissible fade show">
