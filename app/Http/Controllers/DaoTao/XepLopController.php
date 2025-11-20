@@ -7,7 +7,6 @@ use App\Models\DangKyMonHocTam;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\LopHocPhan;
 use App\Models\HocKy;
-use App\Services\HocPhiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -56,194 +55,9 @@ class XepLopController extends Controller
     }
 
     /**
-     * Xếp lớp tự động - PHIÊN BẢN TỐI ƯU
-     * Sử dụng batch processing và eager loading để giảm số lượng queries
+     * Xếp lớp tự động cho tất cả đăng ký
      */
     public function autoAssign(Request $request)
-    {
-        $request->validate([
-            'hoc_ky_id' => 'required|exists:hoc_ky,id',
-        ]);
-
-        DB::beginTransaction();
-        try {
-            $hocKyId = $request->hoc_ky_id;
-            
-            // 1. Lấy tất cả đăng ký chờ xếp lớp (đã sắp xếp theo ưu tiên)
-            $dangKys = DangKyMonHocTam::where('hoc_ky_id', $hocKyId)
-                ->where('trang_thai', 'cho_xep_lop')
-                ->orderBy('uu_tien', 'desc')
-                ->orderBy('ngay_dang_ky', 'asc')
-                ->get();
-
-            if ($dangKys->isEmpty()) {
-                DB::commit();
-                return response()->json([
-                    'success' => true,
-                    'message' => 'Không có đăng ký nào cần xếp lớp!',
-                    'data' => ['thanh_cong' => 0, 'that_bai' => 0]
-                ]);
-            }
-
-            // 2. Lấy tất cả môn học liên quan
-            $monHocIds = $dangKys->pluck('mon_hoc_id')->unique()->values();
-
-            // 3. Load trước tất cả lớp học phần phù hợp (Eager Loading)
-            $lopHocPhans = LopHocPhan::whereIn('mon_hoc_id', $monHocIds)
-                ->where('hoc_ky_id', $hocKyId)
-                ->whereIn('trang_thai_lop', ['mo_dang_ky', 'dang_hoc'])
-                ->get()
-                ->groupBy('mon_hoc_id');
-
-            // 4. Load trước số lượng sinh viên đã đăng ký cho mỗi lớp
-            $lopHocPhanIds = $lopHocPhans->flatten()->pluck('id')->unique();
-            $soLuongDaDangKy = LopHocPhanSinhVien::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
-                ->select('lop_hoc_phan_id', DB::raw('COUNT(*) as so_luong'))
-                ->groupBy('lop_hoc_phan_id')
-                ->pluck('so_luong', 'lop_hoc_phan_id')
-                ->toArray();
-
-            // 5. Load trước danh sách sinh viên đã đăng ký (để kiểm tra trùng)
-            $sinhVienIds = $dangKys->pluck('sinh_vien_id')->unique();
-            $daDangKyLop = LopHocPhanSinhVien::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-                ->whereIn('sinh_vien_id', $sinhVienIds)
-                ->select('lop_hoc_phan_id', 'sinh_vien_id')
-                ->get()
-                ->groupBy('sinh_vien_id')
-                ->map(function ($group) {
-                    return $group->pluck('lop_hoc_phan_id')->toArray();
-                })
-                ->toArray();
-
-            // 6. Xử lý xếp lớp
-            $dataToInsert = [];
-            $dangKyUpdates = [
-                'thanh_cong' => [],
-                'that_bai' => []
-            ];
-
-            foreach ($dangKys as $dangKy) {
-                $monHocId = $dangKy->mon_hoc_id;
-                $sinhVienId = $dangKy->sinh_vien_id;
-                
-                // Lấy các lớp của môn học này
-                $cacLopHocPhan = $lopHocPhans->get($monHocId, collect());
-                
-                $daXepLop = false;
-                
-                foreach ($cacLopHocPhan as $lopHocPhan) {
-                    $lopId = $lopHocPhan->id;
-                    
-                    // Kiểm tra sinh viên đã đăng ký lớp này chưa
-                    if (isset($daDangKyLop[$sinhVienId]) && in_array($lopId, $daDangKyLop[$sinhVienId])) {
-                        continue; // Đã đăng ký rồi, thử lớp khác
-                    }
-                    
-                    // Lấy sức chứa và số lượng hiện tại
-                    $sucChua = $lopHocPhan->suc_chua ?? 0;
-                    $soLuongHienTai = $soLuongDaDangKy[$lopId] ?? 0;
-                    
-                    // Kiểm tra còn chỗ không
-                    if ($soLuongHienTai < $sucChua) {
-                        // Thêm vào danh sách insert
-                        $dataToInsert[] = [
-                            'lop_hoc_phan_id' => $lopId,
-                            'sinh_vien_id' => $sinhVienId,
-                            'dang_ky_tam_id' => $dangKy->id,
-                            'ngay_dang_ky' => $dangKy->ngay_dang_ky,
-                            'ngay_xep_lop' => now(),
-                            'phuong_thuc_xep' => 'tu_dong',
-                            'trang_thai' => 'da_xep_lop',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ];
-                        
-                        // Đánh dấu đã xếp lớp
-                        $dangKyUpdates['thanh_cong'][] = $dangKy->id;
-                        
-                        // Cập nhật số lượng trong bộ nhớ để các lần xử lý sau chính xác
-                        $soLuongDaDangKy[$lopId] = $soLuongHienTai + 1;
-                        
-                        // Cập nhật danh sách đã đăng ký trong bộ nhớ
-                        if (!isset($daDangKyLop[$sinhVienId])) {
-                            $daDangKyLop[$sinhVienId] = [];
-                        }
-                        $daDangKyLop[$sinhVienId][] = $lopId;
-                        
-                        $daXepLop = true;
-                        break; // Đã xếp được lớp, dừng vòng lặp
-                    }
-                }
-                
-                // Nếu không xếp được lớp nào
-                if (!$daXepLop) {
-                    $dangKyUpdates['that_bai'][] = $dangKy->id;
-                }
-            }
-
-            // 7. Bulk Insert vào bảng lop_hoc_phan_sinh_vien
-            if (!empty($dataToInsert)) {
-                // Insert theo batch 500 records để tránh query quá lớn
-                foreach (array_chunk($dataToInsert, 500) as $chunk) {
-                    LopHocPhanSinhVien::insert($chunk);
-                }
-            }
-
-            // 8. Bulk Update trạng thái đăng ký tạm
-            if (!empty($dangKyUpdates['thanh_cong'])) {
-                DangKyMonHocTam::whereIn('id', $dangKyUpdates['thanh_cong'])
-                    ->update(['trang_thai' => 'da_xep_lop']);
-            }
-
-            if (!empty($dangKyUpdates['that_bai'])) {
-                DangKyMonHocTam::whereIn('id', $dangKyUpdates['that_bai'])
-                    ->update([
-                        'trang_thai' => 'that_bai',
-                        'ly_do_that_bai' => 'Không còn chỗ trong các lớp học phần'
-                    ]);
-            }
-
-            // 9. Đồng bộ số lượng trong bảng lop_hoc_phan
-            foreach ($soLuongDaDangKy as $lopId => $soLuong) {
-                LopHocPhan::where('id', $lopId)
-                    ->update(['so_luong_dang_ky' => $soLuong]);
-            }
-
-            // 10. TÍNH HỌC PHÍ CHO SINH VIÊN ĐÃ XẾP LỚP THÀNH CÔNG
-            if (!empty($dangKyUpdates['thanh_cong'])) {
-                $this->tinhHocPhiSauXepLop($hocKyId, $dataToInsert);
-            }
-
-            DB::commit();
-
-            $soLuongThanhCong = count($dangKyUpdates['thanh_cong']);
-            $soLuongThatBai = count($dangKyUpdates['that_bai']);
-
-            return response()->json([
-                'success' => true,
-                'message' => "Xếp lớp hoàn tất! Thành công: {$soLuongThanhCong}, Thất bại: {$soLuongThatBai}",
-                'data' => [
-                    'thanh_cong' => $soLuongThanhCong,
-                    'that_bai' => $soLuongThatBai
-                ]
-            ]);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            Log::error('Lỗi xếp lớp tự động: ' . $e->getMessage());
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra khi xếp lớp: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * Xếp lớp tự động - PHIÊN BẢN CŨ (giữ lại để tham khảo)
-     * KHÔNG SỬ DỤNG - Code này xử lý từng sinh viên một (chậm)
-     */
-    private function autoAssign_OLD(Request $request)
     {
         $request->validate([
             'hoc_ky_id' => 'required|exists:hoc_ky,id',
@@ -295,51 +109,22 @@ class XepLopController extends Controller
     }
 
     /**
-     * Xếp lớp cho một sinh viên cụ thể - PHIÊN BẢN TỐI ƯU
-     * Tối ưu số lượng queries
+     * Xếp lớp cho một sinh viên cụ thể
      */
     private function xepLopChoSinhVien($dangKy)
     {
-        // Tìm tất cả lớp học phần phù hợp với eager loading số lượng sinh viên
+        // Tìm lớp học phần phù hợp
         $lopHocPhans = LopHocPhan::where('mon_hoc_id', $dangKy->mon_hoc_id)
             ->where('hoc_ky_id', $dangKy->hoc_ky_id)
             ->whereIn('trang_thai_lop', ['mo_dang_ky', 'dang_hoc'])
             ->get();
 
-        if ($lopHocPhans->isEmpty()) {
-            $dangKy->update([
-                'trang_thai' => 'that_bai',
-                'ly_do_that_bai' => 'Không tìm thấy lớp học phần phù hợp'
-            ]);
-            return ['success' => false, 'message' => 'Không tìm thấy lớp'];
-        }
-
-        // Lấy IDs của các lớp
-        $lopHocPhanIds = $lopHocPhans->pluck('id')->toArray();
-
-        // Query 1 lần để lấy số lượng sinh viên của tất cả các lớp
-        $soLuongDaDangKy = LopHocPhanSinhVien::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
-            ->select('lop_hoc_phan_id', DB::raw('COUNT(*) as so_luong'))
-            ->groupBy('lop_hoc_phan_id')
-            ->pluck('so_luong', 'lop_hoc_phan_id')
-            ->toArray();
-
-        // Query 1 lần để kiểm tra sinh viên đã đăng ký lớp nào chưa
-        $daDangKyLopIds = LopHocPhanSinhVien::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-            ->where('sinh_vien_id', $dangKy->sinh_vien_id)
-            ->pluck('lop_hoc_phan_id')
-            ->toArray();
-
         foreach ($lopHocPhans as $lopHocPhan) {
-            // Kiểm tra sinh viên đã đăng ký lớp này chưa
-            if (in_array($lopHocPhan->id, $daDangKyLopIds)) {
-                continue; // Đã đăng ký rồi, thử lớp khác
-            }
-
-            // Lấy sức chứa và số lượng thực tế
+            // Lấy sức chứa và số lượng thực tế từ bảng lop_hoc_phan_sinh_vien
             $sucChua = $lopHocPhan->suc_chua ?? 0;
-            $soLuongThucTe = $soLuongDaDangKy[$lopHocPhan->id] ?? 0;
+            $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                ->count();
 
             // Kiểm tra còn chỗ không
             if ($soLuongThucTe < $sucChua) {
@@ -347,6 +132,15 @@ class XepLopController extends Controller
                 if ($lopHocPhan->so_luong_dang_ky != $soLuongThucTe) {
                     $lopHocPhan->so_luong_dang_ky = $soLuongThucTe;
                     $lopHocPhan->save();
+                }
+
+                // Kiểm tra sinh viên đã đăng ký lớp này chưa
+                $exists = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
+                    ->where('sinh_vien_id', $dangKy->sinh_vien_id)
+                    ->exists();
+
+                if ($exists) {
+                    continue; // Đã đăng ký rồi, thử lớp khác
                 }
 
                 // Xếp vào lớp này
@@ -585,49 +379,6 @@ class XepLopController extends Controller
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ], 500);
-        }
-    }
-
-    /**
-     * Tính học phí cho sinh viên sau khi xếp lớp thành công
-     * 
-     * @param int $hocKyId
-     * @param array $dataToInsert Mảng data đã insert vào lop_hoc_phan_sinh_vien
-     */
-    private function tinhHocPhiSauXepLop($hocKyId, $dataToInsert)
-    {
-        try {
-            $hocPhiService = app(HocPhiService::class);
-
-            // Nhóm theo sinh viên
-            $sinhVienGroups = [];
-            foreach ($dataToInsert as $item) {
-                $sinhVienId = $item['sinh_vien_id'];
-                if (!isset($sinhVienGroups[$sinhVienId])) {
-                    $sinhVienGroups[$sinhVienId] = [];
-                }
-                // Lưu ID của bản ghi lop_hoc_phan_sinh_vien vừa được tạo
-                // (cần query lại vì insert() không trả về ID)
-            }
-
-            // Query lại các bản ghi vừa tạo để lấy ID
-            foreach ($sinhVienGroups as $sinhVienId => $items) {
-                $lopHocPhanSinhVienIds = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVienId)
-                    ->whereHas('lopHocPhan', function ($query) use ($hocKyId) {
-                        $query->where('hoc_ky_id', $hocKyId);
-                    })
-                    ->pluck('id')
-                    ->toArray();
-
-                if (!empty($lopHocPhanSinhVienIds)) {
-                    $hocPhiService->tinhHocPhiKhiDangKy($sinhVienId, $hocKyId, $lopHocPhanSinhVienIds);
-                    Log::info("Đã tính học phí cho sinh viên ID: {$sinhVienId}, Học kỳ: {$hocKyId}");
-                }
-            }
-
-        } catch (\Exception $e) {
-            Log::error('Lỗi tính học phí sau xếp lớp: ' . $e->getMessage());
-            // Không throw exception để không rollback việc xếp lớp
         }
     }
 }

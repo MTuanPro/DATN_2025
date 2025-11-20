@@ -18,7 +18,6 @@ use App\Http\Controllers\Admin\ThongBaoController;
 use App\Http\Controllers\DaoTao\DashboardController as DaoTaoDashboardController;
 use App\Http\Controllers\GiangVien\DashboardController as GiangVienDashboardController;
 use App\Http\Controllers\GiangVien\ScheduleController;
-use App\Http\Controllers\SinhVien\HocPhiController;
 use App\Http\Controllers\GiangVien\GVCNController;
 use App\Http\Controllers\SinhVien\DashboardController as SinhVienDashboardController;
 use App\Http\Controllers\DaoTao\CTDT\ChuongTrinhKhungController;
@@ -106,11 +105,6 @@ Route::middleware(['auth'])->group(function () {
 // ========== Email Verification Routes ==========
 Route::get('/email/verify/{token}', [AdminUserController::class, 'showVerifyForm'])->name('verification.form');
 Route::post('/email/verify', [AdminUserController::class, 'processVerify'])->name('verification.process');
-
-// ========== Payment Callback Routes (Không cần auth - Nhận từ gateway) ==========
-Route::get('/sinh-vien/hoc-phi/payment-callback', [HocPhiController::class, 'paymentCallback'])->name('payment.callback');
-Route::post('/sinh-vien/hoc-phi/payment-callback', [HocPhiController::class, 'paymentCallback']);
-Route::get('/sinh-vien/hoc-phi/payment-return', [HocPhiController::class, 'paymentReturn'])->name('payment.return');
 
 // ========== Admin Routes ==========
 Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->group(function () {
@@ -582,9 +576,6 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/{id}', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'show'])->name('show');
         Route::get('/{id}/lich-su', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'lichSu'])->name('lich-su');
         Route::get('/{id}/pdf', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'exportPdf'])->name('pdf');
-        
-        // Thanh toán online
-        Route::post('/{id}/thanh-toan-online', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'thanhToanOnline'])->name('thanh-toan-online');
     });
 
     // PHASE 9.5: Xuất dữ liệu (Export Data)

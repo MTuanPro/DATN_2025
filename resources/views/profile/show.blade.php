@@ -16,7 +16,7 @@
                     <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                 </div>
             @endif
-
+<!-- sửa giao diện -->
             <div class="card">
                 <div class="card-header">
                     <h4 class="card-title">Thông Tin Cá Nhân</h4>
