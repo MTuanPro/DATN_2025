@@ -59,6 +59,14 @@ class DangKyMonHocTam extends Model
     }
 
     /**
+     * Scope: Chờ đóng học phí
+     */
+    public function scopeChoDongHocPhi($query)
+    {
+        return $query->where('trang_thai', 'cho_dong_hoc_phi');
+    }
+
+    /**
      * Scope: Chờ xếp lớp
      */
     public function scopeChoXepLop($query)
@@ -88,6 +96,7 @@ class DangKyMonHocTam extends Model
     public function getTrangThaiLabelAttribute()
     {
         $labels = [
+            'cho_dong_hoc_phi' => 'Chờ đóng học phí',
             'cho_xep_lop' => 'Chờ xếp lớp',
             'da_xep_lop' => 'Đã xếp lớp',
             'that_bai' => 'Thất bại',
@@ -102,6 +111,7 @@ class DangKyMonHocTam extends Model
     public function getTrangThaiBadgeAttribute()
     {
         $badges = [
+            'cho_dong_hoc_phi' => 'info',
             'cho_xep_lop' => 'warning',
             'da_xep_lop' => 'success',
             'that_bai' => 'danger',

@@ -576,6 +576,16 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/{id}', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'show'])->name('show');
         Route::get('/{id}/lich-su', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'lichSu'])->name('lich-su');
         Route::get('/{id}/pdf', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'exportPdf'])->name('pdf');
+        
+        // MoMo Payment routes
+        Route::get('/{id}/momo-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showMoMoPayment'])->name('momo-payment');
+        Route::post('/{id}/momo-initiate', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'initiateMoMoPayment'])->name('momo-initiate');
+    });
+    
+    // MoMo Payment Callback (public routes - no auth required for IPN)
+    Route::prefix('payment')->name('payment.')->group(function () {
+        Route::get('/momo/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'momoCallback'])->name('momo.callback');
+        Route::post('/momo/ipn', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'momoIpn'])->name('momo.ipn');
     });
 
     // PHASE 9.5: Xuất dữ liệu (Export Data)

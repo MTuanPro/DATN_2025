@@ -12,9 +12,13 @@ class HocPhiHocKyObserver
      */
     public function saving(HocPhiHocKy $hocPhiHocKy): void
     {
-        // Tự động tính tổng số tiền = học phí môn học + phí dịch vụ
+        // ✅ CHỈ TÍNH PHÍ DỊCH VỤ KHI CÓ ÍT NHẤT 1 MÔN HỌC (tong_tin_chi_dang_ky > 0)
+        // Nếu không có môn nào hoặc tất cả môn đã bị hủy, thì không tính phí dịch vụ
+        $phiDichVu = ($hocPhiHocKy->tong_tin_chi_dang_ky > 0) ? $hocPhiHocKy->phi_dich_vu : 0;
+        
+        // Tự động tính tổng số tiền = học phí môn học + phí dịch vụ (nếu có môn học)
         $hocPhiHocKy->tong_so_tien =
-            $hocPhiHocKy->tong_hoc_phi_mon_hoc + $hocPhiHocKy->phi_dich_vu;
+            $hocPhiHocKy->tong_hoc_phi_mon_hoc + $phiDichVu;
 
         // Tự động tính số tiền còn lại = tổng số tiền - số tiền đã đóng
         $hocPhiHocKy->so_tien_con_lai =

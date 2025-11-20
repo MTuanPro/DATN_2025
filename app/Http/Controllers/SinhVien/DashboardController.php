@@ -8,10 +8,14 @@ use App\Models\LopHocPhanSinhVien;
 use App\Models\HocPhiHocKy;
 use App\Models\CanhBaoHocVu;
 use App\Models\NguoiNhanThongBao;
+use App\Models\LichHocChiTiet;
+use App\Models\KetQuaHocTap;
+use App\Models\LichThi;
 use App\Services\DiemService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
@@ -105,6 +109,50 @@ class DashboardController extends Controller
             'thong_bao_ids' => $thongBaoMoiNhat->pluck('thong_bao_id')->toArray()
         ]);
 
+        // Lấy thời khóa biểu tuần này
+        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
+        $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
+        
+        $lopHocPhanIds = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+            ->pluck('lop_hoc_phan_id');
+        
+        $weeklyTimetable = LichHocChiTiet::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
+            ->whereBetween('ngay_hoc', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+            ->where('trang_thai', '!=', 'huy')
+            ->with([
+                'lopHocPhan.monHoc',
+                'phongHoc',
+                'giangVien',
+                'caHoc'
+            ])
+            ->orderBy('ngay_hoc', 'asc')
+            ->orderBy('gio_bat_dau', 'asc')
+            ->get();
+
+        // Lấy điểm gần đây (5 điểm mới nhất)
+        $recentGrades = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function($q) use ($sinhVien) {
+                $q->where('sinh_vien_id', $sinhVien->id);
+            })
+            ->with([
+                'lopHocPhanSinhVien.lopHocPhan.monHoc'
+            ])
+            ->orderBy('updated_at', 'desc')
+            ->limit(5)
+            ->get();
+
+        // Lấy lịch thi sắp tới (5 lịch thi gần nhất)
+        $upcomingExams = LichThi::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
+            ->where('ngay_thi', '>=', now()->toDateString())
+            ->with([
+                'lopHocPhan.monHoc',
+                'phongHoc'
+            ])
+            ->orderBy('ngay_thi', 'asc')
+            ->orderBy('gio_bat_dau', 'asc')
+            ->limit(5)
+            ->get();
+
         $data = [
             'totalCredits' => $totalCredits,
             'gpa' => $gpaFormatted,
@@ -116,6 +164,9 @@ class DashboardController extends Controller
             'warnings' => $warnings,
             'sinhVien' => $sinhVien,
             'thongBaoMoiNhat' => $thongBaoMoiNhat,
+            'weeklyTimetable' => $weeklyTimetable,
+            'recentGrades' => $recentGrades,
+            'upcomingExams' => $upcomingExams,
         ];
 
         return view('sinhvien.dashboard', $data);

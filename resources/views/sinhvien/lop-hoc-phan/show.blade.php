@@ -194,7 +194,7 @@
                             <thead>
                                 <tr>
                                     <th>Thứ</th>
-                                    <th>Tiết</th>
+                                    <th>Ca</th>
                                     <th>Giờ học</th>
                                     <th>Phòng</th>
                                     <th>Giảng viên</th>
@@ -207,9 +207,14 @@
                                             <strong>{{ $lich->ten_thu ?? 'N/A' }}</strong>
                                         </td>
                                         <td>
-                                            Tiết {{ $lich->tiet_bat_dau }}
-                                            @if($lich->tiet_ket_thuc != $lich->tiet_bat_dau)
-                                                - {{ $lich->tiet_ket_thuc }}
+                                            @if($lich->caHoc)
+                                                <span class="badge bg-info">{{ $lich->caHoc->ten_ca }}</span>
+                                            @else
+                                                <span class="text-muted">Tiết {{ $lich->tiet_bat_dau }}
+                                                    @if($lich->tiet_ket_thuc != $lich->tiet_bat_dau)
+                                                        - {{ $lich->tiet_ket_thuc }}
+                                                    @endif
+                                                </span>
                                             @endif
                                         </td>
                                         <td>

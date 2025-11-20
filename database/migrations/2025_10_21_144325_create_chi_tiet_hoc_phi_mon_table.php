@@ -14,7 +14,7 @@ return new class extends Migration
         Schema::create('chi_tiet_hoc_phi_mon', function (Blueprint $table) {
             $table->id();
             $table->foreignId('hoc_phi_hoc_ky_id')->constrained('hoc_phi_hoc_ky')->onDelete('cascade');
-            $table->foreignId('lop_hoc_phan_sinh_vien_id')->constrained('lop_hoc_phan_sinh_vien')->onDelete('cascade');
+            $table->foreignId('lop_hoc_phan_sinh_vien_id')->nullable()->constrained('lop_hoc_phan_sinh_vien')->onDelete('cascade');
             $table->foreignId('mon_hoc_id')->constrained('mon_hoc')->onDelete('cascade');
             $table->integer('so_tin_chi');
             $table->float('don_gia_tin_chi')->comment('Giá/tín chỉ tại thời điểm đăng ký');
@@ -23,7 +23,9 @@ return new class extends Migration
             $table->string('trang_thai')->default('chua_thanh_toan')->comment('chua_thanh_toan, da_thanh_toan, huy');
             $table->timestamps();
 
-            $table->unique(['hoc_phi_hoc_ky_id', 'lop_hoc_phan_sinh_vien_id'], 'unique_hp_sv');
+            // Unique constraint: một môn học chỉ có một chi tiết học phí trong một học phí học kỳ
+            // (khi chưa xếp lớp, lop_hoc_phan_sinh_vien_id sẽ là NULL)
+            $table->unique(['hoc_phi_hoc_ky_id', 'mon_hoc_id'], 'unique_hp_mon');
         });
     }
 

@@ -120,6 +120,11 @@
                                 </tr>
                             </table>
 
+                            @if($hocPhi->so_tien_con_lai > 0)
+                                <a href="{{ route('sinh-vien.hoc-phi.momo-payment', $hocPhi->id) }}" class="btn btn-primary w-100 mt-2">
+                                    <i class="bi bi-wallet2"></i> Thanh toán qua MoMo
+                                </a>
+                            @endif
                             <a href="{{ route('sinh-vien.hoc-phi.lich-su', $hocPhi->id) }}" class="btn btn-info w-100 mt-2">
                                 <i class="bi bi-clock-history"></i> Xem lịch sử đóng
                             </a>

@@ -35,4 +35,15 @@ return [
         ],
     ],
 
+    'momo' => [
+        'partner_code' => env('MOMO_PARTNER_CODE'),
+        'access_key' => env('MOMO_ACCESS_KEY'),
+        'secret_key' => env('MOMO_SECRET_KEY'),
+        'environment' => env('MOMO_ENVIRONMENT', 'sandbox'), // 'sandbox' or 'production'
+        'partner_name' => env('MOMO_PARTNER_NAME', 'Trường Đại Học'),
+        'store_id' => env('MOMO_STORE_ID'),
+        'return_url' => env('MOMO_RETURN_URL', env('APP_URL') . '/payment/momo/callback'),
+        'notify_url' => env('MOMO_NOTIFY_URL', env('APP_URL') . '/payment/momo/ipn'),
+    ],
+
 ];

@@ -10,6 +10,8 @@ use App\Models\DaoTao\ChuongTrinhKhung;
 use App\Models\LopHocPhan;
 use App\Models\KetQuaHocTap;
 use App\Services\DangKyMonHocService;
+use App\Services\HocPhiService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -17,10 +19,17 @@ use Illuminate\Support\Facades\DB;
 class DangKyMonHocController extends Controller
 {
     protected $dangKyMonHocService;
+    protected $hocPhiService;
+    protected $notificationService;
 
-    public function __construct(DangKyMonHocService $dangKyMonHocService)
-    {
+    public function __construct(
+        DangKyMonHocService $dangKyMonHocService, 
+        HocPhiService $hocPhiService,
+        NotificationService $notificationService
+    ) {
         $this->dangKyMonHocService = $dangKyMonHocService;
+        $this->hocPhiService = $hocPhiService;
+        $this->notificationService = $notificationService;
     }
 
     /**
@@ -300,25 +309,86 @@ class DangKyMonHocController extends Controller
             $uuTien += 50;
         }
 
-        // Tạo đăng ký tạm
-        $dangKy = DangKyMonHocTam::create([
-            'sinh_vien_id' => $sinhVien->id,
-            'mon_hoc_id' => $request->mon_hoc_id,
-            'hoc_ky_id' => $request->hoc_ky_id,
-            'ngay_dang_ky' => now(),
-            'uu_tien' => $uuTien,
-            'trang_thai' => 'cho_xep_lop',
-        ]);
+        try {
+            DB::beginTransaction();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Đăng ký môn học thành công! Hệ thống sẽ tự động xếp lớp sau.',
-            'data' => $dangKy
-        ]);
+            // Tạo đăng ký tạm với trạng thái chờ đóng học phí (chưa vào danh sách chờ xếp lớp)
+            $dangKy = DangKyMonHocTam::create([
+                'sinh_vien_id' => $sinhVien->id,
+                'mon_hoc_id' => $request->mon_hoc_id,
+                'hoc_ky_id' => $request->hoc_ky_id,
+                'ngay_dang_ky' => now(),
+                'uu_tien' => $uuTien,
+                'trang_thai' => 'cho_dong_hoc_phi', // Trạng thái mới: chờ đóng học phí
+            ]);
+
+            // ✅ TÍNH HỌC PHÍ NGAY KHI ĐĂNG KÝ MÔN
+            $hocPhi = $this->hocPhiService->tinhHocPhiKhiDangKyMonHoc(
+                $sinhVien->id,
+                $request->hoc_ky_id,
+                $request->mon_hoc_id
+            );
+
+            if (!$hocPhi) {
+                DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không thể tính học phí. Vui lòng thử lại hoặc liên hệ phòng đào tạo.'
+                ], 500);
+            }
+
+            // Lấy thông tin môn học để gửi thông báo
+            $monHoc = \App\Models\DaoTao\MonHoc::find($request->mon_hoc_id);
+            $tenMonHoc = $monHoc ? $monHoc->ten_mon : 'Môn học';
+
+            // ✅ GỬI THÔNG BÁO YÊU CẦU ĐÓNG HỌC PHÍ
+            try {
+                // Tính số tiền học phí cho môn này (từ chi tiết học phí môn)
+                $chiTietHocPhi = \App\Models\ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                    ->where('mon_hoc_id', $request->mon_hoc_id)
+                    ->first();
+                
+                $soTienMonHoc = $chiTietHocPhi ? $chiTietHocPhi->thanh_tien : 0;
+                
+                // Sử dụng hạn đóng từ học phí (đã được tính là 1 tuần)
+                $hanDong = $hocPhi->han_dong;
+
+                $this->notificationService->sendTuitionPaymentRequestNotification(
+                    $sinhVien->id,
+                    $tenMonHoc,
+                    $hocPhi->tong_so_tien, // Tổng học phí của học kỳ
+                    $hanDong
+                );
+            } catch (\Exception $e) {
+                \Log::error('Lỗi gửi thông báo yêu cầu đóng học phí: ' . $e->getMessage());
+                // Không rollback vì đăng ký đã thành công, chỉ log lỗi
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Đăng ký môn học thành công! Vui lòng đóng học phí trong vòng 1 tuần để được xếp lớp.',
+                'data' => $dangKy,
+                'hoc_phi' => [
+                    'tong_so_tien' => $hocPhi->tong_so_tien,
+                    'so_tien_con_lai' => $hocPhi->so_tien_con_lai,
+                    'han_dong' => $hanDong,
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Lỗi khi đăng ký môn học: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi đăng ký môn học: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**
      * Hủy đăng ký môn học
+     * Cho phép hủy khi: chưa đóng học phí (cho_dong_hoc_phi) hoặc chưa xếp lớp (cho_xep_lop)
      */
     public function destroy($id)
     {
@@ -335,29 +405,65 @@ class DangKyMonHocController extends Controller
             ], 404);
         }
 
-        // Chỉ cho phép hủy nếu chưa xếp lớp
-        if ($dangKy->trang_thai !== 'cho_xep_lop') {
+        // ✅ Cho phép hủy nếu chưa đóng học phí hoặc chưa xếp lớp
+        if (!in_array($dangKy->trang_thai, ['cho_dong_hoc_phi', 'cho_xep_lop'])) {
             return response()->json([
                 'success' => false,
-                'message' => 'Không thể hủy đăng ký đã xếp lớp!'
+                'message' => 'Không thể hủy đăng ký đã được xếp lớp!'
             ], 400);
         }
 
         // Kiểm tra thời gian hủy đăng ký
         $hocKy = $dangKy->hocKy;
-        if (now() > $hocKy->ngay_ket_thuc_dang_ky) {
+        if ($hocKy && $hocKy->ngay_ket_thuc_dang_ky && now() > $hocKy->ngay_ket_thuc_dang_ky) {
             return response()->json([
                 'success' => false,
                 'message' => 'Đã hết thời gian hủy đăng ký!'
             ], 400);
         }
 
-        $dangKy->delete();
+        try {
+            DB::beginTransaction();
 
-        return response()->json([
-            'success' => true,
-            'message' => 'Hủy đăng ký thành công!'
-        ]);
+            // ✅ HỦY HỌC PHÍ TƯƠNG ỨNG
+            $hocPhi = \App\Models\HocPhiHocKy::where('sinh_vien_id', $sinhVien->id)
+                ->where('hoc_ky_id', $dangKy->hoc_ky_id)
+                ->first();
+
+            if ($hocPhi) {
+                // Tìm và hủy chi tiết học phí của môn này
+                $chiTietHocPhi = \App\Models\ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                    ->where('mon_hoc_id', $dangKy->mon_hoc_id)
+                    ->whereNull('lop_hoc_phan_sinh_vien_id') // Chỉ hủy những môn chưa xếp lớp
+                    ->first();
+
+                if ($chiTietHocPhi) {
+                    // Đánh dấu là hủy
+                    $chiTietHocPhi->trang_thai = 'huy';
+                    $chiTietHocPhi->save();
+
+                    // Tính lại tổng học phí
+                    $this->hocPhiService->recalculateHocPhi($hocPhi->id);
+                }
+            }
+
+            // Xóa đăng ký
+            $dangKy->delete();
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Hủy đăng ký thành công! Học phí đã được cập nhật.'
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Lỗi khi hủy đăng ký môn học: ' . $e->getMessage());
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra khi hủy đăng ký: ' . $e->getMessage()
+            ], 500);
+        }
     }
 
     /**

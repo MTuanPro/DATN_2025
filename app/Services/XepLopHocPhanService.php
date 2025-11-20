@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\LopHocPhanSinhVien;
 use App\Models\DangKyMonHocTam;
+use App\Models\HocPhiHocKy;
 use App\Models\HocKy;
 use App\Models\LopHocPhan;
 use App\Models\LichHocCoDinh;
@@ -74,6 +75,12 @@ class XepLopHocPhanService
      */
     protected function xepLopChoMotSinhVien(DangKyMonHocTam $dangKy): array
     {
+        // ✅ KIỂM TRA HỌC PHÍ: Chỉ xếp lớp cho sinh viên đã đóng đủ học phí
+        if (!$this->kiemTraDaDongHocPhi($dangKy)) {
+            $this->capNhatThatBai($dangKy, 'Sinh viên chưa đóng đủ học phí. Vui lòng đóng học phí để được xếp lớp.');
+            return ['success' => false];
+        }
+
         // 1. Tìm lớp phù hợp
         $lopPhuHop = $this->timLopPhuHop($dangKy);
 
@@ -90,6 +97,32 @@ class XepLopHocPhanService
             $this->capNhatThatBai($dangKy, 'Lỗi khi xếp lớp: ' . $e->getMessage());
             return ['success' => false];
         }
+    }
+
+    /**
+     * Kiểm tra sinh viên đã đóng đủ học phí chưa
+     * 
+     * @param DangKyMonHocTam $dangKy
+     * @return bool
+     */
+    protected function kiemTraDaDongHocPhi(DangKyMonHocTam $dangKy): bool
+    {
+        $hocPhi = HocPhiHocKy::where('sinh_vien_id', $dangKy->sinh_vien_id)
+            ->where('hoc_ky_id', $dangKy->hoc_ky_id)
+            ->first();
+
+        if (!$hocPhi) {
+            Log::warning("Không tìm thấy học phí cho sinh viên {$dangKy->sinh_vien_id} - Học kỳ {$dangKy->hoc_ky_id}");
+            return false;
+        }
+
+        // Chỉ xếp lớp nếu đã đóng đủ học phí
+        if ($hocPhi->trang_thai !== 'da_nop_du') {
+            Log::info("Sinh viên {$dangKy->sinh_vien_id} chưa đóng đủ học phí. Trạng thái: {$hocPhi->trang_thai}");
+            return false;
+        }
+
+        return true;
     }
 
     /**

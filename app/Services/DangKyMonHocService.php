@@ -67,7 +67,7 @@ class DangKyMonHocService
     {
         $tongTinChi = DangKyMonHocTam::where('sinh_vien_id', $sinhVienId)
             ->where('hoc_ky_id', $hocKyId)
-            ->whereIn('trang_thai', ['cho_xep_lop', 'da_xep_lop'])
+            ->whereIn('trang_thai', ['cho_dong_hoc_phi', 'cho_xep_lop', 'da_xep_lop'])
             ->join('mon_hoc', 'dang_ky_mon_hoc_tam.mon_hoc_id', '=', 'mon_hoc.id')
             ->sum('mon_hoc.so_tin_chi');
 
@@ -94,7 +94,7 @@ class DangKyMonHocService
         return DangKyMonHocTam::where('sinh_vien_id', $sinhVienId)
             ->where('mon_hoc_id', $monHocId)
             ->where('hoc_ky_id', $hocKyId)
-            ->whereIn('trang_thai', ['cho_xep_lop', 'da_xep_lop'])
+            ->whereIn('trang_thai', ['cho_dong_hoc_phi', 'cho_xep_lop', 'da_xep_lop'])
             ->exists();
     }
 

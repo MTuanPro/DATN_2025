@@ -4,6 +4,7 @@ namespace App\Observers;
 
 use App\Models\LopHocPhanSinhVien;
 use App\Models\LopHocPhan;
+use App\Models\ChiTietHocPhiMon;
 use App\Services\HocPhiService;
 use Illuminate\Support\Facades\Log;
 
@@ -37,6 +38,7 @@ class LopHocPhanSinhVienObserver
 
     /**
      * Tính học phí tự động cho sinh viên khi được xếp lớp
+     * LƯU Ý: Học phí đã được tính khi đăng ký môn, bây giờ chỉ cần liên kết với LopHocPhanSinhVien
      */
     protected function tinhHocPhiTuDong(LopHocPhanSinhVien $lhpsv): void
     {
@@ -48,19 +50,42 @@ class LopHocPhanSinhVienObserver
                 return;
             }
 
-            $result = $this->hocPhiService->tinhHocPhiKhiDangKy(
-                $lhpsv->sinh_vien_id,
-                $lopHocPhan->hoc_ky_id,
-                [$lhpsv->id]
-            );
+            // Lấy học phí của sinh viên trong học kỳ này
+            $hocPhi = \App\Models\HocPhiHocKy::where('sinh_vien_id', $lhpsv->sinh_vien_id)
+                ->where('hoc_ky_id', $lopHocPhan->hoc_ky_id)
+                ->first();
 
-            if ($result) {
-                Log::info("✅ [AUTO] Đã tính học phí cho sinh viên ID: {$lhpsv->sinh_vien_id} - Lớp: {$lopHocPhan->ma_lop_hp} - Tổng: " . number_format($result->tong_so_tien, 0, ',', '.') . " VND");
+            if (!$hocPhi) {
+                Log::warning("⚠️ Không tìm thấy học phí cho sinh viên ID: {$lhpsv->sinh_vien_id} - Học kỳ: {$lopHocPhan->hoc_ky_id}");
+                return;
+            }
+
+            // Cập nhật ChiTietHocPhiMon để liên kết với LopHocPhanSinhVien
+            $chiTiet = ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                ->where('mon_hoc_id', $lopHocPhan->mon_hoc_id)
+                ->whereNull('lop_hoc_phan_sinh_vien_id')
+                ->first();
+
+            if ($chiTiet) {
+                $chiTiet->lop_hoc_phan_sinh_vien_id = $lhpsv->id;
+                $chiTiet->save();
+                Log::info("✅ [AUTO] Đã liên kết học phí với lớp học phần cho sinh viên ID: {$lhpsv->sinh_vien_id} - Lớp: {$lopHocPhan->ma_lop_hp}");
             } else {
-                Log::warning("⚠️ [AUTO] Không thể tính học phí cho sinh viên ID: {$lhpsv->sinh_vien_id}");
+                // Nếu không tìm thấy chi tiết học phí, có thể học phí chưa được tính khi đăng ký
+                // Trong trường hợp này, tính lại học phí (fallback)
+                Log::warning("⚠️ Không tìm thấy chi tiết học phí cho môn {$lopHocPhan->mon_hoc_id}. Tính lại học phí...");
+                $result = $this->hocPhiService->tinhHocPhiKhiDangKy(
+                    $lhpsv->sinh_vien_id,
+                    $lopHocPhan->hoc_ky_id,
+                    [$lhpsv->id]
+                );
+
+                if ($result) {
+                    Log::info("✅ [AUTO] Đã tính lại học phí cho sinh viên ID: {$lhpsv->sinh_vien_id} - Lớp: {$lopHocPhan->ma_lop_hp}");
+                }
             }
         } catch (\Exception $e) {
-            Log::error("❌ [AUTO] Lỗi tính học phí tự động cho sinh viên ID: {$lhpsv->sinh_vien_id} - Lỗi: {$e->getMessage()}");
+            Log::error("❌ [AUTO] Lỗi xử lý học phí tự động cho sinh viên ID: {$lhpsv->sinh_vien_id} - Lỗi: {$e->getMessage()}");
             Log::error("Stack trace: " . $e->getTraceAsString());
         }
     }

@@ -71,7 +71,7 @@
                             <thead>
                                 <tr>
                                     <th>Ngày học</th>
-                                    <th>Tiết</th>
+                                    <th>Ca</th>
                                     <th>Giờ</th>
                                     <th>Phòng</th>
                                     <th>Giảng viên</th>
@@ -83,7 +83,13 @@
                                 @forelse($lichHocs as $lichHoc)
                                     <tr>
                                         <td>{{ Carbon\Carbon::parse($lichHoc->ngay_hoc)->format('d/m/Y') }}</td>
-                                        <td>{{ $lichHoc->tiet_bat_dau }} - {{ $lichHoc->tiet_ket_thuc }}</td>
+                                        <td>
+                                            @if($lichHoc->caHoc)
+                                                <span class="badge bg-info">{{ $lichHoc->caHoc->ten_ca }}</span>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                         <td>{{ Carbon\Carbon::parse($lichHoc->gio_bat_dau)->format('H:i') }} -
                                             {{ Carbon\Carbon::parse($lichHoc->gio_ket_thuc)->format('H:i') }}</td>
                                         <td>{{ $lichHoc->phongHoc->ten_phong ?? '-' }}</td>

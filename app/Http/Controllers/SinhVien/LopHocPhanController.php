@@ -50,6 +50,7 @@ class LopHocPhanController extends Controller
                 'lopHocPhan.giangVienChinh.giangVien',
                 'lopHocPhan.lichHocCoDinhs.phongHoc',
                 'lopHocPhan.lichHocCoDinhs.giangVien',
+                'lopHocPhan.lichHocCoDinhs.caHoc',
                 'ketQuaHocTap',
             ]);
 
@@ -129,6 +130,7 @@ class LopHocPhanController extends Controller
                 'lopHocPhan.giangVienChinh.giangVien',
                 'lopHocPhan.lichHocCoDinhs.phongHoc',
                 'lopHocPhan.lichHocCoDinhs.giangVien',
+                'lopHocPhan.lichHocCoDinhs.caHoc',
                 'ketQuaHocTap',
                 'dangKyTam',
             ])

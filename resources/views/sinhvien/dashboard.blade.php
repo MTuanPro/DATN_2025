@@ -92,16 +92,52 @@
                                         <thead>
                                             <tr>
                                                 <th>Thứ</th>
-                                                <th>Tiết</th>
+                                                <th>Ca</th>
                                                 <th>Học phần</th>
                                                 <th>Phòng</th>
                                                 <th>Giảng viên</th>
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr>
-                                                <td colspan="5" class="text-center">Chưa có lịch học</td>
-                                            </tr>
+                                            @if(isset($weeklyTimetable) && $weeklyTimetable->count() > 0)
+                                                @foreach($weeklyTimetable as $lich)
+                                                    @php
+                                                        $ngayHoc = \Carbon\Carbon::parse($lich->ngay_hoc);
+                                                        $thuTrongTuan = $ngayHoc->dayOfWeek; // 0 = CN, 1 = T2, ..., 6 = T7
+                                                        $thuNames = [
+                                                            0 => 'Chủ nhật',
+                                                            1 => 'Thứ Hai',
+                                                            2 => 'Thứ Ba',
+                                                            3 => 'Thứ Tư',
+                                                            4 => 'Thứ Năm',
+                                                            5 => 'Thứ Sáu',
+                                                            6 => 'Thứ Bảy',
+                                                        ];
+                                                        $tenThu = $thuNames[$thuTrongTuan] ?? 'N/A';
+                                                        $monHoc = $lich->lopHocPhan->monHoc ?? null;
+                                                    @endphp
+                                                    <tr>
+                                                        <td>{{ $tenThu }}</td>
+                                                        <td>
+                                                            @if($lich->caHoc)
+                                                                <span class="badge bg-primary">{{ $lich->caHoc->ten_ca }}</span>
+                                                            @elseif($lich->gio_bat_dau && $lich->gio_ket_thuc)
+                                                                {{ \Carbon\Carbon::parse($lich->gio_bat_dau)->format('H:i') }} - 
+                                                                {{ \Carbon\Carbon::parse($lich->gio_ket_thuc)->format('H:i') }}
+                                                            @else
+                                                                -
+                                                            @endif
+                                                        </td>
+                                                        <td>{{ $monHoc ? $monHoc->ten_mon : 'N/A' }}</td>
+                                                        <td>{{ $lich->phongHoc ? $lich->phongHoc->ten_phong : 'TBA' }}</td>
+                                                        <td>{{ $lich->giangVien ? $lich->giangVien->ho_ten : 'TBA' }}</td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="5" class="text-center">Chưa có lịch học</td>
+                                                </tr>
+                                            @endif
                                         </tbody>
                                     </table>
                                 </div>
@@ -125,9 +161,28 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr>
-                                                <td colspan="2" class="text-center">Chưa có điểm</td>
-                                            </tr>
+                                            @if(isset($recentGrades) && $recentGrades->count() > 0)
+                                                @foreach($recentGrades as $grade)
+                                                    @php
+                                                        $monHoc = $grade->lopHocPhanSinhVien->lopHocPhan->monHoc ?? null;
+                                                    @endphp
+                                                    <tr>
+                                                        <td>{{ $monHoc ? $monHoc->ten_mon : 'N/A' }}</td>
+                                                        <td>
+                                                            <span class="badge bg-{{ $grade->diem_chu_badge }}">
+                                                                {{ $grade->diem_chu ?? 'N/A' }}
+                                                            </span>
+                                                            @if($grade->diem_he_10)
+                                                                <small class="text-muted ms-1">({{ number_format($grade->diem_he_10, 1) }})</small>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="2" class="text-center">Chưa có điểm</td>
+                                                </tr>
+                                            @endif
                                         </tbody>
                                     </table>
                                 </div>
@@ -149,9 +204,27 @@
                                             </tr>
                                         </thead>
                                         <tbody>
-                                            <tr>
-                                                <td colspan="2" class="text-center">Chưa có lịch thi</td>
-                                            </tr>
+                                            @if(isset($upcomingExams) && $upcomingExams->count() > 0)
+                                                @foreach($upcomingExams as $exam)
+                                                    @php
+                                                        $monHoc = $exam->lopHocPhan->monHoc ?? null;
+                                                    @endphp
+                                                    <tr>
+                                                        <td>{{ $monHoc ? $monHoc->ten_mon : 'N/A' }}</td>
+                                                        <td>
+                                                            <strong>{{ \Carbon\Carbon::parse($exam->ngay_thi)->format('d/m/Y') }}</strong>
+                                                            @if($exam->gio_bat_dau)
+                                                                <br>
+                                                                <small class="text-muted">{{ \Carbon\Carbon::parse($exam->gio_bat_dau)->format('H:i') }}</small>
+                                                            @endif
+                                                        </td>
+                                                    </tr>
+                                                @endforeach
+                                            @else
+                                                <tr>
+                                                    <td colspan="2" class="text-center">Chưa có lịch thi</td>
+                                                </tr>
+                                            @endif
                                         </tbody>
                                     </table>
                                 </div>

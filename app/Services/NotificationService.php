@@ -442,6 +442,61 @@ class NotificationService
     }
 
     /**
+     * Gửi thông báo yêu cầu đóng học phí sau khi đăng ký môn
+     * 
+     * @param int $sinhVienId
+     * @param string $tenMonHoc
+     * @param float $soTienHocPhi
+     * @param string $hanDong Hạn đóng học phí (format: Y-m-d)
+     * @return ThongBao|null
+     */
+    public function sendTuitionPaymentRequestNotification(
+        int $sinhVienId,
+        string $tenMonHoc,
+        float $soTienHocPhi,
+        string $hanDong
+    ): ?ThongBao {
+        $sinhVien = SinhVien::find($sinhVienId);
+        if (!$sinhVien || !$sinhVien->user_id) {
+            Log::warning("Không tìm thấy sinh viên hoặc user_id cho sinh viên ID: {$sinhVienId}");
+            return null;
+        }
+
+        $hanDongFormatted = \Carbon\Carbon::parse($hanDong)->format('d/m/Y');
+        $soTienFormatted = number_format($soTienHocPhi, 0, ',', '.') . ' đ';
+
+        $tieuDe = "Yêu cầu đóng học phí - {$tenMonHoc}";
+        
+        $noiDung = "Kính chào {$sinhVien->ho_ten},\n\n"
+            . "Bạn đã đăng ký thành công môn học: {$tenMonHoc}\n\n"
+            . "📋 THÔNG TIN HỌC PHÍ:\n"
+            . "   • Số tiền cần đóng: {$soTienFormatted}\n"
+            . "   • Hạn đóng: {$hanDongFormatted} (trong vòng 1 tuần)\n\n"
+            . "⚠️ LƯU Ý QUAN TRỌNG:\n"
+            . "   • Bạn cần đóng đủ học phí trong vòng 1 tuần để được xếp lớp.\n"
+            . "   • Nếu không đóng học phí đúng hạn, bạn sẽ không được xếp lớp.\n"
+            . "   • Sau khi đóng đủ học phí, hệ thống sẽ tự động xếp lớp cho bạn.\n\n"
+            . "💡 HƯỚNG DẪN:\n"
+            . "   1. Vào menu 'Học phí' để xem chi tiết học phí\n"
+            . "   2. Đóng học phí theo hướng dẫn\n"
+            . "   3. Hệ thống sẽ tự động thêm bạn vào danh sách chờ xếp lớp sau khi đóng đủ\n\n"
+            . "Trân trọng!\n"
+            . "Phòng Đào tạo";
+
+        return $this->createAutoNotification(
+            'hoc_phi',
+            $tieuDe,
+            $noiDung,
+            [$sinhVien->user_id],
+            [
+                'muc_do_quan_trong' => 'quan_trong',
+                'gui_email' => false,
+                'gui_web_notification' => true,
+            ]
+        );
+    }
+
+    /**
      * Gửi Laravel Notification đến user
      * Sử dụng database + broadcast channels
      * 

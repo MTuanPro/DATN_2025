@@ -19,7 +19,7 @@ class LichHocChiTietController extends Controller
      */
     public function index(LopHocPhan $lopHocPhan)
     {
-        $lichHocs = LichHocChiTiet::with(['phongHoc', 'giangVien', 'lichHocCoDinh'])
+        $lichHocs = LichHocChiTiet::with(['phongHoc', 'giangVien', 'lichHocCoDinh', 'caHoc'])
             ->where('lop_hoc_phan_id', $lopHocPhan->id)
             ->orderBy('ngay_hoc')
             ->orderBy('tiet_bat_dau')

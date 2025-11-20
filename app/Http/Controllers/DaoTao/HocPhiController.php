@@ -6,11 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\HocPhiHocKy;
 use App\Models\LichSuDongHocPhi;
 use App\Models\ChiTietHocPhiMon;
+use App\Models\DangKyMonHocTam;
 use App\Models\DaoTao\SinhVien;
 use App\Models\HocKy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 
 class HocPhiController extends Controller
 {
@@ -195,6 +197,9 @@ class HocPhiController extends Controller
                 ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
                     ->where('trang_thai', 'chua_thanh_toan')
                     ->update(['trang_thai' => 'da_thanh_toan']);
+
+                // ✅ KHI ĐÓNG ĐỦ HỌC PHÍ: Tự động thêm vào danh sách chờ xếp lớp
+                $this->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
             }
 
             DB::commit();
@@ -272,6 +277,48 @@ class HocPhiController extends Controller
             ->paginate(20);
 
         return view('daotao.hoc-phi.overdue', compact('hocPhis'));
+    }
+
+    /**
+     * Thêm sinh viên vào danh sách chờ xếp lớp khi đóng đủ học phí
+     * 
+     * @param int $sinhVienId
+     * @param int $hocKyId
+     * @return void
+     */
+    private function themVaoDanhSachChoXepLop($sinhVienId, $hocKyId)
+    {
+        try {
+            // Lấy tất cả đăng ký đang chờ đóng học phí của sinh viên trong học kỳ này
+            $dangKys = DangKyMonHocTam::where('sinh_vien_id', $sinhVienId)
+                ->where('hoc_ky_id', $hocKyId)
+                ->where('trang_thai', 'cho_dong_hoc_phi')
+                ->get();
+
+            foreach ($dangKys as $dangKy) {
+                // Kiểm tra xem sinh viên đã đóng đủ học phí cho môn này chưa
+                $hocPhi = HocPhiHocKy::where('sinh_vien_id', $sinhVienId)
+                    ->where('hoc_ky_id', $hocKyId)
+                    ->first();
+
+                if ($hocPhi && $hocPhi->trang_thai == 'da_nop_du') {
+                    // Kiểm tra xem môn này có trong chi tiết học phí không
+                    $chiTiet = ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                        ->where('mon_hoc_id', $dangKy->mon_hoc_id)
+                        ->first();
+
+                    if ($chiTiet) {
+                        // Chuyển trạng thái từ 'cho_dong_hoc_phi' sang 'cho_xep_lop'
+                        $dangKy->trang_thai = 'cho_xep_lop';
+                        $dangKy->save();
+
+                        Log::info("✅ Đã thêm sinh viên {$sinhVienId} - Môn {$dangKy->mon_hoc_id} vào danh sách chờ xếp lớp sau khi đóng đủ học phí");
+                    }
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("❌ Lỗi khi thêm vào danh sách chờ xếp lớp: " . $e->getMessage());
+        }
     }
 }
 
