@@ -69,19 +69,102 @@
                         </div>
                     @endif
 
+                    @if (session('warning'))
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <strong>Cảnh báo trùng lịch!</strong>
+                            <div class="mt-2">{!! session('warning') !!}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
+                    <!-- Bộ lọc giảng viên -->
+                    <div class="card bg-light mb-3">
+                        <div class="card-body">
+                            <h6 class="card-title mb-3">
+                                <i class="bi bi-funnel"></i> Lọc & Tìm kiếm Giảng viên
+                            </h6>
+                            <form method="GET" action="{{ route('dao-tao.lop-hoc-phan.phan-cong', $lopHocPhan->id) }}" id="filterForm">
+                                <div class="row g-3">
+                                    <div class="col-md-3">
+                                        <label class="form-label">Khoa</label>
+                                        <select name="khoa_id" class="form-select" onchange="document.getElementById('filterForm').submit()">
+                                            <option value="">-- Tất cả Khoa --</option>
+                                            @foreach ($khoas as $khoa)
+                                                <option value="{{ $khoa->id }}" {{ request('khoa_id') == $khoa->id ? 'selected' : '' }}>
+                                                    {{ $khoa->ten_khoa }}
+                                                </option>
+                                            @endforeach
+                                        </select>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <label class="form-label">Tìm kiếm (Tên/Mã GV)</label>
+                                        <input type="text" name="search" class="form-control" 
+                                            placeholder="Nhập tên hoặc mã giảng viên..." 
+                                            value="{{ request('search') }}">
+                                    </div>
+                                    <div class="col-md-3">
+                                        <label class="form-label">Chuyên môn</label>
+                                        <input type="text" name="chuyen_mon" class="form-control" 
+                                            placeholder="VD: Lập trình, Cơ sở dữ liệu..." 
+                                            value="{{ request('chuyen_mon') }}">
+                                    </div>
+                                    <div class="col-md-2">
+                                        <label class="form-label">&nbsp;</label>
+                                        <div class="d-grid gap-2">
+                                            <button type="submit" class="btn btn-primary">
+                                                <i class="bi bi-search"></i> Lọc
+                                            </button>
+                                            @if(request()->hasAny(['khoa_id', 'search', 'chuyen_mon']))
+                                                <a href="{{ route('dao-tao.lop-hoc-phan.phan-cong', $lopHocPhan->id) }}" 
+                                                   class="btn btn-secondary btn-sm">
+                                                    <i class="bi bi-x-circle"></i> Xóa lọc
+                                                </a>
+                                            @endif
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <!-- Kết quả lọc -->
+                    @if(request()->hasAny(['khoa_id', 'search', 'chuyen_mon']))
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            Tìm thấy <strong>{{ $giangViens->count() }}</strong> giảng viên
+                            @if(request('khoa_id'))
+                                trong khoa <strong>{{ $khoas->find(request('khoa_id'))->ten_khoa ?? '' }}</strong>
+                            @endif
+                            @if(request('search'))
+                                với từ khóa "<strong>{{ request('search') }}</strong>"
+                            @endif
+                            @if(request('chuyen_mon'))
+                                có chuyên môn "<strong>{{ request('chuyen_mon') }}</strong>"
+                            @endif
+                        </div>
+                    @endif
+
                     <form action="{{ route('dao-tao.lop-hoc-phan.phan-cong.store', $lopHocPhan->id) }}" method="POST">
                         @csrf
                         <div class="row">
                             <div class="col-md-5">
                                 <label class="form-label">Giảng viên <span class="text-danger">*</span></label>
-                                <select name="giang_vien_id"
+                                <select name="giang_vien_id" id="selectGiangVien"
                                     class="form-select @error('giang_vien_id') is-invalid @enderror" required>
                                     <option value="">-- Chọn giảng viên --</option>
                                     @foreach ($giangViens as $gv)
-                                        <option value="{{ $gv->id }}">{{ $gv->ma_giang_vien }} -
-                                            {{ $gv->ho_ten }}</option>
+                                        <option value="{{ $gv->id }}" 
+                                            data-khoa="{{ $gv->khoa->ten_khoa ?? 'Chưa có' }}"
+                                            data-chuyen-mon="{{ $gv->chuyen_mon ?? 'Chưa có' }}">
+                                            {{ $gv->ma_giang_vien }} - {{ $gv->ho_ten }}
+                                            @if($gv->khoa)
+                                                ({{ $gv->khoa->ma_khoa }})
+                                            @endif
+                                        </option>
                                     @endforeach
                                 </select>
+                                <small class="text-muted" id="giangVienInfo"></small>
                                 @error('giang_vien_id')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
@@ -103,9 +186,26 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> Phân công
-                            </button>
+                            @if(session('show_force_assign'))
+                                <!-- Form xác nhận phân công bất chấp trùng lịch -->
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> Bạn có chắc muốn phân công giảng viên này bất chấp trùng lịch?
+                                </div>
+                                <input type="hidden" name="force_assign" value="1">
+                                <input type="hidden" name="giang_vien_id" value="{{ session('conflict_data.giang_vien_id') }}">
+                                <input type="hidden" name="vai_tro" value="{{ session('conflict_data.vai_tro') }}">
+                                <input type="hidden" name="ghi_chu" value="{{ session('conflict_data.ghi_chu') }}">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> Xác nhận phân công (Bỏ qua cảnh báo)
+                                </button>
+                                <a href="{{ route('dao-tao.lop-hoc-phan.phan-cong', $lopHocPhan->id) }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Hủy
+                                </a>
+                            @else
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Phân công
+                                </button>
+                            @endif
                             <a href="{{ route('dao-tao.lop-hoc-phan.index') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left"></i> Quay lại
                             </a>
@@ -179,4 +279,22 @@
             </div>
         </section>
     </div>
+
+    @push('scripts')
+    <script>
+        // Hiển thị thông tin giảng viên khi chọn
+        document.getElementById('selectGiangVien').addEventListener('change', function() {
+            const selectedOption = this.options[this.selectedIndex];
+            const infoElement = document.getElementById('giangVienInfo');
+            
+            if (selectedOption.value) {
+                const khoa = selectedOption.getAttribute('data-khoa');
+                const chuyenMon = selectedOption.getAttribute('data-chuyen-mon');
+                infoElement.innerHTML = `<i class="bi bi-info-circle"></i> Khoa: <strong>${khoa}</strong> | Chuyên môn: <strong>${chuyenMon}</strong>`;
+            } else {
+                infoElement.innerHTML = '';
+            }
+        });
+    </script>
+    @endpush
 @endsection

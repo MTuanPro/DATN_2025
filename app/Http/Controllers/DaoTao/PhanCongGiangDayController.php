@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LopHocPhan;
 use App\Models\PhanCongGiangDay;
 use App\Models\GiangVien;
+use App\Models\DaoTao\Khoa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,12 +15,39 @@ class PhanCongGiangDayController extends Controller
     /**
      * Hiển thị form phân công giảng viên cho lớp học phần
      */
-    public function index($lopHocPhanId)
+    public function index(Request $request, $lopHocPhanId)
     {
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy', 'lopHocPhanGiangVien.giangVien'])->findOrFail($lopHocPhanId);
-        $giangViens = GiangVien::orderBy('ho_ten')->get();
+        
+        // Lấy danh sách Khoa để filter
+        $khoas = Khoa::orderBy('ten_khoa')->get();
+        
+        // Query giảng viên với filters
+        $query = GiangVien::with(['khoa', 'trinhDo']);
+        
+        // Filter theo Khoa
+        if ($request->filled('khoa_id')) {
+            $query->where('khoa_id', $request->khoa_id);
+        }
+        
+        // Tìm kiếm theo tên hoặc mã giảng viên
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('ho_ten', 'LIKE', "%{$search}%")
+                  ->orWhere('ma_giang_vien', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
+            });
+        }
+        
+        // Filter theo chuyên môn
+        if ($request->filled('chuyen_mon')) {
+            $query->where('chuyen_mon', 'LIKE', "%{$request->chuyen_mon}%");
+        }
+        
+        $giangViens = $query->orderBy('ho_ten')->get();
 
-        return view('daotao.phan-cong-giang-day.index', compact('lopHocPhan', 'giangViens'));
+        return view('daotao.phan-cong-giang-day.index', compact('lopHocPhan', 'giangViens', 'khoas'));
     }
 
     /**
@@ -61,7 +89,69 @@ class PhanCongGiangDayController extends Controller
             }
         }
 
-        // TODO: Kiểm tra trùng lịch giảng viên (cần implement sau khi có bảng lich_hoc_co_dinh)
+        // Kiểm tra trùng lịch giảng viên
+        $lopHocPhan = LopHocPhan::with(['lichHocCoDinhs', 'monHoc'])->find($lopHocPhanId);
+        $giangVien = GiangVien::find($validated['giang_vien_id']);
+        
+        if ($lopHocPhan && $lopHocPhan->lichHocCoDinhs->isNotEmpty()) {
+            $conflictMessages = [];
+            
+            foreach ($lopHocPhan->lichHocCoDinhs as $lichLop) {
+                // Kiểm tra xung đột với lịch của giảng viên
+                $conflict = \App\Models\LichHocCoDinh::where('giang_vien_id', $validated['giang_vien_id'])
+                    ->where('id', '!=', $lichLop->id) // Loại trừ chính lịch này
+                    ->where('thu_trong_tuan', $lichLop->thu_trong_tuan)
+                    ->where(function ($q) use ($lichLop) {
+                        $q->where(function ($q2) use ($lichLop) {
+                            $q2->where('tiet_ket_thuc', '>=', $lichLop->tiet_bat_dau)
+                               ->where('tiet_bat_dau', '<=', $lichLop->tiet_ket_thuc);
+                        });
+                    })
+                    ->with(['lopHocPhan.monHoc'])
+                    ->first();
+                
+                if ($conflict) {
+                    $thuText = [
+                        2 => 'Thứ 2',
+                        3 => 'Thứ 3',
+                        4 => 'Thứ 4',
+                        5 => 'Thứ 5',
+                        6 => 'Thứ 6',
+                        7 => 'Thứ 7',
+                        8 => 'Chủ nhật'
+                    ];
+                    
+                    $conflictMessages[] = sprintf(
+                        '%s, tiết %d-%d: Trùng với lớp "%s" (Môn: %s)',
+                        $thuText[$lichLop->thu_trong_tuan] ?? 'Thứ ' . $lichLop->thu_trong_tuan,
+                        $lichLop->tiet_bat_dau,
+                        $lichLop->tiet_ket_thuc,
+                        $conflict->lopHocPhan->ma_lop_hp ?? 'N/A',
+                        $conflict->lopHocPhan->monHoc->ten_mon ?? 'N/A'
+                    );
+                }
+            }
+            
+            if (!empty($conflictMessages) && !$request->has('force_assign')) {
+                $errorMessage = sprintf(
+                    'Giảng viên "%s" đã có lịch dạy trùng với lớp "%s" (%s):<br><ul><li>%s</li></ul><small class="text-muted">Nếu vẫn muốn phân công, vui lòng xác nhận bên dưới.</small>',
+                    $giangVien->ho_ten,
+                    $lopHocPhan->ma_lop_hp,
+                    $lopHocPhan->monHoc->ten_mon,
+                    implode('</li><li>', $conflictMessages)
+                );
+                
+                return redirect()->back()
+                    ->withInput()
+                    ->with('warning', $errorMessage)
+                    ->with('show_force_assign', true)
+                    ->with('conflict_data', [
+                        'giang_vien_id' => $validated['giang_vien_id'],
+                        'vai_tro' => $validated['vai_tro'],
+                        'ghi_chu' => $validated['ghi_chu']
+                    ]);
+            }
+        }
 
         // Lấy ID của nhân viên đào tạo từ user đang đăng nhập
         $daoTaoId = Auth::user()->daoTao ? Auth::user()->daoTao->id : null;
