@@ -22,6 +22,7 @@ return new class extends Migration
             $table->foreignId('nguoi_thu_id')->nullable()->constrained('dao_tao')->onDelete('set null');
             $table->string('bien_lai_file')->nullable()->comment('File biên lai thanh toán');
             $table->text('ghi_chu')->nullable();
+            $table->json('response_data')->nullable()->comment('Dữ liệu phản hồi từ cổng thanh toán');
             $table->timestamps();
         });
     }
