@@ -100,7 +100,7 @@
                                     </a>
                                 </div>
                             @endif
-
+<!-- sửa giao diện -->
                             {{-- Thống kê người nhận --}}
                             <div class="mb-4">
                                 <h6>Thống kê người nhận:</h6>
@@ -132,7 +132,6 @@
                                 </div>
                             </div>
                         </div>
-
                         <div class="col-md-4">
                             {{-- Thông tin cơ bản --}}
                             <div class="card">
