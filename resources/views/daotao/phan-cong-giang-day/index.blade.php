@@ -69,6 +69,15 @@
                         </div>
                     @endif
 
+                    @if (session('warning'))
+                        <div class="alert alert-warning alert-dismissible fade show">
+                            <i class="bi bi-exclamation-triangle-fill"></i>
+                            <strong>Cảnh báo trùng lịch!</strong>
+                            <div class="mt-2">{!! session('warning') !!}</div>
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        </div>
+                    @endif
+
                     <!-- Bộ lọc giảng viên -->
                     <div class="card bg-light mb-3">
                         <div class="card-body">
@@ -177,9 +186,26 @@
                             </div>
                         </div>
                         <div class="mt-3">
-                            <button type="submit" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> Phân công
-                            </button>
+                            @if(session('show_force_assign'))
+                                <!-- Form xác nhận phân công bất chấp trùng lịch -->
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i> Bạn có chắc muốn phân công giảng viên này bất chấp trùng lịch?
+                                </div>
+                                <input type="hidden" name="force_assign" value="1">
+                                <input type="hidden" name="giang_vien_id" value="{{ session('conflict_data.giang_vien_id') }}">
+                                <input type="hidden" name="vai_tro" value="{{ session('conflict_data.vai_tro') }}">
+                                <input type="hidden" name="ghi_chu" value="{{ session('conflict_data.ghi_chu') }}">
+                                <button type="submit" class="btn btn-warning">
+                                    <i class="bi bi-exclamation-triangle"></i> Xác nhận phân công (Bỏ qua cảnh báo)
+                                </button>
+                                <a href="{{ route('dao-tao.lop-hoc-phan.phan-cong', $lopHocPhan->id) }}" class="btn btn-secondary">
+                                    <i class="bi bi-x-circle"></i> Hủy
+                                </a>
+                            @else
+                                <button type="submit" class="btn btn-primary">
+                                    <i class="bi bi-plus-circle"></i> Phân công
+                                </button>
+                            @endif
                             <a href="{{ route('dao-tao.lop-hoc-phan.index') }}" class="btn btn-secondary">
                                 <i class="bi bi-arrow-left"></i> Quay lại
                             </a>
