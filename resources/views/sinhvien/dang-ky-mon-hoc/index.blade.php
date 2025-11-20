@@ -168,7 +168,7 @@
                                             $daDangKy = in_array($monHoc->id, $monDaDangKy);
                                             $daHoc = in_array($monHoc->id, $monDaHoc);
                                             $daQua = in_array($monHoc->id, $monDaQua);
-                                            $lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
+$lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
                                         @endphp
                                         <tr>
                                             <td><code>{{ $monHoc->ma_mon }}</code></td>
@@ -229,7 +229,10 @@
                                                     </button>
                                                 @elseif($daDangKy)
                                                     @php
-                                                        $dangKyId = $dangKyCollection->firstWhere('mon_hoc_id', $monHoc->id)?->id;
+$dangKyId = $dangKyCollection->firstWhere(
+                                                            'mon_hoc_id',
+                                                            $monHoc->id,
+                                                        )?->id;
                                                     @endphp
                                                     <button type="button" class="btn btn-sm btn-danger btn-huy-dang-ky"
                                                         data-dang-ky-id="{{ $dangKyId }}">

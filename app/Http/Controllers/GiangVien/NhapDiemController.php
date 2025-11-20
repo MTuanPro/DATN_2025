@@ -225,17 +225,12 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             // Tự động tính điểm tổng
             $this->diemService->tinhDiemTong($validated['lop_hoc_phan_sinh_vien_id']);
 
-            // Lấy điểm tổng kết để trả về
-            $ketQua = KetQuaHocTap::where('lop_hoc_phan_sinh_vien_id', $validated['lop_hoc_phan_sinh_vien_id'])->first();
-
             DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Đã nhập điểm thành công',
-                'data' => $nhapDiem,
-                'diem_tong_ket' => $ketQua ? $ketQua->diem_he_10 : null,
-                'qua_mon' => $ketQua ? $ketQua->qua_mon : false,
+                'data' => $nhapDiem
             ]);
         } catch (\Exception $e) {
             DB::rollBack();

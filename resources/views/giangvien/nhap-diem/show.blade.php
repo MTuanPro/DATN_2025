@@ -177,7 +177,6 @@
                                         </th>
                                     @endforeach
                                     <th width="80" class="text-center" rowspan="2">Điểm TK</th>
-                                    <th width="100" class="text-center" rowspan="2">Kết quả</th>
                                     @if(!$daKhoaDiem && $dangDienRa)
                                     <th width="100" class="text-center" rowspan="2">Thao tác</th>
                                     @endif
@@ -246,22 +245,6 @@
                                                 -
                                             @endif
                                         </strong>
-                                    </td>
-                                    
-                                    <td class="text-center ket-qua-{{ $lhpsv->id }}">
-                                        @if($ketQua && $ketQua->diem_he_10 !== null)
-                                            @if($ketQua->qua_mon)
-                                                <span class="badge bg-success">
-                                                    <i class="bi bi-check-circle"></i> Đạt
-                                                </span>
-                                            @else
-                                                <span class="badge bg-danger">
-                                                    <i class="bi bi-x-circle"></i> Không đạt
-                                                </span>
-                                            @endif
-                                        @else
-                                            <span class="text-muted">-</span>
-                                        @endif
                                     </td>
                                     
                                     @if(!$daKhoaDiem && $dangDienRa)
@@ -371,34 +354,8 @@
                     const errorMsg = results.find(r => !r.success)?.message || 'Có lỗi xảy ra';
                     Swal.fire('Lỗi!', errorMsg, 'error');
                 } else {
-                    // Lấy điểm tổng kết mới từ kết quả cuối cùng
-                    const lastResult = results[results.length - 1];
-                    if (lastResult.diem_tong_ket !== undefined) {
-                        const diemTK = lastResult.diem_tong_ket;
-                        const quaMon = diemTK >= 4.0;
-                        
-                        // Cập nhật điểm tổng kết
-                        const diemTKElement = document.querySelector(`.diem-tk-${svId}`);
-                        if (diemTKElement) {
-                            diemTKElement.textContent = diemTK ? diemTK.toFixed(2) : '-';
-                        }
-                        
-                        // Cập nhật kết quả (Pass/Fail)
-                        const ketQuaElement = document.querySelector(`.ket-qua-${svId}`);
-                        if (ketQuaElement) {
-                            if (diemTK !== null) {
-                                if (quaMon) {
-                                    ketQuaElement.innerHTML = '<span class="badge bg-success"><i class="bi bi-check-circle"></i> Đạt</span>';
-                                } else {
-                                    ketQuaElement.innerHTML = '<span class="badge bg-danger"><i class="bi bi-x-circle"></i> Không đạt</span>';
-                                }
-                            } else {
-                                ketQuaElement.innerHTML = '<span class="text-muted">-</span>';
-                            }
-                        }
-                    }
-                    
-                    Swal.fire('Thành công!', 'Đã lưu điểm sinh viên', 'success');
+                    Swal.fire('Thành công!', 'Đã lưu điểm sinh viên', 'success')
+                        .then(() => location.reload());
                 }
             })
             .catch(error => {
