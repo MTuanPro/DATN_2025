@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\LopHocPhan;
 use App\Models\PhanCongGiangDay;
 use App\Models\GiangVien;
+use App\Models\DaoTao\Khoa;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -14,12 +15,39 @@ class PhanCongGiangDayController extends Controller
     /**
      * Hiển thị form phân công giảng viên cho lớp học phần
      */
-    public function index($lopHocPhanId)
+    public function index(Request $request, $lopHocPhanId)
     {
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy', 'lopHocPhanGiangVien.giangVien'])->findOrFail($lopHocPhanId);
-        $giangViens = GiangVien::orderBy('ho_ten')->get();
+        
+        // Lấy danh sách Khoa để filter
+        $khoas = Khoa::orderBy('ten_khoa')->get();
+        
+        // Query giảng viên với filters
+        $query = GiangVien::with(['khoa', 'trinhDo']);
+        
+        // Filter theo Khoa
+        if ($request->filled('khoa_id')) {
+            $query->where('khoa_id', $request->khoa_id);
+        }
+        
+        // Tìm kiếm theo tên hoặc mã giảng viên
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function($q) use ($search) {
+                $q->where('ho_ten', 'LIKE', "%{$search}%")
+                  ->orWhere('ma_giang_vien', 'LIKE', "%{$search}%")
+                  ->orWhere('email', 'LIKE', "%{$search}%");
+            });
+        }
+        
+        // Filter theo chuyên môn
+        if ($request->filled('chuyen_mon')) {
+            $query->where('chuyen_mon', 'LIKE', "%{$request->chuyen_mon}%");
+        }
+        
+        $giangViens = $query->orderBy('ho_ten')->get();
 
-        return view('daotao.phan-cong-giang-day.index', compact('lopHocPhan', 'giangViens'));
+        return view('daotao.phan-cong-giang-day.index', compact('lopHocPhan', 'giangViens', 'khoas'));
     }
 
     /**
