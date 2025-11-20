@@ -36,19 +36,22 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
-        // Register Observers for auto-calculation
-        HocPhiHocKy::observe(HocPhiHocKyObserver::class);
-        KetQuaHocTap::observe(KetQuaHocTapObserver::class);
-        LopHocPhanSinhVien::observe(LopHocPhanSinhVienObserver::class);
+        // Only register Observers and View Composers when NOT in console
+        if (!app()->runningInConsole()) {
+            // Register Observers for auto-calculation
+            HocPhiHocKy::observe(HocPhiHocKyObserver::class);
+            KetQuaHocTap::observe(KetQuaHocTapObserver::class);
+            LopHocPhanSinhVien::observe(LopHocPhanSinhVienObserver::class);
 
-        // Register Observers for auto-notifications
-        DangKyMonHoc::observe(DangKyMonHocObserver::class);
-        LichThi::observe(LichThiObserver::class);
-        
-        // Register Observer for auto-sync LichHocChiTiet
-        LichHocCoDinh::observe(LichHocCoDinhObserver::class);
+            // Register Observers for auto-notifications
+            DangKyMonHoc::observe(DangKyMonHocObserver::class);
+            LichThi::observe(LichThiObserver::class);
+            
+            // Register Observer for auto-sync LichHocChiTiet
+            LichHocCoDinh::observe(LichHocCoDinhObserver::class);
 
-        // Register View Composer for notifications in header
-        View::composer('layouts.blocks.header', NotificationComposer::class);
+            // Register View Composer for notifications in header
+            View::composer('layouts.blocks.header', NotificationComposer::class);
+        }
     }
 }

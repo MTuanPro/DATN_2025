@@ -7,6 +7,7 @@ use App\Models\DangKyMonHocTam;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\LopHocPhan;
 use App\Models\HocKy;
+use App\Services\HocPhiService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -207,6 +208,11 @@ class XepLopController extends Controller
             foreach ($soLuongDaDangKy as $lopId => $soLuong) {
                 LopHocPhan::where('id', $lopId)
                     ->update(['so_luong_dang_ky' => $soLuong]);
+            }
+
+            // 10. TÍNH HỌC PHÍ CHO SINH VIÊN ĐÃ XẾP LỚP THÀNH CÔNG
+            if (!empty($dangKyUpdates['thanh_cong'])) {
+                $this->tinhHocPhiSauXepLop($hocKyId, $dataToInsert);
             }
 
             DB::commit();
@@ -579,6 +585,49 @@ class XepLopController extends Controller
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ], 500);
+        }
+    }
+
+    /**
+     * Tính học phí cho sinh viên sau khi xếp lớp thành công
+     * 
+     * @param int $hocKyId
+     * @param array $dataToInsert Mảng data đã insert vào lop_hoc_phan_sinh_vien
+     */
+    private function tinhHocPhiSauXepLop($hocKyId, $dataToInsert)
+    {
+        try {
+            $hocPhiService = app(HocPhiService::class);
+
+            // Nhóm theo sinh viên
+            $sinhVienGroups = [];
+            foreach ($dataToInsert as $item) {
+                $sinhVienId = $item['sinh_vien_id'];
+                if (!isset($sinhVienGroups[$sinhVienId])) {
+                    $sinhVienGroups[$sinhVienId] = [];
+                }
+                // Lưu ID của bản ghi lop_hoc_phan_sinh_vien vừa được tạo
+                // (cần query lại vì insert() không trả về ID)
+            }
+
+            // Query lại các bản ghi vừa tạo để lấy ID
+            foreach ($sinhVienGroups as $sinhVienId => $items) {
+                $lopHocPhanSinhVienIds = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVienId)
+                    ->whereHas('lopHocPhan', function ($query) use ($hocKyId) {
+                        $query->where('hoc_ky_id', $hocKyId);
+                    })
+                    ->pluck('id')
+                    ->toArray();
+
+                if (!empty($lopHocPhanSinhVienIds)) {
+                    $hocPhiService->tinhHocPhiKhiDangKy($sinhVienId, $hocKyId, $lopHocPhanSinhVienIds);
+                    Log::info("Đã tính học phí cho sinh viên ID: {$sinhVienId}, Học kỳ: {$hocKyId}");
+                }
+            }
+
+        } catch (\Exception $e) {
+            Log::error('Lỗi tính học phí sau xếp lớp: ' . $e->getMessage());
+            // Không throw exception để không rollback việc xếp lớp
         }
     }
 }
