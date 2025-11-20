@@ -105,10 +105,12 @@ class HocPhiService
         try {
             $hocPhi = HocPhiHocKy::with('chiTietHocPhiMon')->findOrFail($hocPhiHocKyId);
 
-            // Calculate total credits
-            $tongTinChi = $hocPhi->chiTietHocPhiMon->sum('so_tin_chi');
+            // Calculate total credits (only non-cancelled courses)
+            $tongTinChi = $hocPhi->chiTietHocPhiMon
+                ->where('trang_thai', '!=', 'huy')
+                ->sum('so_tin_chi');
 
-            // Calculate total course tuition
+            // Calculate total course tuition (only non-cancelled courses)
             $tongHocPhiMon = $hocPhi->chiTietHocPhiMon
                 ->where('trang_thai', '!=', 'huy')
                 ->sum('thanh_tien');

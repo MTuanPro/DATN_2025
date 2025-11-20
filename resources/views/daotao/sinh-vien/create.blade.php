@@ -398,120 +398,173 @@
         $oldKhoaHocId = old('khoa_hoc_id', '');
         $oldChuyenNganhId = old('chuyen_nganh_id', '');
         $oldLopHanhChinhId = old('lop_hanh_chinh_id', '');
+        
+        // Chuẩn bị dữ liệu cho JavaScript
+        $chuyenNganhsData = $chuyenNganhs->map(function($cn) {
+            return [
+                'value' => $cn->id,
+                'text' => $cn->ma_chuyen_nganh . ' - ' . $cn->ten_chuyen_nganh,
+                'nganhId' => (string)$cn->nganh_id
+            ];
+        })->toArray();
+        
+        $lopHanhChinhsData = $lopHanhChinhs->map(function($lop) {
+            return [
+                'value' => $lop->id,
+                'text' => $lop->ma_lop . ' - ' . $lop->ten_lop,
+                'nganhId' => (string)$lop->nganh_id,
+                'khoaHocId' => (string)$lop->khoa_hoc_id
+            ];
+        })->toArray();
     @endphp
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const nganhSelect = document.getElementById('nganh_id');
-            const chuyenNganhSelect = document.getElementById('chuyen_nganh_id');
-            const khoaHocSelect = document.getElementById('khoa_hoc_id');
-            const lopHanhChinhSelect = document.getElementById('lop_hanh_chinh_id');
+        $(document).ready(function() {
+            // Đợi Select2 khởi tạo xong
+            setTimeout(function() {
+                const $nganhSelect = $('#nganh_id');
+                const $chuyenNganhSelect = $('#chuyen_nganh_id');
+                const $khoaHocSelect = $('#khoa_hoc_id');
+                const $lopHanhChinhSelect = $('#lop_hanh_chinh_id');
 
-            const allChuyenNganhs = Array.from(chuyenNganhSelect.options).slice(1); // Bỏ qua option đầu tiên
-            const allLopHanhChinhs = Array.from(lopHanhChinhSelect.options).slice(1); // Bỏ qua option đầu tiên
+                // Lưu trữ dữ liệu từ PHP
+                const allChuyenNganhs = @json($chuyenNganhsData);
+                const allLopHanhChinhs = @json($lopHanhChinhsData);
+                
+                console.log('Chuyên ngành data:', allChuyenNganhs);
+                console.log('Lớp hành chính data:', allLopHanhChinhs);
 
-            // Hàm lọc chuyên ngành theo ngành
-            function filterChuyenNganh(nganhId) {
-                chuyenNganhSelect.innerHTML = '';
+                // Hàm lọc chuyên ngành theo ngành
+                function filterChuyenNganh(nganhId) {
+                    nganhId = String(nganhId || '').trim();
+                    
+                    console.log('filterChuyenNganh called with nganhId:', nganhId);
 
-                if (!nganhId) {
-                    chuyenNganhSelect.disabled = true;
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = '-- Vui lòng chọn ngành trước --';
-                    chuyenNganhSelect.appendChild(defaultOption);
-                } else {
-                    chuyenNganhSelect.disabled = false;
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = '-- Chọn chuyên ngành --';
-                    chuyenNganhSelect.appendChild(defaultOption);
+                    // Xóa tất cả options trừ option đầu tiên
+                    $chuyenNganhSelect.find('option:not(:first)').remove();
 
-                    allChuyenNganhs.forEach(option => {
-                        if (option.dataset.nganhId == nganhId) {
-                            chuyenNganhSelect.appendChild(option.cloneNode(true));
+                    if (!nganhId) {
+                        $chuyenNganhSelect.prop('disabled', true);
+                        $chuyenNganhSelect.html('<option value="">-- Vui lòng chọn ngành trước --</option>');
+                    } else {
+                        $chuyenNganhSelect.prop('disabled', false);
+                        $chuyenNganhSelect.html('<option value="">-- Chọn chuyên ngành --</option>');
+
+                        let hasOptions = false;
+                        // Thêm các chuyên ngành phù hợp
+                        allChuyenNganhs.forEach(chuyenNganh => {
+                            if (chuyenNganh.nganhId === nganhId) {
+                                $chuyenNganhSelect.append(
+                                    $('<option></option>')
+                                        .attr('value', chuyenNganh.value)
+                                        .attr('data-nganh-id', chuyenNganh.nganhId)
+                                        .text(chuyenNganh.text)
+                                );
+                                hasOptions = true;
+                            }
+                        });
+
+                        if (!hasOptions) {
+                            $chuyenNganhSelect.append('<option value="">-- Không có chuyên ngành --</option>');
                         }
-                    });
-
-                    if (chuyenNganhSelect.options.length === 1) {
-                        const noDataOption = document.createElement('option');
-                        noDataOption.value = '';
-                        noDataOption.textContent = '-- Không có chuyên ngành --';
-                        chuyenNganhSelect.appendChild(noDataOption);
                     }
+                    
+                    // Trigger Select2 để cập nhật UI
+                    $chuyenNganhSelect.trigger('change.select2');
                 }
-            }
 
-            // Hàm lọc lớp hành chính theo ngành và khóa học
-            function filterLopHanhChinh() {
-                const nganhId = nganhSelect.value;
-                const khoaHocId = khoaHocSelect.value;
+                // Hàm lọc lớp hành chính theo ngành và khóa học
+                function filterLopHanhChinh() {
+                    let nganhId = String($nganhSelect.val() || '').trim();
+                    let khoaHocId = String($khoaHocSelect.val() || '').trim();
 
-                lopHanhChinhSelect.innerHTML = '';
+                    console.log('filterLopHanhChinh called with nganhId:', nganhId, 'khoaHocId:', khoaHocId);
 
-                if (!nganhId || !khoaHocId) {
-                    lopHanhChinhSelect.disabled = true;
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = '-- Chọn khóa học và ngành trước --';
-                    lopHanhChinhSelect.appendChild(defaultOption);
-                } else {
-                    lopHanhChinhSelect.disabled = false;
-                    const defaultOption = document.createElement('option');
-                    defaultOption.value = '';
-                    defaultOption.textContent = '-- Chọn lớp hành chính --';
-                    lopHanhChinhSelect.appendChild(defaultOption);
+                    // Xóa tất cả options trừ option đầu tiên
+                    $lopHanhChinhSelect.find('option:not(:first)').remove();
 
-                    // Lọc lớp theo cả ngành và khóa học
-                    allLopHanhChinhs.forEach(option => {
-                        if (option.dataset.nganhId == nganhId && option.dataset.khoaHocId == khoaHocId) {
-                            lopHanhChinhSelect.appendChild(option.cloneNode(true));
+                    if (!nganhId || !khoaHocId) {
+                        $lopHanhChinhSelect.prop('disabled', true);
+                        $lopHanhChinhSelect.html('<option value="">-- Chọn khóa học và ngành trước --</option>');
+                    } else {
+                        $lopHanhChinhSelect.prop('disabled', false);
+                        $lopHanhChinhSelect.html('<option value="">-- Chọn lớp hành chính --</option>');
+
+                        let hasOptions = false;
+                        // Lọc lớp theo cả ngành và khóa học
+                        allLopHanhChinhs.forEach(lop => {
+                            if (lop.nganhId === nganhId && lop.khoaHocId === khoaHocId) {
+                                $lopHanhChinhSelect.append(
+                                    $('<option></option>')
+                                        .attr('value', lop.value)
+                                        .attr('data-nganh-id', lop.nganhId)
+                                        .attr('data-khoa-hoc-id', lop.khoaHocId)
+                                        .text(lop.text)
+                                );
+                                hasOptions = true;
+                            }
+                        });
+
+                        if (!hasOptions) {
+                            $lopHanhChinhSelect.append('<option value="">-- Không có lớp phù hợp --</option>');
                         }
-                    });
-
-                    if (lopHanhChinhSelect.options.length === 1) {
-                        const noDataOption = document.createElement('option');
-                        noDataOption.value = '';
-                        noDataOption.textContent = '-- Không có lớp phù hợp --';
-                        lopHanhChinhSelect.appendChild(noDataOption);
                     }
+                    
+                    // Trigger Select2 để cập nhật UI
+                    $lopHanhChinhSelect.trigger('change.select2');
                 }
-            }
 
-            // Lắng nghe sự kiện thay đổi ngành
-            nganhSelect.addEventListener('change', function() {
-                filterChuyenNganh(this.value);
-                filterLopHanhChinh(); // Cập nhật lớp hành chính khi đổi ngành
-            });
+                // Hàm để cập nhật tất cả dropdowns
+                function updateAllDropdowns() {
+                    const currentNganhId = String($nganhSelect.val() || '').trim();
+                    const currentKhoaHocId = String($khoaHocSelect.val() || '').trim();
+                    
+                    console.log('Updating - Nganh:', currentNganhId, 'KhoaHoc:', currentKhoaHocId);
+                    
+                    filterChuyenNganh(currentNganhId);
+                    filterLopHanhChinh();
+                }
 
-            // Lắng nghe sự kiện thay đổi khóa học
-            khoaHocSelect.addEventListener('change', function() {
-                filterLopHanhChinh(); // Cập nhật lớp hành chính khi đổi khóa học
-            });
+                // Lắng nghe sự kiện thay đổi ngành (Select2 event)
+                $nganhSelect.on('change.select2', function() {
+                    console.log('Ngành changed to:', $(this).val());
+                    updateAllDropdowns();
+                });
 
-            // Khởi tạo trạng thái ban đầu
-            const initialNganhId = nganhSelect.value || '{{ $oldNganhId }}';
-            const initialKhoaHocId = khoaHocSelect.value || '{{ $oldKhoaHocId }}';
+                // Lắng nghe sự kiện thay đổi khóa học (Select2 event)
+                $khoaHocSelect.on('change.select2', function() {
+                    console.log('Khóa học changed to:', $(this).val());
+                    filterLopHanhChinh();
+                });
 
-            if (initialNganhId) {
-                filterChuyenNganh(initialNganhId);
+                // Khởi tạo trạng thái ban đầu
+                const initialNganhId = String($nganhSelect.val() || '').trim();
+                const initialKhoaHocId = String($khoaHocSelect.val() || '').trim();
+                
+                console.log('Initial values - Nganh:', initialNganhId, 'KhoaHoc:', initialKhoaHocId);
+
+                // Luôn gọi filter để khởi tạo đúng trạng thái
+                updateAllDropdowns();
 
                 // Khôi phục giá trị chuyên ngành đã chọn nếu có
                 const oldChuyenNganhId = '{{ $oldChuyenNganhId }}';
-                if (oldChuyenNganhId) {
-                    chuyenNganhSelect.value = oldChuyenNganhId;
+                if (oldChuyenNganhId && initialNganhId) {
+                    setTimeout(() => {
+                        if ($chuyenNganhSelect.find(`option[value="${oldChuyenNganhId}"]`).length > 0) {
+                            $chuyenNganhSelect.val(oldChuyenNganhId).trigger('change.select2');
+                        }
+                    }, 300);
                 }
-            }
-
-            // Khởi tạo lọc lớp hành chính
-            if (initialNganhId && initialKhoaHocId) {
-                filterLopHanhChinh();
 
                 // Khôi phục giá trị lớp đã chọn nếu có
                 const oldLopHanhChinhId = '{{ $oldLopHanhChinhId }}';
-                if (oldLopHanhChinhId) {
-                    lopHanhChinhSelect.value = oldLopHanhChinhId;
+                if (oldLopHanhChinhId && initialNganhId && initialKhoaHocId) {
+                    setTimeout(() => {
+                        if ($lopHanhChinhSelect.find(`option[value="${oldLopHanhChinhId}"]`).length > 0) {
+                            $lopHanhChinhSelect.val(oldLopHanhChinhId).trigger('change.select2');
+                        }
+                    }, 300);
                 }
-            }
+            }, 500); // Đợi Select2 khởi tạo xong
         });
     </script>
 @endpush

@@ -43,7 +43,10 @@
                                         </tr>
                                     </thead>
                                     <tbody>
-                                        @foreach ($hocPhi->chiTietHocPhiMon as $index => $ct)
+                                        @php
+                                            $chiTietHienThi = $hocPhi->chiTietHocPhiMon->where('trang_thai', '!=', 'huy');
+                                        @endphp
+                                        @foreach ($chiTietHienThi as $index => $ct)
                                             <tr>
                                                 <td>{{ $index + 1 }}</td>
                                                 <td>{{ $ct->monHoc->ma_mon }}</td>
@@ -68,9 +71,24 @@
                         <div class="card-body">
                             <table class="table table-borderless">
                                 <tr>
-                                    <td>Tổng học phí:</td>
-                                    <td class="text-end"><strong>{{ number_format($hocPhi->tong_so_tien, 0, ',', '.') }}
-                                            đ</strong></td>
+                                    <td>Tổng học phí môn học:</td>
+                                    <td class="text-end">
+                                        <strong>{{ number_format($hocPhi->tong_hoc_phi_mon_hoc, 0, ',', '.') }} đ</strong>
+                                    </td>
+                                </tr>
+                                @if($hocPhi->phi_dich_vu > 0)
+                                <tr>
+                                    <td>Phí dịch vụ:</td>
+                                    <td class="text-end">
+                                        <strong>{{ number_format($hocPhi->phi_dich_vu, 0, ',', '.') }} đ</strong>
+                                    </td>
+                                </tr>
+                                @endif
+                                <tr style="border-top: 2px solid #ddd;">
+                                    <td><strong>Tổng học phí:</strong></td>
+                                    <td class="text-end">
+                                        <strong class="text-primary">{{ number_format($hocPhi->tong_so_tien, 0, ',', '.') }} đ</strong>
+                                    </td>
                                 </tr>
                                 <tr>
                                     <td>Đã đóng:</td>
