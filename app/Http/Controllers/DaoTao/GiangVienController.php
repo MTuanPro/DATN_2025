@@ -5,6 +5,7 @@ namespace App\Http\Controllers\DaoTao;
 use App\Http\Controllers\Controller;
 use App\Models\GiangVien;
 use App\Models\User;
+use App\Models\VaiTro;
 use App\Models\DaoTao\Khoa;
 use App\Models\DanhMuc\TrinhDo;
 use Illuminate\Http\Request;
@@ -121,7 +122,7 @@ class GiangVienController extends Controller
                 ]);
 
                 // Gán vai trò giảng viên
-                $vaiTroGiangVien = \App\Models\VaiTro::where('ma_vai_tro', 'giang_vien')->first();
+                $vaiTroGiangVien = VaiTro::where('ma_vai_tro', 'giang_vien')->first();
                 if ($vaiTroGiangVien) {
                     $user->vaiTro()->attach($vaiTroGiangVien->id);
                 }
@@ -354,30 +355,220 @@ class GiangVienController extends Controller
     public function import(Request $request)
     {
         $request->validate([
-            'file' => ['required', 'file', 'mimes:xlsx,xls,csv', 'max:5120'],
+            'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:5120'],
             'tao_tai_khoan' => ['nullable', 'boolean'],
         ], [
-            'file.required' => 'Vui lòng chọn file Excel',
-            'file.mimes' => 'File phải có định dạng Excel (xlsx, xls, csv)',
+            'file.required' => 'Vui lòng chọn file Excel hoặc CSV',
+            'file.mimes' => 'File phải có định dạng Excel (.xlsx, .xls) hoặc CSV (.csv, .txt)',
             'file.max' => 'File không được vượt quá 5MB',
         ]);
 
+        DB::beginTransaction();
         try {
             $file = $request->file('file');
-            $extension = $file->getClientOriginalExtension();
-
-            // Đọc file Excel (giả sử dùng PhpSpreadsheet hoặc Laravel Excel)
-            // Để đơn giản, tôi sẽ làm logic cơ bản
+            $extension = strtolower($file->getClientOriginalExtension());
+            
+            $data = [];
+            
+            // Đọc file Excel
+            if (in_array($extension, ['xlsx', 'xls'])) {
+                // Kiểm tra extension zip có sẵn không
+                if (!extension_loaded('zip')) {
+                    DB::rollBack();
+                    return back()->with('error', 'PHP extension "zip" chưa được cài đặt. Vui lòng bật extension zip trong php.ini hoặc sử dụng file CSV thay vì Excel.');
+                }
+                
+                try {
+                    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+                    $worksheet = $spreadsheet->getActiveSheet();
+                    $data = $worksheet->toArray();
+                    
+                    // Bỏ qua header (dòng đầu tiên)
+                    array_shift($data);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return back()->with('error', 'Không thể đọc file Excel: ' . $e->getMessage());
+                }
+            } 
+            // Đọc file CSV
+            else {
+                $handle = fopen($file->getRealPath(), 'r');
+                
+                if ($handle === false) {
+                    throw new \Exception('Không thể đọc file');
+                }
+                
+                // Bỏ qua dòng header
+                fgetcsv($handle);
+                
+                while (($row = fgetcsv($handle)) !== false) {
+                    $data[] = $row;
+                }
+                
+                fclose($handle);
+            }
 
             $imported = 0;
             $errors = [];
+            $taoTaiKhoan = $request->boolean('tao_tai_khoan', false);
+            
+            // Lấy vai trò giảng viên
+            $vaiTroGiangVien = VaiTro::where('ma_vai_tro', 'giang_vien')->first();
 
-            // TODO: Implement Excel import logic
-            // Cần cài package: composer require maatwebsite/excel
+            foreach ($data as $rowNum => $row) {
+                $rowNum += 2; // +2 vì bỏ header và index bắt đầu từ 0
 
-            return back()->with('success', "Đã import thành công {$imported} giảng viên!");
+                // Kiểm tra dòng trống
+                if (empty($row[0])) {
+                    continue;
+                }
+
+                try {
+                    // Parse data - mapping theo cấu trúc: ma_giang_vien, ho_ten, email, khoa, trinh_do, so_dien_thoai, ngay_sinh, gioi_tinh, dia_chi, chuyen_mon, ngay_vao_truong
+                    $maGV = trim($row[0] ?? '');
+                    $hoTen = trim($row[1] ?? '');
+                    $email = trim($row[2] ?? '');
+                    $tenKhoa = trim($row[3] ?? '');
+                    $tenTrinhDo = trim($row[4] ?? '');
+                    $soDienThoai = trim($row[5] ?? '');
+                    $ngaySinh = !empty($row[6]) ? trim($row[6]) : null;
+                    $gioiTinh = !empty($row[7]) ? trim($row[7]) : null;
+                    $diaChi = !empty($row[8]) ? trim($row[8]) : null;
+                    $chuyenMon = !empty($row[9]) ? trim($row[9]) : 'Chưa xác định';
+                    $ngayVaoTruong = !empty($row[10]) ? trim($row[10]) : null;
+
+                    // Validate các trường bắt buộc
+                    if (empty($maGV) || empty($hoTen) || empty($email) || empty($tenKhoa) || empty($soDienThoai)) {
+                        $errors[] = "Dòng {$rowNum}: Thiếu thông tin bắt buộc (Mã GV, Họ tên, Email, Khoa, SĐT)";
+                        continue;
+                    }
+
+                    // Kiểm tra trùng mã giảng viên
+                    if (GiangVien::where('ma_giang_vien', $maGV)->exists()) {
+                        $errors[] = "Dòng {$rowNum}: Mã giảng viên {$maGV} đã tồn tại";
+                        continue;
+                    }
+
+                    // Kiểm tra trùng email
+                    if (GiangVien::where('email', $email)->exists()) {
+                        $errors[] = "Dòng {$rowNum}: Email {$email} đã tồn tại";
+                        continue;
+                    }
+
+                    // Tìm khoa theo tên hoặc mã khoa
+                    $khoa = Khoa::where('ten_khoa', $tenKhoa)
+                        ->orWhere('ma_khoa', $tenKhoa)
+                        ->first();
+                    
+                    if (!$khoa) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy khoa với tên/mã: {$tenKhoa}";
+                        continue;
+                    }
+                    $khoaId = $khoa->id;
+
+                    // Tìm trình độ theo tên (nếu có)
+                    $trinhDoId = null;
+                    if (!empty($tenTrinhDo)) {
+                        $trinhDo = TrinhDo::where('ten_trinh_do', $tenTrinhDo)->first();
+                        if (!$trinhDo) {
+                            $errors[] = "Dòng {$rowNum}: Không tìm thấy trình độ với tên: {$tenTrinhDo}";
+                            continue;
+                        }
+                        $trinhDoId = $trinhDo->id;
+                    }
+
+                    // Validate giới tính
+                    if ($gioiTinh && !in_array($gioiTinh, ['Nam', 'Nữ', 'Khác'])) {
+                        $errors[] = "Dòng {$rowNum}: Giới tính không hợp lệ (phải là: Nam, Nữ, Khác)";
+                        continue;
+                    }
+
+                    // Validate ngày sinh
+                    $ngaySinhDate = null;
+                    if ($ngaySinh) {
+                        try {
+                            $ngaySinhDate = \Carbon\Carbon::createFromFormat('Y-m-d', $ngaySinh)->format('Y-m-d');
+                        } catch (\Exception $e) {
+                            $errors[] = "Dòng {$rowNum}: Định dạng ngày sinh không hợp lệ (phải là YYYY-MM-DD)";
+                            continue;
+                        }
+                    }
+
+                    // Tạo tài khoản nếu được chọn
+                    $userId = null;
+                    if ($taoTaiKhoan) {
+                        // Kiểm tra email đã tồn tại trong users chưa
+                        $existingUser = User::where('email', $email)->first();
+                        if ($existingUser) {
+                            $errors[] = "Dòng {$rowNum}: Email {$email} đã được sử dụng cho tài khoản khác";
+                            continue;
+                        }
+
+                        $user = User::create([
+                            'name' => $hoTen,
+                            'email' => $email,
+                            'password' => Hash::make($maGV), // Mật khẩu mặc định là mã giảng viên
+                            'trang_thai' => 'hoat_dong',
+                            'email_verified_at' => now(),
+                        ]);
+
+                        // Gán vai trò giảng viên
+                        if ($vaiTroGiangVien) {
+                            $user->vaiTro()->attach($vaiTroGiangVien->id, [
+                                'nguoi_gan_id' => auth()->id() ?? 1,
+                                'ngay_gan' => now(),
+                            ]);
+                        }
+
+                        $userId = $user->id;
+                    }
+
+                    // Validate ngày vào trường
+                    $ngayVaoTruongDate = now()->format('Y-m-d');
+                    if ($ngayVaoTruong) {
+                        try {
+                            $ngayVaoTruongDate = \Carbon\Carbon::createFromFormat('Y-m-d', $ngayVaoTruong)->format('Y-m-d');
+                        } catch (\Exception $e) {
+                            $errors[] = "Dòng {$rowNum}: Định dạng ngày vào trường không hợp lệ (phải là YYYY-MM-DD)";
+                            continue;
+                        }
+                    }
+
+                    // Tạo giảng viên
+                    GiangVien::create([
+                        'ma_giang_vien' => $maGV,
+                        'ho_ten' => $hoTen,
+                        'email' => $email,
+                        'so_dien_thoai' => $soDienThoai,
+                        'ngay_sinh' => $ngaySinhDate,
+                        'gioi_tinh' => $gioiTinh,
+                        'dia_chi' => $diaChi,
+                        'trinh_do_id' => $trinhDoId,
+                        'chuyen_mon' => $chuyenMon,
+                        'khoa_id' => $khoaId,
+                        'ngay_vao_truong' => $ngayVaoTruongDate,
+                        'user_id' => $userId,
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Dòng {$rowNum}: " . $e->getMessage();
+                }
+            }
+
+            DB::commit();
+
+            $message = "Import thành công {$imported} giảng viên.";
+            if (count($errors) > 0) {
+                $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 5));
+            }
+
+            return redirect()->route('dao-tao.giang-vien.index')
+                ->with('success', $message)
+                ->with('errors', $errors);
         } catch (\Exception $e) {
-            return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+            DB::rollBack();
+            return back()->with('error', 'Có lỗi xảy ra khi import: ' . $e->getMessage());
         }
     }
 
@@ -387,7 +578,7 @@ class GiangVienController extends Controller
     public function downloadTemplate()
     {
         $headers = [
-            'Content-Type' => 'text/csv',
+            'Content-Type' => 'text/csv; charset=utf-8',
             'Content-Disposition' => 'attachment; filename="giang_vien_template.csv"',
         ];
 
@@ -395,15 +586,19 @@ class GiangVienController extends Controller
             'ma_giang_vien',
             'ho_ten',
             'email',
+            'khoa',
+            'trinh_do',
             'so_dien_thoai',
+            'ngay_sinh',
+            'gioi_tinh',
+            'dia_chi',
             'chuyen_mon',
-            'ma_khoa',
-            'ma_trinh_do',
             'ngay_vao_truong',
         ];
 
         $callback = function () use ($columns) {
             $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
 
             // Header
             fputcsv($file, $columns);
@@ -413,10 +608,13 @@ class GiangVienController extends Controller
                 'GV001',
                 'Nguyễn Văn A',
                 'nguyenvana@example.com',
+                'Công nghệ thông tin', // Tên khoa
+                'Thạc sĩ', // Tên trình độ
                 '0123456789',
+                '1985-05-15',
+                'Nam',
+                'Hà Nội',
                 'Lập trình',
-                'CNTT',
-                'THAC_SI',
                 '2020-01-01',
             ]);
 

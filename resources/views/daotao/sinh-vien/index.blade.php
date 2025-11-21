@@ -141,7 +141,7 @@
                                         </td>
                                         <td>
                                             @if ($sv->nganh)
-                                                {{ $sv->nganh->ma_nganh }}
+                                                {{ $sv->nganh->ten_nganh }}
                                             @endif
                                         </td>
                                         <td><span class="badge bg-info">Kỳ {{ $sv->ky_hien_tai }}</span></td>

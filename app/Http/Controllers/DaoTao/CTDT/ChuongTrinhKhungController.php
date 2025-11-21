@@ -8,6 +8,7 @@ use App\Models\DaoTao\ChuyenNganh;
 use App\Models\DaoTao\MonHoc;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\QueryException;
 
 class ChuongTrinhKhungController extends Controller
 {
@@ -129,10 +130,22 @@ class ChuongTrinhKhungController extends Controller
             ])->withInput();
         }
 
-        ChuongTrinhKhung::create($validated);
+        try {
+            ChuongTrinhKhung::create($validated);
 
-        return redirect()->route('dao-tao.chuong-trinh-khung.index', ['chuyen_nganh_id' => $validated['chuyen_nganh_id']])
-            ->with('success', 'Thêm môn học vào CTĐT thành công!');
+            return redirect()->route('dao-tao.chuong-trinh-khung.index', ['chuyen_nganh_id' => $validated['chuyen_nganh_id']])
+                ->with('success', 'Thêm môn học vào CTĐT thành công!');
+        } catch (QueryException $e) {
+            // Xử lý lỗi unique constraint violation
+            if ($e->getCode() == 23000 || str_contains($e->getMessage(), 'Duplicate entry')) {
+                return redirect()->back()->withErrors([
+                    'mon_hoc_id' => 'Môn học này đã có trong Chương trình khung'
+                ])->withInput();
+            }
+            
+            // Nếu là lỗi khác, throw lại
+            throw $e;
+        }
     }
 
     /**

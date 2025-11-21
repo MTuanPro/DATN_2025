@@ -259,6 +259,10 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::get('lop-hanh-chinh/{lop_hanh_chinh}/edit', [LopHanhChinhController::class, 'edit'])->name('lop-hanh-chinh.edit');
     Route::put('lop-hanh-chinh/{lop_hanh_chinh}', [LopHanhChinhController::class, 'update'])->name('lop-hanh-chinh.update');
     Route::delete('lop-hanh-chinh/{lop_hanh_chinh}', [LopHanhChinhController::class, 'destroy'])->name('lop-hanh-chinh.destroy');
+    Route::get('lop-hanh-chinh-export', [LopHanhChinhController::class, 'exportExcel'])->name('lop-hanh-chinh.export');
+    Route::get('lop-hanh-chinh-import', [LopHanhChinhController::class, 'showImportForm'])->name('lop-hanh-chinh.show-import-form');
+    Route::post('lop-hanh-chinh-import', [LopHanhChinhController::class, 'import'])->name('lop-hanh-chinh.import');
+    Route::get('lop-hanh-chinh-template', [LopHanhChinhController::class, 'downloadTemplate'])->name('lop-hanh-chinh.download-template');
 
     Route::resource('sinh-vien', SinhVienController::class);
     Route::get('sinh-vien-import', [SinhVienController::class, 'showImportForm'])->name('sinh-vien.show-import-form');

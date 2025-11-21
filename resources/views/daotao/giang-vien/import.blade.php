@@ -100,12 +100,14 @@
                                             <th>ma_giang_vien *</th>
                                             <th>ho_ten *</th>
                                             <th>email *</th>
-                                            <th>khoa_id *</th>
-                                            <th>trinh_do_id</th>
+                                            <th>khoa *</th>
+                                            <th>trinh_do</th>
                                             <th>so_dien_thoai</th>
                                             <th>ngay_sinh</th>
                                             <th>gioi_tinh</th>
                                             <th>dia_chi</th>
+                                            <th>chuyen_mon</th>
+                                            <th>ngay_vao_truong</th>
                                         </tr>
                                     </thead>
                                     <tbody>
@@ -113,31 +115,40 @@
                                             <td>GV001</td>
                                             <td>Nguyễn Văn A</td>
                                             <td>gv001@example.com</td>
-                                            <td>1</td>
-                                            <td>2</td>
+                                            <td>Công nghệ thông tin</td>
+                                            <td>Thạc sĩ</td>
                                             <td>0912345678</td>
                                             <td>1985-05-15</td>
                                             <td>Nam</td>
                                             <td>Hà Nội</td>
+                                            <td>Lập trình</td>
+                                            <td>2020-01-01</td>
                                         </tr>
                                         <tr>
                                             <td>GV002</td>
                                             <td>Trần Thị B</td>
                                             <td>gv002@example.com</td>
-                                            <td>2</td>
-                                            <td>3</td>
+                                            <td>Kế toán</td>
+                                            <td>Tiến sĩ</td>
                                             <td>0987654321</td>
                                             <td>1990-10-20</td>
                                             <td>Nữ</td>
                                             <td>TP. HCM</td>
+                                            <td>Kế toán tài chính</td>
+                                            <td>2021-06-01</td>
                                         </tr>
                                     </tbody>
                                 </table>
                             </div>
                             <small class="text-muted">
                                 <strong>Ghi chú:</strong>
-                                khoa_id và trinh_do_id là ID tương ứng trong hệ thống.
-                                Vui lòng kiểm tra danh sách Khoa và Trình độ trước khi import.
+                                <ul class="mb-0">
+                                    <li><strong>khoa</strong>: Nhập tên khoa hoặc mã khoa (VD: "Công nghệ thông tin" hoặc "CNTT")</li>
+                                    <li><strong>trinh_do</strong>: Nhập tên trình độ (VD: "Thạc sĩ", "Tiến sĩ", "Cử nhân") - có thể để trống</li>
+                                    <li><strong>ngay_sinh</strong>: Định dạng YYYY-MM-DD (VD: 1985-05-15)</li>
+                                    <li><strong>gioi_tinh</strong>: Nam, Nữ hoặc Khác</li>
+                                    <li><strong>ngay_vao_truong</strong>: Định dạng YYYY-MM-DD (VD: 2020-01-01) - mặc định là hôm nay nếu để trống</li>
+                                </ul>
                             </small>
                         </div>
                     </div>

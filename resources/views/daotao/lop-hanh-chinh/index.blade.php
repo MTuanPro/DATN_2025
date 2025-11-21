@@ -77,9 +77,17 @@
                             </form>
                         </div>
                         <div class="col-md-4 text-end">
-                            <a href="{{ route('dao-tao.lop-hanh-chinh.create') }}" class="btn btn-success">
-                                <i class="bi bi-plus-circle"></i> Thêm lớp mới
-                            </a>
+                            <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                <a href="{{ route('dao-tao.lop-hanh-chinh.create') }}" class="btn btn-success shadow-sm" title="Thêm lớp hành chính mới">
+                                    <i class="bi bi-plus-circle me-1"></i> Thêm lớp mới
+                                </a>
+                                <a href="{{ route('dao-tao.lop-hanh-chinh.show-import-form') }}" class="btn btn-warning shadow-sm text-white" title="Import lớp hành chính từ Excel">
+                                    <i class="bi bi-upload me-1"></i> Import Excel
+                                </a>
+                                <a href="{{ route('dao-tao.lop-hanh-chinh.export', request()->query()) }}" class="btn btn-info shadow-sm text-white" title="Xuất danh sách lớp hành chính ra Excel">
+                                    <i class="bi bi-file-earmark-excel me-1"></i> Xuất Excel
+                                </a>
+                            </div>
                         </div>
                     </div>
 

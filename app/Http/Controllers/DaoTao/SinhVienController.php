@@ -403,10 +403,10 @@ class SinhVienController extends Controller
             'so_dien_thoai',
             'can_cuoc_cong_dan',
             'ma_lop',
-            'ma_khoa_hoc',
-            'ma_nganh',
+            'khoa_hoc',
+            'nganh',
             'ky_hien_tai',
-            'ma_trang_thai',
+            'trang_thai',
         ];
 
         $callback = function () use ($columns) {
@@ -426,10 +426,10 @@ class SinhVienController extends Controller
                 '0901234567',
                 '001203012345',
                 'CNTT-K15-01',
-                'K15',
-                'CNTT',
+                'K15', // Tên khóa học
+                'Công nghệ thông tin', // Tên ngành
                 '1',
-                'DANG_HOC',
+                'Đang học', // Tên trạng thái
             ]);
 
             fclose($file);
@@ -439,37 +439,58 @@ class SinhVienController extends Controller
     }
 
     /**
-     * Import sinh viên từ CSV
+     * Import sinh viên từ Excel hoặc CSV
      */
     public function import(Request $request)
     {
         $request->validate([
-            'file' => 'required|mimes:csv,txt|max:5120',
+            'file' => 'required|mimes:xlsx,xls,csv,txt|max:5120',
         ], [
-            'file.required' => 'Vui lòng chọn file CSV',
-            'file.mimes' => 'File phải là CSV (.csv, .txt)',
+            'file.required' => 'Vui lòng chọn file Excel hoặc CSV',
+            'file.mimes' => 'File phải là Excel (.xlsx, .xls) hoặc CSV (.csv, .txt)',
+            'file.max' => 'File không được vượt quá 5MB',
         ]);
 
         DB::beginTransaction();
         try {
             $file = $request->file('file');
-            $handle = fopen($file->getRealPath(), 'r');
-
-            if ($handle === false) {
-                throw new \Exception('Không thể đọc file');
+            $extension = strtolower($file->getClientOriginalExtension());
+            
+            $data = [];
+            
+            // Đọc file Excel
+            if (in_array($extension, ['xlsx', 'xls'])) {
+                $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+                $worksheet = $spreadsheet->getActiveSheet();
+                $data = $worksheet->toArray();
+                
+                // Bỏ qua header (dòng đầu tiên)
+                array_shift($data);
+            } 
+            // Đọc file CSV
+            else {
+                $handle = fopen($file->getRealPath(), 'r');
+                
+                if ($handle === false) {
+                    throw new \Exception('Không thể đọc file');
+                }
+                
+                // Bỏ qua dòng header
+                fgetcsv($handle);
+                
+                while (($row = fgetcsv($handle)) !== false) {
+                    $data[] = $row;
+                }
+                
+                fclose($handle);
             }
 
             $imported = 0;
             $errors = [];
-            $rowNum = 0;
-
-            // Bỏ qua dòng header
-            fgetcsv($handle);
-
             $vaiTroSV = VaiTro::where('ma_vai_tro', 'sinh_vien')->first();
 
-            while (($row = fgetcsv($handle)) !== false) {
-                $rowNum++;
+            foreach ($data as $rowNum => $row) {
+                $rowNum += 2; // +2 vì bỏ header và index bắt đầu từ 0
 
                 // Kiểm tra dòng trống
                 if (empty($row[0])) {
@@ -477,28 +498,61 @@ class SinhVienController extends Controller
                 }
 
                 try {
-                    // Parse data
-                    $maSV = $row[0];
-                    $hoTen = $row[1];
-                    $email = $row[2];
-                    $ngaySinh = $row[3];
-                    $gioiTinh = $row[4];
-                    $sdt = $row[5];
-                    $cccd = $row[6];
-                    $maLop = $row[7];
-                    $maKhoaHoc = $row[8];
-                    $maNganh = $row[9];
-                    $kyHienTai = $row[10] ?? 1;
-                    $maTrangThai = $row[11] ?? '';
+                    // Parse data - xử lý cả array từ Excel và CSV
+                    $maSV = trim($row[0] ?? '');
+                    $hoTen = trim($row[1] ?? '');
+                    $email = trim($row[2] ?? '');
+                    $ngaySinh = trim($row[3] ?? '');
+                    $gioiTinh = trim($row[4] ?? '');
+                    $sdt = trim($row[5] ?? '');
+                    $cccd = trim($row[6] ?? '');
+                    $maLop = trim($row[7] ?? '');
+                    $tenKhoaHoc = trim($row[8] ?? ''); // Tên khóa học
+                    $tenNganh = trim($row[9] ?? ''); // Tên ngành
+                    $kyHienTai = !empty($row[10]) ? (int)$row[10] : 1;
+                    $tenTrangThai = trim($row[11] ?? ''); // Tên trạng thái
 
-                    // Tìm ID từ mã
+                    // Tìm ID từ tên/mã
                     $lopHanhChinh = LopHanhChinh::where('ma_lop', $maLop)->first();
-                    $khoaHoc = KhoaHoc::where('ma_khoa_hoc', $maKhoaHoc)->first();
-                    $nganh = Nganh::where('ma_nganh', $maNganh)->first();
-                    $trangThai = TrangThaiHocTap::first(); // Lấy trạng thái đầu tiên
+                    
+                    // Tìm khóa học theo tên
+                    $khoaHoc = KhoaHoc::where('ten_khoa_hoc', $tenKhoaHoc)->first();
+                    
+                    // Tìm ngành theo tên hoặc mã
+                    $nganh = Nganh::where('ten_nganh', $tenNganh)
+                        ->orWhere('ma_nganh', $tenNganh)
+                        ->first();
+                    
+                    // Tìm trạng thái theo tên
+                    $trangThai = null;
+                    if (!empty($tenTrangThai)) {
+                        $trangThai = TrangThaiHocTap::where('ten_trang_thai', $tenTrangThai)->first();
+                    }
+                    
+                    // Nếu không tìm thấy trạng thái, lấy mặc định "Đang học"
+                    if (!$trangThai) {
+                        $trangThai = TrangThaiHocTap::where('ten_trang_thai', 'Đang học')->first() 
+                            ?? TrangThaiHocTap::first();
+                    }
 
-                    if (!$lopHanhChinh || !$khoaHoc || !$nganh || !$trangThai) {
-                        $errors[] = "Dòng {$rowNum}: Không tìm thấy lớp/khóa/ngành/trạng thái";
+                    // Kiểm tra và báo lỗi chi tiết
+                    if (!$lopHanhChinh) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy lớp với mã: {$maLop}";
+                        continue;
+                    }
+                    
+                    if (!$khoaHoc) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy khóa học với tên: {$tenKhoaHoc}";
+                        continue;
+                    }
+                    
+                    if (!$nganh) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy ngành với tên/mã: {$tenNganh}";
+                        continue;
+                    }
+                    
+                    if (!$trangThai) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy trạng thái với tên/mã: {$tenTrangThai}";
                         continue;
                     }
 
@@ -557,8 +611,6 @@ class SinhVienController extends Controller
                 }
             }
 
-            fclose($handle);
-
             DB::commit();
 
             $message = "Import thành công {$imported} sinh viên.";
@@ -570,9 +622,6 @@ class SinhVienController extends Controller
                 ->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            if (isset($handle) && is_resource($handle)) {
-                fclose($handle);
-            }
             return back()->with('error', 'Có lỗi xảy ra khi import: ' . $e->getMessage());
         }
     }
