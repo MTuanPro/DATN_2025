@@ -331,9 +331,25 @@ class DangKyMonHocController extends Controller
 
             if (!$hocPhi) {
                 DB::rollBack();
+                
+                // Kiểm tra xem có cấu hình học phí không
+                $cauHinh = \App\Models\CauHinhHocPhi::getCauHinhHienTai();
+                $message = 'Không thể tính học phí. ';
+                
+                if (!$cauHinh) {
+                    $allConfigs = \App\Models\CauHinhHocPhi::count();
+                    if ($allConfigs == 0) {
+                        $message .= 'Chưa có cấu hình học phí nào trong hệ thống. Vui lòng liên hệ phòng đào tạo để thiết lập cấu hình học phí.';
+                    } else {
+                        $message .= 'Không tìm thấy cấu hình học phí đang áp dụng cho ngày hiện tại. Vui lòng kiểm tra lại cấu hình học phí hoặc liên hệ phòng đào tạo.';
+                    }
+                } else {
+                    $message .= 'Vui lòng thử lại hoặc liên hệ phòng đào tạo.';
+                }
+                
                 return response()->json([
                     'success' => false,
-                    'message' => 'Không thể tính học phí. Vui lòng thử lại hoặc liên hệ phòng đào tạo.'
+                    'message' => $message
                 ], 500);
             }
 

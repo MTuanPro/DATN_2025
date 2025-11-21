@@ -32,14 +32,26 @@ class CauHinhHocPhi extends Model
      */
     public static function getCauHinhHienTai()
     {
-        $now = now()->toDateString();
-        return self::where('ap_dung_tu_ngay', '<=', $now)
-            ->where(function ($query) use ($now) {
+        $now = now();
+        $nowDate = $now->toDateString();
+        
+        // Lấy tất cả cấu hình có thể áp dụng
+        $cauHinhs = self::where('ap_dung_tu_ngay', '<=', $nowDate)
+            ->where(function ($query) use ($nowDate) {
                 $query->whereNull('ap_dung_den_ngay')
-                    ->orWhere('ap_dung_den_ngay', '>=', $now);
+                    ->orWhere('ap_dung_den_ngay', '>=', $nowDate);
             })
             ->orderBy('ap_dung_tu_ngay', 'desc')
-            ->first();
+            ->get();
+        
+        // Kiểm tra từng cấu hình với Carbon để đảm bảo chính xác
+        foreach ($cauHinhs as $cauHinh) {
+            if ($cauHinh->isActive()) {
+                return $cauHinh;
+            }
+        }
+        
+        return null;
     }
 
     /**
@@ -47,8 +59,26 @@ class CauHinhHocPhi extends Model
      */
     public function isActive()
     {
-        $now = now()->toDateString();
-        return $this->ap_dung_tu_ngay <= $now &&
-            (is_null($this->ap_dung_den_ngay) || $this->ap_dung_den_ngay >= $now);
+        $now = now();
+        
+        // Parse dates - đảm bảo là Carbon instance để so sánh chính xác
+        $tuNgay = \Carbon\Carbon::parse($this->ap_dung_tu_ngay)->startOfDay();
+        
+        // Nếu chưa đến ngày bắt đầu áp dụng
+        if ($tuNgay->isAfter($now)) {
+            return false;
+        }
+        
+        // Nếu có ngày kết thúc
+        if ($this->ap_dung_den_ngay) {
+            $denNgay = \Carbon\Carbon::parse($this->ap_dung_den_ngay)->endOfDay();
+            // Nếu đã qua ngày kết thúc
+            if ($denNgay->isBefore($now)) {
+                return false;
+            }
+        }
+        
+        // Đang trong khoảng thời gian áp dụng
+        return true;
     }
 }

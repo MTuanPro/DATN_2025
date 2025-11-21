@@ -247,7 +247,22 @@ class HocPhiService
             // Get current tuition config
             $cauHinh = CauHinhHocPhi::getCauHinhHienTai();
             if (!$cauHinh) {
-                Log::error('Không tìm thấy cấu hình học phí hiện tại');
+                $now = now()->toDateString();
+                Log::error("Không tìm thấy cấu hình học phí hiện tại. Ngày hiện tại: {$now}");
+                
+                // Log tất cả cấu hình để debug
+                $allConfigs = CauHinhHocPhi::orderBy('ap_dung_tu_ngay', 'desc')->get();
+                if ($allConfigs->count() > 0) {
+                    $configInfo = $allConfigs->map(function($c) {
+                        $active = $c->isActive() ? 'Có' : 'Không';
+                        return "ID:{$c->id} Từ:{$c->ap_dung_tu_ngay} Đến:" . ($c->ap_dung_den_ngay ?? 'null') . " Active:{$active}";
+                    })->implode(' | ');
+                    Log::error("Danh sách cấu hình: {$configInfo}");
+                } else {
+                    Log::error("Không có cấu hình học phí nào trong hệ thống!");
+                }
+                
+                DB::rollBack();
                 return null;
             }
 
@@ -288,6 +303,7 @@ class HocPhiService
                     'mon_hoc_id' => $monHocId,
                 ],
                 [
+                    'lop_hoc_phan_sinh_vien_id' => null, // Chưa xếp lớp nên để null
                     'so_tin_chi' => $soTinChi,
                     'don_gia_tin_chi' => $cauHinh->don_gia_tren_tin_chi,
                     'thanh_tien' => $thanhTien,
@@ -307,6 +323,7 @@ class HocPhiService
         } catch (\Exception $e) {
             DB::rollBack();
             Log::error('Error calculating tuition for subject registration: ' . $e->getMessage());
+            Log::error('Stack trace: ' . $e->getTraceAsString());
             return null;
         }
     }
