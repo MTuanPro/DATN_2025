@@ -113,13 +113,52 @@ class ProfileController extends Controller
         // Xử lý upload avatar
         $avatarPath = null;
         if ($request->hasFile('anh_dai_dien')) {
-            // Lấy ảnh cũ từ bảng tương ứng để xóa
-            $anhCu = $user->anh_dai_dien;
+            // Lấy ảnh cũ từ bảng tương ứng để xóa dựa trên vai trò
+            $anhCu = null;
+            switch ($role) {
+                case 'sinh_vien':
+                    $sinhVien = $user->sinhVien;
+                    $anhCu = $sinhVien ? $sinhVien->anh_dai_dien : null;
+                    break;
+                case 'giang_vien':
+                    $giangVien = $user->giangVien;
+                    $anhCu = $giangVien ? $giangVien->anh_dai_dien : null;
+                    break;
+                case 'truong_phong_dt':
+                case 'nhan_vien_dt':
+                    $daoTao = $user->daoTao;
+                    $anhCu = $daoTao ? $daoTao->anh_dai_dien : null;
+                    break;
+                case 'admin':
+                    $admin = $user->admin;
+                    $anhCu = $admin ? $admin->anh_dai_dien : null;
+                    break;
+            }
+            
+            // Xóa ảnh cũ nếu tồn tại
             if ($anhCu && Storage::disk('public')->exists($anhCu)) {
                 Storage::disk('public')->delete($anhCu);
             }
 
-            $avatarPath = $request->file('anh_dai_dien')->store('avatars', 'public');
+            // Lưu ảnh mới vào thư mục tương ứng với vai trò
+            $folder = 'avatars';
+            switch ($role) {
+                case 'sinh_vien':
+                    $folder = 'sinh-vien';
+                    break;
+                case 'giang_vien':
+                    $folder = 'giang-vien';
+                    break;
+                case 'truong_phong_dt':
+                case 'nhan_vien_dt':
+                    $folder = 'dao-tao';
+                    break;
+                case 'admin':
+                    $folder = 'admin';
+                    break;
+            }
+            
+            $avatarPath = $request->file('anh_dai_dien')->store($folder, 'public');
         }
 
         // Đổi mật khẩu nếu có nhập mật khẩu mới
