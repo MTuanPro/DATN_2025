@@ -10,9 +10,11 @@ use App\Models\HocKy;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Traits\ImportHelper;
 
 class LopHocPhanController extends Controller
 {
+    use ImportHelper;
     /**
      * Display a listing of the resource.
      */
@@ -292,6 +294,335 @@ class LopHocPhanController extends Controller
             DB::rollBack();
             return redirect()->route('dao-tao.lop-hoc-phan.index')
                 ->with('error', 'Lỗi khi đồng bộ: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Hiển thị form import
+     */
+    public function showImportForm()
+    {
+        return view('daotao.lop-hoc-phan.import');
+    }
+
+    /**
+     * Download template Excel/CSV
+     */
+    public function downloadTemplate()
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=utf-8',
+            'Content-Disposition' => 'attachment; filename="lop_hoc_phan_template.csv"',
+        ];
+
+        $columns = [
+            'ma_lop_hp',
+            'ten_lop_hp',
+            'mon_hoc',
+            'hoc_ky',
+            'nhom_lop',
+            'suc_chua',
+            'so_luong_toi_thieu',
+            'hinh_thuc',
+            'link_online',
+            'ngay_bat_dau',
+            'ngay_ket_thuc',
+            'trang_thai_lop',
+            'ghi_chu',
+        ];
+
+        $callback = function () use ($columns) {
+            $file = fopen('php://output', 'w');
+            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
+
+            // Header
+            fputcsv($file, $columns);
+
+            // Sample data
+            fputcsv($file, [
+                'CNTT101.01',
+                'Lập trình web - Nhóm 1',
+                'Lập trình web',
+                'Học kỳ 1 - Năm học 2024-2025',
+                '1',
+                '50',
+                '10',
+                'offline',
+                '',
+                '2024-09-01',
+                '2024-12-31',
+                'mo_dang_ky',
+                'Lớp học phần mẫu',
+            ]);
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
+
+    /**
+     * Import lớp học phần từ Excel hoặc CSV
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls,csv,txt|max:5120',
+        ], [
+            'file.required' => 'Vui lòng chọn file Excel hoặc CSV',
+            'file.mimes' => 'File phải có định dạng Excel (.xlsx, .xls) hoặc CSV (.csv, .txt)',
+            'file.max' => 'File không được vượt quá 5MB',
+        ]);
+
+        DB::beginTransaction();
+        try {
+            $file = $request->file('file');
+            $extension = strtolower($file->getClientOriginalExtension());
+            
+            $data = [];
+            
+            // Đọc file Excel
+            if (in_array($extension, ['xlsx', 'xls'])) {
+                // Kiểm tra extension zip có sẵn không
+                if (!extension_loaded('zip')) {
+                    DB::rollBack();
+                    return back()->with('error', 'PHP extension "zip" chưa được cài đặt. Vui lòng bật extension zip trong php.ini hoặc sử dụng file CSV thay vì Excel.');
+                }
+                
+                try {
+                    $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
+                    $worksheet = $spreadsheet->getActiveSheet();
+                    $data = $worksheet->toArray();
+                    
+                    // Bỏ qua header (dòng đầu tiên)
+                    array_shift($data);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    return back()->with('error', 'Không thể đọc file Excel: ' . $e->getMessage());
+                }
+            } 
+            // Đọc file CSV
+            else {
+                $handle = fopen($file->getRealPath(), 'r');
+                
+                if ($handle === false) {
+                    throw new \Exception('Không thể đọc file');
+                }
+                
+                // Bỏ qua dòng header
+                fgetcsv($handle);
+                
+                while (($row = fgetcsv($handle)) !== false) {
+                    $data[] = $row;
+                }
+                
+                fclose($handle);
+            }
+
+            $imported = 0;
+            $errors = [];
+
+            foreach ($data as $rowNum => $row) {
+                $rowNum += 2; // +2 vì bỏ header và index bắt đầu từ 0
+
+                // Kiểm tra dòng trống
+                if (empty($row[0])) {
+                    continue;
+                }
+
+                try {
+                    // Parse data
+                    $maLopHp = trim($row[0] ?? '');
+                    $tenLopHp = trim($row[1] ?? '');
+                    $tenMonHoc = trim($row[2] ?? '');
+                    $tenHocKy = trim($row[3] ?? '');
+                    $nhomLop = !empty($row[4]) ? (int)trim($row[4]) : 1;
+                    $sucChua = !empty($row[5]) ? (int)trim($row[5]) : 50;
+                    $soLuongToiThieu = !empty($row[6]) ? (int)trim($row[6]) : 10;
+                    $hinhThuc = !empty($row[7]) ? trim($row[7]) : 'offline';
+                    $linkOnline = !empty($row[8]) ? trim($row[8]) : null;
+                    $ngayBatDau = !empty($row[9]) ? trim($row[9]) : null;
+                    $ngayKetThuc = !empty($row[10]) ? trim($row[10]) : null;
+                    $trangThaiLop = !empty($row[11]) ? trim($row[11]) : 'mo_dang_ky';
+                    $ghiChu = !empty($row[12]) ? trim($row[12]) : null;
+
+                    // Validate các trường bắt buộc
+                    if (empty($maLopHp) || empty($tenLopHp) || empty($tenMonHoc) || empty($tenHocKy)) {
+                        $errors[] = "Dòng {$rowNum}: Thiếu thông tin bắt buộc (Mã lớp, Tên lớp, Môn học, Học kỳ)";
+                        continue;
+                    }
+
+                    // Không cần kiểm tra trùng vì sẽ update nếu đã tồn tại
+
+                    // Tìm môn học theo tên hoặc mã
+                    $monHoc = MonHoc::where('ten_mon', $tenMonHoc)
+                        ->orWhere('ma_mon', $tenMonHoc)
+                        ->first();
+                    
+                    if (!$monHoc) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy môn học với tên/mã: {$tenMonHoc}";
+                        continue;
+                    }
+
+                    // Tìm học kỳ theo tên
+                    $hocKy = HocKy::where('ten_hoc_ky', $tenHocKy)->first();
+                    
+                    if (!$hocKy) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy học kỳ với tên: {$tenHocKy}";
+                        continue;
+                    }
+
+                    // Kiểm tra unique constraint: mon_hoc_id + hoc_ky_id + nhom_lop
+                    $exists = LopHocPhan::where('mon_hoc_id', $monHoc->id)
+                        ->where('hoc_ky_id', $hocKy->id)
+                        ->where('nhom_lop', $nhomLop)
+                        ->exists();
+
+                    if ($exists) {
+                        $errors[] = "Dòng {$rowNum}: Lớp học phần đã tồn tại (cùng môn học, học kỳ và nhóm lớp)";
+                        continue;
+                    }
+
+                    // Validate hình thức
+                    if (!in_array($hinhThuc, ['offline', 'online', 'hybrid'])) {
+                        $errors[] = "Dòng {$rowNum}: Hình thức học không hợp lệ (phải là: offline, online, hybrid)";
+                        continue;
+                    }
+
+                    // Validate link online nếu hình thức là online hoặc hybrid
+                    if (in_array($hinhThuc, ['online', 'hybrid']) && empty($linkOnline)) {
+                        $errors[] = "Dòng {$rowNum}: Link online là bắt buộc khi hình thức là online hoặc hybrid";
+                        continue;
+                    }
+
+                    // Validate trạng thái
+                    if (!in_array($trangThaiLop, ['mo_dang_ky', 'dang_hoc', 'ket_thuc', 'huy'])) {
+                        $errors[] = "Dòng {$rowNum}: Trạng thái không hợp lệ (phải là: mo_dang_ky, dang_hoc, ket_thuc, huy)";
+                        continue;
+                    }
+
+                    // Parse ngày với nhiều định dạng hỗ trợ
+                    $parseDate = function($dateString) {
+                        if (empty($dateString)) {
+                            return null;
+                        }
+                        
+                        $dateString = trim($dateString);
+                        
+                        // Thử các định dạng phổ biến
+                        $formats = [
+                            'Y-m-d',           // 2025-12-18
+                            'd/m/Y',           // 18/12/2025
+                            'd-m-Y',           // 18-12-2025
+                            'd.m.Y',           // 18.12.2025
+                            'Y/m/d',           // 2025/12/18
+                            'm/d/Y',           // 12/18/2025 (US format)
+                        ];
+                        
+                        foreach ($formats as $format) {
+                            try {
+                                $date = \Carbon\Carbon::createFromFormat($format, $dateString);
+                                return $date->format('Y-m-d'); // Chuẩn hóa về Y-m-d
+                            } catch (\Exception $e) {
+                                continue;
+                            }
+                        }
+                        
+                        // Nếu không parse được với format cụ thể, thử parse tự động
+                        try {
+                            return \Carbon\Carbon::parse($dateString)->format('Y-m-d');
+                        } catch (\Exception $e) {
+                            throw new \Exception("Không thể parse ngày: {$dateString}. Vui lòng sử dụng định dạng YYYY-MM-DD hoặc DD/MM/YYYY");
+                        }
+                    };
+                    
+                    // Parse ngày bắt đầu và kết thúc
+                    $ngayBatDauParsed = null;
+                    $ngayKetThucParsed = null;
+                    
+                    if (!empty($ngayBatDau)) {
+                        try {
+                            $ngayBatDauParsed = $parseDate($ngayBatDau);
+                        } catch (\Exception $e) {
+                            $errors[] = "Dòng {$rowNum}: {$e->getMessage()}";
+                            continue;
+                        }
+                    }
+                    
+                    if (!empty($ngayKetThuc)) {
+                        try {
+                            $ngayKetThucParsed = $parseDate($ngayKetThuc);
+                        } catch (\Exception $e) {
+                            $errors[] = "Dòng {$rowNum}: {$e->getMessage()}";
+                            continue;
+                        }
+                    }
+                    
+                    // Validate ngày
+                    if ($ngayBatDauParsed && $ngayKetThucParsed) {
+                        $ngayBD = \Carbon\Carbon::parse($ngayBatDauParsed);
+                        $ngayKT = \Carbon\Carbon::parse($ngayKetThucParsed);
+                        
+                        if ($ngayKT->lt($ngayBD)) {
+                            $errors[] = "Dòng {$rowNum}: Ngày kết thúc phải sau hoặc bằng ngày bắt đầu";
+                            continue;
+                        }
+                    }
+
+                    // Validate số lượng
+                    if ($soLuongToiThieu > $sucChua) {
+                        $errors[] = "Dòng {$rowNum}: Số lượng tối thiểu phải nhỏ hơn hoặc bằng sức chứa";
+                        continue;
+                    }
+
+                    // Kiểm tra nếu trạng thái là "Mở đăng ký" thì học kỳ phải đang mở đăng ký
+                    if ($trangThaiLop === 'mo_dang_ky' && !$hocKy->dang_mo_dang_ky) {
+                        $errors[] = "Dòng {$rowNum}: Không thể mở đăng ký lớp học phần này vì học kỳ chưa mở đăng ký";
+                        continue;
+                    }
+
+                    // Update hoặc tạo lớp học phần (dựa vào ma_lop_hp)
+                    LopHocPhan::updateOrCreate(
+                        ['ma_lop_hp' => $maLopHp],
+                        [
+                            'ten_lop_hp' => $tenLopHp,
+                            'mon_hoc_id' => $monHoc->id,
+                            'hoc_ky_id' => $hocKy->id,
+                            'nhom_lop' => $nhomLop,
+                            'suc_chua' => $sucChua,
+                            'so_luong_toi_thieu' => $soLuongToiThieu,
+                            'hinh_thuc' => $hinhThuc,
+                            'link_online' => $linkOnline,
+                            'ngay_bat_dau' => $ngayBatDauParsed,
+                            'ngay_ket_thuc' => $ngayKetThucParsed,
+                            'trang_thai_lop' => $trangThaiLop,
+                            'ghi_chu' => $ghiChu,
+                            // Không update so_luong_dang_ky khi import để tránh ghi đè số lượng thực tế
+                        ]
+                    );
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Dòng {$rowNum}: " . $e->getMessage();
+                }
+            }
+
+            DB::commit();
+
+            $message = "Đã import thành công {$imported} lớp học phần (đã tạo mới hoặc cập nhật).";
+            if (!empty($errors)) {
+                $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 5));
+                if (count($errors) > 5) {
+                    $message .= " và " . (count($errors) - 5) . " lỗi khác.";
+                }
+            }
+
+            return redirect()->route('dao-tao.lop-hoc-phan.index')
+                ->with($imported > 0 ? 'success' : 'error', $message)
+                ->with('errors', $errors);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Lỗi khi import: ' . $e->getMessage());
         }
     }
 }

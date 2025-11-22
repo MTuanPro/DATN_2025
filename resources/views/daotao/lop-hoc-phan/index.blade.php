@@ -29,15 +29,20 @@
                             <h5 class="card-title">Danh sách Lớp học phần</h5>
                         </div>
                         <div class="col-md-6 text-end">
-                            <form method="POST" action="{{ route('dao-tao.lop-hoc-phan.sync-so-luong') }}" class="d-inline">
-                                @csrf
-                                <button type="submit" class="btn btn-warning me-2" onclick="return confirm('Bạn có chắc muốn đồng bộ lại số lượng đăng ký?')">
-                                    <i class="bi bi-arrow-repeat"></i> Đồng bộ sĩ số
-                                </button>
-                            </form>
-                            <a href="{{ route('dao-tao.lop-hoc-phan.create') }}" class="btn btn-primary">
-                                <i class="bi bi-plus-circle"></i> Thêm lớp học phần
-                            </a>
+                            <div class="d-flex flex-wrap gap-2 justify-content-end">
+                                <form method="POST" action="{{ route('dao-tao.lop-hoc-phan.sync-so-luong') }}" class="d-inline">
+                                    @csrf
+                                    <button type="submit" class="btn btn-warning btn-sm shadow-sm" onclick="return confirm('Bạn có chắc muốn đồng bộ lại số lượng đăng ký?')">
+                                        <i class="bi bi-arrow-repeat"></i> Đồng bộ sĩ số
+                                    </button>
+                                </form>
+                                <a href="{{ route('dao-tao.lop-hoc-phan.show-import-form') }}" class="btn btn-success btn-sm shadow-sm text-white">
+                                    <i class="bi bi-upload"></i> Import Excel
+                                </a>
+                                <a href="{{ route('dao-tao.lop-hoc-phan.create') }}" class="btn btn-primary btn-sm shadow-sm text-white">
+                                    <i class="bi bi-plus-circle"></i> Thêm lớp học phần
+                                </a>
+                            </div>
                         </div>
                     </div>
                 </div>

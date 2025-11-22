@@ -377,11 +377,7 @@ class LopHanhChinhController extends Controller
                         continue;
                     }
 
-                    // Kiểm tra trùng mã lớp
-                    if (LopHanhChinh::where('ma_lop', $maLop)->exists()) {
-                        $errors[] = "Dòng {$rowNum}: Mã lớp {$maLop} đã tồn tại";
-                        continue;
-                    }
+                    // Không cần kiểm tra trùng vì sẽ update nếu đã tồn tại
 
                     // Tìm khóa học theo tên
                     $khoaHoc = KhoaHoc::where('ten_khoa_hoc', $tenKhoaHoc)->first();
@@ -414,15 +410,17 @@ class LopHanhChinhController extends Controller
                         $giangVienId = $giangVien->id;
                     }
 
-                    // Tạo lớp hành chính
-                    LopHanhChinh::create([
-                        'ma_lop' => $maLop,
-                        'ten_lop' => $tenLop,
-                        'khoa_hoc_id' => $khoaHoc->id,
-                        'nganh_id' => $nganh->id,
-                        'giang_vien_chu_nhiem_id' => $giangVienId,
-                        'si_so' => 0, // Mặc định 0, sẽ tự động cập nhật khi có sinh viên
-                    ]);
+                    // Update hoặc tạo lớp hành chính (dựa vào ma_lop)
+                    LopHanhChinh::updateOrCreate(
+                        ['ma_lop' => $maLop],
+                        [
+                            'ten_lop' => $tenLop,
+                            'khoa_hoc_id' => $khoaHoc->id,
+                            'nganh_id' => $nganh->id,
+                            'giang_vien_chu_nhiem_id' => $giangVienId,
+                            // Không update si_so khi import để tránh ghi đè số lượng thực tế
+                        ]
+                    );
 
                     $imported++;
                 } catch (\Exception $e) {
@@ -432,7 +430,7 @@ class LopHanhChinhController extends Controller
 
             DB::commit();
 
-            $message = "Import thành công {$imported} lớp hành chính.";
+            $message = "Import thành công {$imported} lớp hành chính (đã tạo mới hoặc cập nhật).";
             if (count($errors) > 0) {
                 $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 5));
             }

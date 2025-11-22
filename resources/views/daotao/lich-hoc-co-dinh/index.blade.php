@@ -84,8 +84,13 @@
                                             </td>
                                             <td>
                                                 <i class="bi bi-clock-history"></i>
-                                                {{ Carbon\Carbon::parse($lichHoc->gio_bat_dau)->format('H:i') }} - 
-                                                {{ Carbon\Carbon::parse($lichHoc->gio_ket_thuc)->format('H:i') }}
+                                                @if($lichHoc->caHoc)
+                                                    {{ Carbon\Carbon::parse($lichHoc->caHoc->gio_bat_dau)->format('H:i') }} - 
+                                                    {{ Carbon\Carbon::parse($lichHoc->caHoc->gio_ket_thuc)->format('H:i') }}
+                                                @else
+                                                    {{ Carbon\Carbon::parse($lichHoc->gio_bat_dau)->format('H:i') }} - 
+                                                    {{ Carbon\Carbon::parse($lichHoc->gio_ket_thuc)->format('H:i') }}
+                                                @endif
                                             </td>
                                             <td>
                                                 <i class="bi bi-door-open"></i>

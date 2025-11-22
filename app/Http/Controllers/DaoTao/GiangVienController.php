@@ -12,9 +12,11 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
+use App\Traits\ImportHelper;
 
 class GiangVienController extends Controller
 {
+    use ImportHelper;
     /**
      * Hiển thị danh sách giảng viên
      */
@@ -356,7 +358,6 @@ class GiangVienController extends Controller
     {
         $request->validate([
             'file' => ['required', 'file', 'mimes:xlsx,xls,csv,txt', 'max:5120'],
-            'tao_tai_khoan' => ['nullable', 'boolean'],
         ], [
             'file.required' => 'Vui lòng chọn file Excel hoặc CSV',
             'file.mimes' => 'File phải có định dạng Excel (.xlsx, .xls) hoặc CSV (.csv, .txt)',
@@ -410,7 +411,6 @@ class GiangVienController extends Controller
 
             $imported = 0;
             $errors = [];
-            $taoTaiKhoan = $request->boolean('tao_tai_khoan', false);
             
             // Lấy vai trò giảng viên
             $vaiTroGiangVien = VaiTro::where('ma_vai_tro', 'giang_vien')->first();
@@ -443,14 +443,14 @@ class GiangVienController extends Controller
                         continue;
                     }
 
-                    // Kiểm tra trùng mã giảng viên
-                    if (GiangVien::where('ma_giang_vien', $maGV)->exists()) {
-                        $errors[] = "Dòng {$rowNum}: Mã giảng viên {$maGV} đã tồn tại";
-                        continue;
-                    }
-
-                    // Kiểm tra trùng email
-                    if (GiangVien::where('email', $email)->exists()) {
+                    // Kiểm tra email trùng với giảng viên khác (nếu đang update)
+                    $existingGiangVien = GiangVien::where('ma_giang_vien', $maGV)->first();
+                    if ($existingGiangVien && $existingGiangVien->email !== $email) {
+                        if (GiangVien::where('email', $email)->where('id', '!=', $existingGiangVien->id)->exists()) {
+                            $errors[] = "Dòng {$rowNum}: Email {$email} đã được sử dụng bởi giảng viên khác";
+                            continue;
+                        }
+                    } elseif (!$existingGiangVien && GiangVien::where('email', $email)->exists()) {
                         $errors[] = "Dòng {$rowNum}: Email {$email} đã tồn tại";
                         continue;
                     }
@@ -483,31 +483,41 @@ class GiangVienController extends Controller
                         continue;
                     }
 
-                    // Validate ngày sinh
+                    // Parse ngày sinh
                     $ngaySinhDate = null;
                     if ($ngaySinh) {
                         try {
-                            $ngaySinhDate = \Carbon\Carbon::createFromFormat('Y-m-d', $ngaySinh)->format('Y-m-d');
+                            $ngaySinhDate = $this->parseDate($ngaySinh);
                         } catch (\Exception $e) {
-                            $errors[] = "Dòng {$rowNum}: Định dạng ngày sinh không hợp lệ (phải là YYYY-MM-DD)";
+                            $errors[] = "Dòng {$rowNum}: {$e->getMessage()}";
                             continue;
                         }
                     }
 
-                    // Tạo tài khoản nếu được chọn
+                    // Tạo tài khoản mặc định cho giảng viên (mật khẩu: 12345678)
                     $userId = null;
-                    if ($taoTaiKhoan) {
-                        // Kiểm tra email đã tồn tại trong users chưa
-                        $existingUser = User::where('email', $email)->first();
-                        if ($existingUser) {
-                            $errors[] = "Dòng {$rowNum}: Email {$email} đã được sử dụng cho tài khoản khác";
-                            continue;
+                    
+                    // Kiểm tra email đã tồn tại trong users chưa
+                    $existingUser = User::where('email', $email)->first();
+                    if ($existingUser) {
+                        // Nếu user đã tồn tại, sử dụng user đó
+                        $userId = $existingUser->id;
+                        // Cập nhật tên nếu cần
+                        $existingUser->update(['name' => $hoTen]);
+                        
+                        // Kiểm tra và gán vai trò giảng viên nếu chưa có
+                        if ($vaiTroGiangVien && !$existingUser->vaiTro->contains($vaiTroGiangVien->id)) {
+                            $existingUser->vaiTro()->attach($vaiTroGiangVien->id, [
+                                'nguoi_gan_id' => auth()->id() ?? 1,
+                                'ngay_gan' => now(),
+                            ]);
                         }
-
+                    } else {
+                        // Tạo user mới với mật khẩu mặc định 12345678
                         $user = User::create([
                             'name' => $hoTen,
                             'email' => $email,
-                            'password' => Hash::make($maGV), // Mật khẩu mặc định là mã giảng viên
+                            'password' => Hash::make('12345678'), // Mật khẩu mặc định: 12345678
                             'trang_thai' => 'hoat_dong',
                             'email_verified_at' => now(),
                         ]);
@@ -523,32 +533,34 @@ class GiangVienController extends Controller
                         $userId = $user->id;
                     }
 
-                    // Validate ngày vào trường
+                    // Parse ngày vào trường
                     $ngayVaoTruongDate = now()->format('Y-m-d');
                     if ($ngayVaoTruong) {
                         try {
-                            $ngayVaoTruongDate = \Carbon\Carbon::createFromFormat('Y-m-d', $ngayVaoTruong)->format('Y-m-d');
+                            $ngayVaoTruongDate = $this->parseDate($ngayVaoTruong);
                         } catch (\Exception $e) {
-                            $errors[] = "Dòng {$rowNum}: Định dạng ngày vào trường không hợp lệ (phải là YYYY-MM-DD)";
+                            $errors[] = "Dòng {$rowNum}: {$e->getMessage()}";
                             continue;
                         }
                     }
 
-                    // Tạo giảng viên
-                    GiangVien::create([
-                        'ma_giang_vien' => $maGV,
-                        'ho_ten' => $hoTen,
-                        'email' => $email,
-                        'so_dien_thoai' => $soDienThoai,
-                        'ngay_sinh' => $ngaySinhDate,
-                        'gioi_tinh' => $gioiTinh,
-                        'dia_chi' => $diaChi,
-                        'trinh_do_id' => $trinhDoId,
-                        'chuyen_mon' => $chuyenMon,
-                        'khoa_id' => $khoaId,
-                        'ngay_vao_truong' => $ngayVaoTruongDate,
-                        'user_id' => $userId,
-                    ]);
+                    // Update hoặc tạo giảng viên (dựa vào ma_giang_vien)
+                    GiangVien::updateOrCreate(
+                        ['ma_giang_vien' => $maGV],
+                        [
+                            'ho_ten' => $hoTen,
+                            'email' => $email,
+                            'so_dien_thoai' => $soDienThoai,
+                            'ngay_sinh' => $ngaySinhDate,
+                            'gioi_tinh' => $gioiTinh,
+                            'dia_chi' => $diaChi,
+                            'trinh_do_id' => $trinhDoId,
+                            'chuyen_mon' => $chuyenMon,
+                            'khoa_id' => $khoaId,
+                            'ngay_vao_truong' => $ngayVaoTruongDate,
+                            'user_id' => $userId,
+                        ]
+                    );
 
                     $imported++;
                 } catch (\Exception $e) {
@@ -558,7 +570,7 @@ class GiangVienController extends Controller
 
             DB::commit();
 
-            $message = "Import thành công {$imported} giảng viên.";
+            $message = "Import thành công {$imported} giảng viên (đã tạo mới hoặc cập nhật).";
             if (count($errors) > 0) {
                 $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 5));
             }

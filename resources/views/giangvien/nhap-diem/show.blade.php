@@ -291,6 +291,142 @@
 
 @push('scripts')
 <script>
+    // Cấu hình đầu điểm từ PHP
+    const cauHinhs = @json($cauHinhs->map(function($cauHinh) {
+        return [
+            'id' => $cauHinh->id,
+            'ty_le' => (float)$cauHinh->ty_le,
+            'so_cot' => (int)$cauHinh->so_cot
+        ];
+    })->values());
+
+    // Tính điểm TK tạm thời dựa trên điểm đã nhập
+    function tinhDiemTKTamThoi(svId) {
+        const row = document.querySelector(`tr[data-sv-id="${svId}"]`);
+        if (!row) return null;
+
+        let tongDiem = 0;
+        let tongTyLe = 0;
+
+        // Duyệt qua từng cấu hình đầu điểm
+        cauHinhs.forEach(cauHinh => {
+            const diems = [];
+            
+            // Lấy tất cả điểm của đầu điểm này
+            for (let cot = 1; cot <= cauHinh.so_cot; cot++) {
+                const input = row.querySelector(`input[data-cau-hinh-id="${cauHinh.id}"][data-cot-diem="${cot}"]`);
+                if (input && input.value !== '' && input.value !== null) {
+                    const diem = parseFloat(input.value);
+                    if (!isNaN(diem) && diem >= 0 && diem <= 10) {
+                        diems.push(diem);
+                    }
+                }
+            }
+
+            // Chỉ tính nếu đủ cột
+            if (diems.length >= cauHinh.so_cot) {
+                // Tính trung bình các cột
+                const diemTrungBinh = diems.reduce((sum, d) => sum + d, 0) / diems.length;
+
+                // Nhân với tỷ lệ %
+                tongDiem += diemTrungBinh * (cauHinh.ty_le / 100);
+                tongTyLe += cauHinh.ty_le;
+            }
+        });
+
+        // Nếu không có điểm nào thì trả về null
+        if (tongTyLe === 0) {
+            return null;
+        }
+
+        // Tính điểm tạm thời (chia lại theo tỷ lệ đã có)
+        const diemTamThoi = (tongDiem / tongTyLe) * 100;
+
+        // Làm tròn 2 chữ số
+        return Math.round(diemTamThoi * 100) / 100;
+    }
+
+    // Lấy điểm TK từ server sau khi lưu
+    function capNhatDiemTK(svId) {
+        console.log('Cap nhat diem TK for svId:', svId);
+        
+        // Delay nhỏ để đảm bảo database đã commit
+        setTimeout(() => {
+            const url = '{{ route("giangvien.nhap-diem.get-diem-tk") }}';
+            console.log('Fetching diem TK from:', url);
+            
+            fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'X-CSRF-TOKEN': '{{ csrf_token() }}',
+                    'Accept': 'application/json'
+                },
+                body: JSON.stringify({
+                    lop_hoc_phan_sinh_vien_id: parseInt(svId)
+                })
+            })
+            .then(response => {
+                console.log('Response status:', response.status);
+                if (!response.ok) {
+                    return response.text().then(text => {
+                        console.error('Response error:', text);
+                        throw new Error('Network response was not ok: ' + response.status);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                console.log('Diem TK response:', data);
+                if (data.success) {
+                    // Thử nhiều cách selector
+                    let diemTKElement = document.querySelector(`.diem-tk-${svId}`);
+                    if (!diemTKElement) {
+                        // Thử tìm trong row
+                        const row = document.querySelector(`tr[data-sv-id="${svId}"]`);
+                        if (row) {
+                            diemTKElement = row.querySelector(`.diem-tk-${svId}`);
+                        }
+                    }
+                    
+                    if (diemTKElement) {
+                        const oldValue = diemTKElement.textContent;
+                        diemTKElement.textContent = data.diem_tk;
+                        
+                        // Nếu là điểm tạm thời, thêm style đặc biệt
+                        if (data.is_tam_thoi) {
+                            diemTKElement.style.color = '#ff9800';
+                            diemTKElement.style.fontWeight = 'bold';
+                            diemTKElement.title = 'Điểm tạm thời (chưa đủ tất cả đầu điểm)';
+                        } else {
+                            diemTKElement.style.color = '#28a745';
+                            diemTKElement.style.fontWeight = 'bold';
+                            diemTKElement.title = 'Điểm chính thức';
+                        }
+                        
+                        setTimeout(() => {
+                            if (data.is_tam_thoi) {
+                                diemTKElement.style.color = '#ff9800';
+                            } else {
+                                diemTKElement.style.color = '';
+                            }
+                            diemTKElement.style.fontWeight = '';
+                        }, 2000);
+                        console.log('Updated diem TK for svId:', svId, 'from:', oldValue, 'to:', data.diem_tk, 'is_tam_thoi:', data.is_tam_thoi);
+                    } else {
+                        console.error('Không tìm thấy element .diem-tk-' + svId);
+                        console.log('Available elements:', document.querySelectorAll('[class*="diem-tk"]'));
+                    }
+                } else {
+                    console.error('API returned success: false', data);
+                }
+            })
+            .catch(error => {
+                console.error('Error fetching diem TK:', error);
+            });
+        }, 500); // Tăng delay lên 500ms để đảm bảo database đã commit
+    }
+
     // Lưu điểm từng sinh viên
     document.querySelectorAll('.btn-luu-sv').forEach(btn => {
         btn.addEventListener('click', function() {
@@ -309,26 +445,25 @@
         const promises = [];
         
         inputs.forEach(input => {
-            const value = input.value;
-            if (value !== '' && value !== null) {
-                const data = {
-                    lop_hoc_phan_sinh_vien_id: parseInt(svId),
-                    cau_hinh_id: parseInt(input.dataset.cauHinhId),
-                    cot_diem: parseInt(input.dataset.cotDiem),
-                    diem_so: parseFloat(value)
-                };
-                
-                promises.push(
-                    fetch('{{ route("giangvien.nhap-diem.store") }}', {
-                        method: 'POST',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                        },
-                        body: JSON.stringify(data)
-                    })
-                );
-            }
+            const value = input.value.trim();
+            // Gửi cả giá trị rỗng để xóa điểm cũ
+            const data = {
+                lop_hoc_phan_sinh_vien_id: parseInt(svId),
+                cau_hinh_id: parseInt(input.dataset.cauHinhId),
+                cot_diem: parseInt(input.dataset.cotDiem),
+                diem_so: value === '' || value === null || value === '-' ? null : parseFloat(value)
+            };
+            
+            promises.push(
+                fetch('{{ route("giangvien.nhap-diem.store") }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify(data)
+                })
+            );
         });
         
         if (promises.length === 0) {
@@ -354,8 +489,22 @@
                     const errorMsg = results.find(r => !r.success)?.message || 'Có lỗi xảy ra';
                     Swal.fire('Lỗi!', errorMsg, 'error');
                 } else {
-                    Swal.fire('Thành công!', 'Đã lưu điểm sinh viên', 'success')
-                        .then(() => location.reload());
+                    Swal.fire('Thành công!', 'Đã lưu điểm sinh viên', 'success');
+                    
+                    // Tính và hiển thị điểm TK tạm thời ngay lập tức
+                    const diemTamThoi = tinhDiemTKTamThoi(svId);
+                    const diemTKElement = document.querySelector(`.diem-tk-${svId}`);
+                    if (diemTKElement && diemTamThoi !== null) {
+                        diemTKElement.textContent = diemTamThoi.toFixed(2);
+                        diemTKElement.style.color = '#ff9800';
+                        diemTKElement.style.fontWeight = 'bold';
+                        diemTKElement.title = 'Điểm tạm thời (chưa đủ tất cả đầu điểm)';
+                    }
+                    
+                    // Sau đó cập nhật từ server (có thể là điểm chính thức nếu đủ điểm)
+                    setTimeout(() => {
+                        capNhatDiemTK(svId);
+                    }, 500);
                 }
             })
             .catch(error => {
@@ -365,33 +514,50 @@
     }
 
     function luuTatCaDiem() {
+        console.log('luuTatCaDiem called');
         const rows = document.querySelectorAll('#tableDiem tbody tr');
+        console.log('Found rows:', rows.length);
+        
+        if (rows.length === 0) {
+            Swal.fire('Thông báo', 'Không tìm thấy dữ liệu sinh viên', 'info');
+            return;
+        }
+        
         const promises = [];
+        const svIds = new Set(); // Lưu danh sách svId đã gửi request
         
         rows.forEach(row => {
             const inputs = row.querySelectorAll('.diem-input');
             
             inputs.forEach(input => {
-                const value = input.value;
-                if (value !== '' && value !== null) {
-                    const data = {
-                        lop_hoc_phan_sinh_vien_id: parseInt(input.dataset.svId),
-                        cau_hinh_id: parseInt(input.dataset.cauHinhId),
-                        cot_diem: parseInt(input.dataset.cotDiem),
-                        diem_so: parseFloat(value)
-                    };
-                    
-                    promises.push(
-                        fetch('{{ route("giangvien.nhap-diem.store") }}', {
-                            method: 'POST',
-                            headers: {
-                                'Content-Type': 'application/json',
-                                'X-CSRF-TOKEN': '{{ csrf_token() }}'
-                            },
-                            body: JSON.stringify(data)
-                        })
-                    );
-                }
+                const value = input.value.trim();
+                const svId = parseInt(input.dataset.svId);
+                
+                // Gửi cả giá trị rỗng để xóa điểm cũ
+                const data = {
+                    lop_hoc_phan_sinh_vien_id: svId,
+                    cau_hinh_id: parseInt(input.dataset.cauHinhId),
+                    cot_diem: parseInt(input.dataset.cotDiem),
+                    diem_so: value === '' || value === null || value === '-' ? null : parseFloat(value)
+                };
+                
+                // Đánh dấu sinh viên này có điểm được lưu/xóa
+                svIds.add(svId);
+                
+                promises.push(
+                    fetch('{{ route("giangvien.nhap-diem.store") }}', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                        },
+                        body: JSON.stringify(data)
+                    }).then(response => {
+                        return response.json().then(result => {
+                            return { result, svId };
+                        });
+                    })
+                );
             });
         });
         
@@ -411,18 +577,42 @@
         });
         
         Promise.all(promises)
-            .then(responses => Promise.all(responses.map(r => r.json())))
             .then(results => {
-                const hasError = results.some(r => !r.success);
-                const successCount = results.filter(r => r.success).length;
+                const hasError = results.some(r => !r.result.success);
+                const successCount = results.filter(r => r.result.success).length;
+                
+                // Lấy danh sách sinh viên đã lưu điểm thành công
+                const svIds = new Set();
+                results.forEach(({ result, svId }) => {
+                    if (result.success && svId) {
+                        svIds.add(svId);
+                    }
+                });
                 
                 if (hasError) {
-                    const errorMsg = results.find(r => !r.success)?.message || 'Có lỗi xảy ra';
+                    const errorMsg = results.find(r => !r.result.success)?.result?.message || 'Có lỗi xảy ra';
                     Swal.fire('Lỗi!', `Đã lưu ${successCount}/${results.length} điểm. Lỗi: ${errorMsg}`, 'error');
                 } else {
-                    Swal.fire('Thành công!', `Đã lưu tất cả ${successCount} điểm`, 'success')
-                        .then(() => location.reload());
+                    Swal.fire('Thành công!', `Đã lưu tất cả ${successCount} điểm`, 'success');
                 }
+                
+                // Cập nhật điểm TK cho từng sinh viên đã lưu điểm thành công
+                svIds.forEach(svId => {
+                    // Tính và hiển thị điểm TK tạm thời ngay lập tức
+                    const diemTamThoi = tinhDiemTKTamThoi(svId);
+                    const diemTKElement = document.querySelector(`.diem-tk-${svId}`);
+                    if (diemTKElement && diemTamThoi !== null) {
+                        diemTKElement.textContent = diemTamThoi.toFixed(2);
+                        diemTKElement.style.color = '#ff9800';
+                        diemTKElement.style.fontWeight = 'bold';
+                        diemTKElement.title = 'Điểm tạm thời (chưa đủ tất cả đầu điểm)';
+                    }
+                    
+                    // Sau đó cập nhật từ server
+                    setTimeout(() => {
+                        capNhatDiemTK(svId);
+                    }, 500);
+                });
             })
             .catch(error => {
                 console.error('Error:', error);

@@ -37,10 +37,13 @@
                                     <li>File import phải ở định dạng <strong>.xlsx</strong> hoặc <strong>.csv</strong></li>
                                     <li>Tải file mẫu bên dưới để xem cấu trúc dữ liệu</li>
                                     <li>Không thay đổi tên các cột trong file mẫu</li>
-                                    <li>Mã giảng viên và Email phải là duy nhất (không trùng lặp)</li>
+                                    <li>Mã giảng viên: Nếu đã tồn tại, hệ thống sẽ tự động cập nhật thông tin</li>
+                                    <li>Email: Phải là duy nhất (không trùng lặp với giảng viên khác)</li>
                                     <li>Các trường có dấu (*) là bắt buộc phải nhập</li>
-                                    <li>Định dạng ngày sinh: <code>YYYY-MM-DD</code> (VD: 1990-05-15)</li>
+                                    <li>Định dạng ngày sinh: Hỗ trợ nhiều định dạng: <code>YYYY-MM-DD</code> (1990-05-15), <code>DD/MM/YYYY</code> (15/05/1990), <code>DD-MM-YYYY</code> (15-05-1990)</li>
+                                    <li><strong>Lưu ý:</strong> Nếu Mã giảng viên đã tồn tại, hệ thống sẽ tự động cập nhật thông tin thay vì tạo mới</li>
                                     <li>Giới tính: <code>Nam</code>, <code>Nữ</code> hoặc <code>Khác</code></li>
+                                    <li><strong class="text-primary">Tài khoản đăng nhập:</strong> Hệ thống sẽ tự động tạo tài khoản đăng nhập cho tất cả giảng viên với mật khẩu mặc định: <code class="text-danger">12345678</code></li>
                                 </ol>
                             </div>
 

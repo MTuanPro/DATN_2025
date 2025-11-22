@@ -83,10 +83,12 @@ class KetQuaHocTap extends Model
 
     /**
      * Tính điểm hệ 4 từ điểm hệ 10
+     * Logic giống với DiemService::chuyenDoiHe4()
      */
     public static function tinhDiemHe4($diemHe10)
     {
-        if ($diemHe10 >= 8.5) return 4.0;
+        if ($diemHe10 >= 9.0) return 4.0;
+        if ($diemHe10 >= 8.5) return 3.7;
         if ($diemHe10 >= 8.0) return 3.5;
         if ($diemHe10 >= 7.0) return 3.0;
         if ($diemHe10 >= 6.5) return 2.5;

@@ -16,7 +16,9 @@ use App\Observers\LopHocPhanSinhVienObserver;
 use App\Observers\DangKyMonHocObserver;
 use App\Observers\LichThiObserver;
 use App\Observers\LichHocCoDinhObserver;
+use App\Observers\CaHocObserver;
 use App\Models\LichHocCoDinh;
+use App\Models\CaHoc;
 use App\View\Composers\NotificationComposer;
 
 class AppServiceProvider extends ServiceProvider
@@ -47,6 +49,9 @@ class AppServiceProvider extends ServiceProvider
         
         // Register Observer for auto-sync LichHocChiTiet
         LichHocCoDinh::observe(LichHocCoDinhObserver::class);
+        
+        // Register Observer for auto-sync LichHocCoDinh when CaHoc changes
+        CaHoc::observe(CaHocObserver::class);
 
         // Register View Composer for notifications in header
         View::composer('layouts.blocks.header', NotificationComposer::class);

@@ -85,6 +85,62 @@ class DiemService
     }
 
     /**
+     * Tính điểm TK tạm thời dựa trên điểm đã nhập (không cần đủ tất cả)
+     */
+    public function tinhDiemTKTamThoi($lopHocPhanSinhVienId)
+    {
+        $lhpsv = LopHocPhanSinhVien::with('lopHocPhan')->find($lopHocPhanSinhVienId);
+
+        if (!$lhpsv) {
+            return null;
+        }
+
+        // 1. Lấy cấu hình đầu điểm
+        $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lhpsv->lop_hoc_phan_id)
+            ->orderBy('id')
+            ->get();
+
+        if ($cauHinhs->isEmpty()) {
+            return null;
+        }
+
+        $tongDiem = 0;
+        $tongTyLe = 0; // Tổng tỷ lệ của các đầu điểm đã có điểm
+
+        // 2. Tính điểm từng đầu (chỉ tính những đầu đã có đủ điểm)
+        foreach ($cauHinhs as $cauHinh) {
+            // Lấy điểm đã nhập
+            $diems = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVienId)
+                ->where('cau_hinh_id', $cauHinh->id)
+                ->orderBy('cot_diem')
+                ->get();
+
+            // Chỉ tính nếu đủ cột
+            if ($diems->count() >= $cauHinh->so_cot) {
+                // Tính trung bình các cột
+                $diemTrungBinh = $diems->avg('diem_so');
+
+                // Nhân với tỷ lệ %
+                $tongDiem += $diemTrungBinh * ($cauHinh->ty_le / 100);
+                $tongTyLe += $cauHinh->ty_le;
+            }
+        }
+
+        // 3. Nếu không có điểm nào thì trả về null
+        if ($tongTyLe == 0) {
+            return null;
+        }
+
+        // 4. Tính điểm tạm thời (chia lại theo tỷ lệ đã có)
+        // Ví dụ: nếu chỉ có 60% điểm (Chuyên cần 10% + Thi Giữa Kỳ 30% + bài tập 10% = 50%)
+        // thì điểm tạm thời = tổng điểm / tổng tỷ lệ * 100
+        $diemTamThoi = ($tongDiem / $tongTyLe) * 100;
+
+        // 5. Làm tròn 2 chữ số
+        return round($diemTamThoi, 2);
+    }
+
+    /**
      * Tính điểm trung bình học kỳ (GPA)
      */
     public function tinhGPAHocKy($sinhVienId, $hocKyId)
