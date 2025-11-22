@@ -48,6 +48,45 @@ class HocPhiController extends Controller
         return view('daotao.hoc-phi.index', compact('hocPhis', 'hocKys'));
     }
 
+
+
+
+
+// public function update(Request $request, $id)
+//     {
+//         $validated = $request->validate([
+//             'phi_dich_vu' => 'nullable|numeric|min:0',
+//             'han_dong' => 'required|date',
+//             'ghi_chu' => 'nullable|string',
+//         ]);
+
+//         try {
+//             $hocPhi = HocPhiHocKy::findOrFail($id);
+            
+//             $hocPhi->phi_dich_vu = $validated['phi_dich_vu'] ?? 0;
+//             $hocPhi->han_dong = $validated['han_dong'];
+//             $hocPhi->ghi_chu = $validated['ghi_chu'];
+            
+//             // Recalculate total
+//             $hocPhi->tong_so_tien = $hocPhi->tong_hoc_phi_mon_hoc + $hocPhi->phi_dich_vu;
+//             $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
+            
+//             $hocPhi->save();
+//             $hocPhi->updateTrangThai();
+
+//             return redirect()
+//                 ->route('dao-tao.hoc-phi.show', $id)
+//                 ->with('success', 'Cập nhật học phí thành công!');
+//         } catch (\Exception $e) {
+//             return redirect()
+//                 ->back()
+//                 ->withInput()
+//                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+//         }
+//     }
+
+
+
     /**
      * Display the specified resource.
      */

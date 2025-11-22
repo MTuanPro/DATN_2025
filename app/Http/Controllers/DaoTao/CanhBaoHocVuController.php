@@ -207,6 +207,39 @@ class CanhBaoHocVuController extends Controller
         }
     }
 
+
+//  public function show(CanhBaoHocVu $canhBaoHocVu)
+//     {
+//         $canhBaoHocVu->load([
+//             'sinhVien.user',
+//             'sinhVien.lopHanhChinh',
+//             'sinhVien.ketQuaHocTaps',
+//             'hocKy',
+//             'nguoiTao',
+//             'nguoiXuLy'
+//         ]);
+
+//         $canhBao = $canhBaoHocVu; // Alias for view
+//         return view('daotao.canh-bao-hoc-vu.show', compact('canhBao'));
+//     }
+
+//     /**
+//      * Hiển thị form sửa cảnh báo
+//      */
+//     public function edit(CanhBaoHocVu $canhBaoHocVu)
+//     {
+//         $sinhViens = SinhVien::with('user', 'lopHanhChinh')->get();
+//         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
+
+//         $canhBao = $canhBaoHocVu; // Alias for view
+//         return view('daotao.canh-bao-hoc-vu.edit', compact('canhBao', 'sinhViens', 'hocKys'));
+//     }
+
+
+
+
+
+
     /**
      * Xóa cảnh báo
      */
