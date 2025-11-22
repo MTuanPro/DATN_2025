@@ -21,6 +21,31 @@
             </div>
         </div>
 
+
+
+
+           <!-- <div class="page-heading">
+        <div class="page-title">
+            <div class="row">
+                <div class="col-12 col-md-6 order-md-1 order-last">
+                    <h3>Quản lý Môn học</h3>
+                    <p class="text-subtitle text-muted">Danh sách môn học trong hệ thống</p>
+                </div>
+                <div class="col-12 col-md-6 order-md-2 order-first">
+                    <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
+                        <ol class="breadcrumb">
+                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item active" aria-current="page">Môn học</li>
+                        </ol>
+                    </nav>
+                </div>
+            </div>
+        </div> -->
+
+
+
+
+
         <!-- Search and Filter -->
         <section class="section">
             <div class="card">

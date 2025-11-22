@@ -117,3 +117,24 @@ class StoreMonHocRequest extends FormRequest
         ];
     }
 }
+
+
+
+
+//  public function attributes(): array
+//     {
+//         return [
+//             'ma_mon' => 'Mã môn học',
+//             'ten_mon' => 'Tên môn học',
+//             'so_tin_chi' => 'Số tín chỉ',
+//             'so_tin_chi_ly_thuyet' => 'Số tín chỉ lý thuyết',
+//             'so_tin_chi_thuc_hanh' => 'Số tín chỉ thực hành',
+//             'mo_ta' => 'Mô tả',
+//             'loai_mon' => 'Loại môn học',
+//             'khoa_id' => 'Khoa',
+//             'hinh_thuc_day' => 'Hình thức dạy',
+//             'thoi_luong_hoc' => 'Thời lượng học',
+//             'so_buoi_hoc' => 'Số buổi học',
+//         ];
+//     }
+// }

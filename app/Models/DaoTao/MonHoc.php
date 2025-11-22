@@ -50,6 +50,22 @@ class MonHoc extends Model
         )->withPivot('id', 'loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
     }
 
+// // Relationship: Các môn học cần môn này làm tiên quyết
+//     public function monCanMonNay()
+//     {
+//         return $this->belongsToMany(
+//             MonHoc::class,
+//             'mon_hoc_tien_quyet',
+//             'mon_tien_quyet_id',
+//             'mon_hoc_id'
+//         )->withPivot('id', 'loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
+//     }
+// }
+
+
+
+
+
     // Relationship: Các môn học cần môn này làm tiên quyết
     public function monCanMonNay()
     {
