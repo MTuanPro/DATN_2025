@@ -71,7 +71,7 @@
                                             <div class="col-md-3 text-center mb-4">
                                                 <div class="mb-3">
                                                     <img id="preview-avatar"
-                                                        src="{{ $admin->anh_dai_dien ? asset('storage/' . $admin->anh_dai_dien) : asset('assets/compiled/jpg/4.jpg') }}"
+                                                        src="{{ $admin->anh_dai_dien ? asset('storage/' . $admin->anh_dai_dien) : asset('assets/images/faces/4.jpg') }}"
                                                         alt="Avatar" class="img-fluid rounded-circle"
                                                         style="width: 150px; height: 150px; object-fit: cover;">
                                                 </div>
@@ -194,14 +194,39 @@
 
     @push('scripts')
         <script>
-            document.getElementById('anh_dai_dien').addEventListener('change', function(e) {
-                const file = e.target.files[0];
-                if (file) {
-                    const reader = new FileReader();
-                    reader.onload = function(e) {
-                        document.getElementById('preview-avatar').src = e.target.result;
-                    }
-                    reader.readAsDataURL(file);
+            // Preview avatar
+            document.addEventListener('DOMContentLoaded', function() {
+                const fileInput = document.getElementById('anh_dai_dien');
+                const previewImg = document.getElementById('preview-avatar');
+                
+                if (fileInput && previewImg) {
+                    fileInput.addEventListener('change', function(e) {
+                        const file = e.target.files[0];
+                        if (file) {
+                            // Kiểm tra loại file
+                            if (!file.type.match('image.*')) {
+                                alert('Vui lòng chọn file ảnh!');
+                                e.target.value = '';
+                                return;
+                            }
+                            
+                            // Kiểm tra kích thước file (max 2MB)
+                            if (file.size > 2048 * 1024) {
+                                alert('Kích thước ảnh không được vượt quá 2MB!');
+                                e.target.value = '';
+                                return;
+                            }
+                            
+                            const reader = new FileReader();
+                            reader.onload = function(e) {
+                                previewImg.src = e.target.result;
+                            };
+                            reader.onerror = function() {
+                                alert('Có lỗi xảy ra khi đọc file!');
+                            };
+                            reader.readAsDataURL(file);
+                        }
+                    });
                 }
             });
         </script>
