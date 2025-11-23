@@ -25,6 +25,23 @@ class ChatbotController extends Controller
     protected $gptService;
     protected $geminiService;
 
+    /**
+     * Khởi tạo ChatbotController với 5 service dependencies cho AI chatbot
+     *
+     * Các service được inject:
+     * - ChatbotMatchingService: Tìm kiếm câu trả lời từ knowledge base bằng tính tương đồng cơ bản
+     * - AdvancedChatbotMatchingService: Tính tương đồng nâng cao (intent, entities, context)
+     * - ChatbotContextService: Quản lý context của cuộc hội thoại (lịch sử, chủ đề, entities)
+     * - ChatbotGPTService: Tích hợp ChatGPT API (OpenAI) cho câu hỏi không match
+     * - ChatbotGeminiService: Tích hợp Gemini API (Google) cho câu hỏi không match
+     *
+     * @param ChatbotMatchingService $matchingService Service tìm kiếm cư bản
+     * @param AdvancedChatbotMatchingService $advancedMatchingService Service tìm kiếm nâng cao
+     * @param ChatbotContextService $contextService Service quản lý context
+     * @param ChatbotGPTService $gptService Service ChatGPT (fallback AI)
+     * @param ChatbotGeminiService $geminiService Service Gemini (primary AI)
+     * @return void
+     */
     public function __construct(
         ChatbotMatchingService $matchingService,
         AdvancedChatbotMatchingService $advancedMatchingService,
@@ -40,7 +57,15 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Display chatbot interface
+     * Hiển thị giao diện chatbot chính của sinh viên
+     *
+     * Load:
+     * - Cuộc hội thoại đang mở hiện tại (nếu có)
+     * - 10 cuộc hội thoại gần đây với 5 tin nhắn mới nhất mỗi cuộc
+     * - Eager load relationships để tránh N+1 query
+     * - Thông tin knowledge base và feedback liên quan
+     *
+     * @return \Illuminate\View\View Giao diện chatbot với active conversation và lịch sử
      */
     public function index()
     {
@@ -69,8 +94,18 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Create new conversation
-     * FIX: Sử dụng transaction để đảm bảo data integrity
+     * Tạo cuộc hội thoại mới cho sinh viên qua AJAX
+     *
+     * Quy trình:
+     * 1. Sử dụng database transaction để đảm bảo data integrity
+     * 2. Đóng tất cả cuộc hội thoại đang mở của sinh viên (bulk update - atomic)
+     * 3. Tạo cuộc hội thoại mới với session_id duy nhất (UUID)
+     * 4. Trạng thái ban đầu: 'dang_mo'
+     * 5. Log lỗi nếu có vấn đề trong quá trình tạo
+     *
+     * @param Request $request Không cần tham số
+     * @return \Illuminate\Http\JsonResponse JSON {success, conversation_id, session_id}
+     * @throws \Exception Khi có lỗi database
      */
     public function createConversation(Request $request)
     {
@@ -114,8 +149,32 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Send message and get bot response
-     * FIX: Sanitize input để tránh XSS attack
+     * Gửi tin nhắn và nhận phản hồi từ chatbot AI qua AJAX
+     *
+     * Quy trình xử lý tin nhắn (multi-tier AI architecture):
+     * 1. Validate và sanitize input để tránh XSS attack (strip_tags, htmlspecialchars, limit 1000 chars)
+     * 2. Kiểm tra quyền truy cập cuộc hội thoại
+     * 3. Lưu tin nhắn của user vào database
+     * 4. Lấy context từ conversation (lịch sử, chủ đề, entities)
+     * 5. Sử dụng AdvancedChatbotMatchingService để tìm kiếm trong knowledge base:
+     *    - Phân tích intent (intent recognition)
+     *    - Nhận diện entities (entity extraction)
+     *    - Tính tương đồng với context-aware algorithm
+     * 6. Nếu match (similarity > threshold):
+     *    - Trả về câu trả lời từ knowledge base
+     *    - Tăng lượt truy cập cho knowledge
+     * 7. Nếu không match (similarity < threshold):
+     *    - Thử Gemini AI (priority 1, nếu enabled và similarity < min_similarity)
+     *    - Fallback ChatGPT (priority 2, nếu Gemini fail)
+     *    - Fallback default response (priority 3, nếu cả 2 AI fail)
+     * 8. Lưu tin nhắn bot với metadata (knowledge_id, similarity, AI provider, tokens)
+     * 9. Cập nhật context sau khi trả lời (last_question, last_response, intent, entities)
+     * 10. Tự động tạo tiêu đề cho conversation nếu chưa có
+     * 11. Trả về JSON với thông tin chi tiết (bao gồm debug info nếu app.debug = true)
+     *
+     * @param Request $request Chứa conversation_id, message (max 1000 chars), chu_de (optional)
+     * @return \Illuminate\Http\JsonResponse JSON {success, user_message, bot_message, similarity, intent, entities, used_ai, ai_provider, ai_tokens}
+     * @throws \Illuminate\Validation\ValidationException Khi dữ liệu không hợp lệ
      */
     public function sendMessage(Request $request)
     {
@@ -340,7 +399,16 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Get conversation messages
+     * Lấy tất cả tin nhắn của một cuộc hội thoại qua AJAX
+     *
+     * Load eager relationships (knowledgeBase) để tránh N+1 query.
+     * Kiểm tra quyền sinh viên trước khi trả về.
+     * Format thời gian theo 'H:i d/m/Y'.
+     * Tính % tương đồng cho mỗi message.
+     *
+     * @param int $conversationId ID của cuộc hội thoại cần lấy tin nhắn
+     * @return \Illuminate\Http\JsonResponse JSON {success, messages[]}
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu conversation không tồn tại
      */
     public function getMessages($conversationId)
     {
@@ -373,7 +441,18 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Load conversation (for history)
+     * Tải một cuộc hội thoại cũ từ lịch sử để xem lại
+     *
+     * Kiểm tra:
+     * - Cuộc hội thoại có tồn tại không (dùng find() thay vì findOrFail())
+     * - Quyền truy cập của sinh viên
+     * - Redirect về history với thông báo lỗi nếu không hợp lệ
+     *
+     * Eager load messages và knowledgeBase để tránh N+1 query.
+     *
+     * @param int $conversationId ID của cuộc hội thoại cần xem
+     * @return \Illuminate\View\View Trang xem chi tiết conversation
+     * @return \Illuminate\Http\RedirectResponse Redirect về history nếu không hợp lệ
      */
     public function loadConversation($conversationId)
     {
@@ -399,7 +478,21 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Submit feedback for a message
+     * Gửi đánh giá (feedback) cho một tin nhắn bot qua AJAX
+     *
+     * Quy trình:
+     * 1. Validate dữ liệu (message_id, danh_gia: huu_ich/khong_huu_ich, ly_do)
+     * 2. Kiểm tra quyền sinh viên qua conversation
+     * 3. Nếu đã có feedback trước đó:
+     *    - Cập nhật feedback (update)
+     *    - Cập nhật thống kê knowledge base (tăng/giảm đếm hữu ích)
+     * 4. Nếu chưa có feedback:
+     *    - Tạo feedback mới (create)
+     *    - Tăng đếm hữu ích cho knowledge base (nếu danh_gia = huu_ich)
+     *
+     * @param Request $request Chứa message_id, danh_gia (huu_ich|khong_huu_ich), ly_do (optional, max 500)
+     * @return \Illuminate\Http\JsonResponse JSON {success, message}
+     * @throws \Illuminate\Validation\ValidationException Khi dữ liệu không hợp lệ
      */
     public function submitFeedback(Request $request)
     {
@@ -458,7 +551,13 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Get conversation history
+     * Hiển thị lịch sử tất cả các cuộc hội thoại của sinh viên có phân trang
+     *
+     * Load conversations kèm số lượng tin nhắn (withCount).
+     * Sắp xếp theo ngay_bat_dau giảm dần (mới nhất lên đầu).
+     * Phân trang 15 conversations/page.
+     *
+     * @return \Illuminate\View\View Trang lịch sử với danh sách conversations
      */
     public function history()
     {
@@ -473,7 +572,18 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Delete conversation
+     * Xóa một cuộc hội thoại và cả context liên quan qua AJAX
+     *
+     * Quy trình:
+     * 1. Kiểm tra conversation có tồn tại không (dùng find())
+     * 2. Kiểm tra quyền sinh viên
+     * 3. Xóa context từ ChatbotContextService (cache/Redis)
+     * 4. Xóa conversation (soft delete, messages sẽ tự xóa nếu có onDelete cascade)
+     * 5. Log lỗi nếu có vấn đề
+     *
+     * @param int $conversationId ID của cuộc hội thoại cần xóa
+     * @return \Illuminate\Http\JsonResponse JSON {success, message/error}
+     * @throws \Exception Khi có lỗi trong quá trình xóa
      */
     public function deleteConversation($conversationId)
     {
@@ -518,7 +628,16 @@ class ChatbotController extends Controller
     }
 
     /**
-     * Get suggested questions by topic
+     * Lấy danh sách câu hỏi gợi ý từ knowledge base qua AJAX
+     *
+     * Lọc:
+     * - Chỉ lấy knowledge base đang kích hoạt (scope kichHoat)
+     * - Lọc theo chủ đề (chu_de) nếu có tham số
+     * - Sắp xếp theo độ ưu tiên giảm dần
+     * - Giới hạn 5 câu hỏi
+     *
+     * @param Request $request Có thể chứa chu_de để lọc theo chủ đề
+     * @return \Illuminate\Http\JsonResponse JSON {success, questions[]}
      */
     public function getSuggestedQuestions(Request $request)
     {

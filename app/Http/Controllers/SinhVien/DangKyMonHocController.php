@@ -22,6 +22,19 @@ class DangKyMonHocController extends Controller
     protected $hocPhiService;
     protected $notificationService;
 
+    /**
+     * Khởi tạo DangKyMonHocController với 3 service dependencies cho quản lý đăng ký môn học
+     *
+     * Các service được inject:
+     * - DangKyMonHocService: Xử lý logic đăng ký môn học, kiểm tra điều kiện, trùng lịch
+     * - HocPhiService: Tính toán học phí khi đăng ký môn, tạo hóa đơn, xếp lớp
+     * - NotificationService: Gửi thông báo cho sinh viên và đào tạo về đăng ký
+     *
+     * @param DangKyMonHocService $dangKyMonHocService Service đăng ký môn học
+     * @param HocPhiService $hocPhiService Service tính học phí
+     * @param NotificationService $notificationService Service gửi thông báo
+     * @return void
+     */
     public function __construct(
         DangKyMonHocService $dangKyMonHocService, 
         HocPhiService $hocPhiService,
@@ -33,7 +46,26 @@ class DangKyMonHocController extends Controller
     }
 
     /**
-     * Hiển thị danh sách môn có thể đăng ký
+     * Hiển thị giao diện đăng ký môn học cho sinh viên trong học kỳ hiện tại
+     *
+     * Quy trình hiển thị:
+     * 1. Kiểm tra học kỳ hiện tại đang mở đăng ký (la_hoc_ky_hien_tai = true AND dang_mo_dang_ky = true)
+     * 2. Nếu không có học kỳ mở đăng ký:
+     *    - Hiển thị thông báo 'Không có học kỳ mở đăng ký'
+     *    - Hiển thị debug info (học kỳ hiện tại, học kỳ mở đăng ký)
+     *    - Trả về view rỗng
+     * 3. Lấy danh sách lớp học phần đang mở trong học kỳ (trang_thai_lop: mo_dang_ky, dang_hoc)
+     * 4. Lấy chương trình khung của ngành sinh viên
+     * 5. Lấy danh sách môn đã đăng ký tạm (DangKyMonHocTam)
+     * 6. Lấy danh sách môn đã học và đã qua (KetQuaHocTap)
+     * 7. Tính tổng số tín chỉ đã đăng ký (giới hạn tối đa 24 tín chỉ/học kỳ)
+     * 8. Nhóm môn học theo học kỳ đề nghị trong chương trình khung
+     * 9. Hiển thị cảnh báo nếu số tín chỉ vượt quá giới hạn
+     * 10. Hiển thị trạng thái của từng môn: Đăng ký được, Đã đăng ký, Đã học, Chưa đủ điều kiện...
+     *
+     * @param Request $request Có thể chứa hoc_ky_id để xem học kỳ khác
+     * @return \Illuminate\View\View Giao diện đăng ký môn học với danh sách môn và thông tin tín chỉ
+     * @return \Illuminate\Http\RedirectResponse Redirect nếu không tìm thấy sinh viên
      */
     public function index(Request $request)
     {
@@ -222,6 +254,14 @@ class DangKyMonHocController extends Controller
     /**
      * Form tạo đăng ký (phiên bản fallback)
      */
+    /**
+     * Hiển thị form tạo đăng ký môn học mới (không sử dụng trong hệ thống hiện tại)
+     *
+     * Form này không được sử dụng trong flow đăng ký môn thông thường.
+     * Sinh viên đăng ký trực tiếp từ trang index bằng AJAX.
+     *
+     * @return \Illuminate\View\View Form tạo đăng ký (unused)
+     */
     public function create()
     {
         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
@@ -232,6 +272,52 @@ class DangKyMonHocController extends Controller
 
     /**
      * Đăng ký môn học
+     */
+    /**
+     * Lưu đăng ký môn học tạm thời của sinh viên qua AJAX request
+     *
+     * Quy trình đăng ký môn học (rất phức tạp với nhiều kiểm tra):
+     * 1. Validate dữ liệu đầu vào:
+     *    - lop_hoc_phan_id: Lớp học phần muốn đăng ký (required, exists)
+     * 2. Kiểm tra học kỳ đang mở đăng ký:
+     *    - Nếu không có học kỳ mở: Trả về lỗi 'Không trong thời gian đăng ký'
+     * 3. Kiểm tra lớp học phần:
+     *    - Lớp có thuộc học kỳ đang mở không?
+     *    - Lớp có đang mở đăng ký không? (trang_thai_lop: mo_dang_ky, dang_hoc)
+     *    - Còn chỗ không? (si_so_hien_tai < si_so_toi_da)
+     * 4. Kiểm tra sinh viên đã đăng ký môn này chưa:
+     *    - Trong DangKyMonHocTam (tạm thời)
+     *    - Trong LopHocPhanSinhVien (đã xếp lớp chính thức)
+     *    - Nếu đã đăng ký: Trả về lỗi 'Bạn đã đăng ký môn này'
+     * 5. Kiểm tra điều kiện tiên quyết:
+     *    - Môn có yêu cầu môn tiên quyết không?
+     *    - Sinh viên đã qua môn tiên quyết chưa? (KetQuaHocTap)
+     *    - Nếu chưa đủ điều kiện: Trả về lỗi liệt kê các môn tiên quyết cần học
+     * 6. Kiểm tra giới hạn tín chỉ:
+     *    - Tính tổng tín chỉ đã đăng ký + tín chỉ môn mới
+     *    - Nếu vượt 24 tín chỉ: Trả về lỗi 'Vượt quá giới hạn 24 tín chỉ'
+     * 7. Kiểm tra trùng lịch học (thông qua DangKyMonHocService):
+     *    - So sánh lịch học của môn mới với các môn đã đăng ký
+     *    - Nếu trùng lịch: Trả về lỗi với thông tin lịch trùng
+     * 8. Kiểm tra học phí:
+     *    - Sinh viên đã thanh toán học phí học kỳ chưa?
+     *    - Nếu chưa thanh toán: Cảnh báo nhưng vẫn cho đăng ký
+     * 9. Sử dụng database transaction để đảm bảo data integrity:
+     *    - Tạo bản ghi DangKyMonHocTam (trạng thái: cho_duyet)
+     *    - Lưu thông tin: sinh_vien_id, lop_hoc_phan_id, hoc_ky_id, ngay_dang_ky
+     *    - Tự động tăng si_so_hien_tai của LopHocPhan (optimistic locking)
+     * 10. Gửi thông báo:
+     *     - Thông báo cho sinh viên về đăng ký thành công
+     *     - Thông báo cho đào tạo (nếu cần duyệt)
+     * 11. Trả về JSON response:
+     *     - success: true
+     *     - message: 'Thêm môn học vào danh sách đăng ký thành công'
+     *     - data: Thông tin đăng ký vừa tạo
+     *     - warnings: Cảnh báo nếu có (ví dụ: chưa thanh toán học phí)
+     *
+     * @param Request $request Chứa lop_hoc_phan_id (ID lớp học phần muốn đăng ký)
+     * @return \Illuminate\Http\JsonResponse JSON {success, message, data?, warnings?}
+     * @throws \Exception Khi có lỗi trong quá trình đăng ký
      */
     public function store(Request $request)
     {
@@ -413,6 +499,29 @@ class DangKyMonHocController extends Controller
      * Hủy đăng ký môn học
      * Cho phép hủy khi: chưa đóng học phí (cho_dong_hoc_phi) hoặc chưa xếp lớp (cho_xep_lop)
      */
+    /**
+     * Hủy đăng ký môn học tạm thời của sinh viên qua AJAX
+     *
+     * Quy trình hủy đăng ký:
+     * 1. Tìm bản ghi DangKyMonHocTam theo ID
+     * 2. Kiểm tra quyền: Sinh viên chỉ được hủy đăng ký của mình
+     * 3. Kiểm tra trạng thái:
+     *    - Chỉ cho phép hủy nếu trạng thái: cho_duyet, da_duyet
+     *    - Không cho hủy nếu: da_xep_lop, bi_tu_choi
+     * 4. Kiểm tra thời gian:
+     *    - Chỉ cho phép hủy trong thời gian mở đăng ký
+     *    - Nếu quá hạn: Trả về lỗi 'Hết thời gian hủy đăng ký'
+     * 5. Sử dụng database transaction:
+     *    - Xóa bản ghi DangKyMonHocTam
+     *    - Giảm si_so_hien_tai của LopHocPhan (atomic decrement)
+     *    - Cập nhật lại học phí (nếu có)
+     * 6. Gửi thông báo cho sinh viên về việc hủy đăng ký
+     * 7. Trả về JSON response thành công
+     *
+     * @param int $id ID của bản ghi DangKyMonHocTam cần hủy
+     * @return \Illuminate\Http\JsonResponse JSON {success, message}
+     * @throws \Exception Khi có lỗi trong quá trình hủy
+     */
     public function destroy($id)
     {
         $sinhVien = Auth::user()->sinhVien;
@@ -491,6 +600,25 @@ class DangKyMonHocController extends Controller
 
     /**
      * Xem danh sách môn đã đăng ký
+     */
+    /**
+     * Xem danh sách tất cả các môn học đã đăng ký của sinh viên (có lọc và phân trang)
+     *
+     * Hiển thị:
+     * - Các môn đăng ký tạm thời (DangKyMonHocTam)
+     * - Các môn đã xếp lớp chính thức (LopHocPhanSinhVien)
+     * - Kèm thông tin lớp học phần, môn học, học kỳ
+     * - Trạng thái đăng ký: Chờ duyệt, Đã duyệt, Đã xếp lớp, Bị từ chối
+     *
+     * Chức năng lọc:
+     * - Theo học kỳ (hoc_ky_id)
+     * - Theo trạng thái (trang_thai)
+     * - Tìm kiếm theo tên môn học (search)
+     *
+     * Phân trang 15 môn/trang.
+     *
+     * @param Request $request Có thể chứa hoc_ky_id, trang_thai, search
+     * @return \Illuminate\View\View Danh sách môn đã đăng ký
      */
     public function myRegistrations(Request $request)
     {

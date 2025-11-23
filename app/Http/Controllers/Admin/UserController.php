@@ -20,7 +20,16 @@ use Illuminate\Validation\Rules\Password as PasswordRule;
 class UserController extends Controller
 {
     /**
-     * Hiển thị danh sách tài khoản (có phân trang)
+     * Hiển thị danh sách tài khoản có phân trang, tìm kiếm và lọc
+     *
+     * Hỗ trợ các tính năng:
+     * - Tìm kiếm theo tên hoặc email (param: search)
+     * - Lọc theo trạng thái (hoạt động, khóa, ngừng hoạt động) (param: status)
+     * - Lọc theo vai trò (param: role)
+     * - Phân trang 15 tài khoản/trang
+     *
+     * @param Request $request Chứa các tham số tìm kiếm/lọc (search, status, role)
+     * @return \Illuminate\View\View View danh sách tài khoản với thông tin vai trò
      */
     public function index(Request $request)
     {
@@ -54,7 +63,12 @@ class UserController extends Controller
     }
 
     /**
-     * Hiển thị form tạo tài khoản mới
+     * Hiển thị form tạo tài khoản người dùng mới
+     *
+     * Load danh sách tất cả vai trò được sắp xếp theo mức độ ưu tiên
+     * để hiển thị trong dropdown select vai trò.
+     *
+     * @return \Illuminate\View\View Form tạo tài khoản với danh sách vai trò
      */
     public function create()
     {
@@ -63,7 +77,19 @@ class UserController extends Controller
     }
 
     /**
-     * Lưu tài khoản mới
+     * Lưu tài khoản người dùng mới vào database với các tự động hóa
+     *
+     * Quy trình tạo tài khoản:
+     * 1. Validate dữ liệu đầu vào (name, email, password, trạng thái, vai trò)
+     * 2. Tạo bản ghi User với mật khẩu đã hash
+     * 3. Gán vai trò cho user (attach vào bảng pivot)
+     * 4. Tự động tạo profile Admin nếu gán vai trò 'admin' (mã tự động: AD + năm + số thứ tự)
+     * 5. Tự động tạo profile DaoTao nếu gán vai trò 'đào tạo' (mã: DT + năm + số thứ tự)
+     * 6. Tạo token xác thực email và gửi email xác thực
+     *
+     * @param Request $request Chứa name, email, password, password_confirmation, trang_thai, vai_tro
+     * @return \Illuminate\Http\RedirectResponse Redirect về index với thông báo thành công/lỗi
+     * @throws \Exception Khi có lỗi trong quá trình tạo tài khoản
      */
     public function store(Request $request)
     {
@@ -181,7 +207,12 @@ class UserController extends Controller
     }
 
     /**
-     * Hiển thị form sửa thông tin tài khoản
+     * Hiển thị form sửa thông tin tài khoản người dùng
+     *
+     * Load thông tin user hiện tại, danh sách vai trò, và các vai trò đang được gán.
+     *
+     * @param User $user Tài khoản cần chỉnh sửa (route model binding)
+     * @return \Illuminate\View\View Form chỉnh sửa với dữ liệu user và vai trò
      */
     public function edit(User $user)
     {
@@ -192,7 +223,20 @@ class UserController extends Controller
     }
 
     /**
-     * Cập nhật thông tin tài khoản
+     * Cập nhật thông tin tài khoản người dùng và xử lý thay đổi vai trò
+     *
+     * Quy trình cập nhật:
+     * 1. Validate dữ liệu (name, email unique trừ user hiện tại, trạng thái, vai trò)
+     * 2. Cập nhật thông tin cơ bản (name, email, trang_thai)
+     * 3. Nếu email thay đổi: reset email_verified_at, tạo token mới, gửi email xác thực
+     * 4. Sync vai trò mới (thêm/xóa trong bảng pivot)
+     * 5. Tự động tạo/xóa profile Admin dựa trên vai trò 'admin'
+     * 6. Tự động tạo/xóa profile DaoTao dựa trên vai trò 'đào tạo'
+     *
+     * @param Request $request Chứa name, email, trang_thai, vai_tro[]
+     * @param User $user Tài khoản cần cập nhật (route model binding)
+     * @return \Illuminate\Http\RedirectResponse Redirect về index với thông báo
+     * @throws \Exception Khi có lỗi trong quá trình cập nhật
      */
     public function update(Request $request, User $user)
     {
@@ -332,7 +376,18 @@ class UserController extends Controller
     }
 
     /**
-     * Xóa tài khoản
+     * Xóa tài khoản người dùng và tất cả dữ liệu liên quan
+     *
+     * Quy trình xóa:
+     * 1. Kiểm tra không cho phép xóa chính mình
+     * 2. Xóa các profile liên quan (Admin, DaoTao, SinhVien, GiangVien) - force delete
+     * 3. Xóa quan hệ vai trò (detach từ bảng pivot)
+     * 4. Xóa dữ liệu phụ (nhật ký, thông báo, token, session)
+     * 5. Xóa bản ghi User (các bảng khác có onDelete cascade sẽ tự xóa)
+     *
+     * @param User $user Tài khoản cần xóa (route model binding)
+     * @return \Illuminate\Http\RedirectResponse Redirect về index với thông báo
+     * @throws \Exception Khi có lỗi trong quá trình xóa
      */
     public function destroy(User $user)
     {
@@ -396,7 +451,18 @@ class UserController extends Controller
     }
 
     /**
-     * Khóa/Mở khóa tài khoản
+     * Khóa/Mở khóa/Kích hoạt lại tài khoản qua AJAX
+     *
+     * Logic toggle trạng thái:
+     * - hoat_dong → khoa (khóa tài khoản)
+     * - khoa → hoat_dong (mở khóa tài khoản)
+     * - ngung_hoat_dong → hoat_dong (kích hoạt lại tài khoản)
+     *
+     * Không cho phép khóa chính mình.
+     *
+     * @param User $user Tài khoản cần thay đổi trạng thái (route model binding)
+     * @return \Illuminate\Http\JsonResponse JSON {success, message, status}
+     * @throws \Exception Khi có lỗi trong quá trình cập nhật
      */
     public function toggleStatus(User $user)
     {
@@ -438,7 +504,18 @@ class UserController extends Controller
     }
 
     /**
-     * Gửi email reset mật khẩu
+     * Gửi email chứa link đặt lại mật khẩu cho người dùng
+     *
+     * Quy trình:
+     * 1. Tạo token ngẫu nhiên 64 ký tự
+     * 2. Xóa các token reset cũ (nếu có)
+     * 3. Lưu token mới vào password_reset_tokens (hash)
+     * 4. Tạo URL reset password với token và email
+     * 5. Gửi email chứa link reset cho người dùng
+     *
+     * @param User $user Tài khoản cần reset mật khẩu (route model binding)
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang trước với thông báo
+     * @throws \Exception Khi có lỗi gửi email
      */
     public function resetPassword(User $user)
     {
@@ -471,7 +548,12 @@ class UserController extends Controller
     }
 
     /**
-     * Hiển thị form đặt lại mật khẩu
+     * Hiển thị form nhập mật khẩu mới khi đặt lại mật khẩu
+     *
+     * Nhận token và email từ URL query params.
+     *
+     * @param Request $request Chứa token và email trong query string
+     * @return \Illuminate\View\View Form đặt lại mật khẩu
      */
     public function showResetForm(Request $request)
     {
@@ -482,7 +564,18 @@ class UserController extends Controller
     }
 
     /**
-     * Xử lý đặt lại mật khẩu
+     * Xử lý đặt lại mật khẩu mới với các kiểm tra bảo mật
+     *
+     * Quy trình:
+     * 1. Validate dữ liệu (token, email, password với yêu cầu mạnh: chữ hoa/thường, số, ký tự đặc biệt)
+     * 2. Kiểm tra token tồn tại trong password_reset_tokens
+     * 3. Kiểm tra token khớp với giá trị đã hash
+     * 4. Kiểm tra token chưa hết hạn (60 phút)
+     * 5. Cập nhật mật khẩu mới (hash)
+     * 6. Xóa token đã sử dụng
+     *
+     * @param Request $request Chứa token, email, password, password_confirmation
+     * @return \Illuminate\Http\RedirectResponse Redirect đến login với thông báo
      */
     public function processReset(Request $request)
     {
@@ -540,7 +633,13 @@ class UserController extends Controller
     }
 
     /**
-     * Xem lịch sử đăng nhập
+     * Xem lịch sử đăng nhập của tài khoản người dùng
+     *
+     * Tính năng chưa hoàn thiện - cần tạo bảng login_history để lưu lịch sử.
+     *
+     * @param User $user Tài khoản cần xem lịch sử (route model binding)
+     * @return \Illuminate\View\View Trang lịch sử đăng nhập
+     * @todo Tạo bảng login_history để lưu trữ thông tin đăng nhập
      */
     public function loginHistory(User $user)
     {
@@ -549,7 +648,14 @@ class UserController extends Controller
     }
 
     /**
-     * Force logout tài khoản (xóa session)
+     * Buộc đăng xuất tài khoản người dùng (xóa session và remember token)
+     *
+     * Đặt remember_token = null để force logout.
+     * Không cho phép force logout chính mình.
+     *
+     * @param User $user Tài khoản cần force logout (route model binding)
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang trước với thông báo
+     * @throws \Exception Khi có lỗi trong quá trình cập nhật
      */
     public function forceLogout(User $user)
     {
@@ -571,7 +677,15 @@ class UserController extends Controller
     }
 
     /**
-     * Hiển thị form xác thực email
+     * Hiển thị trang xác thực email từ link trong email
+     *
+     * Nhận token từ URL param và email từ query string.
+     * Kiểm tra email có tồn tại trong query.
+     *
+     * @param string $token Token xác thực email từ URL
+     * @param Request $request Chứa email trong query string
+     * @return \Illuminate\View\View Form xác thực email
+     * @return \Illuminate\Http\RedirectResponse Redirect đến login nếu thiếu email
      */
     public function showVerifyForm($token, Request $request)
     {
@@ -585,7 +699,18 @@ class UserController extends Controller
     }
 
     /**
-     * Xử lý xác thực email
+     * Xử lý xác thực email với kiểm tra token và hạn sử dụng
+     *
+     * Quy trình:
+     * 1. Validate token và email
+     * 2. Kiểm tra token tồn tại trong email_verification_tokens
+     * 3. Kiểm tra token chưa hết hạn (60 phút)
+     * 4. Kiểm tra token khớp với giá trị đã hash
+     * 5. Cập nhật email_verified_at = now()
+     * 6. Xóa token đã sử dụng
+     *
+     * @param Request $request Chứa token và email
+     * @return \Illuminate\Http\RedirectResponse Redirect đến login với thông báo thành công/lỗi
      */
     public function processVerify(Request $request)
     {
