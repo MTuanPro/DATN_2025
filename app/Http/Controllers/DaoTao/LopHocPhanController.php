@@ -16,7 +16,18 @@ class LopHocPhanController extends Controller
 {
     use ImportHelper;
     /**
-     * Display a listing of the resource.
+     * Hiển thị danh sách các lớp học phần
+     * 
+     * Hỗ trợ lọc theo học kỳ, môn học, trạng thái và tìm kiếm theo mã/tên lớp.
+     * Kết quả được phân trang và bao gồm thông tin môn học, học kỳ, giảng viên.
+     * 
+     * @param Request $request Chứa các tham số lọc:
+     *                         - hoc_ky_id: ID học kỳ
+     *                         - mon_hoc_id: ID môn học
+     *                         - trang_thai: Trạng thái lớp
+     *                         - search: Từ khóa tìm kiếm (mã lớp/tên lớp)
+     * @return \Illuminate\View\View Trang danh sách lớp học phần
+     * @throws \Exception Nếu có lỗi khi truy vấn
      */
     public function index(Request $request)
     {
@@ -69,7 +80,12 @@ class LopHocPhanController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Hiển thị form tạo lớp học phần mới
+     * 
+     * Lấy danh sách môn học và học kỳ để hiển thị trên form tạo lớp
+     * 
+     * @return \Illuminate\View\View Form tạo lớp học phần
+     * @throws \Exception Nếu có lỗi khi tải dữ liệu
      */
     public function create()
     {
@@ -80,7 +96,15 @@ class LopHocPhanController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Lưu lớp học phần mới vào database
+     * 
+     * Validate và tạo lớp học phần mới với đầy đủ thông tin:
+     * mã lớp, tên lớp, môn học, học kỳ, số lượng sinh viên, thời gian học, v.v.
+     * 
+     * @param Request $request Chứa dữ liệu lớp học phần
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách
+     * @throws \Illuminate\Validation\ValidationException Nếu validation thất bại
+     * @throws \Exception Nếu có lỗi khi lưu database
      */
     public function store(Request $request)
     {
@@ -156,7 +180,14 @@ class LopHocPhanController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Hiển thị chi tiết một lớp học phần
+     * 
+     * Hiển thị thông tin đầy đủ về lớp học phần bao gồm:
+     * danh sách sinh viên, giảng viên, lịch học, điểm danh, điểm số
+     * 
+     * @param LopHocPhan $lopHocPhan Instance lớp học phần
+     * @return \Illuminate\View\View Trang chi tiết lớp học phần
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
      */
     public function show(LopHocPhan $lopHocPhan)
     {
@@ -166,7 +197,14 @@ class LopHocPhanController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Hiển thị form chỉnh sửa lớp học phần
+     * 
+     * Lấy thông tin lớp học phần hiện tại, danh sách môn học và học kỳ
+     * để hiển thị trên form chỉnh sửa
+     * 
+     * @param LopHocPhan $lopHocPhan Instance lớp học phần cần sửa
+     * @return \Illuminate\View\View Form chỉnh sửa
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
      */
     public function edit(LopHocPhan $lopHocPhan)
     {
@@ -177,7 +215,16 @@ class LopHocPhanController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Cập nhật thông tin lớp học phần
+     * 
+     * Validate và cập nhật thông tin lớp học phần trong database.
+     * Tự động sync số lượng sinh viên đã đăng ký sau khi cập nhật.
+     * 
+     * @param Request $request Chứa dữ liệu cập nhật
+     * @param LopHocPhan $lopHocPhan Instance lớp học phần cần cập nhật
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách
+     * @throws \Illuminate\Validation\ValidationException Nếu validation thất bại
+     * @throws \Exception Nếu có lỗi khi cập nhật
      */
     public function update(Request $request, LopHocPhan $lopHocPhan)
     {
@@ -244,7 +291,16 @@ class LopHocPhanController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Xóa lớp học phần khỏi database
+     * 
+     * Kiểm tra điều kiện trước khi xóa:
+     * - Chỉ xóa được nếu chưa có sinh viên đăng ký
+     * - Xóa cả dữ liệu liên quan: lịch học, phân công giảng viên
+     * 
+     * @param LopHocPhan $lopHocPhan Instance lớp học phần cần xóa
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     * @throws \Exception Nếu có sinh viên hoặc lỗi khi xóa
      */
     public function destroy(LopHocPhan $lopHocPhan)
     {
@@ -262,6 +318,15 @@ class LopHocPhanController extends Controller
 
     /**
      * Đồng bộ lại số lượng đăng ký từ bảng lop_hoc_phan_sinh_vien
+     */
+    /**
+     * Đồng bộ số lượng sinh viên đã đăng ký cho tất cả lớp học phần
+     * 
+     * Cập nhật lại số lượng sinh viên đã đăng ký thực tế cho từng lớp
+     * bằng cách đếm từ bảng lop_hoc_phan_sinh_vien
+     * 
+     * @return \Illuminate\Http\JsonResponse Kết quả đồng bộ với số lượng lớp đã cập nhật
+     * @throws \Exception Nếu có lỗi khi đồng bộ
      */
     public function syncSoLuongDangKy()
     {
@@ -300,6 +365,11 @@ class LopHocPhanController extends Controller
     /**
      * Hiển thị form import
      */
+    /**
+     * Hiển thị trang import lớp học phần từ file Excel
+     * 
+     * @return \Illuminate\View\View Trang upload file Excel để import lớp học phần
+     */
     public function showImportForm()
     {
         return view('daotao.lop-hoc-phan.import');
@@ -307,6 +377,16 @@ class LopHocPhanController extends Controller
 
     /**
      * Download template Excel/CSV
+     */
+    /**
+     * Tải file Excel mẫu để import lớp học phần
+     * 
+     * Tạo file Excel với các cột:
+     * Mã lớp, Tên lớp, Mã môn, Mã học kỳ, Số lượng tối đa,
+     * Ngày bắt đầu, Ngày kết thúc, Ghi chú
+     * 
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse File Excel được tải xuống
+     * @throws \Exception Nếu có lỗi khi tạo file
      */
     public function downloadTemplate()
     {
@@ -363,6 +443,17 @@ class LopHocPhanController extends Controller
 
     /**
      * Import lớp học phần từ Excel hoặc CSV
+     */
+    /**
+     * Import danh sách lớp học phần từ file Excel
+     * 
+     * Đọc file Excel và tạo/cập nhật hàng loạt các lớp học phần.
+     * Validate từng dòng và báo lỗi chi tiết nếu có.
+     * 
+     * @param Request $request Chứa file Excel upload
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang import với kết quả
+     * @throws \Illuminate\Validation\ValidationException Nếu file không hợp lệ
+     * @throws \Exception Nếu có lỗi khi import
      */
     public function import(Request $request)
     {
@@ -628,6 +719,17 @@ class LopHocPhanController extends Controller
 
     /**
      * Remove multiple resources from storage.
+     */
+    /**
+     * Xóa nhiều lớp học phần cùng lúc
+     * 
+     * Xóa hàng loạt các lớp học phần theo danh sách ID.
+     * Chỉ xóa các lớp chưa có sinh viên đăng ký.
+     * 
+     * @param Request $request Chứa mảng lop_hoc_phan_ids
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách với kết quả
+     * @throws \Illuminate\Validation\ValidationException Nếu danh sách ID không hợp lệ
+     * @throws \Exception Nếu có lỗi khi xóa
      */
     public function destroyMultiple(Request $request)
     {

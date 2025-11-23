@@ -16,6 +16,16 @@ class LopHanhChinhController extends Controller
     /**
      * Display a listing of the resource.
      */
+    /**
+     * Hiển thị danh sách các lớp hành chính
+     * 
+     * Hỗ trợ lọc theo khoa, ngành, khóa học, trạng thái và tìm kiếm.
+     * Kết quả bao gồm thông tin khoa, ngành, GVCN, sỉ số lớp.
+     * 
+     * @param Request $request Chứa các tham số lọc và tìm kiếm
+     * @return \Illuminate\View\View Trang danh sách lớp hành chính
+     * @throws \Exception Nếu có lỗi khi truy vấn
+     */
     public function index(Request $request)
     {
         $query = LopHanhChinh::with(['khoaHoc', 'nganh', 'giangVienChuNhiem', 'sinhVien']);
@@ -51,6 +61,15 @@ class LopHanhChinhController extends Controller
     /**
      * Show the form for creating a new resource.
      */
+    /**
+     * Hiển thị form tạo lớp hành chính mới
+     * 
+     * Lấy danh sách khoa, ngành, khóa học, giảng viên chủ nhiệm
+     * để hiển thị trên form tạo lớp
+     * 
+     * @return \Illuminate\View\View Form tạo lớp hành chính
+     * @throws \Exception Nếu có lỗi khi tải dữ liệu
+     */
     public function create()
     {
         $khoaHocs = KhoaHoc::orderBy('ten_khoa_hoc')->get();
@@ -62,6 +81,17 @@ class LopHanhChinhController extends Controller
 
     /**
      * Store a newly created resource in storage.
+     */
+    /**
+     * Lưu lớp hành chính mới vào database
+     * 
+     * Validate và tạo lớp hành chính với thông tin:
+     * mã lớp, tên lớp, khoa, ngành, khóa học, GVCN, sỉ số
+     * 
+     * @param Request $request Chứa dữ liệu lớp hành chính
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách
+     * @throws \Illuminate\Validation\ValidationException Nếu validation thất bại
+     * @throws \Exception Nếu có lỗi khi lưu
      */
     public function store(Request $request)
     {
@@ -88,6 +118,16 @@ class LopHanhChinhController extends Controller
     /**
      * Display the specified resource.
      */
+    /**
+     * Hiển thị chi tiết lớp hành chính
+     * 
+     * Hiển thị thông tin đầy đủ về lớp hành chính bao gồm:
+     * danh sách sinh viên, GVCN, thống kê sỉ số, kết quả học tập
+     * 
+     * @param string $id ID lớp hành chính
+     * @return \Illuminate\View\View Trang chi tiết lớp hành chính
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     */
     public function show(string $id)
     {
         $lopHanhChinh = LopHanhChinh::with([
@@ -103,6 +143,15 @@ class LopHanhChinhController extends Controller
     /**
      * Show the form for editing the specified resource.
      */
+    /**
+     * Hiển thị form chỉnh sửa lớp hành chính
+     * 
+     * Lấy thông tin lớp hành chính hiện tại, danh sách khoa, ngành, khóa, GVCN
+     * 
+     * @param string $id ID lớp hành chính cần sửa
+     * @return \Illuminate\View\View Form chỉnh sửa
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     */
     public function edit(string $id)
     {
         $lopHanhChinh = LopHanhChinh::findOrFail($id);
@@ -115,6 +164,18 @@ class LopHanhChinhController extends Controller
 
     /**
      * Update the specified resource in storage.
+     */
+    /**
+     * Cập nhật thông tin lớp hành chính
+     * 
+     * Validate và cập nhật thông tin lớp hành chính trong database.
+     * Tự động sync sỉ số thực tế sau khi cập nhật.
+     * 
+     * @param Request $request Chứa dữ liệu cập nhật
+     * @param string $id ID lớp hành chính cần cập nhật
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách
+     * @throws \Illuminate\Validation\ValidationException Nếu validation thất bại
+     * @throws \Exception Nếu có lỗi khi cập nhật
      */
     public function update(Request $request, string $id)
     {
@@ -143,6 +204,17 @@ class LopHanhChinhController extends Controller
     /**
      * Remove the specified resource from storage.
      */
+    /**
+     * Xóa lớp hành chính khỏi database
+     * 
+     * Kiểm tra điều kiện: chỉ xóa được nếu lớp chưa có sinh viên.
+     * Xóa cả dữ liệu liên quan nếu có.
+     * 
+     * @param string $id ID lớp hành chính cần xóa
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     * @throws \Exception Nếu có sinh viên hoặc lỗi khi xóa
+     */
     public function destroy(string $id)
     {
         $lopHanhChinh = LopHanhChinh::findOrFail($id);
@@ -161,6 +233,16 @@ class LopHanhChinhController extends Controller
 
     /**
      * Export danh sách lớp hành chính ra Excel
+     */
+    /**
+     * Xuất danh sách lớp hành chính ra file Excel
+     * 
+     * Tạo file Excel chứa danh sách lớp hành chính với các thông tin:
+     * Mã lớp, Tên lớp, Khoa, Ngành, Khóa, GVCN, Sỉ số
+     * 
+     * @param Request $request Chứa các tham số lọc
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse File Excel được tải xuống
+     * @throws \Exception Nếu có lỗi khi tạo file
      */
     public function exportExcel(Request $request)
     {
@@ -250,6 +332,11 @@ class LopHanhChinhController extends Controller
     /**
      * Hiển thị form import
      */
+    /**
+     * Hiển thị trang import lớp hành chính từ file Excel
+     * 
+     * @return \Illuminate\View\View Trang upload file Excel
+     */
     public function showImportForm()
     {
         return view('daotao.lop-hanh-chinh.import');
@@ -257,6 +344,15 @@ class LopHanhChinhController extends Controller
 
     /**
      * Download template Excel
+     */
+    /**
+     * Tải file Excel mẫu để import lớp hành chính
+     * 
+     * Tạo file Excel với các cột: Mã lớp, Tên lớp, Mã khoa, Mã ngành,
+     * Mã khóa học, Mã GVCN, Sỉ số tối đa, Ghi chú
+     * 
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse File Excel mẫu
+     * @throws \Exception Nếu có lỗi khi tạo file
      */
     public function downloadTemplate()
     {
@@ -297,6 +393,17 @@ class LopHanhChinhController extends Controller
 
     /**
      * Import lớp hành chính từ Excel hoặc CSV
+     */
+    /**
+     * Import danh sách lớp hành chính từ file Excel
+     * 
+     * Đọc file Excel và tạo/cập nhật hàng loạt các lớp hành chính.
+     * Validate từng dòng và báo lỗi chi tiết.
+     * 
+     * @param Request $request Chứa file Excel upload
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang import với kết quả
+     * @throws \Illuminate\Validation\ValidationException Nếu file không hợp lệ
+     * @throws \Exception Nếu có lỗi khi import
      */
     public function import(Request $request)
     {
@@ -448,6 +555,15 @@ class LopHanhChinhController extends Controller
     /**
      * Đồng bộ lại sĩ số cho tất cả các lớp hành chính
      */
+    /**
+     * Đồng bộ sỉ số thực tế cho tất cả lớp hành chính
+     * 
+     * Cập nhật sỉ số hiện tại bằng cách đếm số sinh viên
+     * thuộc lớp hành chính từ bảng sinh_vien
+     * 
+     * @return \Illuminate\Http\JsonResponse Kết quả đồng bộ với số lượng lớp đã cập nhật
+     * @throws \Exception Nếu có lỗi khi đồng bộ
+     */
     public function syncSiSo()
     {
         DB::beginTransaction();
@@ -475,6 +591,17 @@ class LopHanhChinhController extends Controller
 
     /**
      * Remove multiple resources from storage.
+     */
+    /**
+     * Xóa nhiều lớp hành chính cùng lúc
+     * 
+     * Xóa hàng loạt các lớp hành chính theo danh sách ID.
+     * Chỉ xóa các lớp chưa có sinh viên.
+     * 
+     * @param Request $request Chứa mảng lop_hanh_chinh_ids
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách với kết quả
+     * @throws \Illuminate\Validation\ValidationException Nếu danh sách ID không hợp lệ
+     * @throws \Exception Nếu có lỗi khi xóa
      */
     public function destroyMultiple(Request $request)
     {

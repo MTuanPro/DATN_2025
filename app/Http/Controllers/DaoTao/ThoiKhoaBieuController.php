@@ -14,7 +14,17 @@ use Carbon\Carbon;
 class ThoiKhoaBieuController extends Controller
 {
     /**
-     * Lịch theo Phòng học
+     * Hiển thị lịch học theo phòng học
+     * 
+     * Cho phép lọc lịch học theo phòng, học kỳ và khoảng thời gian
+     * 
+     * @param Request $request Chứa các tham số lọc:
+     *                         - phong_hoc_id: ID phòng học cần xem lịch
+     *                         - hoc_ky_id: ID học kỳ
+     *                         - tu_ngay: Ngày bắt đầu (YYYY-MM-DD)
+     *                         - den_ngay: Ngày kết thúc (YYYY-MM-DD)
+     * @return \Illuminate\View\View
+     * @throws \Exception
      */
     public function lichTheoPhong(Request $request)
     {
@@ -61,7 +71,17 @@ class ThoiKhoaBieuController extends Controller
     }
 
     /**
-     * Lịch theo Giảng viên
+     * Hiển thị lịch giảng dạy theo giảng viên
+     * 
+     * Cho phép xem lịch giảng dạy của một giảng viên cụ thể
+     * 
+     * @param Request $request Chứa các tham số lọc:
+     *                         - giang_vien_id: ID giảng viên cần xem lịch
+     *                         - hoc_ky_id: ID học kỳ
+     *                         - tu_ngay: Ngày bắt đầu (YYYY-MM-DD)
+     *                         - den_ngay: Ngày kết thúc (YYYY-MM-DD)
+     * @return \Illuminate\View\View
+     * @throws \Exception
      */
     public function lichTheoGiangVien(Request $request)
     {

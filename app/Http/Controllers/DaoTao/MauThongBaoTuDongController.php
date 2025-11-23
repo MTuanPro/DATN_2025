@@ -9,7 +9,13 @@ use Illuminate\Http\Request;
 class MauThongBaoTuDongController extends Controller
 {
     /**
-     * Display a listing of the resource.
+     * Hiển thị danh sách tất cả mẫu thông báo tự động
+     * 
+     * Lấy danh sách các mẫu thông báo được sắp xếp theo loại thông báo
+     * để hiển thị trên trang quản lý
+     * 
+     * @return \Illuminate\View\View Trang danh sách mẫu thông báo
+     * @throws \Exception Nếu có lỗi khi truy vấn database
      */
     public function index()
     {
@@ -19,7 +25,13 @@ class MauThongBaoTuDongController extends Controller
     }
 
     /**
-     * Show the form for creating a new resource.
+     * Hiển thị form tạo mẫu thông báo tự động mới
+     * 
+     * Lấy danh sách các loại thông báo có sẵn để người dùng chọn
+     * khi tạo mẫu mới
+     * 
+     * @return \Illuminate\View\View Form tạo mẫu thông báo
+     * @throws \Exception Nếu có lỗi khi tải options
      */
     public function create()
     {
@@ -29,7 +41,22 @@ class MauThongBaoTuDongController extends Controller
     }
 
     /**
-     * Store a newly created resource in storage.
+     * Lưu mẫu thông báo tự động mới vào database
+     * 
+     * Validate dữ liệu đầu vào và tạo bản ghi mới trong bảng mau_thong_bao_tu_dong
+     * 
+     * @param Request $request Chứa dữ liệu:
+     *                         - loai_thong_bao: Loại thông báo (unique)
+     *                         - tieu_de_mau: Tiêu đề mẫu (max 255 ký tự)
+     *                         - noi_dung_mau: Nội dung thông báo
+     *                         - doi_tuong_mac_dinh: Đối tượng nhận (nullable)
+     *                         - muc_do_uu_tien: binh_thuong|quan_trong|rat_quan_trong
+     *                         - gui_email_mac_dinh: boolean
+     *                         - gui_sms_mac_dinh: boolean
+     *                         - kich_hoat: boolean
+     *                         - ghi_chu: Ghi chú (nullable)
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách với thông báo thành công
+     * @throws \Illuminate\Validation\ValidationException Nếu dữ liệu không hợp lệ
      */
     public function store(Request $request)
     {
@@ -56,7 +83,11 @@ class MauThongBaoTuDongController extends Controller
     }
 
     /**
-     * Display the specified resource.
+     * Hiển thị chi tiết một mẫu thông báo tự động
+     * 
+     * @param MauThongBaoTuDong $mauThongBao Instance mẫu thông báo cần xem
+     * @return \Illuminate\View\View Trang chi tiết mẫu thông báo
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy mẫu thông báo
      */
     public function show(MauThongBaoTuDong $mauThongBao)
     {
@@ -64,7 +95,14 @@ class MauThongBaoTuDongController extends Controller
     }
 
     /**
-     * Show the form for editing the specified resource.
+     * Hiển thị form chỉnh sửa mẫu thông báo tự động
+     * 
+     * Lấy thông tin mẫu thông báo hiện tại và danh sách loại thông báo
+     * để hiển thị trên form chỉnh sửa
+     * 
+     * @param MauThongBaoTuDong $mauThongBao Instance mẫu thông báo cần sửa
+     * @return \Illuminate\View\View Form chỉnh sửa mẫu thông báo
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
      */
     public function edit(MauThongBaoTuDong $mauThongBao)
     {
@@ -74,7 +112,15 @@ class MauThongBaoTuDongController extends Controller
     }
 
     /**
-     * Update the specified resource in storage.
+     * Cập nhật thông tin mẫu thông báo tự động
+     * 
+     * Validate và cập nhật thông tin mẫu thông báo trong database
+     * 
+     * @param Request $request Chứa dữ liệu cập nhật (tương tự store)
+     * @param MauThongBaoTuDong $mauThongBao Instance mẫu thông báo cần cập nhật
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách với thông báo thành công
+     * @throws \Illuminate\Validation\ValidationException Nếu dữ liệu không hợp lệ
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
      */
     public function update(Request $request, MauThongBaoTuDong $mauThongBao)
     {
@@ -101,7 +147,14 @@ class MauThongBaoTuDongController extends Controller
     }
 
     /**
-     * Remove the specified resource from storage.
+     * Xóa mẫu thông báo tự động khỏi database
+     * 
+     * Thực hiện soft delete hoặc hard delete tùy theo cấu hình model
+     * 
+     * @param MauThongBaoTuDong $mauThongBao Instance mẫu thông báo cần xóa
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang danh sách với thông báo thành công
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     * @throws \Exception Nếu có lỗi khi xóa (ví dụ: constraint violation)
      */
     public function destroy(MauThongBaoTuDong $mauThongBao)
     {
@@ -112,7 +165,15 @@ class MauThongBaoTuDongController extends Controller
     }
 
     /**
-     * Toggle activation status
+     * Bật/tắt trạng thái kích hoạt của mẫu thông báo
+     * 
+     * Đảo ngược trạng thái kich_hoat (true <-> false) của mẫu thông báo.
+     * Chỉ các mẫu được kích hoạt mới được sử dụng để gửi thông báo tự động.
+     * 
+     * @param MauThongBaoTuDong $mauThongBao Instance mẫu thông báo cần bật/tắt
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang trước với thông báo trạng thái mới
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     * @throws \Exception Nếu có lỗi khi cập nhật
      */
     public function toggleActivation(MauThongBaoTuDong $mauThongBao)
     {
