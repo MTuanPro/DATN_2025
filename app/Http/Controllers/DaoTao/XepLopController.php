@@ -31,9 +31,8 @@ class XepLopController extends Controller
         // Lọc theo trạng thái
         if ($request->filled('trang_thai')) {
             $query->where('trang_thai', $request->trang_thai);
-        } else {
-            $query->where('trang_thai', 'cho_xep_lop'); // Mặc định chỉ hiện chờ xếp lớp
         }
+        // Mặc định hiển thị tất cả trạng thái
 
         // Lọc theo môn học
         if ($request->filled('mon_hoc_id')) {
@@ -44,6 +43,7 @@ class XepLopController extends Controller
 
         // Thống kê
         $thongKe = [
+            'cho_dong_hoc_phi' => DangKyMonHocTam::where('trang_thai', 'cho_dong_hoc_phi')->count(),
             'cho_xep_lop' => DangKyMonHocTam::choXepLop()->count(),
             'da_xep_lop' => DangKyMonHocTam::daXepLop()->count(),
             'that_bai' => DangKyMonHocTam::thatBai()->count(),
