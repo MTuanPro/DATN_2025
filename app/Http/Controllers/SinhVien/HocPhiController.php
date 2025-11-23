@@ -102,7 +102,10 @@ class HocPhiController extends Controller
 
         $hocPhi = HocPhiHocKy::with([
             'sinhVien.user',
-            'sinhVien.lopHanhChinh.chuyenNganh.nganh.khoa',
+            'sinhVien.lopHanhChinh.khoaHoc',
+            'sinhVien.lopHanhChinh.nganh.khoa',
+            'sinhVien.chuyenNganh.nganh.khoa',
+            'sinhVien.nganh.khoa',
             'hocKy',
             'chiTietHocPhiMon.monHoc',
             'lichSuDongHocPhi'
@@ -110,7 +113,11 @@ class HocPhiController extends Controller
             ->where('sinh_vien_id', $sinhVien->id)
             ->findOrFail($id);
 
-        $pdf = Pdf::loadView('sinhvien.hoc-phi.pdf', compact('hocPhi'));
+        $pdf = Pdf::loadView('sinhvien.hoc-phi.pdf', compact('hocPhi'))
+            ->setPaper('a4', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('defaultFont', 'DejaVu Sans');
 
         $fileName = 'HocPhi_' . $sinhVien->ma_sinh_vien . '_' . $hocPhi->hocKy->ten_hoc_ky . '.pdf';
 

@@ -1,8 +1,6 @@
-@extends('layouts.layout-sinhvien')
+<?php $__env->startSection('title', 'Chương trình đào tạo'); ?>
 
-@section('title', 'Chương trình đào tạo')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
@@ -13,7 +11,7 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="<?php echo e(route('sinh-vien.dashboard')); ?>">Dashboard</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Chương trình đào tạo</li>
                         </ol>
                     </nav>
@@ -34,22 +32,22 @@
                                 <div class="info-item">
                                     <i class="bi bi-person-circle text-primary"></i>
                                     <strong>Sinh viên:</strong>
-                                    <span>{{ $sinhVien->ho_ten }}</span>
+                                    <span><?php echo e($sinhVien->ho_ten); ?></span>
                                 </div>
                                 <div class="info-item">
                                     <i class="bi bi-credit-card text-primary"></i>
                                     <strong>Mã sinh viên:</strong>
-                                    <code class="bg-light px-2 py-1 rounded">{{ $sinhVien->ma_sinh_vien }}</code>
+                                    <code class="bg-light px-2 py-1 rounded"><?php echo e($sinhVien->ma_sinh_vien); ?></code>
                                 </div>
                                 <div class="info-item">
                                     <i class="bi bi-people text-primary"></i>
                                     <strong>Lớp:</strong>
-                                    <span>{{ $sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</span>
+                                    <span><?php echo e($sinhVien->lopHanhChinh->ten_lop ?? 'N/A'); ?></span>
                                 </div>
                                 <div class="info-item">
                                     <i class="bi bi-calendar-check text-primary"></i>
                                     <strong>Khóa học:</strong>
-                                    <span>{{ $sinhVien->lopHanhChinh->khoaHoc->ten_khoa_hoc ?? 'N/A' }}</span>
+                                    <span><?php echo e($sinhVien->lopHanhChinh->khoaHoc->ten_khoa_hoc ?? 'N/A'); ?></span>
                                 </div>
                             </div>
                         </div>
@@ -58,17 +56,17 @@
                                 <div class="info-item">
                                     <i class="bi bi-building text-primary"></i>
                                     <strong>Khoa:</strong>
-                                    <span>{{ $chuyenNganh->nganh->khoa->ten_khoa ?? 'N/A' }}</span>
+                                    <span><?php echo e($chuyenNganh->nganh->khoa->ten_khoa ?? 'N/A'); ?></span>
                                 </div>
                                 <div class="info-item">
                                     <i class="bi bi-diagram-3 text-primary"></i>
                                     <strong>Ngành:</strong>
-                                    <span>{{ $chuyenNganh->nganh->ten_nganh ?? 'N/A' }}</span>
+                                    <span><?php echo e($chuyenNganh->nganh->ten_nganh ?? 'N/A'); ?></span>
                                 </div>
                                 <div class="info-item">
                                     <i class="bi bi-award text-primary"></i>
                                     <strong>Chuyên ngành:</strong>
-                                    <span class="badge bg-primary">{{ $chuyenNganh->ten_chuyen_nganh ?? 'N/A' }}</span>
+                                    <span class="badge bg-primary"><?php echo e($chuyenNganh->ten_chuyen_nganh ?? 'N/A'); ?></span>
                                 </div>
                             </div>
                         </div>
@@ -84,7 +82,7 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-muted mb-2">Tổng tín chỉ CTĐT</h6>
-                                    <h2 class="mb-0 text-primary">{{ $thongKe['tong_tin_chi_ctdt'] }}</h2>
+                                    <h2 class="mb-0 text-primary"><?php echo e($thongKe['tong_tin_chi_ctdt']); ?></h2>
                                     <small class="text-muted">tín chỉ</small>
                                 </div>
                                 <div class="avatar avatar-xl bg-primary">
@@ -100,8 +98,8 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-muted mb-2">Tín chỉ đã đạt</h6>
-                                    <h2 class="mb-0 text-success">{{ $thongKe['tin_chi_dat'] }}</h2>
-                                    <small class="text-success fw-bold">{{ number_format($tienDo, 1) }}% hoàn thành</small>
+                                    <h2 class="mb-0 text-success"><?php echo e($thongKe['tin_chi_dat']); ?></h2>
+                                    <small class="text-success fw-bold"><?php echo e(number_format($tienDo, 1)); ?>% hoàn thành</small>
                                 </div>
                                 <div class="avatar avatar-xl bg-success">
                                     <i class="bi bi-check-circle text-white fs-3"></i>
@@ -116,8 +114,8 @@
                             <div class="d-flex justify-content-between align-items-center">
                                 <div>
                                     <h6 class="text-muted mb-2">Môn đã học</h6>
-                                    <h2 class="mb-0 text-info">{{ $thongKe['so_mon_da_hoc'] }}</h2>
-                                    <small class="text-muted">/ {{ $thongKe['so_mon_ctdt'] }} môn</small>
+                                    <h2 class="mb-0 text-info"><?php echo e($thongKe['so_mon_da_hoc']); ?></h2>
+                                    <small class="text-muted">/ <?php echo e($thongKe['so_mon_ctdt']); ?> môn</small>
                                 </div>
                                 <div class="avatar avatar-xl bg-info">
                                     <i class="bi bi-list-check text-white fs-3"></i>
@@ -133,13 +131,13 @@
                             <div class="progress mb-2" style="height: 20px;">
                                 <div class="progress-bar progress-bar-striped progress-bar-animated bg-gradient-success" 
                                      role="progressbar" 
-                                     style="width: {{ $tienDo }}%"
-                                     aria-valuenow="{{ $tienDo }}" aria-valuemin="0" aria-valuemax="100">
-                                    <strong>{{ number_format($tienDo, 1) }}%</strong>
+                                     style="width: <?php echo e($tienDo); ?>%"
+                                     aria-valuenow="<?php echo e($tienDo); ?>" aria-valuemin="0" aria-valuemax="100">
+                                    <strong><?php echo e(number_format($tienDo, 1)); ?>%</strong>
                                 </div>
                             </div>
                             <small class="text-muted">
-                                Còn lại: {{ $thongKe['tong_tin_chi_ctdt'] - $thongKe['tin_chi_dat'] }} tín chỉ
+                                Còn lại: <?php echo e($thongKe['tong_tin_chi_ctdt'] - $thongKe['tin_chi_dat']); ?> tín chỉ
                             </small>
                         </div>
                     </div>
@@ -152,15 +150,15 @@
                     <h5 class="mb-0"><i class="bi bi-journal-bookmark me-2"></i>Chương trình đào tạo theo học kỳ</h5>
                 </div>
                 <div class="card-body">
-                    @if($chuongTrinhTheoHocKy->isEmpty())
+                    <?php if($chuongTrinhTheoHocKy->isEmpty()): ?>
                         <div class="alert alert-warning border-0 shadow-sm">
                             <i class="bi bi-exclamation-triangle me-2"></i>
                             <strong>Thông báo:</strong> Chưa có chương trình đào tạo cho chuyên ngành này.
                         </div>
-                    @else
+                    <?php else: ?>
                         <div class="accordion" id="accordionCTDT">
-                            @foreach($chuongTrinhTheoHocKy as $hocKy => $monHocs)
-                                @php
+                            <?php $__currentLoopData = $chuongTrinhTheoHocKy; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $hocKy => $monHocs): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <?php
                                     $tongTinChiHK = $monHocs->sum(function($m) { return $m->monHoc->so_tin_chi; });
                                     $soMonDaHoc = $monHocs->filter(function($m) use ($ketQuaHocTap) {
                                         $ketQua = $ketQuaHocTap->first(function ($kq) use ($m) {
@@ -170,32 +168,32 @@
                                         return $ketQua && ($ketQua->diem_he_10 ?? 0) >= 4.0;
                                     })->count();
                                     $tienDoHK = $monHocs->count() > 0 ? ($soMonDaHoc / $monHocs->count()) * 100 : 0;
-                                @endphp
+                                ?>
                                 <div class="accordion-item border-0 shadow-sm mb-2">
-                                    <h2 class="accordion-header" id="heading{{ $hocKy }}">
-                                        <button class="accordion-button {{ $loop->first ? '' : 'collapsed' }} bg-light py-2" 
+                                    <h2 class="accordion-header" id="heading<?php echo e($hocKy); ?>">
+                                        <button class="accordion-button <?php echo e($loop->first ? '' : 'collapsed'); ?> bg-light py-2" 
                                                 type="button" 
                                                 data-bs-toggle="collapse" 
-                                                data-bs-target="#collapse{{ $hocKy }}"
-                                                aria-expanded="{{ $loop->first ? 'true' : 'false' }}" 
-                                                aria-controls="collapse{{ $hocKy }}"
+                                                data-bs-target="#collapse<?php echo e($hocKy); ?>"
+                                                aria-expanded="<?php echo e($loop->first ? 'true' : 'false'); ?>" 
+                                                aria-controls="collapse<?php echo e($hocKy); ?>"
                                                 style="font-size: 0.95rem;">
                                             <div class="d-flex w-100 align-items-center justify-content-between pe-3">
                                                 <div>
                                                     <i class="bi bi-calendar3 text-primary me-2" style="font-size: 0.9rem;"></i>
-                                                    <strong style="font-size: 0.95rem;">Học kỳ {{ $hocKy }}</strong>
+                                                    <strong style="font-size: 0.95rem;">Học kỳ <?php echo e($hocKy); ?></strong>
                                                 </div>
                                                 <div class="d-flex gap-2">
-                                                    <span class="badge bg-primary" style="font-size: 0.75rem;">{{ $monHocs->count() }} môn</span>
-                                                    <span class="badge bg-info" style="font-size: 0.75rem;">{{ $tongTinChiHK }} TC</span>
-                                                    <span class="badge bg-success" style="font-size: 0.75rem;">{{ $soMonDaHoc }}/{{ $monHocs->count() }} đạt</span>
+                                                    <span class="badge bg-primary" style="font-size: 0.75rem;"><?php echo e($monHocs->count()); ?> môn</span>
+                                                    <span class="badge bg-info" style="font-size: 0.75rem;"><?php echo e($tongTinChiHK); ?> TC</span>
+                                                    <span class="badge bg-success" style="font-size: 0.75rem;"><?php echo e($soMonDaHoc); ?>/<?php echo e($monHocs->count()); ?> đạt</span>
                                                 </div>
                                             </div>
                                         </button>
                                     </h2>
-                                    <div id="collapse{{ $hocKy }}" 
-                                         class="accordion-collapse collapse {{ $loop->first ? 'show' : '' }}"
-                                         aria-labelledby="heading{{ $hocKy }}" 
+                                    <div id="collapse<?php echo e($hocKy); ?>" 
+                                         class="accordion-collapse collapse <?php echo e($loop->first ? 'show' : ''); ?>"
+                                         aria-labelledby="heading<?php echo e($hocKy); ?>" 
                                          data-bs-parent="#accordionCTDT">
                                         <div class="accordion-body p-0">
                                             <div class="table-responsive">
@@ -213,8 +211,8 @@
                                                         </tr>
                                                     </thead>
                                                     <tbody>
-                                                        @foreach($monHocs as $item)
-                                                            @php
+                                                        <?php $__currentLoopData = $monHocs; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $item): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                                            <?php
                                                                 $ketQua = $ketQuaHocTap->first(function ($kq) use ($item) {
                                                                     $monHocId = $kq->lopHocPhanSinhVien->lopHocPhan->mon_hoc_id ?? null;
                                                                     return $monHocId == $item->mon_hoc_id;
@@ -236,78 +234,80 @@
                                                                     'thuc_tap' => 'warning',
                                                                     'do_an_tot_nghiep' => 'danger',
                                                                 ];
-                                                            @endphp
-                                                            <tr class="{{ $daDat ? 'table-success' : '' }}" style="font-size: 0.9rem;">
-                                                                <td class="text-center">{{ $loop->iteration }}</td>
+                                                            ?>
+                                                            <tr class="<?php echo e($daDat ? 'table-success' : ''); ?>" style="font-size: 0.9rem;">
+                                                                <td class="text-center"><?php echo e($loop->iteration); ?></td>
                                                                 <td>
-                                                                    <code class="text-primary fw-bold" style="font-size: 0.85rem;">{{ $item->monHoc->ma_mon }}</code>
+                                                                    <code class="text-primary fw-bold" style="font-size: 0.85rem;"><?php echo e($item->monHoc->ma_mon); ?></code>
                                                                 </td>
                                                                 <td>
-                                                                    <div class="fw-semibold">{{ $item->monHoc->ten_mon }}</div>
-                                                                    @if($item->monHoc->monTienQuyet->isNotEmpty())
+                                                                    <div class="fw-semibold"><?php echo e($item->monHoc->ten_mon); ?></div>
+                                                                    <?php if($item->monHoc->monTienQuyet->isNotEmpty()): ?>
                                                                         <small class="text-warning">
                                                                             <i class="bi bi-exclamation-triangle-fill"></i>
-                                                                            {{ $item->monHoc->monTienQuyet->count() }} môn tiên quyết
+                                                                            <?php echo e($item->monHoc->monTienQuyet->count()); ?> môn tiên quyết
                                                                         </small>
-                                                                    @endif
+                                                                    <?php endif; ?>
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    <span class="badge bg-info" style="font-size: 0.75rem;">{{ $item->monHoc->so_tin_chi }}</span>
+                                                                    <span class="badge bg-info" style="font-size: 0.75rem;"><?php echo e($item->monHoc->so_tin_chi); ?></span>
                                                                 </td>
                                                                 <td>
-                                                                    <span class="badge bg-{{ $loaiColors[$item->loai_mon_hoc] ?? 'secondary' }}" style="font-size: 0.7rem;">
-                                                                        {{ $loaiLabels[$item->loai_mon_hoc] ?? $item->loai_mon_hoc }}
+                                                                    <span class="badge bg-<?php echo e($loaiColors[$item->loai_mon_hoc] ?? 'secondary'); ?>" style="font-size: 0.7rem;">
+                                                                        <?php echo e($loaiLabels[$item->loai_mon_hoc] ?? $item->loai_mon_hoc); ?>
+
                                                                     </span>
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    @if($item->bat_buoc)
+                                                                    <?php if($item->bat_buoc): ?>
                                                                         <span class="badge bg-danger" style="font-size: 0.7rem;">
                                                                             <i class="bi bi-star-fill"></i> Bắt buộc
                                                                         </span>
-                                                                    @else
+                                                                    <?php else: ?>
                                                                         <span class="badge bg-secondary" style="font-size: 0.7rem;">Tự chọn</span>
-                                                                    @endif
+                                                                    <?php endif; ?>
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    @if($ketQua)
-                                                                        @if($daDat)
+                                                                    <?php if($ketQua): ?>
+                                                                        <?php if($daDat): ?>
                                                                             <span class="badge bg-success" style="font-size: 0.7rem;">
                                                                                 <i class="bi bi-check-circle-fill"></i> Đã đạt
                                                                             </span>
-                                                                        @else
+                                                                        <?php else: ?>
                                                                             <span class="badge bg-warning text-dark" style="font-size: 0.7rem;">
                                                                                 <i class="bi bi-x-circle-fill"></i> Chưa đạt
                                                                             </span>
-                                                                        @endif
-                                                                    @else
+                                                                        <?php endif; ?>
+                                                                    <?php else: ?>
                                                                         <span class="badge bg-light text-dark" style="font-size: 0.7rem;">
                                                                             <i class="bi bi-dash-circle"></i> Chưa học
                                                                         </span>
-                                                                    @endif
+                                                                    <?php endif; ?>
                                                                 </td>
                                                                 <td class="text-center">
-                                                                    @if($ketQua && $ketQua->diem_he_10)
-                                                                        <strong class="fs-6 {{ $daDat ? 'text-success' : 'text-danger' }}">
-                                                                            {{ number_format($ketQua->diem_he_10, 1) }}
+                                                                    <?php if($ketQua && $ketQua->diem_he_10): ?>
+                                                                        <strong class="fs-6 <?php echo e($daDat ? 'text-success' : 'text-danger'); ?>">
+                                                                            <?php echo e(number_format($ketQua->diem_he_10, 1)); ?>
+
                                                                         </strong>
-                                                                    @else
+                                                                    <?php else: ?>
                                                                         <span class="text-muted">-</span>
-                                                                    @endif
+                                                                    <?php endif; ?>
                                                                 </td>
                                                             </tr>
-                                                        @endforeach
+                                                        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                                                     </tbody>
                                                     <tfoot class="table-light">
                                                         <tr style="font-size: 0.85rem;">
-                                                            <th colspan="3" class="text-end">Tổng học kỳ {{ $hocKy }}:</th>
+                                                            <th colspan="3" class="text-end">Tổng học kỳ <?php echo e($hocKy); ?>:</th>
                                                             <th class="text-center">
-                                                                <span class="badge bg-primary">{{ $tongTinChiHK }} TC</span>
+                                                                <span class="badge bg-primary"><?php echo e($tongTinChiHK); ?> TC</span>
                                                             </th>
                                                             <th colspan="2" class="text-center">
-                                                                <span class="badge bg-success">{{ $soMonDaHoc }}/{{ $monHocs->count() }} môn</span>
+                                                                <span class="badge bg-success"><?php echo e($soMonDaHoc); ?>/<?php echo e($monHocs->count()); ?> môn</span>
                                                             </th>
                                                             <th colspan="2" class="text-center">
-                                                                <span class="badge bg-info">{{ number_format($tienDoHK, 1) }}%</span>
+                                                                <span class="badge bg-info"><?php echo e(number_format($tienDoHK, 1)); ?>%</span>
                                                             </th>
                                                         </tr>
                                                     </tfoot>
@@ -316,9 +316,9 @@
                                         </div>
                                     </div>
                                 </div>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
             </div>
 
@@ -354,7 +354,7 @@
                                 </li>
                                 <li class="mb-2">
                                     <i class="bi bi-award text-success"></i> 
-                                    Xem <a href="{{ route('sinh-vien.chuong-trinh-dao-tao.dieu-kien-tot-nghiep') }}" class="fw-bold">Điều kiện tốt nghiệp</a> để biết thêm chi tiết
+                                    Xem <a href="<?php echo e(route('sinh-vien.chuong-trinh-dao-tao.dieu-kien-tot-nghiep')); ?>" class="fw-bold">Điều kiện tốt nghiệp</a> để biết thêm chi tiết
                                 </li>
                                 <li class="mb-2">
                                     <i class="bi bi-clock-history text-info"></i> 
@@ -426,5 +426,7 @@
             animation: progress-bar-stripes 1s linear infinite;
         }
     </style>
-@endsection
+<?php $__env->stopSection(); ?>
 
+
+<?php echo $__env->make('layouts.layout-sinhvien', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Admin\Downloads\DATN_2025_new\resources\views/sinhvien/chuong-trinh-dao-tao/index.blade.php ENDPATH**/ ?>
