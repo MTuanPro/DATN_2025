@@ -48,7 +48,7 @@ class NhapDiemController extends Controller
             ->get()
             ->map(function ($phanCong) {
                 $lhp = $phanCong->lopHocPhan;
-                
+
                 // Đếm số sinh viên
                 $tongSV = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lhp->id)
                     ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
@@ -65,7 +65,7 @@ class NhapDiemController extends Controller
                 // Kiểm tra lớp đã kết thúc chưa
                 $daKetThuc = $lhp->daKetThuc();
                 $dangDienRa = $lhp->dangDienRa();
-                
+
                 // Xác định trạng thái hiển thị
                 $trangThaiHienThi = $lhp->trang_thai_lop;
                 if ($daKetThuc) {
@@ -134,7 +134,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         $daKhoaDiem = $lopHocPhan->trang_thai_lop === 'da_khoa_diem';
         $daDuyetDiem = $lopHocPhan->trang_thai_lop === 'da_duyet_diem';
         $laGiangVienChinh = $duocPhanCong->vai_tro === 'giang_vien_chinh';
-        
+
         // Kiểm tra lớp đã kết thúc chưa (dựa vào ngày kết thúc)
         $daKetThuc = $lopHocPhan->daKetThuc();
         $dangDienRa = $lopHocPhan->dangDienRa();
@@ -487,7 +487,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
 
         // Xác định lần gửi điểm (1: giữa kỳ, 2: cuối kỳ)
         $lanGui = $request->input('lan_gui', null);
-        
+
         // Nếu không chỉ định, tự động xác định dựa trên trạng thái
         if (!$lanGui) {
             if (!$lopHocPhan->trang_thai_gui_diem_lan_1 || $lopHocPhan->trang_thai_gui_diem_lan_1 === 'chua_gui' || $lopHocPhan->trang_thai_gui_diem_lan_1 === 'da_tra_ve') {
@@ -608,7 +608,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         // Tạo thông báo
         $lanGuiText = $lanGui == 1 ? 'lần 1 (giữa kỳ)' : 'lần 2 (cuối kỳ)';
         $tieuDe = 'Giảng viên gửi điểm ' . $lanGuiText . ' lớp ' . $lopHocPhan->ma_lop_hp;
-        
+
         $noiDung = "Giảng viên {$giangVien->ho_ten} đã gửi điểm {$lanGuiText} lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->monHoc->ten_mon} ({$lopHocPhan->hocKy->ten_hoc_ky}) để duyệt. Vui lòng truy cập phần 'Duyệt điểm' để xem và duyệt.";
 
         $thongBao = ThongBao::create([
