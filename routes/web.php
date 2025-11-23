@@ -346,7 +346,11 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
 
 
     // PHASE 7.5: Quản lý Lịch thi
-    Route::resource('lich-thi', \App\Http\Controllers\DaoTao\LichThiController::class);
+    Route::get('lich-thi', [\App\Http\Controllers\DaoTao\LichThiController::class, 'index'])->name('lich-thi.index');
+    Route::get('lich-thi/{lichThi}', [\App\Http\Controllers\DaoTao\LichThiController::class, 'show'])->name('lich-thi.show');
+    Route::get('lich-thi/{lichThi}/edit', [\App\Http\Controllers\DaoTao\LichThiController::class, 'edit'])->name('lich-thi.edit');
+    Route::put('lich-thi/{lichThi}', [\App\Http\Controllers\DaoTao\LichThiController::class, 'update'])->name('lich-thi.update');
+    Route::delete('lich-thi/{lichThi}', [\App\Http\Controllers\DaoTao\LichThiController::class, 'destroy'])->name('lich-thi.destroy');
     Route::get('lich-thi-import', [\App\Http\Controllers\DaoTao\LichThiController::class, 'showImportForm'])->name('lich-thi.show-import-form');
     Route::post('lich-thi-import', [\App\Http\Controllers\DaoTao\LichThiController::class, 'import'])->name('lich-thi.import');
     Route::get('lich-thi-template', [\App\Http\Controllers\DaoTao\LichThiController::class, 'downloadTemplate'])->name('lich-thi.download-template');
