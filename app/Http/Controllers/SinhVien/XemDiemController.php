@@ -60,7 +60,39 @@ class XemDiemController extends Controller
                     'lopHocPhan.hocKy',
                     'ketQuaHocTap'
                 ])
-                ->get();
+                ->get()
+                ->map(function ($item) {
+                    // Tính thống kê điểm danh cho từng lớp học phần
+                    // Sử dụng một query duy nhất để tối ưu hiệu suất
+                    $thongKe = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $item->id)
+                        ->selectRaw('
+                            COUNT(*) as tong_buoi,
+                            SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
+                            SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang,
+                            SUM(CASE WHEN trang_thai = "di_tre" THEN 1 ELSE 0 END) as di_tre,
+                            SUM(CASE WHEN trang_thai = "nghi_phep" THEN 1 ELSE 0 END) as nghi_phep
+                        ')
+                        ->first();
+                    
+                    $tongBuoi = $thongKe->tong_buoi ?? 0;
+                    $coMat = $thongKe->co_mat ?? 0;
+                    $vang = $thongKe->vang ?? 0;
+                    $diTre = $thongKe->di_tre ?? 0;
+                    $nghiPhep = $thongKe->nghi_phep ?? 0;
+                    
+                    $tyLeChuyenCan = $tongBuoi > 0 ? round(($coMat / $tongBuoi) * 100, 1) : 0;
+                    
+                    $item->thong_ke_diem_danh = [
+                        'tong_buoi' => $tongBuoi,
+                        'co_mat' => $coMat,
+                        'vang' => $vang,
+                        'di_tre' => $diTre,
+                        'nghi_phep' => $nghiPhep,
+                        'ty_le_chuyen_can' => $tyLeChuyenCan
+                    ];
+                    
+                    return $item;
+                });
         }
 
         // Tính GPA học kỳ và tích lũy (chỉ tính điểm đã duyệt)

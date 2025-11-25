@@ -70,16 +70,41 @@
                                         <div class="row">
                                             <div class="col-md-3 text-center mb-4">
                                                 <div class="mb-3">
+                                                    @php
+                                                        $avatarUrl = null;
+                                                        if ($sinhVien->anh_dai_dien) {
+                                                            // Kiểm tra xem ảnh có tồn tại không
+                                                            $avatarPath = 'storage/' . $sinhVien->anh_dai_dien;
+                                                            if (file_exists(public_path($avatarPath))) {
+                                                                $avatarUrl = asset($avatarPath);
+                                                            }
+                                                        }
+                                                        // Nếu không có ảnh hoặc ảnh không tồn tại, dùng ảnh mặc định
+                                                        if (!$avatarUrl) {
+                                                            $defaultImage = 'assets/images/faces/1.jpg';
+                                                            if (file_exists(public_path($defaultImage))) {
+                                                                $avatarUrl = asset($defaultImage);
+                                                            } else {
+                                                                // Nếu không có ảnh mặc định, dùng placeholder
+                                                                $avatarUrl = 'https://ui-avatars.com/api/?name=' . urlencode($sinhVien->ho_ten ?? 'User') . '&size=150&background=0d6efd&color=fff';
+                                                            }
+                                                        }
+                                                    @endphp
                                                     <img id="preview-avatar"
-                                                        src="{{ $sinhVien->anh_dai_dien ? asset('storage/' . $sinhVien->anh_dai_dien) : asset('assets/images/faces/1.jpg') }}"
-                                                        alt="Avatar" class="img-fluid rounded-circle"
-                                                        style="width: 150px; height: 150px; object-fit: cover;">
+                                                        src="{{ $avatarUrl }}"
+                                                        alt="Avatar" 
+                                                        class="img-fluid rounded-circle border"
+                                                        style="width: 150px; height: 150px; object-fit: cover; border-width: 2px !important;"
+                                                        onerror="this.onerror=null; this.src='https://ui-avatars.com/api/?name={{ urlencode($sinhVien->ho_ten ?? 'User') }}&size=150&background=0d6efd&color=fff';">
                                                 </div>
                                                 <label for="anh_dai_dien" class="btn btn-primary btn-sm">
                                                     <i class="bi bi-upload"></i> Chọn Ảnh
                                                 </label>
                                                 <input type="file" class="d-none" id="anh_dai_dien" name="anh_dai_dien"
                                                     accept="image/*">
+                                                @error('anh_dai_dien')
+                                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                                @enderror
                                             </div>
 
                                             <div class="col-md-9">

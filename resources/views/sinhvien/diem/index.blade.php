@@ -138,6 +138,7 @@
                                     <th class="text-center">Điểm (Hệ 4)</th>
                                     <th class="text-center">Điểm chữ</th>
                                     <th class="text-center">Kết quả</th>
+                                    <th class="text-center">Thống kê điểm danh</th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
@@ -183,6 +184,36 @@
                                                 <span class="badge bg-secondary">Chưa có</span>
                                             @endif
                                         </td>
+                                        <td class="text-center">
+                                            @php
+                                                $tk = $item->thong_ke_diem_danh ?? null;
+                                            @endphp
+                                            @if($tk && $tk['tong_buoi'] > 0)
+                                                <div class="d-flex flex-column align-items-center">
+                                                    <div class="mb-1">
+                                                        <span class="badge 
+                                                            @if($tk['ty_le_chuyen_can'] >= 80) bg-success
+                                                            @elseif($tk['ty_le_chuyen_can'] >= 60) bg-warning
+                                                            @else bg-danger
+                                                            @endif">
+                                                            {{ $tk['ty_le_chuyen_can'] }}%
+                                                        </span>
+                                                    </div>
+                                                    <small class="text-muted">
+                                                        <span class="text-success">✓ {{ $tk['co_mat'] }}</span> / 
+                                                        <span class="text-danger">✗ {{ $tk['vang'] }}</span>
+                                                        @if($tk['di_tre'] > 0 || $tk['nghi_phep'] > 0)
+                                                            <br>
+                                                            <span class="text-warning">⏱ {{ $tk['di_tre'] }}</span> / 
+                                                            <span class="text-info">☂ {{ $tk['nghi_phep'] }}</span>
+                                                        @endif
+                                                    </small>
+                                                    <small class="text-muted">({{ $tk['tong_buoi'] }} buổi)</small>
+                                                </div>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <a href="{{ route('sinh-vien.diem.show', $item->lopHocPhan->id) }}"
                                                 class="btn btn-sm btn-info">
@@ -192,7 +223,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="10" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                             <p class="mt-2">Chưa có điểm môn học nào trong học kỳ này</p>
                                         </td>

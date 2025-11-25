@@ -1351,15 +1351,15 @@
 
 
 
-  <!-- <div class="card">
+  {{-- <div class="card">
                 <div class="card-header">
                     <h5 class="card-title mb-0">
                         Danh sách buổi học
-                        <span class="badge bg-primary">{{ $buoiHocList->total() }}</span>
+                        <span class="badge bg-primary">{{ isset($buoiHocList) ? $buoiHocList->total() : 0 }}</span>
                     </h5>
                 </div>
                 <div class="card-body">
-                    @if($buoiHocList->count() > 0)
+                    @if(isset($buoiHocList) && $buoiHocList->count() > 0)
                         <div class="table-responsive">
                             <table class="table table-hover">
                                 <thead>
@@ -1430,4 +1430,11 @@
                                     @endforeach
                                 </tbody>
                             </table>
-                        </div> -->
+                        </div>
+                    @else
+                        <div class="alert alert-info mb-0">
+                            <i class="bi bi-info-circle"></i> Không có buổi học nào.
+                        </div>
+                    @endif
+                </div>
+            </div> --}}

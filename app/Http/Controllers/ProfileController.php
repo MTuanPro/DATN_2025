@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 
 class ProfileController extends Controller
 {
@@ -113,52 +114,70 @@ class ProfileController extends Controller
         // Xử lý upload avatar
         $avatarPath = null;
         if ($request->hasFile('anh_dai_dien')) {
-            // Lấy ảnh cũ từ bảng tương ứng để xóa dựa trên vai trò
-            $anhCu = null;
-            switch ($role) {
-                case 'sinh_vien':
-                    $sinhVien = $user->sinhVien;
-                    $anhCu = $sinhVien ? $sinhVien->anh_dai_dien : null;
-                    break;
-                case 'giang_vien':
-                    $giangVien = $user->giangVien;
-                    $anhCu = $giangVien ? $giangVien->anh_dai_dien : null;
-                    break;
-                case 'truong_phong_dt':
-                case 'nhan_vien_dt':
-                    $daoTao = $user->daoTao;
-                    $anhCu = $daoTao ? $daoTao->anh_dai_dien : null;
-                    break;
-                case 'admin':
-                    $admin = $user->admin;
-                    $anhCu = $admin ? $admin->anh_dai_dien : null;
-                    break;
-            }
-            
-            // Xóa ảnh cũ nếu tồn tại
-            if ($anhCu && Storage::disk('public')->exists($anhCu)) {
-                Storage::disk('public')->delete($anhCu);
-            }
+            try {
+                // Lấy ảnh cũ từ bảng tương ứng để xóa dựa trên vai trò
+                $anhCu = null;
+                switch ($role) {
+                    case 'sinh_vien':
+                        $sinhVien = $user->sinhVien;
+                        $anhCu = $sinhVien ? $sinhVien->anh_dai_dien : null;
+                        break;
+                    case 'giang_vien':
+                        $giangVien = $user->giangVien;
+                        $anhCu = $giangVien ? $giangVien->anh_dai_dien : null;
+                        break;
+                    case 'truong_phong_dt':
+                    case 'nhan_vien_dt':
+                        $daoTao = $user->daoTao;
+                        $anhCu = $daoTao ? $daoTao->anh_dai_dien : null;
+                        break;
+                    case 'admin':
+                        $admin = $user->admin;
+                        $anhCu = $admin ? $admin->anh_dai_dien : null;
+                        break;
+                }
+                
+                // Xóa ảnh cũ nếu tồn tại
+                if ($anhCu && Storage::disk('public')->exists($anhCu)) {
+                    Storage::disk('public')->delete($anhCu);
+                }
 
-            // Lưu ảnh mới vào thư mục tương ứng với vai trò
-            $folder = 'avatars';
-            switch ($role) {
-                case 'sinh_vien':
-                    $folder = 'sinh-vien';
-                    break;
-                case 'giang_vien':
-                    $folder = 'giang-vien';
-                    break;
-                case 'truong_phong_dt':
-                case 'nhan_vien_dt':
-                    $folder = 'dao-tao';
-                    break;
-                case 'admin':
-                    $folder = 'admin';
-                    break;
+                // Lưu ảnh mới vào thư mục tương ứng với vai trò
+                $folder = 'avatars';
+                switch ($role) {
+                    case 'sinh_vien':
+                        $folder = 'sinh-vien';
+                        break;
+                    case 'giang_vien':
+                        $folder = 'giang-vien';
+                        break;
+                    case 'truong_phong_dt':
+                    case 'nhan_vien_dt':
+                        $folder = 'dao-tao';
+                        break;
+                    case 'admin':
+                        $folder = 'admin';
+                        break;
+                }
+                
+                // Đảm bảo thư mục tồn tại
+                $folderPath = storage_path('app/public/' . $folder);
+                if (!File::exists($folderPath)) {
+                    File::makeDirectory($folderPath, 0755, true);
+                }
+                
+                // Lưu file
+                $file = $request->file('anh_dai_dien');
+                $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
+                $avatarPath = $folder . '/' . $fileName;
+                
+                // Di chuyển file vào thư mục
+                $file->move($folderPath, $fileName);
+                
+            } catch (\Exception $e) {
+                \Log::error('Lỗi upload avatar: ' . $e->getMessage());
+                return back()->withErrors(['anh_dai_dien' => 'Có lỗi xảy ra khi upload ảnh: ' . $e->getMessage()]);
             }
-            
-            $avatarPath = $request->file('anh_dai_dien')->store($folder, 'public');
         }
 
         // Đổi mật khẩu nếu có nhập mật khẩu mới
