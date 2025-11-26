@@ -13,8 +13,54 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // Sử dụng QuanLySinhVienSeeder để seed toàn bộ dữ liệu
-        // Seeder này sẽ tự động gọi tất cả các seeder cần thiết theo đúng thứ tự
-        $this->call(QuanLySinhVienSeeder::class);
+        // ========================================
+        // 1. SEEDER QUẢN LÝ USERS, VAI TRÒ, QUYỀN (Admin)
+        // ========================================
+        $this->call(VaiTroSeeder::class);
+        $this->call(NhomQuyenSeeder::class);
+        $this->call(QuyenSeeder::class);
+        $this->call(VaiTroQuyenSeeder::class);
+        $this->call(AdminSeeder::class);
+        $this->call(AdminDaoTaoSeeder::class);
+        
+        // ========================================
+        // 2. SEEDER DANH MỤC & CTĐT
+        // ========================================
+        // Cơ bản
+        $this->call(KhoaSeeder::class);
+        $this->call(TrinhDoSeeder::class);
+        $this->call(TrangThaiHocTapSeeder::class);
+        $this->call(PhongHocSeeder::class);
+        $this->call(CaHocSeeder::class);
+        
+        // Phụ thuộc Khoa, TrinhDo
+        $this->call(NganhSeeder::class);
+        
+        // Phụ thuộc Nganh
+        $this->call(ChuyenNganhSeeder::class);
+        
+        // Phụ thuộc Khoa
+        $this->call(MonHocSeeder::class);
+        
+        // Phụ thuộc ChuyenNganh, MonHoc
+        $this->call(ChuongTrinhKhungSeeder::class);
+        $this->call(ChuongTrinhDaoTaoTestSeeder::class);
+        
+        // ========================================
+        // 3. SEEDER NIÊN KHÓA & HỌC KỲ
+        // ========================================
+        $this->call(KhoaHocSeeder::class);
+        $this->call(HocKySeeder::class);
+        
+        // ========================================
+        // 4. SEEDER THÔNG BÁO HỆ THỐNG
+        // ========================================
+        $this->call(ThongBaoSeeder::class);
+        $this->call(MauThongBaoTuDongSeeder::class);
+        
+        // ========================================
+        // 5. SEEDER AI CHATBOT
+        // ========================================
+        $this->call(AiChatbotKnowledgeBaseSeeder::class);
     }
 }
