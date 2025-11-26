@@ -9,6 +9,7 @@ use App\Models\DaoTao\Nganh;
 use App\Models\GiangVien;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class LopHanhChinhController extends Controller
 {
@@ -441,6 +442,100 @@ class LopHanhChinhController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Có lỗi xảy ra khi import: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Đồng bộ lại sĩ số cho tất cả các lớp hành chính
+     */
+    public function syncSiSo()
+    {
+        DB::beginTransaction();
+        try {
+            $lopHanhChinhs = LopHanhChinh::withCount('sinhVien')->get();
+            $updated = 0;
+
+            foreach ($lopHanhChinhs as $lop) {
+                $soLuongThucTe = $lop->sinh_vien_count;
+                if ($lop->si_so != $soLuongThucTe) {
+                    $lop->update(['si_so' => $soLuongThucTe]);
+                    $updated++;
+                }
+            }
+
+            DB::commit();
+
+            return redirect()->route('dao-tao.lop-hanh-chinh.index')
+                ->with('success', "Đã đồng bộ lại sĩ số cho {$updated} lớp hành chính!");
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->with('error', 'Có lỗi xảy ra khi đồng bộ sĩ số: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove multiple resources from storage.
+     */
+    public function destroyMultiple(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|string',
+        ]);
+
+        $ids = explode(',', $request->ids);
+        $ids = array_filter(array_map('trim', $ids));
+
+        if (empty($ids)) {
+            return back()->with('error', 'Không có lớp hành chính nào được chọn!');
+        }
+
+        DB::beginTransaction();
+        try {
+            $deleted = 0;
+            $errors = [];
+            $skipped = 0;
+
+            foreach ($ids as $id) {
+                try {
+                    $lopHanhChinh = LopHanhChinh::find($id);
+                    if (!$lopHanhChinh) {
+                        $errors[] = "Lớp hành chính ID {$id} không tồn tại";
+                        continue;
+                    }
+
+                    // Kiểm tra xem lớp có sinh viên không
+                    $soSinhVien = $lopHanhChinh->sinhVien()->count();
+                    if ($soSinhVien > 0) {
+                        $skipped++;
+                        $errors[] = "Lớp hành chính {$lopHanhChinh->ma_lop} (ID: {$id}) đã có {$soSinhVien} sinh viên. Không thể xóa!";
+                        continue;
+                    }
+
+                    // Xóa lớp hành chính
+                    $lopHanhChinh->delete();
+                    $deleted++;
+                } catch (\Exception $e) {
+                    $errors[] = "Lỗi khi xóa lớp hành chính ID {$id}: " . $e->getMessage();
+                    \Log::error("Lỗi xóa lớp hành chính ID {$id}: " . $e->getMessage());
+                }
+            }
+
+            DB::commit();
+
+            $message = "Đã xóa thành công {$deleted} lớp hành chính.";
+            if ($skipped > 0) {
+                $message .= " Bỏ qua {$skipped} lớp hành chính do có sinh viên.";
+            }
+            if (count($errors) > 0) {
+                $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 3));
+            }
+
+            return redirect()->route('dao-tao.lop-hanh-chinh.index')
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Lỗi xóa nhiều lớp hành chính: ' . $e->getMessage());
+            return back()->with('error', 'Có lỗi xảy ra khi xóa: ' . $e->getMessage());
         }
     }
 }

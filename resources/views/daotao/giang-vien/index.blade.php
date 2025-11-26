@@ -41,6 +41,9 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">Danh sách Giảng viên</h5>
                         <div>
+                            <button type="button" id="btnXoaChon" class="btn btn-danger me-1" style="display: none;" onclick="xoaNhieuGiangVien()">
+                                <i class="bi bi-trash"></i> Xóa đã chọn
+                            </button>
                             <a href="{{ route('dao-tao.giang-vien.show-import-form') }}" class="btn btn-success me-1">
                                 <i class="bi bi-upload"></i> Import Excel
                             </a>
@@ -93,6 +96,9 @@
                         <table class="table table-hover">
                             <thead>
                                 <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="checkAll" onchange="toggleCheckAll()">
+                                    </th>
                                     <th>#</th>
                                     <th>Mã GV</th>
                                     <th>Họ tên</th>
@@ -107,6 +113,9 @@
                             <tbody>
                                 @forelse ($giangViens as $index => $giangVien)
                                     <tr>
+                                        <td>
+                                            <input type="checkbox" class="checkbox-giang-vien" value="{{ $giangVien->id }}" onchange="toggleDeleteButton()">
+                                        </td>
                                         <td>{{ $giangViens->firstItem() + $index }}</td>
                                         <td><strong>{{ $giangVien->ma_giang_vien }}</strong></td>
                                         <td>{{ $giangVien->ho_ten }}</td>
@@ -139,7 +148,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="10" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                             <p class="mt-2">Chưa có giảng viên nào</p>
                                         </td>
@@ -157,4 +166,56 @@
             </div>
         </section>
     </div>
+
+    <!-- Form ẩn để xóa nhiều -->
+    <form id="formXoaNhieu" action="{{ route('dao-tao.giang-vien.destroy-multiple') }}" method="POST" style="display: none;">
+        @csrf
+        @method('DELETE')
+        <input type="hidden" name="ids" id="idsToDelete">
+    </form>
+
+    <script>
+        function toggleCheckAll() {
+            const checkAll = document.getElementById('checkAll');
+            const checkboxes = document.querySelectorAll('.checkbox-giang-vien');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = checkAll.checked;
+            });
+            toggleDeleteButton();
+        }
+
+        function toggleDeleteButton() {
+            const checkboxes = document.querySelectorAll('.checkbox-giang-vien:checked');
+            const btnXoaChon = document.getElementById('btnXoaChon');
+            if (checkboxes.length > 0) {
+                btnXoaChon.style.display = 'inline-block';
+            } else {
+                btnXoaChon.style.display = 'none';
+            }
+            // Cập nhật checkbox "Chọn tất cả"
+            const allCheckboxes = document.querySelectorAll('.checkbox-giang-vien');
+            const checkAll = document.getElementById('checkAll');
+            if (allCheckboxes.length > 0) {
+                checkAll.checked = checkboxes.length === allCheckboxes.length;
+            }
+        }
+
+        function xoaNhieuGiangVien() {
+            const checkboxes = document.querySelectorAll('.checkbox-giang-vien:checked');
+            if (checkboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một giảng viên để xóa!');
+                return;
+            }
+
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            const count = ids.length;
+
+            if (!confirm(`Bạn có chắc chắn muốn xóa ${count} giảng viên đã chọn? Hành động này sẽ xóa cả tài khoản và không thể hoàn tác!`)) {
+                return;
+            }
+
+            document.getElementById('idsToDelete').value = ids.join(',');
+            document.getElementById('formXoaNhieu').submit();
+        }
+    </script>
 @endsection

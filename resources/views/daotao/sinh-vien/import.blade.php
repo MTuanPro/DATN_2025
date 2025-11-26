@@ -54,6 +54,7 @@
                                 <li><strong>Mã lớp:</strong> Phải tồn tại trong hệ thống (VD: CNTT-K15-01)</li>
                                 <li><strong>Khóa học:</strong> Nhập tên khóa học (VD: K15, K16, K2021-2025)</li>
                                 <li><strong>Ngành:</strong> Nhập tên ngành hoặc mã ngành (VD: "Công nghệ thông tin" hoặc "CNTT")</li>
+                                <li><strong>Chuyên ngành:</strong> Nhập mã chuyên ngành (VD: CNTT01) - Có thể để trống</li>
                                 <li><strong>Trạng thái:</strong> Nhập tên trạng thái hoặc mã (VD: "Đang học" hoặc "DANG_HOC")</li>
                             </ul>
                         </li>
@@ -193,6 +194,12 @@
                                     <td><span class="badge bg-danger">Bắt buộc</span></td>
                                     <td>Tên ngành hoặc mã ngành</td>
                                     <td>Công nghệ thông tin hoặc CNTT</td>
+                                </tr>
+                                <tr>
+                                    <td>Chuyên ngành</td>
+                                    <td><span class="badge bg-warning">Tùy chọn</span></td>
+                                    <td>Mã chuyên ngành</td>
+                                    <td>CNTT01</td>
                                 </tr>
                                 <tr>
                                     <td>Kỳ hiện tại</td>

@@ -75,7 +75,7 @@
                                         @foreach ($nganhs as $n)
                                             <option value="{{ $n->id }}"
                                                 {{ request('nganh_id') == $n->id ? 'selected' : '' }}>
-                                                {{ $n->ma_nganh }}
+                                                {{ $n->ten_nganh }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -100,6 +100,9 @@
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="btn-group" role="group">
+                                <button type="button" id="btnXoaChon" class="btn btn-danger btn-sm" style="display: none;" onclick="xoaNhieuSinhVien()">
+                                    <i class="bi bi-trash"></i> Xóa đã chọn
+                                </button>
                                 <a href="{{ route('dao-tao.sinh-vien.show-import-form') }}" class="btn btn-info btn-sm">
                                     <i class="bi bi-file-earmark-excel"></i> Import Excel
                                 </a>
@@ -115,11 +118,15 @@
                         <table class="table table-striped table-hover table-sm">
                             <thead>
                                 <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="checkAll" onchange="toggleCheckAll()">
+                                    </th>
                                     <th>#</th>
                                     <th>MSSV</th>
                                     <th>Họ tên</th>
                                     <th>Lớp</th>
                                     <th>Ngành</th>
+                                    <th>Chuyên ngành</th>
                                     <th>Kỳ</th>
                                     <th>Trạng thái</th>
                                     <th>Thao tác</th>
@@ -128,6 +135,9 @@
                             <tbody>
                                 @forelse ($sinhViens as $index => $sv)
                                     <tr>
+                                        <td>
+                                            <input type="checkbox" class="checkbox-sinh-vien" value="{{ $sv->id }}" onchange="toggleDeleteButton()">
+                                        </td>
                                         <td>{{ $sinhViens->firstItem() + $index }}</td>
                                         <td><strong>{{ $sv->ma_sinh_vien }}</strong></td>
                                         <td>
@@ -142,6 +152,13 @@
                                         <td>
                                             @if ($sv->nganh)
                                                 {{ $sv->nganh->ten_nganh }}
+                                            @endif
+                                        </td>
+                                        <td>
+                                            @if ($sv->chuyenNganh)
+                                                {{ $sv->chuyenNganh->ten_chuyen_nganh }}
+                                            @else
+                                                <span class="text-muted">-</span>
                                             @endif
                                         </td>
                                         <td><span class="badge bg-info">Kỳ {{ $sv->ky_hien_tai }}</span></td>
@@ -181,7 +198,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">Không có dữ liệu</td>
+                                        <td colspan="10" class="text-center text-muted">Không có dữ liệu</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -204,4 +221,56 @@
             </div>
         </section>
     </div>
+
+    <!-- Form ẩn để xóa nhiều -->
+    <form id="formXoaNhieu" action="{{ route('dao-tao.sinh-vien.destroy-multiple') }}" method="POST" style="display: none;">
+        @csrf
+        @method('DELETE')
+        <input type="hidden" name="ids" id="idsToDelete">
+    </form>
+
+    <script>
+        function toggleCheckAll() {
+            const checkAll = document.getElementById('checkAll');
+            const checkboxes = document.querySelectorAll('.checkbox-sinh-vien');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = checkAll.checked;
+            });
+            toggleDeleteButton();
+        }
+
+        function toggleDeleteButton() {
+            const checkboxes = document.querySelectorAll('.checkbox-sinh-vien:checked');
+            const btnXoaChon = document.getElementById('btnXoaChon');
+            if (checkboxes.length > 0) {
+                btnXoaChon.style.display = 'inline-block';
+            } else {
+                btnXoaChon.style.display = 'none';
+            }
+            // Cập nhật checkbox "Chọn tất cả"
+            const allCheckboxes = document.querySelectorAll('.checkbox-sinh-vien');
+            const checkAll = document.getElementById('checkAll');
+            if (allCheckboxes.length > 0) {
+                checkAll.checked = checkboxes.length === allCheckboxes.length;
+            }
+        }
+
+        function xoaNhieuSinhVien() {
+            const checkboxes = document.querySelectorAll('.checkbox-sinh-vien:checked');
+            if (checkboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một sinh viên để xóa!');
+                return;
+            }
+
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            const count = ids.length;
+
+            if (!confirm(`Bạn có chắc chắn muốn xóa ${count} sinh viên đã chọn? Hành động này sẽ xóa cả tài khoản và không thể hoàn tác!`)) {
+                return;
+            }
+
+            document.getElementById('idsToDelete').value = ids.join(',');
+            document.getElementById('formXoaNhieu').submit();
+        }
+    </script>
 @endsection

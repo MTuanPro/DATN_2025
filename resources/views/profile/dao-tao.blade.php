@@ -71,7 +71,7 @@
                                             <div class="col-md-3 text-center mb-4">
                                                 <div class="mb-3">
                                                     <img id="preview-avatar"
-                                                        src="{{ $daoTao->anh_dai_dien ? asset('storage/' . $daoTao->anh_dai_dien) : asset('assets/images/faces/3.jpg') }}"
+                                                        src="{{ $daoTao->anh_dai_dien ? asset('storage/' . $daoTao->anh_dai_dien) . '?t=' . time() : asset('assets/images/faces/3.jpg') }}"
                                                         alt="Avatar" class="img-fluid rounded-circle"
                                                         style="width: 150px; height: 150px; object-fit: cover;">
                                                 </div>

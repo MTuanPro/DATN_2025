@@ -40,7 +40,10 @@ class ProfileController extends Controller
 
             case 'truong_phong_dt':
             case 'nhan_vien_dt':
-                $daoTao = $user->fresh()->daoTao;
+                // Refresh user và load lại relationship để đảm bảo dữ liệu mới nhất
+                $user = $user->fresh();
+                $user->load('daoTao');
+                $daoTao = $user->daoTao;
                 $data['daoTao'] = $daoTao;
                 return view('profile.dao-tao', $data);
 
@@ -160,19 +163,13 @@ class ProfileController extends Controller
                         break;
                 }
                 
-                // Đảm bảo thư mục tồn tại
-                $folderPath = storage_path('app/public/' . $folder);
-                if (!File::exists($folderPath)) {
-                    File::makeDirectory($folderPath, 0755, true);
-                }
-                
-                // Lưu file
+                // Lưu file sử dụng Storage facade
                 $file = $request->file('anh_dai_dien');
                 $fileName = time() . '_' . uniqid() . '.' . $file->getClientOriginalExtension();
                 $avatarPath = $folder . '/' . $fileName;
                 
-                // Di chuyển file vào thư mục
-                $file->move($folderPath, $fileName);
+                // Lưu file vào storage/public
+                Storage::disk('public')->putFileAs($folder, $file, $fileName);
                 
             } catch (\Exception $e) {
                 \Log::error('Lỗi upload avatar: ' . $e->getMessage());
@@ -276,6 +273,8 @@ class ProfileController extends Controller
                 if ($request->filled('ghi_chu')) $data['ghi_chu'] = $request->ghi_chu;
 
                 DB::table('dao_tao')->where('user_id', $user->id)->update($data);
+                // Refresh relationship để đảm bảo dữ liệu mới nhất
+                $user->load('daoTao');
                 break;
 
             case 'admin':

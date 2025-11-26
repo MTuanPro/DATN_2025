@@ -244,6 +244,7 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         ->name('hoc-ky.mo-dang-ky');
 
     Route::resource('giang-vien', DaoTaoGiangVienController::class);
+    Route::delete('giang-vien-destroy-multiple', [DaoTaoGiangVienController::class, 'destroyMultiple'])->name('giang-vien.destroy-multiple');
     Route::get('giang-vien-import', [DaoTaoGiangVienController::class, 'showImportForm'])
         ->name('giang-vien.show-import-form');
     Route::post('giang-vien-import', [DaoTaoGiangVienController::class, 'import'])
@@ -260,17 +261,21 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::put('lop-hanh-chinh/{lop_hanh_chinh}', [LopHanhChinhController::class, 'update'])->name('lop-hanh-chinh.update');
     Route::delete('lop-hanh-chinh/{lop_hanh_chinh}', [LopHanhChinhController::class, 'destroy'])->name('lop-hanh-chinh.destroy');
     Route::get('lop-hanh-chinh-export', [LopHanhChinhController::class, 'exportExcel'])->name('lop-hanh-chinh.export');
+    Route::delete('lop-hanh-chinh-destroy-multiple', [LopHanhChinhController::class, 'destroyMultiple'])->name('lop-hanh-chinh.destroy-multiple');
     Route::get('lop-hanh-chinh-import', [LopHanhChinhController::class, 'showImportForm'])->name('lop-hanh-chinh.show-import-form');
     Route::post('lop-hanh-chinh-import', [LopHanhChinhController::class, 'import'])->name('lop-hanh-chinh.import');
     Route::get('lop-hanh-chinh-template', [LopHanhChinhController::class, 'downloadTemplate'])->name('lop-hanh-chinh.download-template');
+    Route::post('lop-hanh-chinh-sync-si-so', [LopHanhChinhController::class, 'syncSiSo'])->name('lop-hanh-chinh.sync-si-so');
 
     Route::resource('sinh-vien', SinhVienController::class);
+    Route::delete('sinh-vien-destroy-multiple', [SinhVienController::class, 'destroyMultiple'])->name('sinh-vien.destroy-multiple');
     Route::get('sinh-vien-import', [SinhVienController::class, 'showImportForm'])->name('sinh-vien.show-import-form');
     Route::post('sinh-vien-import', [SinhVienController::class, 'import'])->name('sinh-vien.import');
     Route::get('sinh-vien-template', [SinhVienController::class, 'downloadTemplate'])->name('sinh-vien.download-template');
 
     // PHASE 4: Lớp học phần & Phân công
     Route::resource('lop-hoc-phan', LopHocPhanController::class);
+    Route::delete('lop-hoc-phan-destroy-multiple', [LopHocPhanController::class, 'destroyMultiple'])->name('lop-hoc-phan.destroy-multiple');
     Route::post('lop-hoc-phan/sync-so-luong', [LopHocPhanController::class, 'syncSoLuongDangKy'])->name('lop-hoc-phan.sync-so-luong');
     Route::get('lop-hoc-phan-import', [LopHocPhanController::class, 'showImportForm'])->name('lop-hoc-phan.show-import-form');
     Route::post('lop-hoc-phan-import', [LopHocPhanController::class, 'import'])->name('lop-hoc-phan.import');

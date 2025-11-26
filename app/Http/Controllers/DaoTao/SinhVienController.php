@@ -351,14 +351,12 @@ class SinhVienController extends Controller
 
         DB::beginTransaction();
         try {
+            // Lưu lớp hành chính ID để đồng bộ lại sĩ số sau
+            $lopHanhChinhId = $sinhVien->lop_hanh_chinh_id;
+
             // Xóa ảnh đại diện
             if ($sinhVien->anh_dai_dien) {
                 Storage::disk('public')->delete($sinhVien->anh_dai_dien);
-            }
-
-            // Giảm sĩ số lớp
-            if ($sinhVien->lopHanhChinh) {
-                $sinhVien->lopHanhChinh->decrement('si_so');
             }
 
             // Xóa User (sẽ cascade xóa sinh viên)
@@ -368,6 +366,14 @@ class SinhVienController extends Controller
 
             $sinhVien->delete();
 
+            // Đồng bộ lại sĩ số cho lớp hành chính
+            if ($lopHanhChinhId) {
+                $lop = LopHanhChinh::withCount('sinhVien')->find($lopHanhChinhId);
+                if ($lop) {
+                    $lop->update(['si_so' => $lop->sinh_vien_count]);
+                }
+            }
+
             DB::commit();
 
             return redirect()->route('dao-tao.sinh-vien.index')
@@ -375,6 +381,86 @@ class SinhVienController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Remove multiple resources from storage.
+     */
+    public function destroyMultiple(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|string',
+        ]);
+
+        $ids = explode(',', $request->ids);
+        $ids = array_filter(array_map('trim', $ids));
+
+        if (empty($ids)) {
+            return back()->with('error', 'Không có sinh viên nào được chọn!');
+        }
+
+        DB::beginTransaction();
+        try {
+            $deleted = 0;
+            $errors = [];
+            $affectedLopIds = []; // Lưu các lớp bị ảnh hưởng để đồng bộ lại sĩ số
+
+            foreach ($ids as $id) {
+                try {
+                    $sinhVien = SinhVien::find($id);
+                    if (!$sinhVien) {
+                        $errors[] = "Sinh viên ID {$id} không tồn tại";
+                        continue;
+                    }
+
+                    // Lưu lớp hành chính ID để đồng bộ lại sau
+                    if ($sinhVien->lop_hanh_chinh_id) {
+                        $affectedLopIds[] = $sinhVien->lop_hanh_chinh_id;
+                    }
+
+                    // Xóa ảnh đại diện
+                    if ($sinhVien->anh_dai_dien) {
+                        Storage::disk('public')->delete($sinhVien->anh_dai_dien);
+                    }
+
+                    // Xóa User (sẽ cascade xóa sinh viên)
+                    if ($sinhVien->user) {
+                        $sinhVien->user->delete();
+                    }
+
+                    $sinhVien->delete();
+                    $deleted++;
+                } catch (\Exception $e) {
+                    $errors[] = "Lỗi khi xóa sinh viên ID {$id}: " . $e->getMessage();
+                    Log::error("Lỗi xóa sinh viên ID {$id}: " . $e->getMessage());
+                }
+            }
+
+            // Đồng bộ lại sĩ số cho các lớp bị ảnh hưởng
+            if (!empty($affectedLopIds)) {
+                $uniqueLopIds = array_unique($affectedLopIds);
+                foreach ($uniqueLopIds as $lopId) {
+                    $lop = LopHanhChinh::withCount('sinhVien')->find($lopId);
+                    if ($lop) {
+                        $lop->update(['si_so' => $lop->sinh_vien_count]);
+                    }
+                }
+            }
+
+            DB::commit();
+
+            $message = "Đã xóa thành công {$deleted} sinh viên.";
+            if (count($errors) > 0) {
+                $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 3));
+            }
+
+            return redirect()->route('dao-tao.sinh-vien.index')
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('Lỗi xóa nhiều sinh viên: ' . $e->getMessage());
+            return back()->with('error', 'Có lỗi xảy ra khi xóa: ' . $e->getMessage());
         }
     }
 
@@ -407,6 +493,7 @@ class SinhVienController extends Controller
             'ma_lop',
             'khoa_hoc',
             'nganh',
+            'chuyen_nganh',
             'ky_hien_tai',
             'trang_thai',
         ];
@@ -430,6 +517,7 @@ class SinhVienController extends Controller
                 'CNTT-K15-01',
                 'K15', // Tên khóa học
                 'Công nghệ thông tin', // Tên ngành
+                'CNTT01', // Mã chuyên ngành
                 '1',
                 'Đang học', // Tên trạng thái
             ]);
@@ -511,8 +599,9 @@ class SinhVienController extends Controller
                     $maLop = trim($row[7] ?? '');
                     $tenKhoaHoc = trim($row[8] ?? ''); // Tên khóa học
                     $tenNganh = trim($row[9] ?? ''); // Tên ngành
-                    $kyHienTai = !empty($row[10]) ? (int)$row[10] : 1;
-                    $tenTrangThai = trim($row[11] ?? ''); // Tên trạng thái
+                    $maChuyenNganh = trim($row[10] ?? ''); // Mã chuyên ngành
+                    $kyHienTai = !empty($row[11]) ? (int)$row[11] : 1;
+                    $tenTrangThai = trim($row[12] ?? ''); // Tên trạng thái
 
                     // Tìm ID từ tên/mã
                     $lopHanhChinh = LopHanhChinh::where('ma_lop', $maLop)->first();
@@ -551,6 +640,21 @@ class SinhVienController extends Controller
                     if (!$nganh) {
                         $errors[] = "Dòng {$rowNum}: Không tìm thấy ngành với tên/mã: {$tenNganh}";
                         continue;
+                    }
+                    
+                    // Tìm chuyên ngành theo mã (nếu có) - sau khi đã kiểm tra ngành
+                    $chuyenNganh = null;
+                    if (!empty($maChuyenNganh)) {
+                        $chuyenNganh = ChuyenNganh::where('ma_chuyen_nganh', $maChuyenNganh)->first();
+                        if (!$chuyenNganh) {
+                            $errors[] = "Dòng {$rowNum}: Không tìm thấy chuyên ngành với mã: {$maChuyenNganh}";
+                            continue;
+                        }
+                        // Kiểm tra chuyên ngành có thuộc ngành đã chọn không
+                        if ($chuyenNganh->nganh_id != $nganh->id) {
+                            $errors[] = "Dòng {$rowNum}: Chuyên ngành {$maChuyenNganh} không thuộc ngành đã chọn";
+                            continue;
+                        }
                     }
                     
                     if (!$trangThai) {
@@ -608,23 +712,30 @@ class SinhVienController extends Controller
 
                     // Update hoặc tạo sinh viên (dựa vào ma_sinh_vien)
                     $isNew = !SinhVien::where('ma_sinh_vien', $maSV)->exists();
+                    $sinhVienData = [
+                        'ho_ten' => $hoTen,
+                        'email' => $email,
+                        'ngay_sinh' => $ngaySinhParsed,
+                        'gioi_tinh' => $gioiTinh,
+                        'so_dien_thoai' => $sdt,
+                        'can_cuoc_cong_dan' => $cccd,
+                        'khoa_hoc_id' => $khoaHoc->id,
+                        'lop_hanh_chinh_id' => $lopHanhChinh->id,
+                        'nganh_id' => $nganh->id,
+                        'ky_hien_tai' => $kyHienTai,
+                        'trang_thai_hoc_tap_id' => $trangThai->id,
+                        'giang_vien_chu_nhiem_id' => $lopHanhChinh->giang_vien_chu_nhiem_id,
+                        'user_id' => $user->id,
+                    ];
+                    
+                    // Thêm chuyên ngành nếu có
+                    if ($chuyenNganh) {
+                        $sinhVienData['chuyen_nganh_id'] = $chuyenNganh->id;
+                    }
+                    
                     $sinhVien = SinhVien::updateOrCreate(
                         ['ma_sinh_vien' => $maSV],
-                        [
-                            'ho_ten' => $hoTen,
-                            'email' => $email,
-                            'ngay_sinh' => $ngaySinhParsed,
-                            'gioi_tinh' => $gioiTinh,
-                            'so_dien_thoai' => $sdt,
-                            'can_cuoc_cong_dan' => $cccd,
-                            'khoa_hoc_id' => $khoaHoc->id,
-                            'lop_hanh_chinh_id' => $lopHanhChinh->id,
-                            'nganh_id' => $nganh->id,
-                            'ky_hien_tai' => $kyHienTai,
-                            'trang_thai_hoc_tap_id' => $trangThai->id,
-                            'giang_vien_chu_nhiem_id' => $lopHanhChinh->giang_vien_chu_nhiem_id,
-                            'user_id' => $user->id,
-                        ]
+                        $sinhVienData
                     );
 
                     // Chỉ tăng sĩ số lớp khi tạo mới

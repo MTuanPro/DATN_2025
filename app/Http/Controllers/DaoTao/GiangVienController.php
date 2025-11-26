@@ -635,4 +635,125 @@ class GiangVienController extends Controller
 
         return response()->stream($callback, 200, $headers);
     }
+
+    /**
+     * Remove multiple resources from storage.
+     */
+    public function destroyMultiple(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|string',
+        ]);
+
+        $ids = explode(',', $request->ids);
+        $ids = array_filter(array_map('trim', $ids));
+
+        if (empty($ids)) {
+            return back()->with('error', 'Không có giảng viên nào được chọn!');
+        }
+
+        DB::beginTransaction();
+        try {
+            $deleted = 0;
+            $errors = [];
+            $skipped = 0;
+
+            foreach ($ids as $id) {
+                try {
+                    $giangVien = GiangVien::find($id);
+                    if (!$giangVien) {
+                        $errors[] = "Giảng viên ID {$id} không tồn tại";
+                        continue;
+                    }
+
+                    // Kiểm tra ràng buộc trước khi xóa
+                    $canXoa = true;
+                    $lyDoKhongXoa = [];
+
+                    // Kiểm tra giảng viên có đang là trưởng khoa không
+                    $khoaTruongKhoa = \App\Models\DaoTao\Khoa::where('truong_khoa_id', $giangVien->id)->first();
+                    if ($khoaTruongKhoa) {
+                        $canXoa = false;
+                        $lyDoKhongXoa[] = "Giảng viên đang là trưởng khoa '{$khoaTruongKhoa->ten_khoa}'";
+                    }
+
+                    // Kiểm tra giảng viên có đang chủ nhiệm lớp hành chính không
+                    $lopHanhChinh = \App\Models\DaoTao\LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)->count();
+                    if ($lopHanhChinh > 0) {
+                        $canXoa = false;
+                        $lyDoKhongXoa[] = "Đang chủ nhiệm {$lopHanhChinh} lớp hành chính";
+                    }
+
+                    // Kiểm tra giảng viên có đang chủ nhiệm sinh viên không
+                    $sinhVienChuNhiem = \App\Models\DaoTao\SinhVien::where('giang_vien_chu_nhiem_id', $giangVien->id)->count();
+                    if ($sinhVienChuNhiem > 0) {
+                        $canXoa = false;
+                        $lyDoKhongXoa[] = "Đang chủ nhiệm {$sinhVienChuNhiem} sinh viên";
+                    }
+
+                    if (!$canXoa) {
+                        $skipped++;
+                        $errors[] = "Giảng viên {$giangVien->ho_ten} (ID: {$id}): " . implode(', ', $lyDoKhongXoa);
+                        continue;
+                    }
+
+                    // Xóa các bản ghi liên quan trước
+                    DB::table('lop_hoc_phan_giang_vien')->where('giang_vien_id', $giangVien->id)->delete();
+
+                    // Xóa lịch học chi tiết
+                    $soLichChiTiet = \App\Models\LichHocChiTiet::where('giang_vien_id', $giangVien->id)->count();
+                    if ($soLichChiTiet > 0) {
+                        \App\Models\LichHocChiTiet::where('giang_vien_id', $giangVien->id)->delete();
+                    }
+
+                    // Xóa lịch học cố định
+                    $soLichCoDinh = \App\Models\LichHocCoDinh::where('giang_vien_id', $giangVien->id)->count();
+                    if ($soLichCoDinh > 0) {
+                        $lichCoDinhIds = \App\Models\LichHocCoDinh::where('giang_vien_id', $giangVien->id)->pluck('id');
+                        \App\Models\LichHocChiTiet::whereIn('lich_hoc_co_dinh_id', $lichCoDinhIds)->delete();
+                        \App\Models\LichHocCoDinh::where('giang_vien_id', $giangVien->id)->delete();
+                    }
+
+                    // Set null cho các trường liên quan
+                    DB::table('lop_hanh_chinh')->where('giang_vien_chu_nhiem_id', $giangVien->id)->update(['giang_vien_chu_nhiem_id' => null]);
+                    DB::table('sinh_vien')->where('giang_vien_chu_nhiem_id', $giangVien->id)->update(['giang_vien_chu_nhiem_id' => null]);
+                    DB::table('khoa')->where('truong_khoa_id', $giangVien->id)->update(['truong_khoa_id' => null]);
+
+                    // Xóa ảnh đại diện
+                    if ($giangVien->anh_dai_dien) {
+                        Storage::disk('public')->delete($giangVien->anh_dai_dien);
+                    }
+
+                    // Xóa user nếu có
+                    if ($giangVien->user_id) {
+                        $giangVien->user->delete();
+                    }
+
+                    // Xóa thực sự khỏi database
+                    $giangVien->forceDelete();
+                    $deleted++;
+                } catch (\Exception $e) {
+                    $errors[] = "Lỗi khi xóa giảng viên ID {$id}: " . $e->getMessage();
+                    \Log::error("Lỗi xóa giảng viên ID {$id}: " . $e->getMessage());
+                }
+            }
+
+            DB::commit();
+
+            $message = "Đã xóa thành công {$deleted} giảng viên.";
+            if ($skipped > 0) {
+                $message .= " Bỏ qua {$skipped} giảng viên do ràng buộc dữ liệu.";
+            }
+            if (count($errors) > 0) {
+                $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 3));
+            }
+
+            return redirect()->route('dao-tao.giang-vien.index')
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Lỗi xóa nhiều giảng viên: ' . $e->getMessage());
+            return back()->with('error', 'Có lỗi xảy ra khi xóa: ' . $e->getMessage());
+        }
+    }
 }

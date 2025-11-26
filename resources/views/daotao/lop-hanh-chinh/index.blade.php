@@ -78,6 +78,15 @@
                         </div>
                         <div class="col-md-4 text-end">
                             <div class="d-flex gap-2 justify-content-end flex-wrap">
+                                <button type="button" id="btnXoaChon" class="btn btn-danger shadow-sm" style="display: none;" onclick="xoaNhieuLopHanhChinh()">
+                                    <i class="bi bi-trash me-1"></i> Xóa đã chọn
+                                </button>
+                                <form action="{{ route('dao-tao.lop-hanh-chinh.sync-si-so') }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn đồng bộ lại sĩ số cho tất cả các lớp?')">
+                                    @csrf
+                                    <button type="submit" class="btn btn-secondary shadow-sm" title="Đồng bộ lại sĩ số từ số lượng sinh viên thực tế">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> Đồng bộ sĩ số
+                                    </button>
+                                </form>
                                 <a href="{{ route('dao-tao.lop-hanh-chinh.create') }}" class="btn btn-success shadow-sm" title="Thêm lớp hành chính mới">
                                     <i class="bi bi-plus-circle me-1"></i> Thêm lớp mới
                                 </a>
@@ -96,6 +105,9 @@
                         <table class="table table-striped table-hover">
                             <thead>
                                 <tr>
+                                    <th width="40">
+                                        <input type="checkbox" id="checkAll" onchange="toggleCheckAll()">
+                                    </th>
                                     <th>#</th>
                                     <th>Mã lớp</th>
                                     <th>Tên lớp</th>
@@ -109,6 +121,9 @@
                             <tbody>
                                 @forelse ($lopHanhChinh as $index => $lop)
                                     <tr>
+                                        <td>
+                                            <input type="checkbox" class="checkbox-lop-hanh-chinh" value="{{ $lop->id }}" onchange="toggleDeleteButton()">
+                                        </td>
                                         <td>{{ $lopHanhChinh->firstItem() + $index }}</td>
                                         <td><strong>{{ $lop->ma_lop }}</strong></td>
                                         <td>{{ $lop->ten_lop }}</td>
@@ -160,7 +175,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">Không có dữ liệu</td>
+                                        <td colspan="9" class="text-center text-muted">Không có dữ liệu</td>
                                     </tr>
                                 @endforelse
                             </tbody>
@@ -175,4 +190,56 @@
             </div>
         </section>
     </div>
+
+    <!-- Form ẩn để xóa nhiều -->
+    <form id="formXoaNhieu" action="{{ route('dao-tao.lop-hanh-chinh.destroy-multiple') }}" method="POST" style="display: none;">
+        @csrf
+        @method('DELETE')
+        <input type="hidden" name="ids" id="idsToDelete">
+    </form>
+
+    <script>
+        function toggleCheckAll() {
+            const checkAll = document.getElementById('checkAll');
+            const checkboxes = document.querySelectorAll('.checkbox-lop-hanh-chinh');
+            checkboxes.forEach(checkbox => {
+                checkbox.checked = checkAll.checked;
+            });
+            toggleDeleteButton();
+        }
+
+        function toggleDeleteButton() {
+            const checkboxes = document.querySelectorAll('.checkbox-lop-hanh-chinh:checked');
+            const btnXoaChon = document.getElementById('btnXoaChon');
+            if (checkboxes.length > 0) {
+                btnXoaChon.style.display = 'inline-block';
+            } else {
+                btnXoaChon.style.display = 'none';
+            }
+            // Cập nhật checkbox "Chọn tất cả"
+            const allCheckboxes = document.querySelectorAll('.checkbox-lop-hanh-chinh');
+            const checkAll = document.getElementById('checkAll');
+            if (allCheckboxes.length > 0) {
+                checkAll.checked = checkboxes.length === allCheckboxes.length;
+            }
+        }
+
+        function xoaNhieuLopHanhChinh() {
+            const checkboxes = document.querySelectorAll('.checkbox-lop-hanh-chinh:checked');
+            if (checkboxes.length === 0) {
+                alert('Vui lòng chọn ít nhất một lớp hành chính để xóa!');
+                return;
+            }
+
+            const ids = Array.from(checkboxes).map(cb => cb.value);
+            const count = ids.length;
+
+            if (!confirm(`Bạn có chắc chắn muốn xóa ${count} lớp hành chính đã chọn? Hành động này không thể hoàn tác!`)) {
+                return;
+            }
+
+            document.getElementById('idsToDelete').value = ids.join(',');
+            document.getElementById('formXoaNhieu').submit();
+        }
+    </script>
 @endsection

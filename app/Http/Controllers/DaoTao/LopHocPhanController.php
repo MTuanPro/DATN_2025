@@ -625,4 +625,73 @@ class LopHocPhanController extends Controller
             return back()->with('error', 'Lỗi khi import: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Remove multiple resources from storage.
+     */
+    public function destroyMultiple(Request $request)
+    {
+        $request->validate([
+            'ids' => 'required|string',
+        ]);
+
+        $ids = explode(',', $request->ids);
+        $ids = array_filter(array_map('trim', $ids));
+
+        if (empty($ids)) {
+            return back()->with('error', 'Không có lớp học phần nào được chọn!');
+        }
+
+        DB::beginTransaction();
+        try {
+            $deleted = 0;
+            $errors = [];
+            $skipped = 0;
+
+            foreach ($ids as $id) {
+                try {
+                    $lopHocPhan = LopHocPhan::find($id);
+                    if (!$lopHocPhan) {
+                        $errors[] = "Lớp học phần ID {$id} không tồn tại";
+                        continue;
+                    }
+
+                    // Kiểm tra xem lớp đã có sinh viên đăng ký chưa
+                    $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
+                        ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                        ->count();
+
+                    if ($soLuongThucTe > 0) {
+                        $skipped++;
+                        $errors[] = "Lớp học phần {$lopHocPhan->ma_lop_hp} (ID: {$id}) đã có {$soLuongThucTe} sinh viên đăng ký. Không thể xóa!";
+                        continue;
+                    }
+
+                    // Xóa lớp học phần
+                    $lopHocPhan->delete();
+                    $deleted++;
+                } catch (\Exception $e) {
+                    $errors[] = "Lỗi khi xóa lớp học phần ID {$id}: " . $e->getMessage();
+                    \Log::error("Lỗi xóa lớp học phần ID {$id}: " . $e->getMessage());
+                }
+            }
+
+            DB::commit();
+
+            $message = "Đã xóa thành công {$deleted} lớp học phần.";
+            if ($skipped > 0) {
+                $message .= " Bỏ qua {$skipped} lớp học phần do có sinh viên đăng ký.";
+            }
+            if (count($errors) > 0) {
+                $message .= " Có " . count($errors) . " lỗi: " . implode('; ', array_slice($errors, 0, 3));
+            }
+
+            return redirect()->route('dao-tao.lop-hoc-phan.index')
+                ->with('success', $message);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Lỗi xóa nhiều lớp học phần: ' . $e->getMessage());
+            return back()->with('error', 'Có lỗi xảy ra khi xóa: ' . $e->getMessage());
+        }
+    }
 }
