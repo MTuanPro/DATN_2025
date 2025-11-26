@@ -59,6 +59,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV001',
                 'ho_ten' => 'Nguyễn Văn An',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1985-03-15',
+                'dia_chi' => 'Hà Nội',
                 'email' => 'nva.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234561',
                 'khoa_id' => $khoaCNTT,
@@ -69,6 +72,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV002',
                 'ho_ten' => 'Trần Thị Bích',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1987-07-22',
+                'dia_chi' => 'TP.HCM',
                 'email' => 'ttb.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234562',
                 'khoa_id' => $khoaCNTT,
@@ -79,6 +85,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV003',
                 'ho_ten' => 'Lê Minh Cường',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1988-11-10',
+                'dia_chi' => 'Đà Nẵng',
                 'email' => 'lmc.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234563',
                 'khoa_id' => $khoaCNTT,
@@ -89,6 +98,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV004',
                 'ho_ten' => 'Phạm Văn Dũng',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1984-05-18',
+                'dia_chi' => 'Hà Nội',
                 'email' => 'pvd.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234564',
                 'khoa_id' => $khoaCNTT,
@@ -99,6 +111,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV005',
                 'ho_ten' => 'Hoàng Thị Em',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1986-09-25',
+                'dia_chi' => 'TP.HCM',
                 'email' => 'hte.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234565',
                 'khoa_id' => $khoaCNTT,
@@ -109,6 +124,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV006',
                 'ho_ten' => 'Đỗ Văn Phong',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1990-04-12',
+                'dia_chi' => 'Hải Phòng',
                 'email' => 'dvp.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234566',
                 'khoa_id' => $khoaCNTT,
@@ -119,6 +137,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV007',
                 'ho_ten' => 'Vũ Thị Giang',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1991-08-30',
+                'dia_chi' => 'Cần Thơ',
                 'email' => 'vtg.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234567',
                 'khoa_id' => $khoaCNTT,
@@ -129,6 +150,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV008',
                 'ho_ten' => 'Bùi Văn Hải',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1986-02-28',
+                'dia_chi' => 'Hà Nội',
                 'email' => 'bvh.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234568',
                 'khoa_id' => $khoaCNTT,
@@ -139,6 +163,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV009',
                 'ho_ten' => 'Ngô Thị Hoa',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1989-06-18',
+                'dia_chi' => 'TP.HCM',
                 'email' => 'nth.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234569',
                 'khoa_id' => $khoaCNTT,
@@ -149,6 +176,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV010',
                 'ho_ten' => 'Đinh Văn Khải',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1992-01-05',
+                'dia_chi' => 'Đà Nẵng',
                 'email' => 'dvk.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234570',
                 'khoa_id' => $khoaCNTT,
@@ -161,6 +191,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV011',
                 'ho_ten' => 'Lý Văn Long',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1984-03-20',
+                'dia_chi' => 'Hà Nội',
                 'email' => 'lvl.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234571',
                 'khoa_id' => $khoaKT,
@@ -171,6 +204,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV012',
                 'ho_ten' => 'Phan Thị Mai',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1987-11-14',
+                'dia_chi' => 'TP.HCM',
                 'email' => 'ptm.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234572',
                 'khoa_id' => $khoaKT,
@@ -181,6 +217,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV013',
                 'ho_ten' => 'Võ Văn Nam',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1988-05-08',
+                'dia_chi' => 'Đà Nẵng',
                 'email' => 'vvn.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234573',
                 'khoa_id' => $khoaKT,
@@ -191,6 +230,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV014',
                 'ho_ten' => 'Đặng Thị Oanh',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1990-09-12',
+                'dia_chi' => 'Hải Phòng',
                 'email' => 'dto.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234574',
                 'khoa_id' => $khoaKT,
@@ -201,6 +243,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV015',
                 'ho_ten' => 'Trịnh Văn Phúc',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1985-07-25',
+                'dia_chi' => 'Cần Thơ',
                 'email' => 'tvp.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234575',
                 'khoa_id' => $khoaKT,
@@ -211,6 +256,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV016',
                 'ho_ten' => 'Cao Thị Quỳnh',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1989-12-03',
+                'dia_chi' => 'Hà Nội',
                 'email' => 'ctq.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234576',
                 'khoa_id' => $khoaKT,
@@ -221,6 +269,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV017',
                 'ho_ten' => 'Hồ Văn Rộng',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1991-04-16',
+                'dia_chi' => 'TP.HCM',
                 'email' => 'hvr.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234577',
                 'khoa_id' => $khoaKT,
@@ -231,6 +282,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV018',
                 'ho_ten' => 'Lương Văn Sơn',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1986-10-22',
+                'dia_chi' => 'Đà Nẵng',
                 'email' => 'lvs.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234578',
                 'khoa_id' => $khoaKT,
@@ -241,6 +295,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV019',
                 'ho_ten' => 'Dương Thị Tâm',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1988-08-17',
+                'dia_chi' => 'Hải Phòng',
                 'email' => 'dtt.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234579',
                 'khoa_id' => $khoaKT,
@@ -251,6 +308,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV020',
                 'ho_ten' => 'Ông Văn Út',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1990-02-28',
+                'dia_chi' => 'Cần Thơ',
                 'email' => 'ovu.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234580',
                 'khoa_id' => $khoaKT,
@@ -261,6 +321,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV021',
                 'ho_ten' => 'Mai Thị Vân',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1992-05-06',
+                'dia_chi' => 'Hà Nội',
                 'email' => 'mtv.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234581',
                 'khoa_id' => $khoaKT,
@@ -273,6 +336,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV022',
                 'ho_ten' => 'Nguyễn Thị Xuân',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1985-12-10',
+                'dia_chi' => 'TP.HCM',
                 'email' => 'ntx.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234582',
                 'khoa_id' => $khoaNN,
@@ -283,6 +349,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV023',
                 'ho_ten' => 'Trần Văn Yên',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1987-03-28',
+                'dia_chi' => 'Đà Nẵng',
                 'email' => 'tvy.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234583',
                 'khoa_id' => $khoaNN,
@@ -293,6 +362,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV024',
                 'ho_ten' => 'Lê Thị Ánh',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1989-07-19',
+                'dia_chi' => 'Hải Phòng',
                 'email' => 'lta.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234584',
                 'khoa_id' => $khoaNN,
@@ -303,6 +375,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV025',
                 'ho_ten' => 'Phạm Văn Bình',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1986-01-15',
+                'dia_chi' => 'Cần Thơ',
                 'email' => 'pvb.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234585',
                 'khoa_id' => $khoaNN,
@@ -313,6 +388,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV026',
                 'ho_ten' => 'Hoàng Thị Cẩm',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1988-11-24',
+                'dia_chi' => 'Hà Nội',
                 'email' => 'htc.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234586',
                 'khoa_id' => $khoaNN,
@@ -323,6 +401,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV027',
                 'ho_ten' => 'Đỗ Văn Đạt',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1990-06-09',
+                'dia_chi' => 'TP.HCM',
                 'email' => 'dvd.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234587',
                 'khoa_id' => $khoaNN,
@@ -333,6 +414,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV028',
                 'ho_ten' => 'Vũ Văn Gia',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1987-09-13',
+                'dia_chi' => 'Đà Nẵng',
                 'email' => 'vvg.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234588',
                 'khoa_id' => $khoaNN,
@@ -343,6 +427,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV029',
                 'ho_ten' => 'Bùi Thị Hạnh',
+                'gioi_tinh' => 'Nữ',
+                'ngay_sinh' => '1989-04-21',
+                'dia_chi' => 'Hải Phòng',
                 'email' => 'bth.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234589',
                 'khoa_id' => $khoaNN,
@@ -353,6 +440,9 @@ class GiangVienSeeder extends Seeder
             [
                 'ma_giang_vien' => 'GV030',
                 'ho_ten' => 'Ngô Văn Khánh',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1991-10-30',
+                'dia_chi' => 'Cần Thơ',
                 'email' => 'nvk.gv@university.edu.vn',
                 'so_dien_thoai' => '0901234590',
                 'khoa_id' => $khoaNN,
@@ -384,11 +474,14 @@ class GiangVienSeeder extends Seeder
                 'updated_at' => now(),
             ]);
 
-            // Tạo giảng viên (không có chuyen_mon nữa)
+            // Tạo giảng viên
             $giangVienId = DB::table('giang_vien')->insertGetId([
                 'user_id' => $userId,
                 'ma_giang_vien' => $gvData['ma_giang_vien'],
                 'ho_ten' => $gvData['ho_ten'],
+                'gioi_tinh' => $gvData['gioi_tinh'] ?? null,
+                'ngay_sinh' => $gvData['ngay_sinh'] ?? null,
+                'dia_chi' => $gvData['dia_chi'] ?? null,
                 'email' => $gvData['email'],
                 'so_dien_thoai' => $gvData['so_dien_thoai'],
                 'khoa_id' => $gvData['khoa_id'],

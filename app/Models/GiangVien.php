@@ -21,7 +21,6 @@ class GiangVien extends Model
         'gioi_tinh',
         'dia_chi',
         'trinh_do_id',
-        'chuyen_mon',
         'khoa_id',
         'ngay_vao_truong',
         'anh_dai_dien',

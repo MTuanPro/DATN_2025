@@ -41,7 +41,8 @@
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">Danh sách Giảng viên</h5>
                         <div>
-                            <button type="button" id="btnXoaChon" class="btn btn-danger me-1" style="display: none;" onclick="xoaNhieuGiangVien()">
+                            <button type="button" id="btnXoaChon" class="btn btn-danger me-1" style="display: none;"
+                                onclick="xoaNhieuGiangVien()">
                                 <i class="bi bi-trash"></i> Xóa đã chọn
                             </button>
                             <a href="{{ route('dao-tao.giang-vien.show-import-form') }}" class="btn btn-success me-1">
@@ -106,7 +107,7 @@
                                     <th>SĐT</th>
                                     <th>Khoa</th>
                                     <th>Trình độ</th>
-                                    <th>Chuyên môn</th>
+                                    <th>Môn học</th>
                                     <th class="text-center">Thao tác</th>
                                 </tr>
                             </thead>
@@ -114,7 +115,8 @@
                                 @forelse ($giangViens as $index => $giangVien)
                                     <tr>
                                         <td>
-                                            <input type="checkbox" class="checkbox-giang-vien" value="{{ $giangVien->id }}" onchange="toggleDeleteButton()">
+                                            <input type="checkbox" class="checkbox-giang-vien" value="{{ $giangVien->id }}"
+                                                onchange="toggleDeleteButton()">
                                         </td>
                                         <td>{{ $giangViens->firstItem() + $index }}</td>
                                         <td><strong>{{ $giangVien->ma_giang_vien }}</strong></td>
@@ -123,7 +125,14 @@
                                         <td>{{ $giangVien->so_dien_thoai }}</td>
                                         <td>{{ $giangVien->khoa->ten_khoa ?? '-' }}</td>
                                         <td>{{ $giangVien->trinhDo->ten_trinh_do ?? '-' }}</td>
-                                        <td>{{ $giangVien->chuyen_mon }}</td>
+                                        <td>
+                                            @if ($giangVien->monHocs->count() > 0)
+                                                <span class="badge bg-primary">{{ $giangVien->monHocs->count() }}
+                                                    môn</span>
+                                            @else
+                                                <span class="text-muted">Chưa có</span>
+                                            @endif
+                                        </td>
                                         <td class="text-center">
                                             <div class="btn-group" role="group">
                                                 <a href="{{ route('dao-tao.giang-vien.show', $giangVien->id) }}"
@@ -168,7 +177,8 @@
     </div>
 
     <!-- Form ẩn để xóa nhiều -->
-    <form id="formXoaNhieu" action="{{ route('dao-tao.giang-vien.destroy-multiple') }}" method="POST" style="display: none;">
+    <form id="formXoaNhieu" action="{{ route('dao-tao.giang-vien.destroy-multiple') }}" method="POST"
+        style="display: none;">
         @csrf
         @method('DELETE')
         <input type="hidden" name="ids" id="idsToDelete">
@@ -210,7 +220,9 @@
             const ids = Array.from(checkboxes).map(cb => cb.value);
             const count = ids.length;
 
-            if (!confirm(`Bạn có chắc chắn muốn xóa ${count} giảng viên đã chọn? Hành động này sẽ xóa cả tài khoản và không thể hoàn tác!`)) {
+            if (!confirm(
+                    `Bạn có chắc chắn muốn xóa ${count} giảng viên đã chọn? Hành động này sẽ xóa cả tài khoản và không thể hoàn tác!`
+                    )) {
                 return;
             }
 

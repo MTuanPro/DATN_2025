@@ -111,7 +111,7 @@
                                     @if ($giangVien->gioi_tinh == 'Nam')
                                         <span class="badge bg-info">{{ $giangVien->gioi_tinh }}</span>
                                     @elseif($giangVien->gioi_tinh == 'Nữ')
-                                        <span class="badge bg-pink">{{ $giangVien->gioi_tinh }}</span>
+                                        <span class="badge bg-danger">{{ $giangVien->gioi_tinh }}</span>
                                     @else
                                         <span class="badge bg-secondary">{{ $giangVien->gioi_tinh ?? 'N/A' }}</span>
                                     @endif
@@ -129,8 +129,16 @@
                                 </div>
                             </div>
                             <div class="row mb-3">
-                                <div class="col-md-4 fw-bold">Chuyên môn:</div>
-                                <div class="col-md-8">{{ $giangVien->chuyen_mon }}</div>
+                                <div class="col-md-4 fw-bold">Môn học giảng dạy:</div>
+                                <div class="col-md-8">
+                                    @if ($giangVien->monHocs && $giangVien->monHocs->count() > 0)
+                                        @foreach ($giangVien->monHocs as $monHoc)
+                                            <span class="badge bg-light-primary me-1 mb-1">{{ $monHoc->ten_mon }}</span>
+                                        @endforeach
+                                    @else
+                                        <span class="text-muted">Chưa có môn học</span>
+                                    @endif
+                                </div>
                             </div>
                             <div class="row mb-3">
                                 <div class="col-md-4 fw-bold">Khoa:</div>

@@ -53,7 +53,7 @@
                                         @if ($sinhVien->gioi_tinh == 'nam')
                                             <span class="badge bg-info">Nam</span>
                                         @elseif($sinhVien->gioi_tinh == 'nu')
-                                            <span class="badge bg-pink">Nữ</span>
+                                            <span class="badge bg-danger">Nữ</span>
                                         @else
                                             <span class="badge bg-secondary">Khác</span>
                                         @endif

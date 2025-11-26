@@ -17,7 +17,11 @@ class PhanCongGiangDayController extends Controller
     public function index($lopHocPhanId)
     {
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy', 'lopHocPhanGiangVien.giangVien'])->findOrFail($lopHocPhanId);
-        $giangViens = GiangVien::orderBy('ho_ten')->get();
+
+        // Chỉ lấy những giảng viên có thể dạy môn học này
+        $giangViens = GiangVien::whereHas('monHocs', function ($query) use ($lopHocPhan) {
+            $query->where('mon_hoc.id', $lopHocPhan->mon_hoc_id);
+        })->orderBy('ho_ten')->get();
 
         return view('daotao.phan-cong-giang-day.index', compact('lopHocPhan', 'giangViens'));
     }

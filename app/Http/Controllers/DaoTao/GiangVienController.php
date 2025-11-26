@@ -22,7 +22,7 @@ class GiangVienController extends Controller
      */
     public function index(Request $request)
     {
-        $query = GiangVien::with(['khoa', 'trinhDo', 'user']);
+        $query = GiangVien::with(['khoa', 'trinhDo', 'user', 'monHocs']);
 
         // Tìm kiếm
         if ($request->filled('search')) {
@@ -201,12 +201,13 @@ class GiangVienController extends Controller
             'ma_giang_vien' => ['required', 'string', 'max:50', 'unique:giang_vien,ma_giang_vien,' . $giangVien->id],
             'ho_ten' => ['required', 'string', 'max:255'],
             'email' => ['required', 'email', 'max:255', 'unique:giang_vien,email,' . $giangVien->id],
-            'so_dien_thoai' => ['required', 'string', 'max:15'],
+            'so_dien_thoai' => ['nullable', 'string', 'max:15'],
             'ngay_sinh' => ['nullable', 'date'],
             'gioi_tinh' => ['nullable', 'in:Nam,Nữ,Khác'],
             'dia_chi' => ['nullable', 'string'],
             'trinh_do_id' => ['required', 'exists:dm_trinh_do,id'],
-            'chuyen_mon' => ['required', 'string', 'max:255'],
+            'mon_hoc_ids' => ['required', 'array', 'min:1'],
+            'mon_hoc_ids.*' => ['exists:mon_hoc,id'],
             'khoa_id' => ['required', 'exists:khoa,id'],
             'ngay_vao_truong' => ['required', 'date'],
             'anh_dai_dien' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
@@ -216,7 +217,8 @@ class GiangVienController extends Controller
             'ho_ten.required' => 'Vui lòng nhập họ tên',
             'email.required' => 'Vui lòng nhập email',
             'email.unique' => 'Email đã tồn tại',
-            'so_dien_thoai.required' => 'Vui lòng nhập số điện thoại',
+            'mon_hoc_ids.required' => 'Vui lòng chọn ít nhất một môn học',
+            'mon_hoc_ids.min' => 'Vui lòng chọn ít nhất một môn học',
         ]);
 
         DB::beginTransaction();

@@ -186,14 +186,13 @@
                                     <select class="form-select @error('gioi_tinh') is-invalid @enderror" id="gioi_tinh"
                                         name="gioi_tinh">
                                         <option value="">-- Chọn giới tính --</option>
-                                        <option value="Nam"
-                                            {{ old('gioi_tinh', $giangVien->gioi_tinh) == 'Nam' ? 'selected' : '' }}>Nam
+                                        @php
+                                            $currentGender = old('gioi_tinh', $giangVien->gioi_tinh);
+                                        @endphp
+                                        <option value="Nam" {{ $currentGender == 'Nam' ? 'selected' : '' }}>Nam
                                         </option>
-                                        <option value="Nữ"
-                                            {{ old('gioi_tinh', $giangVien->gioi_tinh) == 'Nữ' ? 'selected' : '' }}>Nữ
-                                        </option>
-                                        <option value="Khác"
-                                            {{ old('gioi_tinh', $giangVien->gioi_tinh) == 'Khác' ? 'selected' : '' }}>Khác
+                                        <option value="Nữ" {{ $currentGender == 'Nữ' ? 'selected' : '' }}>Nữ</option>
+                                        <option value="Khác" {{ $currentGender == 'Khác' ? 'selected' : '' }}>Khác
                                         </option>
                                     </select>
                                     @error('gioi_tinh')
