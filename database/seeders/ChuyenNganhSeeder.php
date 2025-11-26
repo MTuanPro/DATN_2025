@@ -12,11 +12,16 @@ class ChuyenNganhSeeder extends Seeder
         // Lấy ID các ngành
         $nganhCNTT = DB::table('nganh')->where('ma_nganh', '7480201')->value('id');
         $nganhKHMT = DB::table('nganh')->where('ma_nganh', '7480202')->value('id');
+        $nganhATTT = DB::table('nganh')->where('ma_nganh', '7480299')->value('id');
         $nganhQLKD = DB::table('nganh')->where('ma_nganh', '7340101')->value('id');
         $nganhTCNH = DB::table('nganh')->where('ma_nganh', '7340201')->value('id');
+        $nganhKeToan = DB::table('nganh')->where('ma_nganh', '7340301')->value('id');
+        $nganhTiengAnh = DB::table('nganh')->where('ma_nganh', '7220201')->value('id');
+        $nganhTiengNhat = DB::table('nganh')->where('ma_nganh', '7220203')->value('id');
+        $nganhTiengTrung = DB::table('nganh')->where('ma_nganh', '7220204')->value('id');
 
         $data = [
-            // Chuyên ngành CNTT
+            // KHOA CNTT - Ngành 1: Công nghệ thông tin (2 chuyên ngành)
             [
                 'ma_chuyen_nganh' => 'CNPM',
                 'ten_chuyen_nganh' => 'Công nghệ phần mềm',
@@ -31,25 +36,11 @@ class ChuyenNganhSeeder extends Seeder
                 'tong_tin_chi_toi_thieu' => 140,
                 'mo_ta' => 'Chuyên ngành lập trình ứng dụng trên iOS, Android, Cross-platform',
             ],
-            [
-                'ma_chuyen_nganh' => 'HTTT',
-                'ten_chuyen_nganh' => 'Hệ thống thông tin',
-                'nganh_id' => $nganhCNTT,
-                'tong_tin_chi_toi_thieu' => 140,
-                'mo_ta' => 'Chuyên ngành quản trị và phát triển hệ thống thông tin doanh nghiệp',
-            ],
-            [
-                'ma_chuyen_nganh' => 'ATTT',
-                'ten_chuyen_nganh' => 'An toàn thông tin',
-                'nganh_id' => $nganhCNTT,
-                'tong_tin_chi_toi_thieu' => 140,
-                'mo_ta' => 'Chuyên ngành bảo mật mạng, an ninh mạng, phòng chống tấn công',
-            ],
 
-            // Chuyên ngành Khoa học máy tính
+            // KHOA CNTT - Ngành 2: Khoa học máy tính (2 chuyên ngành)
             [
                 'ma_chuyen_nganh' => 'AI-ML',
-                'ten_chuyen_nganh' => 'Trí tuệ nhân tạo và Học máy',
+                'ten_chuyen_nganh' => 'Trí tuệ nhân tạo',
                 'nganh_id' => $nganhKHMT,
                 'tong_tin_chi_toi_thieu' => 140,
                 'mo_ta' => 'Chuyên ngành AI, Machine Learning, Deep Learning, Computer Vision',
@@ -62,7 +53,23 @@ class ChuyenNganhSeeder extends Seeder
                 'mo_ta' => 'Chuyên ngành phân tích dữ liệu, Big Data, Data Mining',
             ],
 
-            // Chuyên ngành Quản trị kinh doanh
+            // KHOA CNTT - Ngành 3: An toàn thông tin (2 chuyên ngành)
+            [
+                'ma_chuyen_nganh' => 'ATTT-BM',
+                'ten_chuyen_nganh' => 'Bảo mật hệ thống',
+                'nganh_id' => $nganhATTT,
+                'tong_tin_chi_toi_thieu' => 140,
+                'mo_ta' => 'Chuyên ngành bảo mật mạng, an ninh mạng, phòng chống tấn công',
+            ],
+            [
+                'ma_chuyen_nganh' => 'ATTT-MA',
+                'ten_chuyen_nganh' => 'Mật mã học',
+                'nganh_id' => $nganhATTT,
+                'tong_tin_chi_toi_thieu' => 140,
+                'mo_ta' => 'Chuyên ngành nghiên cứu và ứng dụng mật mã, blockchain',
+            ],
+
+            // KHOA KINH TẾ - Ngành 1: Quản trị kinh doanh (2 chuyên ngành)
             [
                 'ma_chuyen_nganh' => 'QTKD-DN',
                 'ten_chuyen_nganh' => 'Quản trị doanh nghiệp',
@@ -77,28 +84,85 @@ class ChuyenNganhSeeder extends Seeder
                 'tong_tin_chi_toi_thieu' => 130,
                 'mo_ta' => 'Chuyên ngành marketing, quảng cáo, nghiên cứu thị trường',
             ],
-            [
-                'ma_chuyen_nganh' => 'QTKD-KN',
-                'ten_chuyen_nganh' => 'Quản trị khởi nghiệp',
-                'nganh_id' => $nganhQLKD,
-                'tong_tin_chi_toi_thieu' => 130,
-                'mo_ta' => 'Chuyên ngành khởi nghiệp, quản lý startup, đổi mới sáng tạo',
-            ],
 
-            // Chuyên ngành Tài chính - Ngân hàng
+            // KHOA KINH TẾ - Ngành 2: Tài chính - Ngân hàng (2 chuyên ngành)
             [
-                'ma_chuyen_nganh' => 'TC',
+                'ma_chuyen_nganh' => 'TCNH-TC',
                 'ten_chuyen_nganh' => 'Tài chính doanh nghiệp',
                 'nganh_id' => $nganhTCNH,
                 'tong_tin_chi_toi_thieu' => 130,
                 'mo_ta' => 'Chuyên ngành quản lý tài chính, đầu tư, phân tích tài chính',
             ],
             [
-                'ma_chuyen_nganh' => 'NH',
+                'ma_chuyen_nganh' => 'TCNH-NH',
                 'ten_chuyen_nganh' => 'Ngân hàng',
                 'nganh_id' => $nganhTCNH,
                 'tong_tin_chi_toi_thieu' => 130,
                 'mo_ta' => 'Chuyên ngành nghiệp vụ ngân hàng, tín dụng, thanh toán quốc tế',
+            ],
+
+            // KHOA KINH TẾ - Ngành 3: Kế toán (2 chuyên ngành)
+            [
+                'ma_chuyen_nganh' => 'KT-KTDN',
+                'ten_chuyen_nganh' => 'Kế toán doanh nghiệp',
+                'nganh_id' => $nganhKeToan,
+                'tong_tin_chi_toi_thieu' => 130,
+                'mo_ta' => 'Chuyên ngành kế toán tài chính, kế toán quản trị doanh nghiệp',
+            ],
+            [
+                'ma_chuyen_nganh' => 'KT-KTA',
+                'ten_chuyen_nganh' => 'Kiểm toán',
+                'nganh_id' => $nganhKeToan,
+                'tong_tin_chi_toi_thieu' => 130,
+                'mo_ta' => 'Chuyên ngành kiểm toán độc lập, kiểm toán nội bộ',
+            ],
+
+            // KHOA NGOẠI NGỮ - Ngành 1: Ngôn ngữ Anh (2 chuyên ngành)
+            [
+                'ma_chuyen_nganh' => 'TA-SPNN',
+                'ten_chuyen_nganh' => 'Sư phạm tiếng Anh',
+                'nganh_id' => $nganhTiengAnh,
+                'tong_tin_chi_toi_thieu' => 130,
+                'mo_ta' => 'Chuyên ngành đào tạo giáo viên tiếng Anh',
+            ],
+            [
+                'ma_chuyen_nganh' => 'TA-BDPD',
+                'ten_chuyen_nganh' => 'Biên - Phiên dịch tiếng Anh',
+                'nganh_id' => $nganhTiengAnh,
+                'tong_tin_chi_toi_thieu' => 130,
+                'mo_ta' => 'Chuyên ngành biên dịch, phiên dịch tiếng Anh chuyên nghiệp',
+            ],
+
+            // KHOA NGOẠI NGỮ - Ngành 2: Ngôn ngữ Nhật (2 chuyên ngành)
+            [
+                'ma_chuyen_nganh' => 'TN-BDPD',
+                'ten_chuyen_nganh' => 'Biên - Phiên dịch tiếng Nhật',
+                'nganh_id' => $nganhTiengNhat,
+                'tong_tin_chi_toi_thieu' => 130,
+                'mo_ta' => 'Chuyên ngành biên dịch, phiên dịch tiếng Nhật',
+            ],
+            [
+                'ma_chuyen_nganh' => 'TN-QHQT',
+                'ten_chuyen_nganh' => 'Quan hệ quốc tế Nhật Bản',
+                'nganh_id' => $nganhTiengNhat,
+                'tong_tin_chi_toi_thieu' => 130,
+                'mo_ta' => 'Chuyên ngành về văn hóa, kinh tế, quan hệ Việt - Nhật',
+            ],
+
+            // KHOA NGOẠI NGỮ - Ngành 3: Ngôn ngữ Trung Quốc (2 chuyên ngành)
+            [
+                'ma_chuyen_nganh' => 'TT-BDPD',
+                'ten_chuyen_nganh' => 'Biên - Phiên dịch tiếng Trung',
+                'nganh_id' => $nganhTiengTrung,
+                'tong_tin_chi_toi_thieu' => 130,
+                'mo_ta' => 'Chuyên ngành biên dịch, phiên dịch tiếng Trung',
+            ],
+            [
+                'ma_chuyen_nganh' => 'TT-TMQT',
+                'ten_chuyen_nganh' => 'Thương mại Trung Quốc',
+                'nganh_id' => $nganhTiengTrung,
+                'tong_tin_chi_toi_thieu' => 130,
+                'mo_ta' => 'Chuyên ngành thương mại, kinh doanh với Trung Quốc',
             ],
         ];
 
@@ -113,5 +177,7 @@ class ChuyenNganhSeeder extends Seeder
                 );
             }
         }
+
+        $this->command->info('✅ Đã tạo ' . count($data) . ' chuyên ngành (9 ngành x 2 chuyên ngành)');
     }
 }

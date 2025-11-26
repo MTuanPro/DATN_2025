@@ -59,7 +59,8 @@ class GiangVienController extends Controller
     {
         $khoas = Khoa::all();
         $trinhDos = TrinhDo::all();
-        return view('daotao.giang-vien.create', compact('khoas', 'trinhDos'));
+        $monHocs = \App\Models\DaoTao\MonHoc::orderBy('ma_mon')->get();
+        return view('daotao.giang-vien.create', compact('khoas', 'trinhDos', 'monHocs'));
     }
 
     /**
@@ -90,7 +91,8 @@ class GiangVienController extends Controller
             'email.unique' => 'Email đã tồn tại trong hệ thống',
             'so_dien_thoai.required' => 'Vui lòng nhập số điện thoại',
             'trinh_do_id.required' => 'Vui lòng chọn trình độ',
-            'chuyen_mon.required' => 'Vui lòng nhập chuyên môn',
+            'mon_hoc_ids.required' => 'Vui lòng chọn ít nhất một môn học',
+            'mon_hoc_ids.min' => 'Vui lòng chọn ít nhất một môn học',
             'khoa_id.required' => 'Vui lòng chọn khoa',
             'ngay_vao_truong.required' => 'Vui lòng chọn ngày vào trường',
         ]);
@@ -142,12 +144,14 @@ class GiangVienController extends Controller
                 'gioi_tinh' => $validated['gioi_tinh'] ?? null,
                 'dia_chi' => $validated['dia_chi'] ?? null,
                 'trinh_do_id' => $validated['trinh_do_id'],
-                'chuyen_mon' => $validated['chuyen_mon'],
                 'khoa_id' => $validated['khoa_id'],
                 'ngay_vao_truong' => $validated['ngay_vao_truong'],
                 'anh_dai_dien' => $anhDaiDien,
                 'user_id' => $userId,
             ]);
+
+            // Gán môn học cho giảng viên
+            $giangVien->monHocs()->sync($validated['mon_hoc_ids']);
 
             DB::commit();
             return redirect()->route('dao-tao.giang-vien.index')
@@ -178,7 +182,8 @@ class GiangVienController extends Controller
     {
         $khoas = Khoa::all();
         $trinhDos = TrinhDo::all();
-        return view('daotao.giang-vien.edit', compact('giangVien', 'khoas', 'trinhDos'));
+        $monHocs = \App\Models\DaoTao\MonHoc::orderBy('ma_mon')->get();
+        return view('daotao.giang-vien.edit', compact('giangVien', 'khoas', 'trinhDos', 'monHocs'));
     }
 
     /**
@@ -225,7 +230,14 @@ class GiangVienController extends Controller
                 $validated['anh_dai_dien'] = $request->file('anh_dai_dien')->store('giang-vien', 'public');
             }
 
+            // Lưu mon_hoc_ids trước khi update
+            $monHocIds = $validated['mon_hoc_ids'];
+            unset($validated['mon_hoc_ids']);
+
             $giangVien->update($validated);
+
+            // Cập nhật môn học
+            $giangVien->monHocs()->sync($monHocIds);
 
             // Cập nhật thông tin user nếu có
             if ($giangVien->user_id) {
@@ -302,7 +314,7 @@ class GiangVienController extends Controller
                 // Xóa lịch học chi tiết liên quan trước
                 $lichCoDinhIds = \App\Models\LichHocCoDinh::where('giang_vien_id', $giangVien->id)->pluck('id');
                 \App\Models\LichHocChiTiet::whereIn('lich_hoc_co_dinh_id', $lichCoDinhIds)->delete();
-                
+
                 // Sau đó xóa lịch học cố định
                 \App\Models\LichHocCoDinh::where('giang_vien_id', $giangVien->id)->delete();
                 \Log::info('Đã xóa lịch học cố định khi xóa giảng viên', [
@@ -368,9 +380,9 @@ class GiangVienController extends Controller
         try {
             $file = $request->file('file');
             $extension = strtolower($file->getClientOriginalExtension());
-            
+
             $data = [];
-            
+
             // Đọc file Excel
             if (in_array($extension, ['xlsx', 'xls'])) {
                 // Kiểm tra extension zip có sẵn không
@@ -378,40 +390,40 @@ class GiangVienController extends Controller
                     DB::rollBack();
                     return back()->with('error', 'PHP extension "zip" chưa được cài đặt. Vui lòng bật extension zip trong php.ini hoặc sử dụng file CSV thay vì Excel.');
                 }
-                
+
                 try {
                     $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
                     $worksheet = $spreadsheet->getActiveSheet();
                     $data = $worksheet->toArray();
-                    
+
                     // Bỏ qua header (dòng đầu tiên)
                     array_shift($data);
                 } catch (\Exception $e) {
                     DB::rollBack();
                     return back()->with('error', 'Không thể đọc file Excel: ' . $e->getMessage());
                 }
-            } 
+            }
             // Đọc file CSV
             else {
                 $handle = fopen($file->getRealPath(), 'r');
-                
+
                 if ($handle === false) {
                     throw new \Exception('Không thể đọc file');
                 }
-                
+
                 // Bỏ qua dòng header
                 fgetcsv($handle);
-                
+
                 while (($row = fgetcsv($handle)) !== false) {
                     $data[] = $row;
                 }
-                
+
                 fclose($handle);
             }
 
             $imported = 0;
             $errors = [];
-            
+
             // Lấy vai trò giảng viên
             $vaiTroGiangVien = VaiTro::where('ma_vai_tro', 'giang_vien')->first();
 
@@ -459,7 +471,7 @@ class GiangVienController extends Controller
                     $khoa = Khoa::where('ten_khoa', $tenKhoa)
                         ->orWhere('ma_khoa', $tenKhoa)
                         ->first();
-                    
+
                     if (!$khoa) {
                         $errors[] = "Dòng {$rowNum}: Không tìm thấy khoa với tên/mã: {$tenKhoa}";
                         continue;
@@ -496,7 +508,7 @@ class GiangVienController extends Controller
 
                     // Tạo tài khoản mặc định cho giảng viên (mật khẩu: 12345678)
                     $userId = null;
-                    
+
                     // Kiểm tra email đã tồn tại trong users chưa
                     $existingUser = User::where('email', $email)->first();
                     if ($existingUser) {
@@ -504,7 +516,7 @@ class GiangVienController extends Controller
                         $userId = $existingUser->id;
                         // Cập nhật tên nếu cần
                         $existingUser->update(['name' => $hoTen]);
-                        
+
                         // Kiểm tra và gán vai trò giảng viên nếu chưa có
                         if ($vaiTroGiangVien && !$existingUser->vaiTro->contains($vaiTroGiangVien->id)) {
                             $existingUser->vaiTro()->attach($vaiTroGiangVien->id, [

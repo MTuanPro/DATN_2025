@@ -174,6 +174,7 @@ class DangKyMonHocService
     public function validateRegistration($sinhVienId, $monHocId, $hocKyId): array
     {
         $errors = [];
+        $warnings = [];
 
         // Lấy thông tin sinh viên
         $sinhVien = SinhVien::findOrFail($sinhVienId);
@@ -184,7 +185,7 @@ class DangKyMonHocService
             $errors[] = 'Bạn đã đăng ký môn học này trong học kỳ hiện tại.';
         }
 
-        // 2. Kiểm tra kỳ học: Sinh viên chỉ được đăng ký môn của kỳ hiện tại hoặc kỳ trước đó (học lại)
+        // 2. Kiểm tra kỳ học: Sinh viên có thể đăng ký môn của kỳ hiện tại hoặc kỳ trước đó
         $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
             ->where('mon_hoc_id', $monHocId)
             ->first();
@@ -192,29 +193,47 @@ class DangKyMonHocService
         if ($chuongTrinhKhung) {
             $hocKyGoiY = $chuongTrinhKhung->hoc_ky_goi_y;
             
-            // Kiểm tra xem sinh viên đã học môn này chưa (học lại) - chỉ môn kỳ trước
-            $daHocChuaQua = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $monHocId) {
-                $q->where('sinh_vien_id', $sinhVienId)
-                    ->whereHas('lopHocPhan', function ($q2) use ($monHocId) {
-                        $q2->where('mon_hoc_id', $monHocId);
-                    });
-            })->where('qua_mon', false)->exists();
+            // Kiểm tra môn kỳ tương lai (KHÔNG cho phép)
+            if ($hocKyGoiY > $kyHienTai) {
+                $errors[] = "Bạn chỉ được đăng ký môn học của kỳ {$kyHienTai}. Môn này thuộc kỳ {$hocKyGoiY}.";
+            }
+            // Môn kỳ trước: Cho phép nhưng cảnh báo
+            elseif ($hocKyGoiY < $kyHienTai) {
+                // Kiểm tra xem sinh viên đã học môn này chưa
+                $ketQuaCu = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $monHocId) {
+                    $q->where('sinh_vien_id', $sinhVienId)
+                        ->whereHas('lopHocPhan', function ($q2) use ($monHocId) {
+                            $q2->where('mon_hoc_id', $monHocId);
+                        });
+                })->first();
 
-            // Chỉ cho phép đăng ký:
-            // - Môn của kỳ hiện tại (hoc_ky_goi_y == ky_hien_tai)
-            // - Môn của kỳ trước VÀ đã học nhưng chưa qua (học lại)
-            if ($hocKyGoiY == $kyHienTai) {
-                // Cho phép đăng ký môn kỳ hiện tại
-            } elseif ($hocKyGoiY < $kyHienTai && $daHocChuaQua) {
-                // Cho phép đăng ký môn kỳ trước nếu đã học nhưng chưa qua (học lại)
-            } else {
-                // Không cho phép
-                if ($hocKyGoiY > $kyHienTai) {
-                    $errors[] = "Bạn chỉ được đăng ký môn học của kỳ {$kyHienTai}. Môn này thuộc kỳ {$hocKyGoiY}.";
-                } elseif ($hocKyGoiY < $kyHienTai && !$daHocChuaQua) {
-                    $errors[] = "Bạn chỉ được đăng ký môn học của kỳ {$kyHienTai} hoặc môn học lại (kỳ trước). Môn này thuộc kỳ {$hocKyGoiY} và bạn chưa học lại.";
+                if ($ketQuaCu) {
+                    // Đã học môn này rồi
+                    if (!$ketQuaCu->qua_mon) {
+                        // Trượt -> học lại
+                        $warnings[] = [
+                            'type' => 'hoc_lai',
+                            'message' => "⚠️ Môn học này thuộc kỳ {$hocKyGoiY}. Bạn đang học lại môn đã trượt.",
+                            'severity' => 'warning'
+                        ];
+                    } else {
+                        // Đã qua -> cải thiện điểm
+                        $warnings[] = [
+                            'type' => 'cai_thien_diem',
+                            'message' => "⚠️ Môn học này thuộc kỳ {$hocKyGoiY}. Bạn muốn cải thiện điểm?",
+                            'severity' => 'info'
+                        ];
+                    }
+                } else {
+                    // Chưa học -> đăng ký muộn
+                    $warnings[] = [
+                        'type' => 'dang_ky_muon',
+                        'message' => "⚠️ Môn học này thuộc kỳ {$hocKyGoiY}. Bạn đang đăng ký muộn môn của kỳ trước.",
+                        'severity' => 'warning'
+                    ];
                 }
             }
+            // Môn kỳ hiện tại: OK, không cảnh báo gì
         }
 
         // 3. Kiểm tra môn tiên quyết
@@ -234,6 +253,7 @@ class DangKyMonHocService
         return [
             'passed' => empty($errors),
             'errors' => $errors,
+            'warnings' => $warnings,
             'details' => [
                 'prerequisite' => $prerequisiteCheck,
                 'credits' => $creditCheck

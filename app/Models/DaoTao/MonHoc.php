@@ -50,17 +50,17 @@ class MonHoc extends Model
         )->withPivot('id', 'loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
     }
 
-// // Relationship: Các môn học cần môn này làm tiên quyết
-//     public function monCanMonNay()
-//     {
-//         return $this->belongsToMany(
-//             MonHoc::class,
-//             'mon_hoc_tien_quyet',
-//             'mon_tien_quyet_id',
-//             'mon_hoc_id'
-//         )->withPivot('id', 'loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
-//     }
-// }
+    // // Relationship: Các môn học cần môn này làm tiên quyết
+    //     public function monCanMonNay()
+    //     {
+    //         return $this->belongsToMany(
+    //             MonHoc::class,
+    //             'mon_hoc_tien_quyet',
+    //             'mon_tien_quyet_id',
+    //             'mon_hoc_id'
+    //         )->withPivot('id', 'loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
+    //     }
+    // }
 
 
 
@@ -75,5 +75,16 @@ class MonHoc extends Model
             'mon_tien_quyet_id',
             'mon_hoc_id'
         )->withPivot('id', 'loai_tien_quyet', 'dieu_kien_qua_mon', 'ghi_chu')->withTimestamps();
+    }
+
+    // Relationship: Giảng viên có chuyên môn dạy môn này
+    public function giangViens()
+    {
+        return $this->belongsToMany(
+            \App\Models\GiangVien::class,
+            'giang_vien_mon_hoc',
+            'mon_hoc_id',
+            'giang_vien_id'
+        )->withTimestamps();
     }
 }

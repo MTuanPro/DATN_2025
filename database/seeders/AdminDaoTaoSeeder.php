@@ -42,6 +42,7 @@ class AdminDaoTaoSeeder extends Seeder
         // Tạo record trong bảng dao_tao
         DB::table('dao_tao')->insert([
             'user_id' => $truongPhongId,
+            'ma_dao_tao' => 'DT001',
             'ho_ten' => 'Nguyễn Văn Trưởng',
             'email' => 'truongphong@smis.edu.vn',
             'so_dien_thoai' => '0987654321',
@@ -74,6 +75,7 @@ class AdminDaoTaoSeeder extends Seeder
         // Tạo record trong bảng dao_tao
         DB::table('dao_tao')->insert([
             'user_id' => $nhanVienId,
+            'ma_dao_tao' => 'DT002',
             'ho_ten' => 'Trần Thị Nhân Viên',
             'email' => 'nhanvien@smis.edu.vn',
             'so_dien_thoai' => '0912345678',

@@ -382,7 +382,7 @@ class DangKyMonHocController extends Controller
 
             DB::commit();
 
-            return response()->json([
+            $response = [
                 'success' => true,
                 'message' => 'Đăng ký môn học thành công! Vui lòng đóng học phí trong vòng 1 tuần để được xếp lớp.',
                 'data' => $dangKy,
@@ -391,7 +391,14 @@ class DangKyMonHocController extends Controller
                     'so_tien_con_lai' => $hocPhi->so_tien_con_lai,
                     'han_dong' => $hanDong,
                 ]
-            ]);
+            ];
+
+            // Thêm warnings nếu có
+            if (!empty($validation['warnings'])) {
+                $response['warnings'] = $validation['warnings'];
+            }
+
+            return response()->json($response);
         } catch (\Exception $e) {
             DB::rollBack();
             \Log::error('Lỗi khi đăng ký môn học: ' . $e->getMessage());

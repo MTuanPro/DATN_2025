@@ -49,3 +49,17 @@ Schedule::command('chatbot:weekly-report')
     ->weeklyOn(1, '09:00')
     ->timezone('Asia/Ho_Chi_Minh')
     ->runInBackground();
+
+// ===== STUDENT SEMESTER UPGRADE =====
+// Tự động chuyển kỳ cho sinh viên sau khi kết thúc học kỳ
+// Chạy vào ngày 1 hàng tháng lúc 23:00 để kiểm tra học kỳ vừa kết thúc
+Schedule::command('sinh-vien:chuyen-ky')
+    ->monthlyOn(1, '23:00')
+    ->timezone('Asia/Ho_Chi_Minh')
+    ->emailOutputOnFailure('admin@example.com');
+
+// Chạy thêm vào ngày 15 hàng tháng lúc 23:00
+Schedule::command('sinh-vien:chuyen-ky')
+    ->monthlyOn(15, '23:00')
+    ->timezone('Asia/Ho_Chi_Minh')
+    ->emailOutputOnFailure('admin@example.com');

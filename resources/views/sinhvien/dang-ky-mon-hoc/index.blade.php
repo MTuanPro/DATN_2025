@@ -336,11 +336,30 @@ selectedTinChi = parseInt($(this).data('tin-chi')) || 0;
                             hoc_ky_id: {{ $hocKy->id }}
                         }
                     }).done(function(response) {
-                        Swal.fire({
-                            icon: 'success',
-                            title: 'Thành công',
-                            text: response.message
-                        }).then(() => location.reload());
+                        // Kiểm tra có warnings không
+                        if (response.warnings && response.warnings.length > 0) {
+                            // Hiển thị cảnh báo trước
+                            let warningMessages = response.warnings.map(w => {
+                                const icon = w.type === 'cai_thien_diem' ? '💡' : 
+                                           w.type === 'hoc_lai' ? '📚' : '⚠️';
+                                return `${icon} ${w.message}`;
+                            }).join('<br><br>');
+                            
+                            Swal.fire({
+                                icon: response.warnings[0].severity === 'info' ? 'info' : 'warning',
+                                title: 'Thông báo',
+                                html: warningMessages + '<br><br>' + response.message,
+                                width: '600px',
+                                confirmButtonText: 'Đã hiểu'
+                            }).then(() => location.reload());
+                        } else {
+                            // Không có warning - hiển thị thông báo thành công bình thường
+                            Swal.fire({
+                                icon: 'success',
+                                title: 'Thành công',
+                                text: response.message
+                            }).then(() => location.reload());
+                        }
                     }).fail(function(xhr) {
                         console.error('Lỗi đăng ký:', xhr);
                         let message = xhr.responseJSON?.message || 'Có lỗi xảy ra!';

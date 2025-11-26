@@ -80,6 +80,19 @@ class GiangVien extends Model
     }
 
     /**
+     * Relationship: Giảng viên có thể dạy nhiều môn học (chuyên môn)
+     */
+    public function monHocs()
+    {
+        return $this->belongsToMany(
+            \App\Models\DaoTao\MonHoc::class,
+            'giang_vien_mon_hoc',
+            'giang_vien_id',
+            'mon_hoc_id'
+        )->withTimestamps();
+    }
+
+    /**
      * Relationship: Giảng viên là trưởng khoa
      */
     public function khoaTruongKhoa()

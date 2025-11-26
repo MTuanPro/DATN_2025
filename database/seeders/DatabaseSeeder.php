@@ -22,7 +22,7 @@ class DatabaseSeeder extends Seeder
         $this->call(VaiTroQuyenSeeder::class);
         $this->call(AdminSeeder::class);
         $this->call(AdminDaoTaoSeeder::class);
-        
+
         // ========================================
         // 2. SEEDER DANH MỤC & CTĐT
         // ========================================
@@ -32,32 +32,38 @@ class DatabaseSeeder extends Seeder
         $this->call(TrangThaiHocTapSeeder::class);
         $this->call(PhongHocSeeder::class);
         $this->call(CaHocSeeder::class);
-        
+
         // Phụ thuộc Khoa, TrinhDo
         $this->call(NganhSeeder::class);
-        
+
         // Phụ thuộc Nganh
         $this->call(ChuyenNganhSeeder::class);
-        
+
         // Phụ thuộc Khoa
         $this->call(MonHocSeeder::class);
-        
+
+        // Phụ thuộc Khoa, TrinhDo, MonHoc (giảng viên được gán môn học luôn)
+        $this->call(GiangVienSeeder::class);
+
         // Phụ thuộc ChuyenNganh, MonHoc
         $this->call(ChuongTrinhKhungSeeder::class);
         $this->call(ChuongTrinhDaoTaoTestSeeder::class);
-        
+
         // ========================================
         // 3. SEEDER NIÊN KHÓA & HỌC KỲ
         // ========================================
         $this->call(KhoaHocSeeder::class);
         $this->call(HocKySeeder::class);
-        
+
+        // Phụ thuộc KhoaHoc, Nganh
+        $this->call(LopHanhChinhSeeder::class);
+
         // ========================================
         // 4. SEEDER THÔNG BÁO HỆ THỐNG
         // ========================================
         $this->call(ThongBaoSeeder::class);
         $this->call(MauThongBaoTuDongSeeder::class);
-        
+
         // ========================================
         // 5. SEEDER AI CHATBOT
         // ========================================

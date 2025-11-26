@@ -129,14 +129,21 @@
                                 </div>
                             </div>
 
-                            <div class="col-md-6">
+                            <div class="col-md-12">
                                 <div class="form-group">
-                                    <label for="chuyen_mon" class="form-label">Chuyên môn <span
+                                    <label for="mon_hoc_ids" class="form-label">Môn học có thể giảng dạy <span
                                             class="text-danger">*</span></label>
-                                    <input type="text" class="form-control @error('chuyen_mon') is-invalid @enderror"
-                                        id="chuyen_mon" name="chuyen_mon"
-                                        value="{{ old('chuyen_mon', $giangVien->chuyen_mon) }}" required>
-                                    @error('chuyen_mon')
+                                    <select multiple class="form-select @error('mon_hoc_ids') is-invalid @enderror"
+                                        id="mon_hoc_ids" name="mon_hoc_ids[]" required>
+                                        @foreach ($monHocs as $monHoc)
+                                            <option value="{{ $monHoc->id }}"
+                                                {{ in_array($monHoc->id, old('mon_hoc_ids', $giangVien->monHocs->pluck('id')->toArray())) ? 'selected' : '' }}>
+                                                {{ $monHoc->ma_mon }} - {{ $monHoc->ten_mon }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    <small class="text-muted">Giữ Ctrl (hoặc Cmd) để chọn nhiều môn học</small>
+                                    @error('mon_hoc_ids')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
