@@ -58,6 +58,9 @@ class DatabaseSeeder extends Seeder
         // Phụ thuộc KhoaHoc, Nganh
         $this->call(LopHanhChinhSeeder::class);
 
+        // Phụ thuộc KhoaHoc, LopHanhChinh, Nganh, TrangThaiHocTap
+        $this->call(SinhVienSeeder::class);
+
         // ========================================
         // 4. SEEDER THÔNG BÁO HỆ THỐNG
         // ========================================

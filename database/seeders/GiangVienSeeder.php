@@ -450,6 +450,20 @@ class GiangVienSeeder extends Seeder
                 'mon_hoc_keywords' => ['Thương mại', 'Trung', 'Dịch thuật'],
                 'ngay_vao_truong' => '2020-10-01',
             ],
+            // Giảng viên test
+            [
+                'ma_giang_vien' => 'GV031',
+                'ho_ten' => 'Giảng Viên Test',
+                'gioi_tinh' => 'Nam',
+                'ngay_sinh' => '1985-01-01',
+                'dia_chi' => 'Hà Nội',
+                'email' => 'giangvien@sis.edu.vn',
+                'so_dien_thoai' => '0901234591',
+                'khoa_id' => $khoaCNTT,
+                'trinh_do_id' => $trinhDoTS,
+                'mon_hoc_keywords' => ['Lập trình Web', 'Cơ sở dữ liệu'],
+                'ngay_vao_truong' => '2015-09-01',
+            ],
         ];
 
         $count = 0;
@@ -460,7 +474,7 @@ class GiangVienSeeder extends Seeder
             $userId = DB::table('users')->insertGetId([
                 'name' => $gvData['ho_ten'],
                 'email' => $gvData['email'],
-                'password' => Hash::make('password123'),
+                'password' => Hash::make('password'),
                 'email_verified_at' => now(),
                 'created_at' => now(),
                 'updated_at' => now(),
@@ -509,10 +523,10 @@ class GiangVienSeeder extends Seeder
         }
 
         echo "✅ Đã tạo {$count} giảng viên\n";
-        echo "   👨‍🏫 Khoa CNTT: 10 giảng viên\n";
+        echo "   👨‍🏫 Khoa CNTT: 11 giảng viên\n";
         echo "   👨‍🏫 Khoa Kinh tế: 11 giảng viên\n";
         echo "   👨‍🏫 Khoa Ngoại ngữ: 9 giảng viên\n";
         echo "   📚 Đã gán {$totalMonHocAssigned} môn học cho các giảng viên\n";
-        echo "   🔑 Mật khẩu mặc định: password123\n";
+        echo "   🔑 Mật khẩu mặc định: password\n";
     }
 }

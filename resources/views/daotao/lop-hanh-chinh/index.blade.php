@@ -81,10 +81,10 @@
                                 <button type="button" id="btnXoaChon" class="btn btn-danger shadow-sm" style="display: none;" onclick="xoaNhieuLopHanhChinh()">
                                     <i class="bi bi-trash me-1"></i> Xóa đã chọn
                                 </button>
-                                <form action="{{ route('dao-tao.lop-hanh-chinh.sync-si-so') }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn đồng bộ lại sĩ số cho tất cả các lớp?')">
+                                <form action="{{ route('dao-tao.lop-hanh-chinh.sync-si-so') }}" method="POST" class="d-inline" onsubmit="return confirm('Bạn có chắc muốn đồng bộ lại sức chứa cho tất cả các lớp?')">
                                     @csrf
-                                    <button type="submit" class="btn btn-secondary shadow-sm" title="Đồng bộ lại sĩ số từ số lượng sinh viên thực tế">
-                                        <i class="bi bi-arrow-clockwise me-1"></i> Đồng bộ sĩ số
+                                    <button type="submit" class="btn btn-secondary shadow-sm" title="Đồng bộ lại sức chứa từ số lượng sinh viên thực tế">
+                                        <i class="bi bi-arrow-clockwise me-1"></i> Đồng bộ sức chứa
                                     </button>
                                 </form>
                                 <a href="{{ route('dao-tao.lop-hanh-chinh.create') }}" class="btn btn-success shadow-sm" title="Thêm lớp hành chính mới">
@@ -114,6 +114,7 @@
                                     <th>Khóa học</th>
                                     <th>Ngành</th>
                                     <th>GVCN</th>
+                                    <th>Sức chứa</th>
                                     <th>Sĩ số</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -149,7 +150,10 @@
                                             @endif
                                         </td>
                                         <td>
-                                            <span class="badge bg-info">{{ $lop->si_so }} SV</span>
+                                            <span class="badge bg-secondary">{{ $lop->si_so }} SV</span>
+                                        </td>
+                                        <td>
+                                            <span class="badge bg-info">{{ $lop->sinhVien->count() }} SV</span>
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
@@ -175,7 +179,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted">Không có dữ liệu</td>
+                                        <td colspan="10" class="text-center text-muted">Không có dữ liệu</td>
                                     </tr>
                                 @endforelse
                             </tbody>

@@ -18,7 +18,7 @@ class LopHanhChinhController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LopHanhChinh::with(['khoaHoc', 'nganh', 'giangVienChuNhiem']);
+        $query = LopHanhChinh::with(['khoaHoc', 'nganh', 'giangVienChuNhiem', 'sinhVien']);
 
         // Tìm kiếm
         if ($request->filled('search')) {
