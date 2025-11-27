@@ -24,7 +24,7 @@
         <section class="section">
             {{-- Thống kê tổng quan --}}
             <div class="row">
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -39,7 +39,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -54,7 +54,7 @@
                         </div>
                     </div>
                 </div>
-                <div class="col-md-4">
+                <div class="col-md-3">
                     <div class="card">
                         <div class="card-body">
                             <div class="d-flex justify-content-between align-items-center">
@@ -64,6 +64,32 @@
                                 </div>
                                 <div class="avatar avatar-xl bg-info">
                                     <i class="bi bi-clipboard-check text-white" style="font-size: 2rem;"></i>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="col-md-3">
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h6 class="text-muted mb-2">Tỷ lệ điểm danh</h6>
+                                    @php
+                                        $tongTyLe = 0;
+                                        $soMon = 0;
+                                        foreach ($monHocs as $mh) {
+                                            if (isset($mh->ty_le_co_mat)) {
+                                                $tongTyLe += $mh->ty_le_co_mat;
+                                                $soMon++;
+                                            }
+                                        }
+                                        $tyLeTrungBinh = $soMon > 0 ? round($tongTyLe / $soMon, 1) : 0;
+                                    @endphp
+                                    <h2 class="mb-0 text-warning">{{ $tyLeTrungBinh }}%</h2>
+                                </div>
+                                <div class="avatar avatar-xl bg-warning">
+                                    <i class="bi bi-person-check text-white" style="font-size: 2rem;"></i>
                                 </div>
                             </div>
                         </div>
@@ -98,6 +124,100 @@
                     </form>
                 </div>
             </div>
+
+            {{-- Tổng kết điểm danh --}}
+            @if ($hocKyId && count($monHocs) > 0)
+                @php
+                    $tongBuoiHocTatCa = 0;
+                    $tongCoMat = 0;
+                    $tongVang = 0;
+                    $tongDiTre = 0;
+                    $tongNghiPhep = 0;
+                    $tongTyLe = 0;
+                    $soMonCoDiemDanh = 0;
+                    
+                    foreach ($monHocs as $mh) {
+                        if (isset($mh->tong_buoi_hoc) && $mh->tong_buoi_hoc > 0) {
+                            $tongBuoiHocTatCa += $mh->tong_buoi_hoc;
+                            $stats = $mh->diem_danh_stats;
+                            if ($stats) {
+                                $tongCoMat += $stats->co_mat ?? 0;
+                                $tongVang += $stats->vang ?? 0;
+                                $tongDiTre += $stats->di_tre ?? 0;
+                                $tongNghiPhep += $stats->nghi_phep ?? 0;
+                            }
+                            $tongTyLe += $mh->ty_le_co_mat ?? 0;
+                            $soMonCoDiemDanh++;
+                        }
+                    }
+                    
+                    $tyLeTrungBinh = $soMonCoDiemDanh > 0 ? round($tongTyLe / $soMonCoDiemDanh, 1) : 0;
+                    $tyLeCoMatTong = $tongBuoiHocTatCa > 0 ? round(($tongCoMat / $tongBuoiHocTatCa) * 100, 1) : 0;
+                @endphp
+                <div class="card mb-4">
+                    <div class="card-header">
+                        <h5 class="card-title mb-0">
+                            <i class="bi bi-clipboard-check"></i> Tổng kết điểm danh học kỳ
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <div class="col-md-3">
+                                <div class="text-center p-3 bg-light rounded">
+                                    <h6 class="text-muted mb-2">Tổng số buổi học</h6>
+                                    <h3 class="mb-0 text-primary">{{ $tongBuoiHocTatCa }}</h3>
+                                </div>
+                            </div>
+                            <div class="col-md-9">
+                                <div class="row">
+                                    <div class="col-md-3">
+                                        <div class="text-center p-3 bg-success bg-opacity-10 rounded mb-2">
+                                            <h6 class="text-muted mb-1">Có mặt</h6>
+                                            <h4 class="mb-0 text-success">{{ $tongCoMat }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-3 bg-danger bg-opacity-10 rounded mb-2">
+                                            <h6 class="text-muted mb-1">Vắng</h6>
+                                            <h4 class="mb-0 text-danger">{{ $tongVang }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-3 bg-warning bg-opacity-10 rounded mb-2">
+                                            <h6 class="text-muted mb-1">Đi trễ</h6>
+                                            <h4 class="mb-0 text-warning">{{ $tongDiTre }}</h4>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-3">
+                                        <div class="text-center p-3 bg-info bg-opacity-10 rounded mb-2">
+                                            <h6 class="text-muted mb-1">Nghỉ phép</h6>
+                                            <h4 class="mb-0 text-info">{{ $tongNghiPhep }}</h4>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="mt-3">
+                                    <div class="d-flex justify-content-between align-items-center mb-2">
+                                        <span class="text-muted">Tỷ lệ có mặt trung bình:</span>
+                                        <span class="badge bg-{{ $tyLeCoMatTong >= 80 ? 'success' : ($tyLeCoMatTong >= 60 ? 'warning' : 'danger') }} fs-6">
+                                            {{ $tyLeCoMatTong }}%
+                                        </span>
+                                    </div>
+                                    <div class="progress" style="height: 25px;">
+                                        <div class="progress-bar bg-{{ $tyLeCoMatTong >= 80 ? 'success' : ($tyLeCoMatTong >= 60 ? 'warning' : 'danger') }}" 
+                                             role="progressbar" 
+                                             style="width: {{ $tyLeCoMatTong }}%"
+                                             aria-valuenow="{{ $tyLeCoMatTong }}" 
+                                             aria-valuemin="0" 
+                                             aria-valuemax="100">
+                                            {{ $tyLeCoMatTong }}%
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
 
             {{-- Bảng điểm --}}
             <div class="card">
@@ -138,6 +258,7 @@
                                     <th class="text-center">Điểm (Hệ 4)</th>
                                     <th class="text-center">Điểm chữ</th>
                                     <th class="text-center">Kết quả</th>
+                                    <th class="text-center">Điểm danh</th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
@@ -183,6 +304,34 @@
                                                 <span class="badge bg-secondary">Chưa có</span>
                                             @endif
                                         </td>
+                                        <td class="text-center">
+                                            @if (isset($item->tong_buoi_hoc) && $item->tong_buoi_hoc > 0)
+                                                @php
+                                                    $stats = $item->diem_danh_stats;
+                                                    $coMat = $stats ? ($stats->co_mat ?? 0) : 0;
+                                                    $vang = $stats ? ($stats->vang ?? 0) : 0;
+                                                    $diTre = $stats ? ($stats->di_tre ?? 0) : 0;
+                                                    $nghiPhep = $stats ? ($stats->nghi_phep ?? 0) : 0;
+                                                    $tyLe = $item->ty_le_co_mat ?? 0;
+                                                @endphp
+                                                <div class="small">
+                                                    <div class="mb-1">
+                                                        <span class="text-success">✓ {{ $coMat }}</span> /
+                                                        <span class="text-danger">✗ {{ $vang }}</span> /
+                                                        <span class="text-warning">⏱ {{ $diTre }}</span> /
+                                                        <span class="text-info">☂ {{ $nghiPhep }}</span>
+                                                    </div>
+                                                    <div>
+                                                        <span class="badge bg-{{ $tyLe >= 80 ? 'success' : ($tyLe >= 60 ? 'warning' : 'danger') }}">
+                                                            {{ $tyLe }}%
+                                                        </span>
+                                                        <small class="text-muted">/ {{ $item->tong_buoi_hoc }} buổi</small>
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <a href="{{ route('sinh-vien.diem.show', $item->lopHocPhan->id) }}"
                                                 class="btn btn-sm btn-info">
@@ -192,7 +341,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="10" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                             <p class="mt-2">Chưa có điểm môn học nào trong học kỳ này</p>
                                         </td>

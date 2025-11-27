@@ -92,12 +92,23 @@ class TeachingClassController extends Controller
         ])->findOrFail($id);
 
         // Lấy danh sách sinh viên trong lớp
+        // Logic: 
+        // - Nếu lớp đang diễn ra: chỉ hiển thị sinh viên "Đã xếp lớp" và "Đang học"
+        // - Nếu lớp đã kết thúc: hiển thị cả "Đã hoàn thành" để xem lịch sử
+        $trangThaiLop = $lopHocPhan->trang_thai_lop;
+        $trangThaiSinhVien = ['da_xep_lop', 'dang_hoc'];
+        
+        // Nếu lớp đã kết thúc hoặc đã duyệt điểm, hiển thị cả sinh viên đã hoàn thành
+        if (in_array($trangThaiLop, ['ket_thuc', 'da_duyet_diem', 'da_khoa_diem'])) {
+            $trangThaiSinhVien[] = 'da_hoan_thanh';
+        }
+        
         $sinhViens = LopHocPhanSinhVien::with([
             'sinhVien.lopHanhChinh',
             'ketQuaHocTap'
         ])
         ->where('lop_hoc_phan_id', $id)
-        ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
+        ->whereIn('trang_thai', $trangThaiSinhVien)
         ->orderBy('trang_thai', 'asc')
         ->get();
 
