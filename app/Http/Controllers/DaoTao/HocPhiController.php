@@ -184,7 +184,7 @@ class HocPhiController extends Controller
             'ngay_dong' => 'required|date',
             'phuong_thuc_thanh_toan' => 'required|string',
             'ngan_hang' => 'nullable|string',
-            'bien_lai_file' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:5120',
+            'bien_lai_file' => 'required|file|mimes:pdf,jpg,jpeg,png|max:5120',
             'ghi_chu' => 'nullable|string',
         ], [
             'so_tien_dong.required' => 'Số tiền đóng là bắt buộc',
@@ -192,6 +192,10 @@ class HocPhiController extends Controller
             'so_tien_dong.min' => 'Số tiền phải lớn hơn 0',
             'ngay_dong.required' => 'Ngày đóng là bắt buộc',
             'phuong_thuc_thanh_toan.required' => 'Phương thức thanh toán là bắt buộc',
+            'bien_lai_file.required' => 'Biên lai thanh toán là bắt buộc',
+            'bien_lai_file.file' => 'File không hợp lệ',
+            'bien_lai_file.mimes' => 'File phải là định dạng: PDF, JPG, JPEG, PNG',
+            'bien_lai_file.max' => 'Kích thước file không được vượt quá 5MB',
         ]);
 
         try {

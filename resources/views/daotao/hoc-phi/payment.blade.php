@@ -86,12 +86,13 @@
                                 </div>
 
                                 <div class="mb-3">
-                                    <label class="form-label">Biên lai thanh toán (nếu có)</label>
+                                    <label class="form-label">Biên lai thanh toán <span class="text-danger">*</span></label>
                                     <input type="file" name="bien_lai_file" class="form-control @error('bien_lai_file') is-invalid @enderror" 
-                                           accept="image/*,.pdf">
+                                           accept="image/*,.pdf" required>
                                     @error('bien_lai_file')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
+                                    <small class="text-muted">Định dạng: PDF, JPG, JPEG, PNG. Tối đa: 5MB</small>
                                 </div>
 
                                 <div class="d-flex justify-content-end gap-2">

@@ -57,7 +57,7 @@ class CauHinhHocPhiController extends Controller
             CauHinhHocPhi::create($validated);
 
             return redirect()
-                ->route('daotao.hoc-phi.cau-hinh.index')
+                ->route('dao-tao.hoc-phi.cau-hinh.index')
                 ->with('success', 'Thêm cấu hình học phí thành công!');
         } catch (\Exception $e) {
             return redirect()
@@ -112,7 +112,7 @@ class CauHinhHocPhiController extends Controller
             $cauHinh->update($validated);
 
             return redirect()
-                ->route('daotao.hoc-phi.cau-hinh.index')
+                ->route('dao-tao.hoc-phi.cau-hinh.index')
                 ->with('success', 'Cập nhật cấu hình học phí thành công!');
         } catch (\Exception $e) {
             return redirect()
@@ -131,7 +131,7 @@ class CauHinhHocPhiController extends Controller
             $cauHinh->delete();
 
             return redirect()
-                ->route('daotao.hoc-phi.cau-hinh.index')
+                ->route('dao-tao.hoc-phi.cau-hinh.index')
                 ->with('success', 'Xóa cấu hình học phí thành công!');
         } catch (\Exception $e) {
             return redirect()

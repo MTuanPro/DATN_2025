@@ -180,14 +180,27 @@
                         <div class="card-body">
                             @forelse ($hocPhi->lichSuDongHocPhi as $ls)
                                 <div class="mb-3 pb-3" style="border-bottom: 1px solid #ddd;">
-                                    <div class="d-flex justify-content-between">
-                                        <strong class="text-success">{{ number_format($ls->so_tien, 0, ',', '.') }} đ</strong>
+                                    <div class="d-flex justify-content-between align-items-start">
+                                        <div>
+                                            <strong class="text-success">{{ number_format($ls->so_tien_dong, 0, ',', '.') }} đ</strong>
+                                            <br>
+                                            <small>{{ $ls->phuong_thuc_thanh_toan }}</small>
+                                            @if ($ls->ma_giao_dich)
+                                                <br><small class="text-muted">Mã GD: {{ $ls->ma_giao_dich }}</small>
+                                            @endif
+                                            @if ($ls->ghi_chu)
+                                                <p class="mb-0 small text-muted mt-1">{{ $ls->ghi_chu }}</p>
+                                            @endif
+                                            @if ($ls->bien_lai_file)
+                                                <div class="mt-2">
+                                                    <a href="{{ Storage::url($ls->bien_lai_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                        <i class="bi bi-file-earmark-text"></i> Xem biên lai
+                                                    </a>
+                                                </div>
+                                            @endif
+                                        </div>
                                         <small class="text-muted">{{ $ls->ngay_dong->format('d/m/Y') }}</small>
                                     </div>
-                                    <small>{{ $ls->phuong_thuc_thanh_toan }}</small>
-                                    @if ($ls->ghi_chu)
-                                        <p class="mb-0 small text-muted">{{ $ls->ghi_chu }}</p>
-                                    @endif
                                 </div>
                             @empty
                                 <p class="text-muted">Chưa có lịch sử đóng học phí</p>

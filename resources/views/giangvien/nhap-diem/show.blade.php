@@ -290,6 +290,42 @@
 </div>
 
 @push('scripts')
+<style>
+    /* Fix input number để có thể nhập điểm */
+    .diem-input {
+        min-width: 80px !important;
+        width: 80px !important;
+        padding: 6px 8px !important;
+        text-align: center !important;
+        font-size: 14px !important;
+        pointer-events: auto !important;
+        cursor: text !important;
+    }
+    
+    /* Ẩn spinner buttons để có nhiều chỗ hơn cho text */
+    .diem-input::-webkit-inner-spin-button,
+    .diem-input::-webkit-outer-spin-button {
+        -webkit-appearance: none;
+        margin: 0;
+    }
+    
+    .diem-input {
+        -moz-appearance: textfield; /* Firefox */
+    }
+    
+    /* Khi focus, làm rõ input */
+    .diem-input:focus {
+        border-color: #0d6efd !important;
+        box-shadow: 0 0 0 0.25rem rgba(13,110,253,.25) !important;
+        outline: none !important;
+        background-color: #fff !important;
+    }
+    
+    /* Đảm bảo cell không chặn click */
+    td:has(.diem-input) {
+        padding: 4px !important;
+    }
+</style>
 <script>
     // Cấu hình đầu điểm từ PHP
     const cauHinhs = @json($cauHinhs->map(function($cauHinh) {
