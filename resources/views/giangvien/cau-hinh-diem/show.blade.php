@@ -110,33 +110,78 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($cauHinhs as $index => $ch)
-                                    <tr>
-                                        <td class="text-center">{{ $index + 1 }}</td>
-                                        <td><strong>{{ $ch->ten_dau_diem }}</strong></td>
-                                        <td class="text-center">
-                                            <span class="badge bg-info">{{ $ch->ty_le }}%</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <span class="badge bg-secondary">{{ $ch->so_cot }} cột</span>
-                                        </td>
-                                        <td class="text-center">
-                                            <a href="{{ route('giangvien.cau-hinh-diem.edit', $ch->id) }}" 
-                                                class="btn btn-sm btn-warning" title="Sửa">
-                                                <i class="bi bi-pencil"></i>
-                                            </a>
-                                            <button type="button" class="btn btn-sm btn-danger" 
-                                                onclick="confirmDelete({{ $ch->id }})" title="Xóa">
-                                                <i class="bi bi-trash"></i>
-                                            </button>
-                                            <form id="delete-form-{{ $ch->id }}" 
-                                                action="{{ route('giangvien.cau-hinh-diem.destroy', $ch->id) }}" 
-                                                method="POST" style="display: none;">
-                                                @csrf
-                                                @method('DELETE')
-                                            </form>
-                                        </td>
-                                    </tr>
+                                @php
+                                    $stt = 0;
+                                @endphp
+                                @foreach($cauHinhs as $ch)
+                                    @if($ch->so_cot > 1)
+                                        @for($cot = 1; $cot <= $ch->so_cot; $cot++)
+                                            @php
+                                                $stt++;
+                                                $tyLeMoi = number_format($ch->ty_le / $ch->so_cot, 2);
+                                            @endphp
+                                            <tr>
+                                                <td class="text-center">{{ $stt }}</td>
+                                                <td><strong>{{ $ch->ten_dau_diem }} {{ $cot }}</strong></td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-info">{{ $tyLeMoi }}%</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    <span class="badge bg-secondary">1 cột</span>
+                                                </td>
+                                                <td class="text-center">
+                                                    @if($cot == 1)
+                                                        <a href="{{ route('giangvien.cau-hinh-diem.edit', $ch->id) }}" 
+                                                            class="btn btn-sm btn-warning" title="Sửa">
+                                                            <i class="bi bi-pencil"></i>
+                                                        </a>
+                                                        <button type="button" class="btn btn-sm btn-danger" 
+                                                            onclick="confirmDelete({{ $ch->id }})" title="Xóa">
+                                                            <i class="bi bi-trash"></i>
+                                                        </button>
+                                                        <form id="delete-form-{{ $ch->id }}" 
+                                                            action="{{ route('giangvien.cau-hinh-diem.destroy', $ch->id) }}" 
+                                                            method="POST" style="display: none;">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                        </form>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
+                                                </td>
+                                            </tr>
+                                        @endfor
+                                    @else
+                                        @php
+                                            $stt++;
+                                        @endphp
+                                        <tr>
+                                            <td class="text-center">{{ $stt }}</td>
+                                            <td><strong>{{ $ch->ten_dau_diem }}</strong></td>
+                                            <td class="text-center">
+                                                <span class="badge bg-info">{{ $ch->ty_le }}%</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <span class="badge bg-secondary">{{ $ch->so_cot }} cột</span>
+                                            </td>
+                                            <td class="text-center">
+                                                <a href="{{ route('giangvien.cau-hinh-diem.edit', $ch->id) }}" 
+                                                    class="btn btn-sm btn-warning" title="Sửa">
+                                                    <i class="bi bi-pencil"></i>
+                                                </a>
+                                                <button type="button" class="btn btn-sm btn-danger" 
+                                                    onclick="confirmDelete({{ $ch->id }})" title="Xóa">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                                <form id="delete-form-{{ $ch->id }}" 
+                                                    action="{{ route('giangvien.cau-hinh-diem.destroy', $ch->id) }}" 
+                                                    method="POST" style="display: none;">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    @endif
                                 @endforeach
                             </tbody>
                             <tfoot class="table-secondary">

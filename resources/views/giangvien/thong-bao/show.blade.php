@@ -91,23 +91,32 @@
                                     <i class="bi bi-arrow-left"></i> Quay lại
                                 </a>
 
-                                @if ($nguoiNhan && !$nguoiNhan->da_doc)
-                                    <form action="{{ route('giangvien.thong-bao.mark-read', $thongBao->id) }}"
-                                        method="POST">
-                                        @csrf
-                                        <button type="submit" class="btn btn-success">
-                                            <i class="bi bi-check-circle"></i> Đánh dấu đã đọc
-                                        </button>
-                                    </form>
-                                @else
-                                    <div class="text-success">
-                                        <i class="bi bi-check-circle-fill"></i> Đã đọc
-                                        @if ($nguoiNhan && $nguoiNhan->ngay_doc)
-                                            <br><small
-                                                class="text-muted">{{ $nguoiNhan->ngay_doc->format('d/m/Y H:i') }}</small>
-                                        @endif
-                                    </div>
-                                @endif
+                                <div class="d-flex gap-2 align-items-center">
+                                    @if ($nguoiNhan && !$nguoiNhan->da_doc)
+                                        <form action="{{ route('giangvien.thong-bao.mark-read', $thongBao->id) }}"
+                                            method="POST">
+                                            @csrf
+                                            <button type="submit" class="btn btn-success">
+                                                <i class="bi bi-check-circle"></i> Đánh dấu đã đọc
+                                            </button>
+                                        </form>
+                                    @else
+                                        <div class="text-success">
+                                            <i class="bi bi-check-circle-fill"></i> Đã đọc
+                                            @if ($nguoiNhan && $nguoiNhan->ngay_doc)
+                                                <br><small
+                                                    class="text-muted">{{ $nguoiNhan->ngay_doc->format('d/m/Y H:i') }}</small>
+                                            @endif
+                                        </div>
+                                    @endif
+
+                                    {{-- Nếu là thông báo về yêu cầu điểm danh bù, hiển thị nút chuyển đến trang quản lý --}}
+                                    @if ($thongBao->lien_ket_loai == 'yeu_cau_diem_danh_bu')
+                                        <a href="{{ route('giangvien.yeu-cau-diem-danh-bu.index') }}" class="btn btn-primary">
+                                            <i class="bi bi-clipboard-check"></i> Xem yêu cầu điểm danh bù
+                                        </a>
+                                    @endif
+                                </div>
                             </div>
                         </div>
                     </div>

@@ -95,7 +95,7 @@ class LopHocPhanController extends Controller
             'hinh_thuc' => 'required|in:offline,online,hybrid',
             'link_online' => 'nullable|url|required_if:hinh_thuc,online,hybrid',
             'ngay_bat_dau' => 'nullable|date',
-            'ngay_ket_thuc' => 'nullable|date|after_or_equal:ngay_bat_dau',
+            'ngay_ket_thuc' => 'nullable|date|after:ngay_bat_dau',
             'trang_thai_lop' => 'required|in:mo_dang_ky,dang_hoc,ket_thuc,huy',
             'ghi_chu' => 'nullable|string',
         ], [
@@ -118,7 +118,7 @@ class LopHocPhanController extends Controller
             'link_online.required_if' => 'Link online là bắt buộc khi chọn hình thức Online hoặc Hybrid',
             'ngay_bat_dau.date' => 'Ngày bắt đầu phải là ngày hợp lệ',
             'ngay_ket_thuc.date' => 'Ngày kết thúc phải là ngày hợp lệ',
-            'ngay_ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu',
+            'ngay_ket_thuc.after' => 'Ngày kết thúc phải sau ngày bắt đầu',
             'trang_thai_lop.required' => 'Trạng thái là bắt buộc',
         ]);
 
@@ -192,7 +192,7 @@ class LopHocPhanController extends Controller
             'hinh_thuc' => 'required|in:offline,online,hybrid',
             'link_online' => 'nullable|url|required_if:hinh_thuc,online,hybrid',
             'ngay_bat_dau' => 'nullable|date',
-            'ngay_ket_thuc' => 'nullable|date|after_or_equal:ngay_bat_dau',
+            'ngay_ket_thuc' => 'nullable|date|after:ngay_bat_dau',
             'trang_thai_lop' => 'required|in:mo_dang_ky,dang_hoc,ket_thuc,huy',
             'ghi_chu' => 'nullable|string',
         ], [
@@ -207,7 +207,7 @@ class LopHocPhanController extends Controller
             'so_luong_toi_thieu.lte' => 'Số lượng tối thiểu phải nhỏ hơn hoặc bằng sức chứa',
             'hinh_thuc.required' => 'Hình thức học là bắt buộc',
             'trang_thai_lop.required' => 'Trạng thái là bắt buộc',
-            'ngay_ket_thuc.after_or_equal' => 'Ngày kết thúc phải sau hoặc bằng ngày bắt đầu',
+            'ngay_ket_thuc.after' => 'Ngày kết thúc phải sau ngày bắt đầu',
         ]);
 
         // Kiểm tra unique constraint: mon_hoc_id + hoc_ky_id + nhom_lop (trừ record hiện tại)

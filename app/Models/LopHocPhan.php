@@ -29,6 +29,12 @@ class LopHocPhan extends Model
         'ghi_chu',
         'trang_thai_lop',
         'ly_do_tra_ve',
+        'lan_gui_diem',
+        'trang_thai_gui_diem_lan_1',
+        'trang_thai_gui_diem_lan_2',
+        'cho_phep_gui_diem_lan_1',
+        'cho_phep_gui_diem_lan_2',
+        'cho_phep_sua_diem_sau_duyet',
     ];
 
     protected $casts = [

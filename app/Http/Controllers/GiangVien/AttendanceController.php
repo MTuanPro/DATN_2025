@@ -124,8 +124,10 @@ class AttendanceController extends Controller
             ->pluck('ghi_chu', 'lop_hoc_phan_sinh_vien_id')
             ->toArray();
 
-        // Kiểm tra xem có thể sửa điểm danh không (trong vòng 24h sau buổi học)
-        $coTheSua = Carbon::parse($buoiHoc->ngay_hoc)->addHours(24)->isFuture();
+        // Kiểm tra xem có thể sửa điểm danh không (chỉ trong ngày, không cho sửa nếu đã qua ngày)
+        $ngayHoc = Carbon::parse($buoiHoc->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->startOfDay();
+        $ngayHienTai = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
+        $coTheSua = $ngayHoc->isSameDay($ngayHienTai) || $ngayHoc->isFuture();
 
         return view('giangvien.diem-danh.show', compact(
             'buoiHoc',
@@ -159,11 +161,13 @@ class AttendanceController extends Controller
             abort(403, 'Bạn không có quyền điểm danh buổi học này.');
         }
 
-        // Kiểm tra thời gian sửa (trong vòng 24h)
-        $coTheSua = Carbon::parse($buoiHoc->ngay_hoc)->addHours(24)->isFuture();
+        // Kiểm tra thời gian sửa (chỉ trong ngày, không cho sửa nếu đã qua ngày)
+        $ngayHoc = Carbon::parse($buoiHoc->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->startOfDay();
+        $ngayHienTai = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
+        $coTheSua = $ngayHoc->isSameDay($ngayHienTai) || $ngayHoc->isFuture();
 
         if (!$coTheSua && DiemDanh::where('lich_hoc_chi_tiet_id', $id)->exists()) {
-            return redirect()->back()->with('error', 'Đã quá thời gian cho phép sửa điểm danh (24h sau buổi học).');
+            return redirect()->back()->with('error', 'Đã quá ngày học. Không thể sửa điểm danh cho các ngày đã qua.');
         }
 
         $validated = $request->validate([
@@ -173,7 +177,7 @@ class AttendanceController extends Controller
             'ghi_chu.*' => 'nullable|string|max:500',
         ]);
 
-        $thoiGianDiemDanh = Carbon::now();
+        $thoiGianDiemDanh = Carbon::now('Asia/Ho_Chi_Minh');
 
         foreach ($request->diem_danh as $lopHocPhanSinhVienId => $trangThai) {
             $ghiChu = $request->ghi_chu[$lopHocPhanSinhVienId] ?? null;
@@ -228,7 +232,7 @@ class AttendanceController extends Controller
 
             // Lấy tất cả buổi học của lớp
             $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhanId)
-                ->where('ngay_hoc', '<=', Carbon::now())
+                ->where('ngay_hoc', '<=', Carbon::now('Asia/Ho_Chi_Minh'))
                 ->count();
 
             $baoCao = [];
@@ -656,7 +660,7 @@ class AttendanceController extends Controller
             // Cập nhật lý do và ngày cảnh báo
             $canhBaoTonTai->update([
                 'ly_do' => $this->taoLyDoCanhBao($lopHocPhan, $thongKe, $tyLeCoMat),
-                'ngay_canh_bao' => Carbon::now(),
+                'ngay_canh_bao' => Carbon::now('Asia/Ho_Chi_Minh'),
                 'muc_do' => $this->xacDinhMucDo($tyLeCoMat),
             ]);
             Log::info('Đã cập nhật cảnh báo học vụ', [

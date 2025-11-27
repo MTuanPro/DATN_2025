@@ -138,12 +138,20 @@
                 </li>
 
                 <!-- PHASE 10: THÔNG BÁO -->
-                <li class="sidebar-item {{ Request::is('giang-vien/thong-bao*') ? 'active' : '' }}">
-                    <a href="{{ route('giangvien.thong-bao.index') }}" class='sidebar-link'>
+                <li class="sidebar-item has-sub {{ Request::is('giang-vien/thong-bao*') || Request::is('giang-vien/yeu-cau-diem-danh-bu*') ? 'active' : '' }}">
+                    <a href="#" class='sidebar-link'>
                         <i class="bi bi-bell-fill"></i>
                         <span>Thông báo</span>
                         <span class="badge bg-danger ms-auto" id="notification-badge" style="display: none;">0</span>
                     </a>
+                    <ul class="submenu {{ Request::is('giang-vien/thong-bao*') || Request::is('giang-vien/yeu-cau-diem-danh-bu*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('giang-vien/thong-bao*') && !Request::is('giang-vien/yeu-cau-diem-danh-bu*') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.thong-bao.index') }}">Danh sách thông báo</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('giang-vien/yeu-cau-diem-danh-bu*') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.yeu-cau-diem-danh-bu.index') }}">Yêu cầu điểm danh bù</a>
+                        </li>
+                    </ul>
                 </li>
 
                 <!-- PHASE 8.5: CẢNH BÁO HỌC VỤ -->

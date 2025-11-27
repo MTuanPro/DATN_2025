@@ -105,7 +105,6 @@
                                     <th>Trình độ</th>
                                     <th>Email</th>
                                     <th>Số điện thoại</th>
-                                    <th>Chuyên môn</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -125,11 +124,10 @@
                                         <td>{{ $gv->trinhDo->ten_trinh_do ?? 'N/A' }}</td>
                                         <td>{{ $gv->email ?? 'N/A' }}</td>
                                         <td>{{ $gv->so_dien_thoai ?? 'N/A' }}</td>
-                                        <td>{{ $gv->chuyen_mon ?? 'N/A' }}</td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="8" class="text-center text-muted">Không tìm thấy giảng viên nào.</td>
+                                        <td colspan="7" class="text-center text-muted">Không tìm thấy giảng viên nào.</td>
                                     </tr>
                                 @endforelse
                             </tbody>

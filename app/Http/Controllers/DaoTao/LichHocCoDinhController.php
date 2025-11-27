@@ -31,7 +31,17 @@ class LichHocCoDinhController extends Controller
     public function create(LopHocPhan $lopHocPhan)
     {
         $phongHocs = PhongHoc::orderBy('ten_phong')->get();
-        $giangViens = GiangVien::orderBy('ho_ten')->get();
+        
+        // Chỉ lấy giảng viên được phân công dạy lớp học phần này
+        $giangVienIds = \App\Models\PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhan->id)
+            ->pluck('giang_vien_id')
+            ->unique()
+            ->toArray();
+        
+        $giangViens = GiangVien::whereIn('id', $giangVienIds)
+            ->orderBy('ho_ten')
+            ->get();
+        
         $caHocs = \App\Models\CaHoc::where('trang_thai', true)
             ->orderBy('thu_tu')
             ->get();
@@ -338,7 +348,17 @@ class LichHocCoDinhController extends Controller
     public function edit(LichHocCoDinh $lichCoDinh)
     {
         $phongHocs = PhongHoc::orderBy('ten_phong')->get();
-        $giangViens = GiangVien::orderBy('ho_ten')->get();
+        
+        // Chỉ lấy giảng viên được phân công dạy lớp học phần này
+        $giangVienIds = \App\Models\PhanCongGiangDay::where('lop_hoc_phan_id', $lichCoDinh->lop_hoc_phan_id)
+            ->pluck('giang_vien_id')
+            ->unique()
+            ->toArray();
+        
+        $giangViens = GiangVien::whereIn('id', $giangVienIds)
+            ->orderBy('ho_ten')
+            ->get();
+        
         $caHocs = \App\Models\CaHoc::where('trang_thai', true)
             ->orderBy('thu_tu')
             ->get();

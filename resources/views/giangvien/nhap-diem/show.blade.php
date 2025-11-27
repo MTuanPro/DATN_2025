@@ -66,6 +66,40 @@
                                     @endif
                                 </td>
                             </tr>
+                            <tr>
+                                <th>Gửi điểm lần 1 (giữa kỳ):</th>
+                                <td>
+                                    @if ($trangThaiLan1 === 'chua_gui')
+                                        <span class="badge bg-secondary">Chưa gửi</span>
+                                        @if (!$choPhepGuiLan1)
+                                            <small class="text-muted d-block">Đang chờ đào tạo mở</small>
+                                        @endif
+                                    @elseif ($trangThaiLan1 === 'da_gui')
+                                        <span class="badge bg-warning">Đã gửi - Chờ duyệt</span>
+                                    @elseif ($trangThaiLan1 === 'da_duyet')
+                                        <span class="badge bg-success">Đã duyệt</span>
+                                    @elseif ($trangThaiLan1 === 'da_tra_ve')
+                                        <span class="badge bg-danger">Đã trả về</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Gửi điểm lần 2 (cuối kỳ):</th>
+                                <td>
+                                    @if ($trangThaiLan2 === 'chua_gui')
+                                        <span class="badge bg-secondary">Chưa gửi</span>
+                                        @if (!$choPhepGuiLan2)
+                                            <small class="text-muted d-block">Đang chờ đào tạo mở</small>
+                                        @endif
+                                    @elseif ($trangThaiLan2 === 'da_gui')
+                                        <span class="badge bg-warning">Đã gửi - Chờ duyệt</span>
+                                    @elseif ($trangThaiLan2 === 'da_duyet')
+                                        <span class="badge bg-success">Đã duyệt</span>
+                                    @elseif ($trangThaiLan2 === 'da_tra_ve')
+                                        <span class="badge bg-danger">Đã trả về</span>
+                                    @endif
+                                </td>
+                            </tr>
                         </table>
                     </div>
                 </div>
@@ -110,12 +144,23 @@
     </section>
     @endif
 
-    <!-- Thông báo khi đã duyệt nhưng vẫn cho phép sửa -->
-    @if(isset($daDuyetDiem) && $daDuyetDiem && $dangDienRa)
+    <!-- Thông báo khi đã duyệt lần 2 -->
+    @if(isset($daDuyetDiem) && $daDuyetDiem && $trangThaiLan2 === 'da_duyet')
+    <section class="section">
+        <div class="alert alert-success alert-dismissible fade show" role="alert">
+            <h5 class="alert-heading"><i class="bi bi-check-circle"></i> Điểm đã được duyệt và công bố</h5>
+            <p class="mb-0">Điểm đã được đào tạo duyệt cả 2 lần và công bố. Bạn không thể chỉnh sửa hoặc gửi lại điểm sau khi đã duyệt.</p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    </section>
+    @endif
+
+    <!-- Thông báo khi đã gửi lần 2 -->
+    @if($daGuiLan2 && !$daDuyetDiem)
     <section class="section">
         <div class="alert alert-info alert-dismissible fade show" role="alert">
-            <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Điểm đã được duyệt</h5>
-            <p class="mb-0">Điểm đã được đào tạo duyệt. Bạn vẫn có thể chỉnh sửa điểm và gửi lại cho đào tạo phê duyệt lại.</p>
+            <h5 class="alert-heading"><i class="bi bi-info-circle"></i> Đã gửi điểm lần 2</h5>
+            <p class="mb-0">Bạn đã gửi điểm lần 2 (cuối kỳ). Sau khi đào tạo duyệt, điểm sẽ được công bố và bạn không thể sửa nữa.</p>
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
     </section>
@@ -221,7 +266,7 @@
                                                 $value = $diemMap[$key] ?? '';
                                             @endphp
                                             <td class="text-center">
-                                                @if($daKhoaDiem || $daKetThuc)
+                                                @if($daKhoaDiem || $daKetThuc || (isset($daDuyetDiem) && $daDuyetDiem))
                                                     {{ $value !== '' ? number_format($value, 2) : '-' }}
                                                 @else
                                                     <input type="number" 
@@ -247,7 +292,7 @@
                                         </strong>
                                     </td>
                                     
-                                    @if(!$daKhoaDiem && $dangDienRa)
+                                    @if(!$daKhoaDiem && (!isset($daDuyetDiem) || !$daDuyetDiem) && $dangDienRa)
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-primary btn-luu-sv" 
                                             data-sv-id="{{ $lhpsv->id }}">
@@ -265,21 +310,30 @@
                         <a href="{{ route('giangvien.nhap-diem.index') }}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> Quay lại
                         </a>
-                        @if(!$daKhoaDiem && $dangDienRa)
+                        @if(!$daKhoaDiem && !isset($daDuyetDiem) || (!$daDuyetDiem && !$daKhoaDiem) && $dangDienRa)
                         <button type="button" class="btn btn-success" onclick="luuTatCaDiem()">
                             <i class="bi bi-save-fill"></i> Lưu tất cả điểm
                         </button>
-                        @if($laGiangVienChinh)
-                        <button type="button" class="btn btn-primary" onclick="guiDiemChoDaoTao()">
-                            <i class="bi bi-send"></i> 
-                            @if(isset($daDuyetDiem) && $daDuyetDiem)
-                                Gửi lại điểm cho đào tạo
-                            @elseif($lopHocPhan->trang_thai_lop === 'dang_hoc' && $lopHocPhan->ly_do_tra_ve)
-                                Gửi lại điểm cho đào tạo
-                            @else
-                                Gửi điểm cho đào tạo
+                        @if($laGiangVienChinh && !$daGuiLan2)
+                            @php
+                                // Xác định lần gửi
+                                $lanGui = 1;
+                                if ($trangThaiLan1 === 'da_duyet' || ($trangThaiLan1 === 'da_gui' && $trangThaiLan2 !== 'da_duyet')) {
+                                    $lanGui = 2;
+                                }
+                                $choPhepGui = ($lanGui == 1 && $choPhepGuiLan1) || ($lanGui == 2 && $choPhepGuiLan2);
+                            @endphp
+                            @if($choPhepGui && !$daKhoaDiem)
+                            <button type="button" class="btn btn-primary" onclick="guiDiemChoDaoTao({{ $lanGui }})">
+                                <i class="bi bi-send"></i> 
+                                Gửi điểm lần {{ $lanGui }} ({{ $lanGui == 1 ? 'giữa kỳ' : 'cuối kỳ' }})
+                            </button>
+                            @elseif(!$choPhepGui)
+                            <button type="button" class="btn btn-secondary" disabled title="Đào tạo chưa mở gửi điểm lần {{ $lanGui }}">
+                                <i class="bi bi-lock"></i> 
+                                Chờ đào tạo mở gửi điểm lần {{ $lanGui }}
+                            </button>
                             @endif
-                        </button>
                         @endif
                         @endif
                     </div>
@@ -657,16 +711,22 @@
     }
 
     // Gửi điểm cho đào tạo
-    function guiDiemChoDaoTao() {
-        @if(isset($daDuyetDiem) && $daDuyetDiem)
-        const title = 'Xác nhận gửi lại điểm';
-        const text = 'Bạn có chắc muốn gửi lại điểm cho đào tạo để duyệt lại? Điểm sẽ được chuyển sang trạng thái chờ duyệt.';
-        const confirmText = 'Có, gửi lại điểm';
-        @else
-        const title = 'Xác nhận gửi điểm';
-        const text = 'Bạn có chắc muốn gửi điểm cho đào tạo để duyệt? Sau khi gửi, bạn sẽ không thể sửa điểm cho đến khi đào tạo duyệt hoặc trả về.';
+    function guiDiemChoDaoTao(lanGui = null) {
+        // Nếu không truyền lần gửi, tự động xác định
+        if (!lanGui) {
+            @if($trangThaiLan1 === 'chua_gui' || $trangThaiLan1 === 'da_tra_ve')
+                lanGui = 1;
+            @elseif($trangThaiLan2 === 'chua_gui' || $trangThaiLan2 === 'da_tra_ve')
+                lanGui = 2;
+            @else
+                lanGui = 1;
+            @endif
+        }
+        
+        const lanGuiText = lanGui == 1 ? 'lần 1 (giữa kỳ)' : 'lần 2 (cuối kỳ)';
+        const title = 'Xác nhận gửi điểm ' + lanGuiText;
+        const text = 'Bạn có chắc muốn gửi điểm ' + lanGuiText + ' cho đào tạo để duyệt? Sau khi gửi, bạn sẽ không thể sửa điểm cho đến khi đào tạo duyệt hoặc trả về.';
         const confirmText = 'Có, gửi điểm';
-        @endif
         
         Swal.fire({
             title: title,
@@ -686,7 +746,7 @@
                         'Content-Type': 'application/json',
                         'X-CSRF-TOKEN': '{{ csrf_token() }}'
                     },
-                    body: JSON.stringify({})
+                    body: JSON.stringify({ lan_gui: lanGui })
                 })
                 .then(response => response.json())
                 .then(data => {
@@ -714,7 +774,7 @@
                                             'Content-Type': 'application/json',
                                             'X-CSRF-TOKEN': '{{ csrf_token() }}'
                                         },
-                                        body: JSON.stringify({ confirm: true })
+                                        body: JSON.stringify({ confirm: true, lan_gui: lanGui })
                                     })
                                     .then(response => response.json())
                                     .then(data => {
@@ -931,7 +991,7 @@
                                                 $value = $diemMap[$key] ?? '';
                                             @endphp
                                             <td class="text-center">
-                                                @if($daKhoaDiem || $daKetThuc)
+                                                @if($daKhoaDiem || $daKetThuc || (isset($daDuyetDiem) && $daDuyetDiem))
                                                     {{ $value !== '' ? number_format($value, 2) : '-' }}
                                                 @else
                                                     <input type="number" 
@@ -957,7 +1017,7 @@
                                         </strong>
                                     </td>
                                     
-                                    @if(!$daKhoaDiem && $dangDienRa)
+                                    @if(!$daKhoaDiem && (!isset($daDuyetDiem) || !$daDuyetDiem) && $dangDienRa)
                                     <td class="text-center">
                                         <button type="button" class="btn btn-sm btn-primary btn-luu-sv" 
                                             data-sv-id="{{ $lhpsv->id }}">
@@ -975,21 +1035,30 @@
                         <a href="{{ route('giangvien.nhap-diem.index') }}" class="btn btn-secondary">
                             <i class="bi bi-arrow-left"></i> Quay lại
                         </a>
-                        @if(!$daKhoaDiem && $dangDienRa)
+                        @if(!$daKhoaDiem && !isset($daDuyetDiem) || (!$daDuyetDiem && !$daKhoaDiem) && $dangDienRa)
                         <button type="button" class="btn btn-success" onclick="luuTatCaDiem()">
                             <i class="bi bi-save-fill"></i> Lưu tất cả điểm
                         </button>
-                        @if($laGiangVienChinh)
-                        <button type="button" class="btn btn-primary" onclick="guiDiemChoDaoTao()">
-                            <i class="bi bi-send"></i> 
-                            @if(isset($daDuyetDiem) && $daDuyetDiem)
-                                Gửi lại điểm cho đào tạo
-                            @elseif($lopHocPhan->trang_thai_lop === 'dang_hoc' && $lopHocPhan->ly_do_tra_ve)
-                                Gửi lại điểm cho đào tạo
-                            @else
-                                Gửi điểm cho đào tạo
+                        @if($laGiangVienChinh && !$daGuiLan2)
+                            @php
+                                // Xác định lần gửi
+                                $lanGui = 1;
+                                if ($trangThaiLan1 === 'da_duyet' || ($trangThaiLan1 === 'da_gui' && $trangThaiLan2 !== 'da_duyet')) {
+                                    $lanGui = 2;
+                                }
+                                $choPhepGui = ($lanGui == 1 && $choPhepGuiLan1) || ($lanGui == 2 && $choPhepGuiLan2);
+                            @endphp
+                            @if($choPhepGui && !$daKhoaDiem)
+                            <button type="button" class="btn btn-primary" onclick="guiDiemChoDaoTao({{ $lanGui }})">
+                                <i class="bi bi-send"></i> 
+                                Gửi điểm lần {{ $lanGui }} ({{ $lanGui == 1 ? 'giữa kỳ' : 'cuối kỳ' }})
+                            </button>
+                            @elseif(!$choPhepGui)
+                            <button type="button" class="btn btn-secondary" disabled title="Đào tạo chưa mở gửi điểm lần {{ $lanGui }}">
+                                <i class="bi bi-lock"></i> 
+                                Chờ đào tạo mở gửi điểm lần {{ $lanGui }}
+                            </button>
                             @endif
-                        </button>
                         @endif
                         @endif
                     </div>

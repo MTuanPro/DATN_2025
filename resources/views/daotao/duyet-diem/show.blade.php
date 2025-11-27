@@ -73,6 +73,40 @@
                                     @endif
                                 </td>
                             </tr>
+                            <tr>
+                                <th>Gửi điểm lần 1 (giữa kỳ):</th>
+                                <td>
+                                    @php
+                                        $trangThaiLan1 = $lopHocPhan->trang_thai_gui_diem_lan_1 ?? 'chua_gui';
+                                    @endphp
+                                    @if($trangThaiLan1 === 'chua_gui')
+                                        <span class="badge bg-secondary">Chưa gửi</span>
+                                    @elseif($trangThaiLan1 === 'da_gui')
+                                        <span class="badge bg-warning">Đã gửi - Chờ duyệt</span>
+                                    @elseif($trangThaiLan1 === 'da_duyet')
+                                        <span class="badge bg-success">Đã duyệt</span>
+                                    @elseif($trangThaiLan1 === 'da_tra_ve')
+                                        <span class="badge bg-danger">Đã trả về</span>
+                                    @endif
+                                </td>
+                            </tr>
+                            <tr>
+                                <th>Gửi điểm lần 2 (cuối kỳ):</th>
+                                <td>
+                                    @php
+                                        $trangThaiLan2 = $lopHocPhan->trang_thai_gui_diem_lan_2 ?? 'chua_gui';
+                                    @endphp
+                                    @if($trangThaiLan2 === 'chua_gui')
+                                        <span class="badge bg-secondary">Chưa gửi</span>
+                                    @elseif($trangThaiLan2 === 'da_gui')
+                                        <span class="badge bg-warning">Đã gửi - Chờ duyệt</span>
+                                    @elseif($trangThaiLan2 === 'da_duyet')
+                                        <span class="badge bg-success">Đã duyệt</span>
+                                    @elseif($trangThaiLan2 === 'da_tra_ve')
+                                        <span class="badge bg-danger">Đã trả về</span>
+                                    @endif
+                                </td>
+                            </tr>
                         </table>
                     </div>
                 </div>
@@ -156,13 +190,56 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="mb-0"><i class="bi bi-table"></i> Bảng điểm sinh viên</h5>
-                @if($lopHocPhan->trang_thai_lop === 'da_khoa_diem')
+                @if($choPhepSuaDiem && $daDuyetCa2Lan)
                 <div>
+                    <span class="badge bg-info me-2"><i class="bi bi-pencil"></i> Chế độ sửa điểm (phúc khảo)</span>
+                    <button type="button" class="btn btn-sm btn-success" onclick="luuTatCaDiemDaoTao()">
+                        <i class="bi bi-save"></i> Lưu tất cả điểm
+                    </button>
+                </div>
+                @elseif($lopHocPhan->trang_thai_lop === 'da_khoa_diem')
+                @php
+                    // Ưu tiên sử dụng lan_gui_diem từ database
+                    $lanDangChoDuyet = $lopHocPhan->lan_gui_diem;
+                    
+                    if (!$lanDangChoDuyet) {
+                        // Nếu chưa có, xác định dựa trên trạng thái
+                        $trangThaiLan1 = $lopHocPhan->trang_thai_gui_diem_lan_1 ?? 'chua_gui';
+                        $trangThaiLan2 = $lopHocPhan->trang_thai_gui_diem_lan_2 ?? 'chua_gui';
+                        
+                        // 1. Nếu lần 1 đã gửi và lần 2 chưa gửi → đang chờ duyệt lần 1
+                        if ($trangThaiLan1 === 'da_gui' && ($trangThaiLan2 === 'chua_gui' || $trangThaiLan2 === 'da_tra_ve' || !$trangThaiLan2)) {
+                            $lanDangChoDuyet = 1;
+                        }
+                        // 2. Nếu lần 1 đã duyệt và lần 2 đã gửi → đang chờ duyệt lần 2
+                        elseif ($trangThaiLan1 === 'da_duyet' && $trangThaiLan2 === 'da_gui') {
+                            $lanDangChoDuyet = 2;
+                        }
+                        // 3. Nếu cả 2 đều đã gửi → ưu tiên duyệt lần 2
+                        elseif ($trangThaiLan1 === 'da_gui' && $trangThaiLan2 === 'da_gui') {
+                            $lanDangChoDuyet = 2;
+                        }
+                        // 4. Nếu chỉ lần 2 đã gửi
+                        elseif ($trangThaiLan2 === 'da_gui') {
+                            $lanDangChoDuyet = 2;
+                        }
+                        // 5. Mặc định là lần 1 nếu lần 1 đã gửi
+                        elseif ($trangThaiLan1 === 'da_gui') {
+                            $lanDangChoDuyet = 1;
+                        } else {
+                            $lanDangChoDuyet = 1; // Mặc định
+                        }
+                    }
+                    
+                    $lanText = $lanDangChoDuyet == 1 ? 'lần 1 (giữa kỳ)' : 'lần 2 (cuối kỳ)';
+                @endphp
+                <div>
+                    <span class="badge bg-info me-2">Đang chờ duyệt {{ $lanText }}</span>
                     <button type="button" class="btn btn-sm btn-success" onclick="duyetDiem('phe_duyet')">
-                        <i class="bi bi-check-circle"></i> Phê duyệt
+                        <i class="bi bi-check-circle"></i> Phê duyệt {{ $lanText }}
                     </button>
                     <button type="button" class="btn btn-sm btn-warning" onclick="duyetDiem('tra_ve')">
-                        <i class="bi bi-arrow-counterclockwise"></i> Trả về
+                        <i class="bi bi-arrow-counterclockwise"></i> Trả về {{ $lanText }}
                     </button>
                 </div>
                 @endif
@@ -225,10 +302,22 @@
                                                     ->first();
                                             @endphp
                                             <td class="text-center">
-                                                @if($diem)
-                                                    <strong>{{ number_format($diem->diem_so, 1) }}</strong>
+                                                @if($choPhepSuaDiem && $daDuyetCa2Lan)
+                                                    <input type="number" 
+                                                        class="form-control form-control-sm text-center diem-input-daotao" 
+                                                        min="0" max="10" step="0.01"
+                                                        data-lhpsv-id="{{ $lhpsv->id }}"
+                                                        data-cau-hinh-id="{{ $cauHinh->id }}"
+                                                        data-cot-diem="{{ $cot }}"
+                                                        value="{{ $diem ? $diem->diem_so : '' }}"
+                                                        placeholder="-"
+                                                        style="width: 70px; margin: 0 auto;">
                                                 @else
-                                                    <span class="text-muted">-</span>
+                                                    @if($diem)
+                                                        <strong>{{ number_format($diem->diem_so, 1) }}</strong>
+                                                    @else
+                                                        <span class="text-muted">-</span>
+                                                    @endif
                                                 @endif
                                             </td>
                                         @endfor
@@ -266,10 +355,48 @@
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 <script>
     function duyetDiem(hanhDong) {
+        // Xác định lần gửi điểm đang duyệt
+        const trangThaiLan1 = '{{ $lopHocPhan->trang_thai_gui_diem_lan_1 ?? "chua_gui" }}';
+        const trangThaiLan2 = '{{ $lopHocPhan->trang_thai_gui_diem_lan_2 ?? "chua_gui" }}';
+        const lanGuiDiem = {{ $lopHocPhan->lan_gui_diem ?? 'null' }};
+        
+        let lanGui = 1;
+        
+        // Ưu tiên sử dụng lan_gui_diem từ database nếu có
+        if (lanGuiDiem !== null) {
+            lanGui = lanGuiDiem;
+        } else {
+            // Logic xác định lần gửi điểm dựa trên trạng thái:
+            // 1. Nếu lần 1 đã gửi (da_gui) và lần 2 chưa gửi → đang chờ duyệt lần 1
+            if (trangThaiLan1 === 'da_gui' && (trangThaiLan2 === 'chua_gui' || trangThaiLan2 === 'da_tra_ve' || !trangThaiLan2)) {
+                lanGui = 1;
+            }
+            // 2. Nếu lần 1 đã duyệt và lần 2 đã gửi → đang chờ duyệt lần 2
+            else if (trangThaiLan1 === 'da_duyet' && trangThaiLan2 === 'da_gui') {
+                lanGui = 2;
+            }
+            // 3. Nếu cả 2 đều đã gửi → ưu tiên duyệt lần 2
+            else if (trangThaiLan1 === 'da_gui' && trangThaiLan2 === 'da_gui') {
+                lanGui = 2;
+            }
+            // 4. Nếu chỉ lần 2 đã gửi (trường hợp đặc biệt)
+            else if (trangThaiLan2 === 'da_gui') {
+                lanGui = 2;
+            }
+            // 5. Mặc định là lần 1 nếu lần 1 đã gửi
+            else if (trangThaiLan1 === 'da_gui') {
+                lanGui = 1;
+            }
+        }
+        
+        const lanGuiText = lanGui == 1 ? 'lần 1 (giữa kỳ)' : 'lần 2 (cuối kỳ)';
+        
         if (hanhDong === 'phe_duyet') {
             Swal.fire({
-                title: 'Xác nhận phê duyệt',
-                text: 'Bạn có chắc muốn phê duyệt và công bố điểm cho sinh viên?',
+                title: 'Xác nhận phê duyệt điểm ' + lanGuiText,
+                text: lanGui == 2 
+                    ? 'Bạn có chắc muốn phê duyệt điểm ' + lanGuiText + '? Điểm sẽ được công bố cho sinh viên và không thể sửa nữa.'
+                    : 'Bạn có chắc muốn phê duyệt điểm ' + lanGuiText + '? Sau khi duyệt, giảng viên vẫn có thể sửa để chuẩn bị gửi lần 2.',
                 icon: 'question',
                 showCancelButton: true,
                 confirmButtonColor: '#3085d6',
@@ -278,7 +405,7 @@
                 cancelButtonText: 'Hủy'
             }).then((result) => {
                 if (result.isConfirmed) {
-                    guiDuyetDiem(hanhDong);
+                    guiDuyetDiem(hanhDong, '', lanGui);
                 }
             });
         } else {
@@ -301,13 +428,13 @@
                 }
             }).then((result) => {
                 if (result.isConfirmed) {
-                    guiDuyetDiem(hanhDong, result.value.ly_do_tra_ve);
+                    guiDuyetDiem(hanhDong, result.value.ly_do_tra_ve, lanGui);
                 }
             });
         }
     }
 
-    function guiDuyetDiem(hanhDong, lyDoTraVe = '') {
+    function guiDuyetDiem(hanhDong, lyDoTraVe = '', lanGui = null) {
         const data = {
             hanh_dong: hanhDong,
             _token: '{{ csrf_token() }}'
@@ -315,6 +442,10 @@
 
         if (hanhDong === 'tra_ve' && lyDoTraVe) {
             data.ly_do_tra_ve = lyDoTraVe;
+        }
+        
+        if (lanGui) {
+            data.lan_gui = lanGui;
         }
 
         fetch('{{ route("dao-tao.duyet-diem.duyet", $lopHocPhan->id) }}', {
@@ -341,6 +472,133 @@
             Swal.fire('Lỗi!', 'Có lỗi xảy ra khi duyệt điểm', 'error');
         });
     }
+
+    @if($choPhepSuaDiem && $daDuyetCa2Lan)
+    // Xử lý sửa điểm cho đào tạo
+    $(document).on('change', '.diem-input-daotao', function() {
+        const input = $(this);
+        const lhpsvId = input.data('lhpsv-id');
+        const cauHinhId = input.data('cau-hinh-id');
+        const cotDiem = input.data('cot-diem');
+        const diemSo = parseFloat(input.val()) || null;
+
+        // Validate
+        if (diemSo !== null && (diemSo < 0 || diemSo > 10)) {
+            Swal.fire('Lỗi!', 'Điểm phải từ 0 đến 10', 'error');
+            input.focus();
+            return;
+        }
+
+        // Gửi request cập nhật điểm
+        fetch('{{ route("dao-tao.duyet-diem.sua-diem", $lopHocPhan->id) }}', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            },
+            body: JSON.stringify({
+                lop_hoc_phan_sinh_vien_id: lhpsvId,
+                cau_hinh_id: cauHinhId,
+                cot_diem: cotDiem,
+                diem_so: diemSo
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                // Cập nhật điểm tổng kết nếu có
+                if (data.diem_tong_ket !== undefined) {
+                    const row = input.closest('tr');
+                    const diemTkCell = row.find('td').eq(-2); // Cột điểm TK
+                    if (data.diem_tong_ket !== null) {
+                        diemTkCell.html('<strong class="text-primary">' + parseFloat(data.diem_tong_ket).toFixed(2) + '</strong>');
+                    } else {
+                        diemTkCell.html('<span class="text-muted">-</span>');
+                    }
+                }
+            } else {
+                Swal.fire('Lỗi!', data.message || 'Có lỗi xảy ra khi cập nhật điểm', 'error');
+                // Revert giá trị
+                input.val(input.data('old-value') || '');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            Swal.fire('Lỗi!', 'Có lỗi xảy ra khi cập nhật điểm', 'error');
+            input.val(input.data('old-value') || '');
+        });
+    });
+
+    // Lưu giá trị cũ khi focus
+    $(document).on('focus', '.diem-input-daotao', function() {
+        $(this).data('old-value', $(this).val());
+    });
+
+    // Lưu tất cả điểm
+    function luuTatCaDiemDaoTao() {
+        const inputs = $('.diem-input-daotao');
+        let hasChanges = false;
+        const diemData = [];
+
+        inputs.each(function() {
+            const input = $(this);
+            const lhpsvId = input.data('lhpsv-id');
+            const cauHinhId = input.data('cau-hinh-id');
+            const cotDiem = input.data('cot-diem');
+            const diemSo = parseFloat(input.val()) || null;
+
+            if (diemSo !== null && (diemSo < 0 || diemSo > 10)) {
+                Swal.fire('Lỗi!', 'Có điểm không hợp lệ (phải từ 0 đến 10)', 'error');
+                return false;
+            }
+
+            diemData.push({
+                lop_hoc_phan_sinh_vien_id: lhpsvId,
+                cau_hinh_id: cauHinhId,
+                cot_diem: cotDiem,
+                diem_so: diemSo
+            });
+        });
+
+        if (diemData.length === 0) {
+            Swal.fire('Thông báo', 'Không có điểm nào để lưu', 'info');
+            return;
+        }
+
+        Swal.fire({
+            title: 'Xác nhận',
+            text: 'Bạn có chắc muốn lưu tất cả điểm đã sửa?',
+            icon: 'question',
+            showCancelButton: true,
+            confirmButtonText: 'Có, lưu tất cả',
+            cancelButtonText: 'Hủy'
+        }).then((result) => {
+            if (result.isConfirmed) {
+                fetch('{{ route("dao-tao.duyet-diem.luu-tat-ca-diem", $lopHocPhan->id) }}', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': '{{ csrf_token() }}'
+                    },
+                    body: JSON.stringify({ diem_data: diemData })
+                })
+                .then(response => response.json())
+                .then(data => {
+                    if (data.success) {
+                        Swal.fire('Thành công!', data.message || 'Đã lưu tất cả điểm thành công', 'success')
+                            .then(() => location.reload());
+                    } else {
+                        Swal.fire('Lỗi!', data.message || 'Có lỗi xảy ra khi lưu điểm', 'error');
+                    }
+                })
+                .catch(error => {
+                    console.error('Error:', error);
+                    Swal.fire('Lỗi!', 'Có lỗi xảy ra khi lưu điểm', 'error');
+                });
+            }
+        });
+    }
+    @endif
 </script>
 @endpush
 @endsection

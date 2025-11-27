@@ -194,12 +194,25 @@
                     </a>
                 </li>
 
-                {{-- 10. HỌC PHÍ --}}
-                <li class="sidebar-item {{ Request::is('dao-tao/duyet-diem*') ? 'active' : '' }}">
-                    <a href="{{ route('dao-tao.duyet-diem.index') }}" class="sidebar-link">
+                {{-- 10. DUYỆT ĐIỂM --}}
+                @php
+                    $isDuyetDiem = Request::is('dao-tao/duyet-diem*');
+                    $isQuanLyGuiDiem = Request::is('dao-tao/duyet-diem/quan-ly-gui-diem*');
+                    $isDuyetDiemIndex = Request::is('dao-tao/duyet-diem') && !$isQuanLyGuiDiem && !Request::is('dao-tao/duyet-diem/*/duyet');
+                @endphp
+                <li class="sidebar-item has-sub {{ $isDuyetDiem ? 'active' : '' }}">
+                    <a href="#" class="sidebar-link">
                         <i class="bi bi-clipboard-check"></i>
                         <span>Duyệt điểm</span>
                     </a>
+                    <ul class="submenu {{ $isDuyetDiem ? 'active' : '' }}">
+                        <li class="submenu-item {{ $isDuyetDiemIndex ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.duyet-diem.index') }}">Danh sách duyệt điểm</a>
+                        </li>
+                        <li class="submenu-item {{ $isQuanLyGuiDiem ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.duyet-diem.quan-ly-gui-diem') }}">Quản lý mở/đóng gửi điểm</a>
+                        </li>
+                    </ul>
                 </li>
                 <li class="sidebar-item has-sub {{ Request::is('dao-tao/hoc-phi*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">

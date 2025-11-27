@@ -4,10 +4,12 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use App\Models\LopHocPhan;
-use App\Models\MonHoc;
+use App\Models\DaoTao\MonHoc;
 use App\Models\HocKy;
 use App\Models\GiangVien;
 use App\Models\DaoTao\ChuongTrinhKhung;
+use App\Models\PhanCongGiangDay;
+use Carbon\Carbon;
 
 class LopHocPhanSeeder extends Seeder
 {
@@ -50,26 +52,41 @@ class LopHocPhanSeeder extends Seeder
                 $giangVien = $giangViens->random();
                 
                 // Tạo mã lớp theo format: [MaMonHoc].[SoLop]
-                $maLop = $monHoc->ma_mon_hoc . '.' . str_pad($i, 2, '0', STR_PAD_LEFT);
+                $maLopHp = $monHoc->ma_mon_hoc . '.' . str_pad($i, 2, '0', STR_PAD_LEFT);
                 
                 // Kiểm tra xem lớp đã tồn tại chưa
-                if (LopHocPhan::where('ma_lop', $maLop)->exists()) {
+                if (LopHocPhan::where('ma_lop_hp', $maLopHp)->exists()) {
                     continue;
                 }
 
-                LopHocPhan::create([
-                    'ma_lop' => $maLop,
+                // Tính ngày bắt đầu và kết thúc dựa trên học kỳ
+                $ngayBatDau = Carbon::parse($hocKy->ngay_bat_dau);
+                $ngayKetThuc = Carbon::parse($hocKy->ngay_ket_thuc);
+
+                // Tạo lớp học phần
+                $lopHocPhan = LopHocPhan::create([
+                    'ma_lop_hp' => $maLopHp,
+                    'ten_lop_hp' => $monHoc->ten_mon . ' - Nhóm ' . $i,
                     'mon_hoc_id' => $monHoc->id,
                     'hoc_ky_id' => $hocKy->id,
-                    'giang_vien_id' => $giangVien->id,
-                    'si_so_toi_da' => rand(30, 60),
-                    'si_so_hien_tai' => 0,
-                    'trang_thai_lop' => 'mo_dang_ky', // Mở đăng ký
-                    'phong_hoc' => 'P' . rand(101, 599),
-                    'thu_hoc' => rand(2, 6), // Thứ 2 - Thứ 6
-                    'tiet_bat_dau' => rand(1, 8),
-                    'so_tiet' => $monHoc->so_tin_chi * 15, // 1 tín chỉ = 15 tiết
+                    'nhom_lop' => $i,
+                    'suc_chua' => rand(30, 60),
+                    'so_luong_dang_ky' => 0,
+                    'so_luong_toi_thieu' => 10,
+                    'hinh_thuc' => 'offline',
+                    'link_online' => null,
+                    'ngay_bat_dau' => $ngayBatDau,
+                    'ngay_ket_thuc' => $ngayKetThuc,
+                    'trang_thai_lop' => 'mo_dang_ky',
                     'ghi_chu' => null,
+                ]);
+
+                // Phân công giảng viên chính
+                PhanCongGiangDay::create([
+                    'lop_hoc_phan_id' => $lopHocPhan->id,
+                    'giang_vien_id' => $giangVien->id,
+                    'vai_tro' => 'giang_vien_chinh',
+                    'ngay_phan_cong' => Carbon::now(),
                 ]);
 
                 $count++;

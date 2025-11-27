@@ -96,7 +96,10 @@ class ThongBaoController extends Controller
         // Tăng lượt xem
         $thongBao->increment('so_luot_xem');
 
-        return view('giangvien.thong-bao.show', compact('thongBao', 'nguoiNhanThongBao'));
+        // Đổi tên biến để khớp với view
+        $nguoiNhan = $nguoiNhanThongBao;
+
+        return view('giangvien.thong-bao.show', compact('thongBao', 'nguoiNhan'));
     }
 
     /**

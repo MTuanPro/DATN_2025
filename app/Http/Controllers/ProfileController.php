@@ -99,7 +99,6 @@ class ProfileController extends Controller
                 $rules['ngay_sinh'] = 'nullable|date';
                 $rules['gioi_tinh'] = 'nullable|in:Nam,Nữ,Khác';
                 $rules['dia_chi'] = 'nullable|string|max:500';
-                $rules['chuyen_mon'] = 'nullable|string|max:255';
                 $rules['ngay_vao_truong'] = 'nullable|date';
                 break;
 
@@ -254,9 +253,6 @@ class ProfileController extends Controller
                 }
                 if ($request->has('dia_chi')) {
                     $data['dia_chi'] = $request->dia_chi ?: null;
-                }
-                if ($request->has('chuyen_mon')) {
-                    $data['chuyen_mon'] = $request->chuyen_mon ?: null;
                 }
                 if ($request->has('ngay_vao_truong')) {
                     $data['ngay_vao_truong'] = $request->ngay_vao_truong ?: null;

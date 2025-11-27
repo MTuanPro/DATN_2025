@@ -273,12 +273,18 @@ class LopHocPhanController extends Controller
             ];
         }
 
+        // Lấy danh sách yêu cầu điểm danh bù đã gửi
+        $yeuCauDiemDanhBuIds = \App\Models\YeuCauDiemDanhBu::whereIn('lop_hoc_phan_sinh_vien_id', $lopHocPhans->pluck('id'))
+            ->pluck('lich_hoc_chi_tiet_id', 'lop_hoc_phan_sinh_vien_id')
+            ->toArray();
+
         return view('sinhvien.diem-danh.index', compact(
             'lopHocPhans',
             'thongKeData',
             'hocKys',
             'hocKyId',
-            'sinhVien'
+            'sinhVien',
+            'yeuCauDiemDanhBuIds'
         ));
     }
 }

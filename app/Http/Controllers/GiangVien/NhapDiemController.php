@@ -131,7 +131,6 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             ->groupBy('lop_hoc_phan_sinh_vien_id');
 
         // Kiểm tra trạng thái
-        // Chỉ chặn sửa khi đang chờ duyệt (da_khoa_diem), không chặn khi đã duyệt (cho phép sửa lại)
         $daKhoaDiem = $lopHocPhan->trang_thai_lop === 'da_khoa_diem';
         $daDuyetDiem = $lopHocPhan->trang_thai_lop === 'da_duyet_diem';
         $laGiangVienChinh = $duocPhanCong->vai_tro === 'giang_vien_chinh';
@@ -139,6 +138,13 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         // Kiểm tra lớp đã kết thúc chưa (dựa vào ngày kết thúc)
         $daKetThuc = $lopHocPhan->daKetThuc();
         $dangDienRa = $lopHocPhan->dangDienRa();
+
+        // Trạng thái 2 lần gửi điểm
+        $trangThaiLan1 = $lopHocPhan->trang_thai_gui_diem_lan_1 ?? 'chua_gui';
+        $trangThaiLan2 = $lopHocPhan->trang_thai_gui_diem_lan_2 ?? 'chua_gui';
+        $choPhepGuiLan1 = $lopHocPhan->cho_phep_gui_diem_lan_1 ?? false;
+        $choPhepGuiLan2 = $lopHocPhan->cho_phep_gui_diem_lan_2 ?? false;
+        $daGuiLan2 = $trangThaiLan2 === 'da_gui' || $trangThaiLan2 === 'da_duyet';
 
         return view('giangvien.nhap-diem.show', compact(
             'lopHocPhan',
@@ -149,7 +155,12 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             'daDuyetDiem',
             'laGiangVienChinh',
             'daKetThuc',
-            'dangDienRa'
+            'dangDienRa',
+            'trangThaiLan1',
+            'trangThaiLan2',
+            'choPhepGuiLan1',
+            'choPhepGuiLan2',
+            'daGuiLan2'
         ));
     }
 
@@ -193,8 +204,32 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             ], 403);
         }
 
-        // Cho phép sửa điểm trong mọi trường hợp (kể cả khi đã duyệt) nếu lớp chưa kết thúc
-        // Giảng viên có thể sửa và gửi lại cho đào tạo phê duyệt lại
+        // Kiểm tra quyền: đào tạo có thể sửa điểm sau khi duyệt (phúc khảo)
+        $user = Auth::user();
+        $laDaoTao = $user->hasAnyRole(['truong_phong_dt', 'nhan_vien_dt']);
+        $choPhepSuaDiemSauDuyet = $lopHocPhan->cho_phep_sua_diem_sau_duyet;
+
+        // Không cho phép sửa điểm khi đã gửi cho đào tạo (đang chờ duyệt)
+        // Trừ khi là đào tạo và có quyền sửa sau khi duyệt
+        if ($lopHocPhan->trang_thai_lop === 'da_khoa_diem') {
+            if (!$laDaoTao || !$choPhepSuaDiemSauDuyet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Điểm đã được gửi cho đào tạo. Bạn không thể sửa điểm khi đang chờ duyệt. Nếu cần sửa, vui lòng đợi đào tạo trả về.'
+                ], 403);
+            }
+        }
+
+        // Không cho phép giảng viên sửa điểm khi đã được duyệt và công bố
+        // Đào tạo có thể sửa nếu có quyền (phúc khảo)
+        if ($lopHocPhan->trang_thai_lop === 'da_duyet_diem') {
+            if (!$laDaoTao || !$choPhepSuaDiemSauDuyet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Điểm đã được duyệt và công bố. Bạn không thể sửa điểm sau khi đã duyệt.'
+                ], 403);
+            }
+        }
 
         // Kiểm tra cột điểm hợp lệ
         $cauHinh = CauHinhDauDiem::find($validated['cau_hinh_id']);
@@ -450,8 +485,45 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             ], 403);
         }
 
-        // Cho phép gửi lại điểm ngay cả khi đã duyệt (để giảng viên có thể sửa và gửi lại)
-        // Không cần kiểm tra trạng thái, luôn cho phép gửi (nếu lớp chưa kết thúc)
+        // Xác định lần gửi điểm (1: giữa kỳ, 2: cuối kỳ)
+        $lanGui = $request->input('lan_gui', null);
+        
+        // Nếu không chỉ định, tự động xác định dựa trên trạng thái
+        if (!$lanGui) {
+            if (!$lopHocPhan->trang_thai_gui_diem_lan_1 || $lopHocPhan->trang_thai_gui_diem_lan_1 === 'chua_gui' || $lopHocPhan->trang_thai_gui_diem_lan_1 === 'da_tra_ve') {
+                $lanGui = 1;
+            } elseif (!$lopHocPhan->trang_thai_gui_diem_lan_2 || $lopHocPhan->trang_thai_gui_diem_lan_2 === 'chua_gui' || $lopHocPhan->trang_thai_gui_diem_lan_2 === 'da_tra_ve') {
+                $lanGui = 2;
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Đã gửi điểm cả 2 lần. Bạn không thể gửi điểm nữa.'
+                ], 403);
+            }
+        }
+
+        // Kiểm tra đào tạo đã mở gửi điểm cho lần này chưa
+        if ($lanGui == 1 && !$lopHocPhan->cho_phep_gui_diem_lan_1) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đào tạo chưa mở gửi điểm lần 1 (giữa kỳ). Vui lòng đợi đào tạo mở.'
+            ], 403);
+        }
+
+        if ($lanGui == 2 && !$lopHocPhan->cho_phep_gui_diem_lan_2) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đào tạo chưa mở gửi điểm lần 2 (cuối kỳ). Vui lòng đợi đào tạo mở.'
+            ], 403);
+        }
+
+        // Kiểm tra đã gửi lần 2 chưa - nếu đã gửi thì không cho gửi nữa
+        if ($lopHocPhan->trang_thai_gui_diem_lan_2 === 'da_gui' || $lopHocPhan->trang_thai_gui_diem_lan_2 === 'da_duyet') {
+            return response()->json([
+                'success' => false,
+                'message' => 'Đã gửi điểm lần 2 (cuối kỳ). Bạn không thể gửi điểm nữa.'
+            ], 403);
+        }
 
         // Kiểm tra tất cả sinh viên đã có điểm chưa
         $tongSinhVien = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
@@ -480,28 +552,36 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         try {
             DB::beginTransaction();
 
-            // Lưu trạng thái cũ để biết có phải gửi lại không
-            $trangThaiCu = $lopHocPhan->trang_thai_lop;
-
-            // Đặt trạng thái là đã khóa điểm (chờ duyệt)
-            // Nếu đã duyệt trước đó, reset về chờ duyệt lại và xóa lý do trả về nếu có
-            $lopHocPhan->update([
-                'trang_thai_lop' => 'da_khoa_diem',
+            // Cập nhật trạng thái gửi điểm theo lần
+            $updateData = [
+                'lan_gui_diem' => $lanGui,
                 'ly_do_tra_ve' => null, // Xóa lý do trả về nếu có
-            ]);
+            ];
+
+            if ($lanGui == 1) {
+                $updateData['trang_thai_gui_diem_lan_1'] = 'da_gui';
+                $updateData['trang_thai_lop'] = 'da_khoa_diem';
+            } else {
+                $updateData['trang_thai_gui_diem_lan_2'] = 'da_gui';
+                $updateData['trang_thai_lop'] = 'da_khoa_diem';
+                // Sau khi gửi lần 2, cập nhật điểm kể cả sửa điểm lần 1
+                // Điểm sẽ được tính lại từ tất cả các đầu điểm
+            }
+
+            $lopHocPhan->update($updateData);
 
             // Gửi thông báo cho đào tạo
-            $this->guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien, $trangThaiCu === 'da_duyet_diem');
+            $this->guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien, $lanGui);
 
             DB::commit();
 
-            $message = $trangThaiCu === 'da_duyet_diem' 
-                ? 'Đã gửi lại điểm cho đào tạo thành công. Chờ đào tạo duyệt lại.'
-                : 'Đã gửi điểm cho đào tạo thành công. Chờ đào tạo duyệt.';
+            $lanGuiText = $lanGui == 1 ? 'lần 1 (giữa kỳ)' : 'lần 2 (cuối kỳ)';
+            $message = "Đã gửi điểm {$lanGuiText} cho đào tạo thành công. Chờ đào tạo duyệt.";
 
             return response()->json([
                 'success' => true,
-                'message' => $message
+                'message' => $message,
+                'lan_gui' => $lanGui
             ]);
         } catch (\Exception $e) {
             DB::rollBack();
@@ -516,7 +596,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     /**
      * Gửi thông báo cho đào tạo khi giảng viên gửi điểm
      */
-    private function guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien, $laGuiLai = false)
+    private function guiThongBaoGuiDiemChoDaoTao($lopHocPhan, $giangVien, $lanGui = 1)
     {
         // Lấy tất cả tài khoản đào tạo
         $daoTaos = \App\Models\DaoTao::with('user')->get();
@@ -526,13 +606,10 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         }
 
         // Tạo thông báo
-        $tieuDe = $laGuiLai 
-            ? 'Giảng viên gửi lại điểm lớp ' . $lopHocPhan->ma_lop_hp
-            : 'Giảng viên gửi điểm lớp ' . $lopHocPhan->ma_lop_hp;
+        $lanGuiText = $lanGui == 1 ? 'lần 1 (giữa kỳ)' : 'lần 2 (cuối kỳ)';
+        $tieuDe = 'Giảng viên gửi điểm ' . $lanGuiText . ' lớp ' . $lopHocPhan->ma_lop_hp;
         
-        $noiDung = $laGuiLai
-            ? "Giảng viên {$giangVien->ho_ten} đã chỉnh sửa và gửi lại điểm lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->monHoc->ten_mon} ({$lopHocPhan->hocKy->ten_hoc_ky}) để duyệt lại. Vui lòng truy cập phần 'Duyệt điểm' để xem và duyệt."
-            : "Giảng viên {$giangVien->ho_ten} đã gửi điểm lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->monHoc->ten_mon} ({$lopHocPhan->hocKy->ten_hoc_ky}) để duyệt. Vui lòng truy cập phần 'Duyệt điểm' để xem và duyệt.";
+        $noiDung = "Giảng viên {$giangVien->ho_ten} đã gửi điểm {$lanGuiText} lớp {$lopHocPhan->ma_lop_hp} - {$lopHocPhan->monHoc->ten_mon} ({$lopHocPhan->hocKy->ten_hoc_ky}) để duyệt. Vui lòng truy cập phần 'Duyệt điểm' để xem và duyệt.";
 
         $thongBao = ThongBao::create([
             'tieu_de' => $tieuDe,
@@ -701,8 +778,32 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             ], 403);
         }
 
-        // Cho phép import điểm trong mọi trường hợp (kể cả khi đã duyệt) nếu lớp chưa kết thúc
-        // Giảng viên có thể sửa và gửi lại cho đào tạo phê duyệt lại
+        // Kiểm tra quyền: đào tạo có thể sửa điểm sau khi duyệt (phúc khảo)
+        $user = Auth::user();
+        $laDaoTao = $user->hasAnyRole(['truong_phong_dt', 'nhan_vien_dt']);
+        $choPhepSuaDiemSauDuyet = $lopHocPhan->cho_phep_sua_diem_sau_duyet;
+
+        // Không cho phép import điểm khi đã gửi cho đào tạo (đang chờ duyệt)
+        // Trừ khi là đào tạo và có quyền sửa sau khi duyệt
+        if ($lopHocPhan->trang_thai_lop === 'da_khoa_diem') {
+            if (!$laDaoTao || !$choPhepSuaDiemSauDuyet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Điểm đã được gửi cho đào tạo. Bạn không thể import điểm khi đang chờ duyệt. Nếu cần sửa, vui lòng đợi đào tạo trả về.'
+                ], 403);
+            }
+        }
+
+        // Không cho phép giảng viên import điểm khi đã được duyệt và công bố
+        // Đào tạo có thể import nếu có quyền (phúc khảo)
+        if ($lopHocPhan->trang_thai_lop === 'da_duyet_diem') {
+            if (!$laDaoTao || !$choPhepSuaDiemSauDuyet) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Điểm đã được duyệt và công bố. Bạn không thể import điểm sau khi đã duyệt.'
+                ], 403);
+            }
+        }
 
         try {
             DB::beginTransaction();

@@ -146,6 +146,7 @@
                                                 <th>Trạng thái</th>
                                                 <th>Thời gian điểm danh</th>
                                                 <th>Ghi chú</th>
+                                                <th style="width: 150px;">Thao tác</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -162,8 +163,8 @@
                                                 <tr>
                                                     <td>{{ $index + 1 }}</td>
                                                     <td>
-                                                        {{ \Carbon\Carbon::parse($dd->ngay_hoc)->format('d/m/Y') }} - 
-                                                        {{ \Carbon\Carbon::parse($dd->ngay_hoc)->translatedFormat('l') }}
+                                                        {{ \Carbon\Carbon::parse($dd->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->format('d/m/Y') }} - 
+                                                        {{ \Carbon\Carbon::parse($dd->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->translatedFormat('l') }}
                                                     </td>
                                                     <td>{{ $dd->tiet_bat_dau }}</td>
                                                     <td>
@@ -193,12 +194,49 @@
                                                     </td>
                                                     <td>
                                                         @if($dd->thoi_gian_diem_danh)
-                                                            {{ \Carbon\Carbon::parse($dd->thoi_gian_diem_danh)->format('H:i d/m/Y') }}
+                                                            {{ \Carbon\Carbon::parse($dd->thoi_gian_diem_danh)->setTimezone('Asia/Ho_Chi_Minh')->format('H:i d/m/Y') }}
                                                         @else
                                                             -
                                                         @endif
                                                     </td>
                                                     <td>{{ $dd->ghi_chu ?? '-' }}</td>
+                                                    <td>
+                                                        @php
+                                                            $ngayHoc = \Carbon\Carbon::parse($dd->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->startOfDay();
+                                                            $ngayHienTai = \Carbon\Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
+                                                            
+                                                            // Nếu có thời gian điểm danh, kiểm tra xem có phải trong vòng 24h từ khi điểm danh không
+                                                            $coTheGuiYeuCau = false;
+                                                            if ($dd->thoi_gian_diem_danh && in_array($dd->trang_thai, ['vang', 'di_tre'])) {
+                                                                $thoiGianDiemDanh = \Carbon\Carbon::parse($dd->thoi_gian_diem_danh)->setTimezone('Asia/Ho_Chi_Minh');
+                                                                $thoiGianHienTai = \Carbon\Carbon::now('Asia/Ho_Chi_Minh');
+                                                                // Cho phép gửi trong vòng 24h từ khi điểm danh (nếu điểm danh trong ngày học) hoặc trong ngày học
+                                                                $coTheGuiYeuCau = ($ngayHoc->isSameDay($ngayHienTai) || 
+                                                                                  ($thoiGianDiemDanh->isSameDay($ngayHienTai) && $thoiGianHienTai->diffInHours($thoiGianDiemDanh) <= 24));
+                                                            } else {
+                                                                // Nếu chưa có điểm danh hoặc không phải vắng/đi trễ, chỉ cho phép trong ngày học
+                                                                $coTheGuiYeuCau = $ngayHoc->isSameDay($ngayHienTai) && 
+                                                                                  in_array($dd->trang_thai, ['vang', 'di_tre']);
+                                                            }
+                                                            
+                                                            $daCoYeuCau = \App\Models\YeuCauDiemDanhBu::where('lop_hoc_phan_sinh_vien_id', $lhp->id)
+                                                                ->where('lich_hoc_chi_tiet_id', $dd->lich_hoc_chi_tiet_id)
+                                                                ->whereIn('trang_thai', ['cho_duyet', 'da_duyet'])
+                                                                ->exists();
+                                                        @endphp
+                                                        @if($coTheGuiYeuCau && !$daCoYeuCau && in_array($dd->trang_thai, ['vang', 'di_tre']))
+                                                            <button type="button" class="btn btn-sm btn-warning" 
+                                                                    onclick="guiYeuCauDiemDanhBu({{ $dd->lich_hoc_chi_tiet_id }}, '{{ $dd->ngay_hoc }}')">
+                                                                <i class="bi bi-send"></i> Gửi yêu cầu
+                                                            </button>
+                                                        @elseif($daCoYeuCau)
+                                                            <span class="badge bg-info">Đã gửi yêu cầu</span>
+                                                        @elseif(in_array($dd->trang_thai, ['vang', 'di_tre']) && !$coTheGuiYeuCau)
+                                                            <small class="text-muted">Đã quá ngày</small>
+                                                        @else
+                                                            <span class="text-muted">-</span>
+                                                        @endif
+                                                    </td>
                                                 </tr>
                                             @endforeach
                                         </tbody>
@@ -218,7 +256,83 @@
             @endif
         </section>
     </div>
-@endsection
+{{-- Modal gửi yêu cầu điểm danh bù --}}
+<div class="modal fade" id="modalYeuCauDiemDanhBu" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Gửi yêu cầu điểm danh bù</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="formYeuCauDiemDanhBu">
+                <div class="modal-body">
+                    <input type="hidden" id="lich_hoc_chi_tiet_id" name="lich_hoc_chi_tiet_id">
+                    <div class="mb-3">
+                        <label class="form-label">Ngày học</label>
+                        <input type="text" id="ngay_hoc_display" class="form-control" readonly>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Lý do <span class="text-danger">*</span></label>
+                        <textarea class="form-control" id="ly_do" name="ly_do" rows="4" required 
+                                  placeholder="Vui lòng nhập lý do xin điểm danh bù (tối đa 1000 ký tự)"></textarea>
+                        <small class="text-muted">Lưu ý: Chỉ có thể gửi yêu cầu trong ngày học. Ngày hôm sau sẽ không được gửi yêu cầu.</small>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="submit" class="btn btn-primary">Gửi yêu cầu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@push('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+function guiYeuCauDiemDanhBu(lichHocChiTietId, ngayHoc) {
+    document.getElementById('lich_hoc_chi_tiet_id').value = lichHocChiTietId;
+    document.getElementById('ngay_hoc_display').value = new Date(ngayHoc).toLocaleDateString('vi-VN');
+    document.getElementById('ly_do').value = '';
+    
+    const modal = new bootstrap.Modal(document.getElementById('modalYeuCauDiemDanhBu'));
+    modal.show();
+}
+
+document.getElementById('formYeuCauDiemDanhBu').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = {
+        lich_hoc_chi_tiet_id: document.getElementById('lich_hoc_chi_tiet_id').value,
+        ly_do: document.getElementById('ly_do').value,
+        _token: '{{ csrf_token() }}'
+    };
+    
+    fetch('{{ route("sinh-vien.diem-danh.yeu-cau-diem-danh-bu.store") }}', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            Swal.fire('Thành công!', data.message, 'success').then(() => {
+                location.reload();
+            });
+        } else {
+            Swal.fire('Lỗi!', data.message, 'error');
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        Swal.fire('Lỗi!', 'Có lỗi xảy ra khi gửi yêu cầu', 'error');
+    });
+});
+</script>
+@endpush
 
 @push('styles')
 <style>

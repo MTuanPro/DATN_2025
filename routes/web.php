@@ -334,8 +334,14 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     // PHASE 7: Duyệt điểm
     Route::prefix('duyet-diem')->name('duyet-diem.')->group(function () {
         Route::get('/', [DuyetDiemController::class, 'index'])->name('index');
+        Route::get('/quan-ly-gui-diem', [DuyetDiemController::class, 'quanLyGuiDiem'])->name('quan-ly-gui-diem');
+        Route::post('/{lopHocPhan}/cap-nhat-trang-thai-gui-diem', [DuyetDiemController::class, 'capNhatTrangThaiGuiDiem'])->name('cap-nhat-trang-thai-gui-diem');
+        Route::post('/cap-nhat-trang-thai-gui-diem-hang-loat', [DuyetDiemController::class, 'capNhatTrangThaiGuiDiemHangLoat'])->name('cap-nhat-trang-thai-gui-diem-hang-loat');
+        Route::post('/{lopHocPhan}/cho-phep-sua-diem-sau-duyet', [DuyetDiemController::class, 'choPhepSuaDiemSauDuyet'])->name('cho-phep-sua-diem-sau-duyet');
         Route::get('/{lopHocPhan}', [DuyetDiemController::class, 'show'])->name('show');
         Route::post('/{lopHocPhan}/duyet', [DuyetDiemController::class, 'duyetDiem'])->name('duyet');
+        Route::post('/{lopHocPhan}/sua-diem', [DuyetDiemController::class, 'suaDiem'])->name('sua-diem');
+        Route::post('/{lopHocPhan}/luu-tat-ca-diem', [DuyetDiemController::class, 'luuTatCaDiem'])->name('luu-tat-ca-diem');
     });
 
 
@@ -437,6 +443,11 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     Route::post('/diem-danh/canh-bao', [App\Http\Controllers\GiangVien\AttendanceController::class, 'checkAndSendWarnings'])->name('diem-danh.canh-bao');
     Route::get('/diem-danh/{id}', [App\Http\Controllers\GiangVien\AttendanceController::class, 'show'])->name('diem-danh.show');
     Route::post('/diem-danh/{id}', [App\Http\Controllers\GiangVien\AttendanceController::class, 'store'])->name('diem-danh.store');
+
+    // Yêu cầu điểm danh bù
+    Route::get('/yeu-cau-diem-danh-bu', [App\Http\Controllers\GiangVien\YeuCauDiemDanhBuController::class, 'index'])->name('yeu-cau-diem-danh-bu.index');
+    Route::post('/yeu-cau-diem-danh-bu/{id}/duyet', [App\Http\Controllers\GiangVien\YeuCauDiemDanhBuController::class, 'duyet'])->name('yeu-cau-diem-danh-bu.duyet');
+    Route::post('/yeu-cau-diem-danh-bu/{id}/tu-choi', [App\Http\Controllers\GiangVien\YeuCauDiemDanhBuController::class, 'tuChoi'])->name('yeu-cau-diem-danh-bu.tu-choi');
 
     // Lớp chủ nhiệm (GVCN)
     Route::get('/lop-chu-nhiem', [GVCNController::class, 'index'])->name('lop-chu-nhiem.index');
@@ -554,6 +565,7 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
     // PHASE 6: Lịch sử điểm danh
     Route::middleware('sinhvien.check')->prefix('diem-danh')->name('diem-danh.')->group(function () {
         Route::get('/', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'tongHopDiemDanh'])->name('index');
+        Route::post('/yeu-cau-diem-danh-bu', [\App\Http\Controllers\SinhVien\YeuCauDiemDanhBuController::class, 'store'])->name('yeu-cau-diem-danh-bu.store');
     });
 
     // PHASE 7: Xem điểm

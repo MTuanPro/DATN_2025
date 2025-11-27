@@ -139,12 +139,6 @@
                                                     </div>
 
                                                     <div class="col-md-6 mb-3">
-                                                        <label class="form-label">Chuyên Môn</label>
-                                                        <input type="text" class="form-control" name="chuyen_mon"
-                                                            value="{{ old('chuyen_mon', $giangVien->chuyen_mon) }}">
-                                                    </div>
-
-                                                    <div class="col-md-6 mb-3">
                                                         <label class="form-label">Ngày Vào Trường</label>
                                                         <input type="date" class="form-control" name="ngay_vao_truong"
                                                             value="{{ old('ngay_vao_truong', $giangVien->ngay_vao_truong ? (\Carbon\Carbon::parse($giangVien->ngay_vao_truong)->format('Y-m-d')) : '') }}">
