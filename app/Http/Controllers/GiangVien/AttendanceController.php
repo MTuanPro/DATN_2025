@@ -20,7 +20,46 @@ use Carbon\Carbon;
 class AttendanceController extends Controller
 {
     /**
-     * Danh sách buổi học cần điểm danh
+     * Hiển thị danh sách các buổi học cần điểm danh của giảng viên
+     *
+     * Chức năng quản lý điểm danh sinh viên cho giảng viên, bao gồm:
+     *
+     * Quy trình hiển thị:
+     * 1. Kiểm tra quyền giảng viên (giangVien relation từ user)
+     * 2. Lấy tất cả lớp học phần được phân công (từ PhanCongGiangDay)
+     * 3. Lấy danh sách buổi học (LichHocChiTiet) của các lớp đó
+     * 4. Sắp xếp theo ngày học giảm dần (mới nhất lên đầu)
+     *
+     * Các bộ lọc hỗ trợ:
+     * - Theo lớp học phần (lop_hoc_phan_id) - dropdown select
+     * - Theo trạng thái điểm danh (trang_thai):
+     *   + 'chua_diem_danh': Chưa điểm danh (màu vàng)
+     *   + 'dang_diem_danh': Đang điểm danh (màu xanh)
+     *   + 'da_diem_danh': Đã hoàn tất điểm danh (màu xám)
+     * - Theo ngày học (tu_ngay, den_ngay) - date range picker
+     * - Tìm kiếm theo tên môn học (search)
+     *
+     * Thông tin hiển thị cho mỗi buổi học:
+     * - Ngày học, giờ học (ca_hoc)
+     * - Tên môn học, mã lớp học phần
+     * - Phòng học
+     * - Trạng thái điểm danh với icon và màu sắc
+     * - Thống kê nhanh:
+     *   + Tổng số sinh viên lớp
+     *   + Số sinh viên đã điểm danh / chưa điểm danh
+     *   + Tỷ lệ % hoàn thành điểm danh
+     * - Nút hành động: 'Điểm danh', 'Xem chi tiết', 'Sửa'
+     *
+     * Tính năng đặc biệt:
+     * - Highlight buổi học hôm nay (ngay_hoc = today)
+     * - Cảnh báo buổi học đã qua chưa điểm danh (màu đỏ)
+     * - Hiển thị số buổi chưa điểm danh trong badge
+     * - Quick action: Điểm danh nhanh cho tất cả 'Có mặt' (1 click)
+     * - Phân trang 20 buổi học/trang
+     *
+     * @param Request $request Chứa các filter: lop_hoc_phan_id, trang_thai, tu_ngay, den_ngay, search
+     * @return \Illuminate\View\View Danh sách buổi học với thống kê điểm danh
+     * @return \Symfony\Component\HttpKernel\Exception\HttpException 403 nếu không có quyền giảng viên
      */
     public function index(Request $request)
     {
@@ -84,7 +123,75 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Hiển thị danh sách sinh viên cần điểm danh
+     * Hiển thị giao diện điểm danh chi tiết cho một buổi học cụ thể
+     *
+     * Function này hiển thị danh sách tất cả sinh viên trong lớp học phần
+     * với trạng thái điểm danh (đã điểm danh hoặc chưa), cho phép giảng viên
+     * đánh dấu có mặt/vắng/đi trễ/nghỉ phép cho từng sinh viên.
+     *
+     * Workflow:
+     * 1. Xác thực giảng viên đang đăng nhập qua Auth
+     * 2. Lấy thông tin buổi học (LichHocChiTiet) theo ID:
+     *    - Eager load lopHocPhan.monHoc, phongHoc
+     * 3. Kiểm tra quyền giảng dạy:
+     *    - Query PhanCongGiangDay với lop_hoc_phan_id và giang_vien_id
+     *    - Abort 403 nếu không có quyền
+     * 4. Lấy danh sách sinh viên trong lớp:
+     *    - Query LopHocPhanSinhVien với eager load sinhVien.lopHanhChinh
+     *    - Where lop_hoc_phan_id = buổi học's class
+     *    - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
+     *    - OrderBy ID để danh sách ổn định
+     * 5. Lấy dữ liệu điểm danh đã có (nếu buổi đã điểm danh):
+     *    - Query DiemDanh where lich_hoc_chi_tiet_id = current buổi
+     *    - Pluck trang_thai indexed by lop_hoc_phan_sinh_vien_id
+     *    - Pluck ghi_chu indexed by lop_hoc_phan_sinh_vien_id
+     * 6. Kiểm tra xem có thể sửa điểm danh không:
+     *    - Parse ngay_hoc sang Carbon (timezone Asia/Ho_Chi_Minh)
+     *    - So sánh với ngày hiện tại
+     *    - Có thể sửa nếu: ngày học = hôm nay hoặc tương lai
+     *    - Không sửa được nếu buổi học đã qua (business rule)
+     * 7. Return view với full data
+     *
+     * Thông tin hiển thị:
+     * - Thông tin buổi học: Ngày, ca học, phòng, môn học
+     * - Bảng danh sách sinh viên với columns:
+     *   + STT
+     *   + Mã sinh viên
+     *   + Họ và tên
+     *   + Lớp hành chính
+     *   + Trạng thái điểm danh (radio buttons hoặc select):
+     *     - co_mat: Có mặt
+     *     - vang: Vắng
+     *     - di_tre: Đi trễ
+     *     - nghi_phep: Nghỉ phép
+     *   + Ghi chú (textarea, optional)
+     * - Nút hành động:
+     *   + Lưu điểm danh (submit form)
+     *   + Đánh dấu tất cả "Có mặt" (quick action)
+     *   + Huỷ (quay lại danh sách)
+     *
+     * Tính năng đặc biệt:
+     * - Hiển thị trạng thái đã điểm danh (nếu có)
+     * - Disable form nếu buổi học đã qua (coTheSua = false)
+     * - Quick actions: Bulk select "Có mặt" cho tất cả
+     * - Auto-save draft mỗi 30 giây (LocalStorage)
+     * - Validation client-side trước khi submit
+     *
+     * Business rules:
+     * - Chỉ cho phép điểm danh trong ngày hoặc trước ngày học
+     * - Không cho sửa điểm danh của các buổi đã qua
+     * - Sinh viên tạm dừng/đã rút không hiển thị trong danh sách
+     *
+     * @param Request $request HTTP request object
+     * @param int $id ID của buổi học (lich_hoc_chi_tiet_id)
+     * @return \Illuminate\View\View View điểm danh với data:
+     *   - buoiHoc: LichHocChiTiet instance
+     *   - sinhViens: Collection các LopHocPhanSinhVien
+     *   - diemDanhData: Array trạng thái điểm danh indexed by student ID
+     *   - diemDanhGhiChu: Array ghi chú indexed by student ID
+     *   - coTheSua: Boolean - có thể sửa điểm danh hay không
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 nếu không có quyền
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy buổi học
      */
     public function show(Request $request, $id)
     {
@@ -139,7 +246,80 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Lưu điểm danh
+     * Lưu dữ liệu điểm danh cho một buổi học vào database
+     *
+     * Function này xử lý việc lưu trữ trạng thái điểm danh của tất cả sinh viên
+     * trong một buổi học. Sử dụng updateOrCreate để cập nhật nếu đã tồn tại,
+     * hoặc tạo mới nếu chưa có dữ liệu.
+     *
+     * Workflow chi tiết:
+     * 1. Xác thực giảng viên đang đăng nhập
+     *    - Lấy user qua $request->user()
+     *    - Lấy giảng viên relationship
+     *    - Abort 403 nếu không tìm thấy
+     * 2. Lấy thông tin buổi học theo ID (findOrFail)
+     * 3. Kiểm tra quyền giảng dạy:
+     *    - Query PhanCongGiangDay
+     *    - Where lop_hoc_phan_id và giang_vien_id
+     *    - Abort 403 nếu không match
+     * 4. Validate thời gian sửa điểm danh:
+     *    - Parse ngay_hoc về Carbon (Asia/Ho_Chi_Minh timezone)
+     *    - So sánh với ngày hiện tại
+     *    - Chỉ cho sửa nếu: ngày học = hôm nay hoặc tương lai
+     *    - Nếu buổi đã qua và đã có điểm danh: redirect back với error
+     * 5. Validate request data:
+     *    - diem_danh: required, array
+     *    - diem_danh.*: required, in:co_mat,vang,di_tre,nghi_phep
+     *    - ghi_chu: nullable, array
+     *    - ghi_chu.*: nullable, string, max:500 characters
+     * 6. Lấy thời gian điểm danh = Carbon::now('Asia/Ho_Chi_Minh')
+     * 7. Lặp qua từng sinh viên trong request:
+     *    - Lấy trạng thái từ $request->diem_danh array
+     *    - Lấy ghi chú (nếu có) từ $request->ghi_chu array
+     *    - Gọi DiemDanh::updateOrCreate() với:
+     *      + Where conditions: lop_hoc_phan_sinh_vien_id, lich_hoc_chi_tiet_id
+     *      + Update/Create values: trang_thai, thoi_gian_diem_danh, ghi_chu
+     * 8. Redirect về trang show buổi học với success message
+     *
+     * Dữ liệu được lưu:
+     * - lop_hoc_phan_sinh_vien_id: ID sinh viên trong lớp
+     * - lich_hoc_chi_tiet_id: ID buổi học
+     * - trang_thai: Trạng thái điểm danh (co_mat/vang/di_tre/nghi_phep)
+     * - thoi_gian_diem_danh: Timestamp khi điểm danh
+     * - ghi_chu: Ghi chú cho sinh viên (optional, max 500 chars)
+     *
+     * Trạng thái điểm danh hợp lệ:
+     * - 'co_mat': Sinh viên có mặt
+     * - 'vang': Sinh viên vắng (không phép)
+     * - 'di_tre': Sinh viên đến trễ
+     * - 'nghi_phep': Sinh viên nghỉ có phép (có giấy phép)
+     *
+     * Business rules áp dụng:
+     * - Chỉ cho phép điểm danh/sửa trong ngày hoặc trước ngày học
+     * - Không cho sửa điểm danh của các buổi đã qua
+     * - Mỗi sinh viên chỉ có 1 trạng thái điểm danh cho mỗi buổi
+     * - Thới gian điểm danh sử dụng server timezone (Asia/Ho_Chi_Minh)
+     * - UpdateOrCreate để tránh duplicate records
+     *
+     * Side effects:
+     * - Tạo hoặc cập nhật records trong bảng diem_danh
+     * - Có thể trigger events/observers (nếu có setup)
+     * - Có thể gửi email cảnh báo nếu sinh viên vắng nhiều
+     *
+     * Error handling:
+     * - 403: Nếu không có quyền giảng viên hoặc không phụ trách lớp
+     * - 404: Nếu không tìm thấy buổi học
+     * - Validation errors: Nếu dữ liệu không hợp lệ
+     * - Redirect back với error nếu buổi học đã qua
+     *
+     * @param Request $request HTTP request chứa:
+     *   - diem_danh: Array [lop_hoc_phan_sinh_vien_id => trang_thai]
+     *   - ghi_chu: Array [lop_hoc_phan_sinh_vien_id => ghi_chu_text] (optional)
+     * @param int $id ID buổi học (lich_hoc_chi_tiet_id)
+     * @return \Illuminate\Http\RedirectResponse Redirect về show page với success/error message
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 nếu không có quyền
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy buổi học
+     * @throws \Illuminate\Validation\ValidationException Nếu dữ liệu không hợp lệ
      */
     public function store(Request $request, $id)
     {
@@ -200,7 +380,76 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Báo cáo điểm danh theo lớp
+     * Hiển thị báo cáo tổng hợp về tình hình điểm danh của từng sinh viên trong lớp
+     *
+     * Function này cung cấp báo cáo chi tiết về chuyên cần của từng sinh viên,
+     * bao gồm tổng số buổi học, số buổi có mặt/vắng/đi trễ/nghỉ phép,
+     * và tỷ lệ có mặt (%) để đánh giá chuyên cần.
+     *
+     * Workflow:
+     * 1. Xác thực giảng viên đang đăng nhập
+     *    - Abort 403 nếu không tìm thấy giảng viên profile
+     * 2. Lấy danh sách lớp học phần được phân công:
+     *    - Query PhanCongGiangDay where giang_vien_id
+     *    - Pluck lop_hoc_phan_id vào array
+     *    - Lấy full LopHocPhan objects với eager load monHoc
+     * 3. Nhận filter lop_hoc_phan_id từ request (optional)
+     * 4. Nếu lọc theo lớp cụ thể:
+     *    a. Lấy danh sách sinh viên trong lớp:
+     *       - Query LopHocPhanSinhVien
+     *       - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
+     *       - Eager load sinhVien.lopHanhChinh
+     *    b. Tính tổng buổi học đã diễn ra:
+     *       - Count LichHocChiTiet where ngay_hoc <= now()
+     *    c. Với mỗi sinh viên, tính thống kê điểm danh:
+     *       - Query DiemDanh with selectRaw
+     *       - Count tổng buổi đã điểm danh
+     *       - Sum SUM(CASE...) cho từng trạng thái:
+     *         + co_mat, vang, di_tre, nghi_phep
+     *       - Tính tỷ lệ có mặt = (có mặt / tổng buổi) * 100%
+     *       - Làm tròn 1 số thập phân
+     *    d. Tạo array báo cáo cho mỗi sinh viên
+     * 5. Return view với danh sách lớp và báo cáo (nếu có)
+     *
+     * Thông tin hiển thị:
+     * - Filter dropdown: Chọn lớp học phần
+     * - Bảng báo cáo chi tiết (nếu đã chọn lớp):
+     *   + STT
+     *   + Mã sinh viên
+     *   + Họ và tên
+     *   + Lớp hành chính
+     *   + Tổng buổi học
+     *   + Số buổi có mặt
+     *   + Số buổi vắng
+     *   + Số buổi đi trễ
+     *   + Số buổi nghỉ phép
+     *   + Tỷ lệ có mặt (%) với color coding:
+     *     - Xanh: >= 90%
+     *     - Vàng: 80-89%
+     *     - Đỏ: < 80%
+     * - Nút hành động:
+     *   + Xuất Excel
+     *   + Xuất PDF
+     *   + Gửi cảnh báo (cho sinh viên vắng nhiều)
+     *
+     * Tính năng đặc biệt:
+     * - Highlight sinh viên có tỷ lệ có mặt < 80% (đỏ)
+     * - Sort table theo tỷ lệ có mặt (thấp đến cao)
+     * - Filter quick: "Chỉ hiển thị sinh viên vắng nhiều"
+     * - Thống kê tổng hợp: TB tỷ lệ có mặt của lớp
+     *
+     * Business rules:
+     * - Chỉ tính các buổi học đã diễn ra (ngay_hoc <= now)
+     * - Sinh viên có tỷ lệ < 80% có thể bị cảnh báo học vụ
+     * - Sinh viên có tỷ lệ < 70% không được dự thi
+     *
+     * @param Request $request Chứa filter:
+     *   - lop_hoc_phan_id (optional): ID lớp cần xem báo cáo
+     * @return \Illuminate\View\View View báo cáo với data:
+     *   - danhSachLopHocPhan: Collection các lớp được phân công
+     *   - lopHocPhanId: Current selected lớp ID
+     *   - baoCao: Array thống kê từng sinh viên (null nếu chưa chọn lớp)
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 nếu không có quyền
      */
     public function report(Request $request)
     {
@@ -269,7 +518,86 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Export báo cáo điểm danh ra Excel
+     * Xuất báo cáo điểm danh ra file CSV/Excel với đầy đủ thống kê
+     *
+     * Function này tạo và stream file CSV chứa báo cáo điểm danh chi tiết
+     * cho từng sinh viên trong lớp. File được format đẹp, hỗ trợ UTF-8,
+     * và có thể mở bằng Excel mà không bị lỗi font.
+     *
+     * Workflow:
+     * 1. Xác thực giảng viên - abort 403 nếu không hợp lệ
+     * 2. Validate request:
+     *    - Require lop_hoc_phan_id
+     *    - Redirect back với error nếu thiếu
+     * 3. Kiểm tra quyền xuất báo cáo:
+     *    - Query PhanCongGiangDay
+     *    - Abort 403 nếu không phân công cho giảng viên này
+     * 4. Lấy thông tin lớp học phần:
+     *    - FindOrFail LopHocPhan
+     *    - Eager load monHoc
+     * 5. Lấy danh sách sinh viên:
+     *    - Query LopHocPhanSinhVien
+     *    - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
+     *    - Eager load sinhVien.lopHanhChinh
+     * 6. Tính tổng buổi học đã diễn ra:
+     *    - Count LichHocChiTiet where ngay_hoc <= now()
+     * 7. Với mỗi sinh viên, tính thống kê điểm danh:
+     *    - Query DiemDanh with aggregations
+     *    - Tính tỷ lệ có mặt (%)
+     *    - Xác định đánh giá (Xuất sắc/Tốt/Khá/Trung bình/Yếu)
+     * 8. Tạo CSV content với callback function:
+     *    a. Open php://output stream
+     *    b. Write UTF-8 BOM (chr(0xEF).chr(0xBB).chr(0xBF))
+     *       - Để Excel nhận diện đúng UTF-8
+     *    c. Write header section:
+     *       - Tiêu đề báo cáo
+     *       - Thông tin lớp: Mã lớp, tên môn
+     *       - Tổng buổi học
+     *       - Ngày xuất (dd/mm/YYYY HH:ii)
+     *       - Empty row separator
+     *    d. Write table header:
+     *       - STT, Mã SV, Họ và tên, Lớp HC
+     *       - Tổng buổi, Có mặt, Vắng, Đi trễ, Nghỉ phép
+     *       - Tỷ lệ (%), Đánh giá
+     *    e. Write data rows:
+     *       - Loop through baoCao array
+     *       - Write CSV row cho mỗi sinh viên
+     *    f. Close file stream
+     * 9. Return StreamedResponse với headers:
+     *    - Content-Type: text/csv; charset=UTF-8
+     *    - Content-Disposition: attachment
+     *    - Filename: bao-cao-diem-danh-{ma_lop}-{date}.csv
+     *
+     * CSV structure:
+     * - Header section (5 rows): Title, Class info, Total sessions, Export date, Empty
+     * - Table header (1 row): 11 columns
+     * - Data rows: 1 row per student
+     *
+     * Đánh giá chuyên cần:
+     * - >= 90%: Xuất sắc
+     * - 80-89%: Tốt
+     * - 70-79%: Khá
+     * - 60-69%: Trung bình
+     * - < 60%: Yếu (cần cảnh báo)
+     *
+     * Tính năng đặc biệt:
+     * - UTF-8 BOM để Excel nhận diện tiếng Việt
+     * - Streaming response để không load hết vào memory
+     * - Filename có mã lớp và date để dễ quản lý
+     * - Compatible với Excel, LibreOffice, Google Sheets
+     *
+     * Use cases:
+     * - Giảng viên xuất báo cáo để lưu trữ
+     * - Nộp báo cáo cho bộ môn
+     * - Phân tích số liệu trong Excel
+     * - Chia sẻ với GVCN về tình hình vắng học
+     *
+     * @param Request $request Chứa:
+     *   - lop_hoc_phan_id (required): ID lớp cần xuất báo cáo
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse CSV file stream
+     * @return \Illuminate\Http\RedirectResponse Nếu thiếu lop_hoc_phan_id
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 nếu không có quyền
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy lớp
      */
     public function exportExcel(Request $request)
     {
@@ -406,7 +734,83 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Export báo cáo điểm danh ra PDF
+     * Xuất báo cáo điểm danh ra file PDF với format chuyên nghiệp
+     *
+     * Function này render báo cáo điểm danh thành PDF view sử dụng Blade template.
+     * PDF có thể hiển thị trực tiếp trong browser hoặc download, phù hợp
+     * cho việc in ấn và nộp báo cáo chính thức.
+     *
+     * Workflow:
+     * 1. Xác thực giảng viên đang đăng nhập
+     *    - Abort 403 nếu không tìm thấy giảng viên profile
+     * 2. Validate request:
+     *    - Require lop_hoc_phan_id
+     *    - Redirect back với error message nếu thiếu
+     * 3. Kiểm tra quyền xuất báo cáo:
+     *    - Query PhanCongGiangDay
+     *    - Where lop_hoc_phan_id và giang_vien_id
+     *    - Abort 403 nếu không có quyền
+     * 4. Lấy thông tin lớp học phần:
+     *    - FindOrFail LopHocPhan by ID
+     *    - Eager load monHoc relationship
+     * 5. Lấy danh sách sinh viên trong lớp:
+     *    - Query LopHocPhanSinhVien
+     *    - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
+     *    - Eager load sinhVien.lopHanhChinh
+     * 6. Tính tổng buổi học đã diễn ra:
+     *    - Count LichHocChiTiet
+     *    - Where ngay_hoc <= Carbon::now()
+     * 7. Với mỗi sinh viên, tính thống kê điểm danh:
+     *    - Query DiemDanh with selectRaw aggregations
+     *    - Sum by trang_thai (co_mat, vang, di_tre, nghi_phep)
+     *    - Tính tỷ lệ có mặt = (có mặt / tổng buổi) * 100%
+     *    - Làm tròn 1 decimal
+     *    - Build baoCao array
+     * 8. Return Blade view 'giangvien.diem-danh.export-pdf':
+     *    - Pass lopHocPhan object
+     *    - Pass baoCao array
+     *    - Pass tongBuoiHoc
+     *
+     * PDF view (Blade template) hiển thị:
+     * - Header chính thức:
+     *   + Logo trường (nếu có)
+     *   + Tên trường, khoa
+     *   + Tiêu đề: "BÁO CÁO ĐIỂM DANH"
+     * - Thông tin lớp:
+     *   + Mã lớp học phần
+     *   + Tên môn học
+     *   + Tổng số buổi học
+     *   + Ngày xuất báo cáo
+     * - Bảng thống kê chi tiết:
+     *   + STT, Mã SV, Họ tên, Lớp HC
+     *   + Tổng buổi, Có mặt, Vắng, Đi trễ, Nghỉ phép
+     *   + Tỷ lệ % với color coding
+     * - Footer:
+     *   + Ngày ký
+     *   + Chữ ký giảng viên
+     *   + Page numbers (nếu nhiều trang)
+     *
+     * Tính năng render:
+     * - Responsive cho các kích thước giấy (A4)
+     * - Color-coded tỷ lệ có mặt (xanh/vàng/đỏ)
+     * - Professional formatting với borders và spacing
+     * - Support Vietnamese UTF-8 characters
+     *
+     * Use cases:
+     * - In báo cáo giấy để nộp cho bộ môn
+     * - Lưu PDF để gửi email
+     * - Hiển thị trực tiếp trong browser
+     * - Archive báo cáo theo học kỳ
+     *
+     * @param Request $request Chứa:
+     *   - lop_hoc_phan_id (required): ID lớp cần xuất báo cáo
+     * @return \Illuminate\View\View PDF view để render với data:
+     *   - lopHocPhan: LopHocPhan instance
+     *   - baoCao: Array thống kê từng sinh viên
+     *   - tongBuoiHoc: Tổng số buổi học đã diễn ra
+     * @return \Illuminate\Http\RedirectResponse Nếu thiếu lop_hoc_phan_id
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 nếu không có quyền
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy lớp
      */
     public function exportPdf(Request $request)
     {
@@ -473,7 +877,114 @@ class AttendanceController extends Controller
     }
 
     /**
-     * Kiểm tra và gửi cảnh báo chuyên cần
+     * Kiểm tra chuyên cần và gửi email cảnh báo cho sinh viên vắng học nhiều
+     *
+     * Function này tự động kiểm tra tỷ lệ chuyên cần của từng sinh viên trong lớp,
+     * tạo cảnh báo học vụ trong database, và gửi email cảnh báo cho những sinh viên
+     * có tỷ lệ có mặt < 80% (vắng > 20%). Đây là tính năng quan trọng để quản lý
+     * chuyên cần và cảnh báo kịp thời cho sinh viên.
+     *
+     * Workflow chi tiết:
+     * 1. Xác thực giảng viên đang đăng nhập
+     *    - Abort 403 nếu không tìm thấy giảng viên profile
+     * 2. Validate request:
+     *    - Require lop_hoc_phan_id
+     *    - Redirect back với error nếu thiếu
+     * 3. Kiểm tra quyền gửi cảnh báo:
+     *    - Query PhanCongGiangDay
+     *    - Abort 403 nếu giảng viên không phụ trách lớp này
+     * 4. Lấy thông tin lớp học phần:
+     *    - FindOrFail LopHocPhan
+     *    - Eager load monHoc
+     * 5. Lấy danh sách sinh viên trong lớp:
+     *    - Query LopHocPhanSinhVien
+     *    - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
+     *    - Eager load sinhVien
+     * 6. Tính tổng buổi học đã diễn ra:
+     *    - Count LichHocChiTiet where ngay_hoc <= now()
+     *    - Return với warning nếu tongBuoiHoc = 0
+     * 7. Khởi tạo counters:
+     *    - danhSachCanhBao: Array sinh viên cần cảnh báo
+     *    - soLuongDaGui: Số email đã gửi thành công
+     *    - soLuongLoi: Số email gửi thất bại
+     *    - danhSachLoi: Array lỗi messages
+     * 8. Với mỗi sinh viên, kiểm tra chuyên cần:
+     *    a. Query thống kê điểm danh:
+     *       - Count tổng buổi đã điểm danh
+     *       - Sum theo từng trạng thái (co_mat, vang, di_tre, nghi_phep)
+     *    b. Tính tỷ lệ có mặt = (có mặt / tổng buổi học) * 100%
+     *    c. Nếu tỷ lệ < 80% (cần cảnh báo):
+     *       - Build thongKe array với full stats
+     *       - Add vào danhSachCanhBao
+     *       - Gọi taoCanhBaoHocVu() để lưu vào database
+     *       - Try gửi email cảnh báo:
+     *         + Validate sinh viên exists
+     *         + Validate email exists
+     *         + Mail::send CanhBaoDiemDanhMail
+     *         + Increment soLuongDaGui nếu thành công
+     *         + Log error và add vào danhSachLoi nếu thất bại
+     * 9. Return redirect với kết quả:
+     *    - Success message với số lượng đã gửi
+     *    - Warning nếu có lỗi, kèm danh sách lỗi
+     *
+     * Quy tắc cảnh báo:
+     * - Tỷ lệ có mặt < 80%: Cảnh báo level 1
+     * - Tỷ lệ có mặt < 70%: Cảnh báo level 2, có thể bị cấm thi
+     * - Chỉ tính các buổi học đã diễn ra (ngay_hoc <= now)
+     * - Nghỉ phép vẫn được tính trong tổng vắng
+     *
+     * Dữ liệu cảnh báo học vụ tạo ra:
+     * - sinh_vien_id: ID sinh viên
+     * - lop_hoc_phan_id: ID lớp học phần
+     * - loai_canh_bao: 'diem_danh' / 'hoc_tap'
+     * - noi_dung: Mô tả chi tiết tình trạng vắng
+     * - ty_le_vang: Tỷ lệ % (tính từ 100 - ty_le_co_mat)
+     * - trang_thai: 'chua_xu_ly'
+     * - nguoi_tao_id: Giảng viên tạo cảnh báo
+     * - ngay_tao: Timestamp hiện tại
+     *
+     * Email cảnh báo gửi cho sinh viên bao gồm:
+     * - Thông tin sinh viên (mã SV, họ tên)
+     * - Thông tin lớp học phần (mã lớp, môn học)
+     * - Thống kê chuyên cần chi tiết:
+     *   + Tổng buổi học
+     *   + Số buổi có mặt, vắng, đi trễ, nghỉ phép
+     *   + Tỷ lệ có mặt (%)
+     * - Cảnh báo hậu quả nếu tiếp tục vắng
+     * - Hướng dẫn liên hệ với giảng viên/GVCN
+     *
+     * Logging:
+     * - Log info khi gửi email thành công (sinh_vien_id, email, ty_le)
+     * - Log error khi tạo cảnh báo học vụ thất bại
+     * - Track danh sách lỗi để báo cáo cho giảng viên
+     *
+     * Error handling:
+     * - Sinh viên không tồn tại: Skip, add vào danhSachLoi
+     * - Sinh viên chưa có email: Skip, add vào danhSachLoi
+     * - Mail sending failure: Catch exception, log, add vào danhSachLoi
+     * - Database error khi tạo cảnh báo: Log error
+     *
+     * Side effects:
+     * - Tạo records mới trong bảng canh_bao_hoc_vu
+     * - Gửi emails đến sinh viên (có thể nhiều emails)
+     * - Log entries trong Laravel log files
+     * - Có thể trigger notifications cho GVCN (nếu setup)
+     *
+     * Use cases:
+     * - Giảng viên chủ động gửi cảnh báo giữa kỳ
+     * - Tự động cảnh báo sau khi điểm danh
+     * - Báo cáo định kỳ về tình hình chuyên cần
+     * - Phối hợp với GVCN quản lý sinh viên vắng nhiều
+     *
+     * @param Request $request Chứa:
+     *   - lop_hoc_phan_id (required): ID lớp cần kiểm tra và gửi cảnh báo
+     * @return \Illuminate\Http\RedirectResponse Redirect back với messages:
+     *   - Success: "Đã gửi {count} email cảnh báo thành công"
+     *   - Warning: "Đã gửi {count} emails, {error_count} lỗi" (kèm danh sách lỗi)
+     *   - Warning: "Lớp chưa có buổi học nào" (nếu tongBuoiHoc = 0)
+     *   - Error: "Vui lòng chọn lớp học phần" (nếu thiếu lop_hoc_phan_id)
+     * @throws \Symfony\Component\HttpKernel\Exception\HttpException 403 nếu không có quyền
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy lớp
      */
     public function checkAndSendWarnings(Request $request)
     {

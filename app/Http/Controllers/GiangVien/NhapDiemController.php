@@ -21,13 +21,28 @@ class NhapDiemController extends Controller
 {
     protected $diemService;
 
+    /**
+     * Khởi tạo controller với DiemService dependency injection
+     *
+     * @param DiemService $diemService Service xử lý logic tính điểm tổng kết
+     * @return void
+     */
     public function __construct(DiemService $diemService)
     {
         $this->diemService = $diemService;
     }
 
     /**
-     * Danh sách lớp học phần của giảng viên
+     * Hiển thị danh sách lớp học phần mà giảng viên đang được phân công giảng dạy
+     *
+     * Lấy tất cả các lớp học phần của giảng viên hiện tại, kèm theo:
+     * - Thông tin môn học, học kỳ
+     * - Số lượng sinh viên đã/chưa có điểm
+     * - Trạng thái lớp (đang học, đã khóa điểm, đã kết thúc...)
+     * - Vai trò của giảng viên (chính/phụ)
+     *
+     * @return \Illuminate\View\View View danh sách lớp học phần với thông tin chi tiết
+     * @return \Illuminate\Http\RedirectResponse Redirect nếu không tìm thấy thông tin giảng viên
      */
     public function index()
     {
@@ -94,7 +109,18 @@ class NhapDiemController extends Controller
     }
 
     /**
-     * Trang nhập điểm chi tiết cho lớp học phần
+     * Hiển thị trang nhập điểm chi tiết cho một lớp học phần cụ thể
+     *
+     * Kiểm tra quyền truy cập của giảng viên, sau đó load:
+     * - Thông tin lớp học phần (môn học, học kỳ)
+     * - Cấu hình đầu điểm (các loại điểm: chuyên cần, giữa kỳ, cuối kỳ...)
+     * - Danh sách sinh viên và điểm đã nhập
+     * - Trạng thái khóa/duyệt điểm
+     * - Trạng thái gửi điểm lần 1 và lần 2
+     *
+     * @param int $lopHocPhanId ID của lớp học phần cần nhập điểm
+     * @return \Illuminate\View\View View form nhập điểm với đầy đủ thông tin
+     * @return \Illuminate\Http\RedirectResponse Redirect về index nếu không có quyền
      */
     public function show($lopHocPhanId)
     {
@@ -165,7 +191,20 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     }
 
     /**
-     * Nhập điểm thành phần (AJAX)
+     * Nhập hoặc cập nhật điểm thành phần cho sinh viên qua AJAX request
+     *
+     * Xử lý việc nhập điểm cho một sinh viên ở một đầu điểm cụ thể.
+     * Các bước xử lý:
+     * 1. Validate dữ liệu đầu vào (lop_hoc_phan_sinh_vien_id, cau_hinh_id, cot_diem, diem_so)
+     * 2. Kiểm tra quyền giảng viên được phân công
+     * 3. Kiểm tra trạng thái lớp (đã kết thúc, đã khóa điểm, đã duyệt)
+     * 4. Kiểm tra cột điểm hợp lệ
+     * 5. Insert/Update điểm hoặc xóa điểm nếu giá trị null
+     * 6. Tự động tính lại điểm tổng kết
+     *
+     * @param Request $request Chứa lop_hoc_phan_sinh_vien_id, cau_hinh_id, cot_diem, diem_so, ghi_chu
+     * @return \Illuminate\Http\JsonResponse JSON {success, message, data/deleted}
+     * @throws \Exception Khi có lỗi trong quá trình xử lý database
      */
     public function nhapDiem(Request $request)
     {
@@ -297,7 +336,13 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     }
 
     /**
-     * Lấy điểm TK của sinh viên (AJAX) - bao gồm điểm tạm thời
+     * Lấy điểm tổng kết (TK) của sinh viên qua AJAX, bao gồm cả điểm tạm thời
+     *
+     * Nếu đã có điểm chính thức (diem_he_10), trả về điểm đó.
+     * Nếu chưa có, tính điểm tạm thời dựa trên các điểm thành phần đã nhập.
+     *
+     * @param Request $request Chứa lop_hoc_phan_sinh_vien_id
+     * @return \Illuminate\Http\JsonResponse JSON {success, diem_tk, is_tam_thoi}
      */
     public function getDiemTK(Request $request)
     {
@@ -329,7 +374,19 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     }
 
     /**
-     * Khóa điểm (chỉ GV chính mới được khóa)
+     * Khóa điểm lớp học phần (chỉ giảng viên chính mới được thực hiện)
+     *
+     * Sau khi khóa điểm, giảng viên không thể sửa điểm nữa.
+     * Điểm sẽ được gửi cho đào tạo để duyệt.
+     * Các kiểm tra:
+     * - Quyền giảng viên chính
+     * - Lớp chưa kết thúc
+     * - Tất cả sinh viên đã có điểm (hoặc xác nhận khóa dù chưa đủ)
+     *
+     * @param Request $request Có thể chứa 'confirm' để bỏ qua cảnh báo thiếu điểm
+     * @param int $lopHocPhanId ID của lớp học phần cần khóa điểm
+     * @return \Illuminate\Http\JsonResponse JSON {success, message, can_confirm?}
+     * @throws \Exception Khi có lỗi trong quá trình cập nhật database
      */
     public function khoaDiem(Request $request, $lopHocPhanId)
     {
@@ -410,7 +467,14 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     }
 
     /**
-     * Mở khóa điểm (khi Đào tạo trả về)
+     * Mở khóa điểm lớp học phần (khi Đào tạo trả về để chỉnh sửa)
+     *
+     * Cho phép giảng viên chính mở lại điểm đã khóa để chỉnh sửa.
+     * Thường được sử dụng khi đào tạo trả về điểm để giảng viên sửa.
+     *
+     * @param int $lopHocPhanId ID của lớp học phần cần mở khóa điểm
+     * @return \Illuminate\Http\JsonResponse JSON {success, message}
+     * @throws \Exception Khi có lỗi trong quá trình cập nhật database
      */
     public function moKhoaDiem($lopHocPhanId)
     {
@@ -456,7 +520,19 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     }
 
     /**
-     * Gửi điểm cho đào tạo để duyệt
+     * Gửi điểm cho đào tạo để duyệt (hỗ trợ gửi 2 lần: giữa kỳ và cuối kỳ)
+     *
+     * Quy trình gửi điểm:
+     * 1. Xác định lần gửi (1: giữa kỳ, 2: cuối kỳ) dựa trên tham số hoặc tự động
+     * 2. Kiểm tra đào tạo đã mở gửi điểm cho lần đó chưa
+     * 3. Kiểm tra tất cả sinh viên đã có điểm (hoặc xác nhận gửi dù chưa đủ)
+     * 4. Cập nhật trạng thái gửi điểm và khóa điểm
+     * 5. Gửi thông báo cho đào tạo
+     *
+     * @param Request $request Có thể chứa 'lan_gui' (1 hoặc 2) và 'confirm'
+     * @param int $lopHocPhanId ID của lớp học phần cần gửi điểm
+     * @return \Illuminate\Http\JsonResponse JSON {success, message, lan_gui, can_confirm?}
+     * @throws \Exception Khi có lỗi trong quá trình xử lý
      */
     public function guiDiemChoDaoTao(Request $request, $lopHocPhanId)
     {
@@ -637,7 +713,17 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     }
 
     /**
-     * Download template Excel để nhập điểm
+     * Tải xuống file Excel mẫu để nhập điểm hàng loạt
+     *
+     * File Excel bao gồm:
+     * - Header với tên các đầu điểm và số cột tương ứng
+     * - Danh sách sinh viên (STT, MSSV, Họ tên)
+     * - Điểm đã nhập (nếu có) để giảng viên có thể chỉnh sửa
+     * - Format chuẩn để import lại vào hệ thống
+     *
+     * @param int $lopHocPhanId ID của lớp học phần cần tải template
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse File Excel download
+     * @return \Illuminate\Http\RedirectResponse Redirect nếu không có quyền
      */
     public function downloadTemplate($lopHocPhanId)
     {
@@ -741,7 +827,21 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
     }
 
     /**
-     * Import điểm từ Excel
+     * Import điểm hàng loạt từ file Excel
+     *
+     * Quy trình import:
+     * 1. Validate file Excel (định dạng, kích thước)
+     * 2. Kiểm tra quyền và trạng thái lớp (khóa điểm, duyệt điểm, kết thúc)
+     * 3. Đọc dữ liệu từ Excel theo format template
+     * 4. Validate từng dòng điểm (MSSV hợp lệ, điểm 0-10)
+     * 5. Insert/Update điểm vào database
+     * 6. Tự động tính lại điểm tổng kết cho từng sinh viên
+     * 7. Trả về thống kê số điểm import thành công và danh sách lỗi (nếu có)
+     *
+     * @param Request $request Chứa file Excel (mimes: xlsx, xls, max: 5MB)
+     * @param int $lopHocPhanId ID của lớp học phần cần import điểm
+     * @return \Illuminate\Http\JsonResponse JSON {success, message, imported, errors, total_errors}
+     * @throws \Exception Khi có lỗi đọc file hoặc xử lý database
      */
     public function importExcel(Request $request, $lopHocPhanId)
     {
