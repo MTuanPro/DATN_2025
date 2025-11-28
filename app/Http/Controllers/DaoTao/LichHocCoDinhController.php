@@ -14,6 +14,15 @@ class LichHocCoDinhController extends Controller
     /**
      * Hiển thị danh sách lịch học cố định của lớp học phần
      */
+    /**
+     * Hiển thị danh sách lịch học cố định của một lớp học phần
+     * 
+     * Lấy tất cả lịch học cố định theo tuần của lớp học phần
+     * 
+     * @param LopHocPhan $lopHocPhan Instance lớp học phần
+     * @return \Illuminate\View\View Trang danh sách lịch học cố định
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy lớp
+     */
     public function index(LopHocPhan $lopHocPhan)
     {
         $lichHocs = LichHocCoDinh::with(['phongHoc', 'giangVien', 'caHoc'])
@@ -27,6 +36,16 @@ class LichHocCoDinhController extends Controller
 
     /**
      * Hiển thị form tạo lịch học cố định
+     */
+    /**
+     * Hiển thị form tạo lịch học cố định mới
+     * 
+     * Lấy danh sách phòng học, ca học, giảng viên, thứ trong tuần
+     * để tạo lịch học cố định cho lớp
+     * 
+     * @param LopHocPhan $lopHocPhan Instance lớp học phần
+     * @return \Illuminate\View\View Form tạo lịch học cố định
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
      */
     public function create(LopHocPhan $lopHocPhan)
     {
@@ -55,6 +74,20 @@ class LichHocCoDinhController extends Controller
 
     /**
      * Lưu lịch học cố định mới - TẠO NHIỀU BUỔI HỌC TỰ ĐỘNG
+     */
+    /**
+     * Lưu lịch học cố định mới vào database
+     * 
+     * Validate và kiểm tra xung đột:
+     * - Xung đột phòng học (phòng bị trùng giờ)
+     * - Xung đột giảng viên (GV dạy trùng giờ)
+     * Tự động tạo lịch học chi tiết cho tất cả các tuần trong học kỳ.
+     * 
+     * @param Request $request Chứa dữ liệu lịch học cố định
+     * @param LopHocPhan $lopHocPhan Instance lớp học phần
+     * @return \Illuminate\Http\RedirectResponse Redirect về danh sách lịch cố định
+     * @throws \Illuminate\Validation\ValidationException Nếu có xung đột lịch
+     * @throws \Exception Nếu có lỗi khi lưu
      */
     public function store(Request $request, LopHocPhan $lopHocPhan)
     {
@@ -345,6 +378,15 @@ class LichHocCoDinhController extends Controller
     /**
      * Hiển thị form chỉnh sửa lịch học cố định
      */
+    /**
+     * Hiển thị form chỉnh sửa lịch học cố định
+     * 
+     * Lấy thông tin lịch học cố định hiện tại và các danh sách cần thiết
+     * 
+     * @param LichHocCoDinh $lichCoDinh Instance lịch học cố định cần sửa
+     * @return \Illuminate\View\View Form chỉnh sửa
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     */
     public function edit(LichHocCoDinh $lichCoDinh)
     {
         $phongHocs = PhongHoc::orderBy('ten_phong')->get();
@@ -372,6 +414,18 @@ class LichHocCoDinhController extends Controller
 
     /**
      * Cập nhật lịch học cố định
+     */
+    /**
+     * Cập nhật thông tin lịch học cố định
+     * 
+     * Validate và kiểm tra xung đột tương tự store.
+     * Cập nhật lại tất cả lịch học chi tiết đã tạo từ lịch cố định này.
+     * 
+     * @param Request $request Chứa dữ liệu cập nhật
+     * @param LichHocCoDinh $lichCoDinh Instance lịch học cố định cần cập nhật
+     * @return \Illuminate\Http\RedirectResponse Redirect về danh sách
+     * @throws \Illuminate\Validation\ValidationException Nếu có xung đột
+     * @throws \Exception Nếu có lỗi
      */
     public function update(Request $request, LichHocCoDinh $lichCoDinh)
     {
@@ -466,6 +520,16 @@ class LichHocCoDinhController extends Controller
 
     /**
      * Xóa lịch học cố định và tất cả lịch học chi tiết liên quan
+     */
+    /**
+     * Xóa lịch học cố định
+     * 
+     * Xóa lịch học cố định và tất cả lịch học chi tiết đã tạo từ lịch cố định này.
+     * Xóa cả bản ghi điểm danh liên quan nếu có.
+     * 
+     * @param LichHocCoDinh $lichCoDinh Instance lịch học cố định cần xóa
+     * @return \Illuminate\Http\RedirectResponse Redirect về danh sách
+     * @throws \Exception Nếu có lỗi khi xóa
      */
     public function destroy(LichHocCoDinh $lichCoDinh)
     {
@@ -626,6 +690,15 @@ class LichHocCoDinhController extends Controller
     /**
      * API kiểm tra xung đột phòng học
      */
+    /**
+     * Kiểm tra xung đột phòng học (AJAX)
+     * 
+     * Kiểm tra xem phòng học có bị trùng lịch không
+     * tại thời điểm và thứ đã chọn
+     * 
+     * @param Request $request Chứa: phong_hoc_id, thu_trong_tuan, tiet_bat_dau, tiet_ket_thuc
+     * @return \Illuminate\Http\JsonResponse Kết quả kiểm tra xung đột
+     */
     public function checkPhongConflict(Request $request)
     {
         $lichHoc = new LichHocCoDinh([
@@ -642,6 +715,15 @@ class LichHocCoDinhController extends Controller
 
     /**
      * API kiểm tra xung đột giảng viên
+     */
+    /**
+     * Kiểm tra xung đột lịch giảng viên (AJAX)
+     * 
+     * Kiểm tra xem giảng viên có bị trùng lịch giảng dạy không
+     * tại thời điểm và thứ đã chọn
+     * 
+     * @param Request $request Chứa: giang_vien_id, thu_trong_tuan, tiet_bat_dau, tiet_ket_thuc
+     * @return \Illuminate\Http\JsonResponse Kết quả kiểm tra xung đột
      */
     public function checkGiangVienConflict(Request $request)
     {

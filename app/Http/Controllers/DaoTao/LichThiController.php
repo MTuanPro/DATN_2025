@@ -29,6 +29,16 @@ class LichThiController extends Controller
     /**
      * Hiển thị danh sách lịch thi
      */
+    /**
+     * Hiển thị danh sách lịch thi
+     * 
+     * Lọc theo học kỳ, môn học, lớp học phần, khoảng thời gian.
+     * Kết quả bao gồm thông tin môn học, lớp, phòng thi, giám thị, số SV dự thi.
+     * 
+     * @param Request $request Chứa các tham số lọc
+     * @return \Illuminate\View\View Trang danh sách lịch thi
+     * @throws \Exception Nếu có lỗi truy vấn
+     */
     public function index(Request $request)
     {
         $query = LichThi::with([
@@ -81,6 +91,15 @@ class LichThiController extends Controller
     /**
      * Hiển thị form tạo lịch thi mới
      */
+    /**
+     * Hiển thị form tạo lịch thi mới
+     * 
+     * Lấy danh sách lớp học phần, phòng học, ca học, giảng viên
+     * để chọn khi tạo lịch thi
+     * 
+     * @return \Illuminate\View\View Form tạo lịch thi
+     * @throws \Exception Nếu có lỗi tải dữ liệu
+     */
     public function create()
     {
         // Load tất cả lớp học phần (sắp xếp theo học kỳ mới nhất)
@@ -99,6 +118,20 @@ class LichThiController extends Controller
 
     /**
      * Lưu lịch thi mới
+     */
+    /**
+     * Lưu lịch thi mới vào database
+     * 
+     * Validate dữ liệu bao gồm:
+     * - Kiểm tra trùng lịch phòng thi
+     * - Kiểm tra trùng lịch giảng viên giám thị
+     * - Kiểm tra trùng lịch thi sinh viên
+     * Tự động tạo lịch thi cho từng sinh viên trong lớp.
+     * 
+     * @param StoreLichThiRequest $request Request đã validate
+     * @return \Illuminate\Http\RedirectResponse Redirect về danh sách
+     * @throws \Illuminate\Validation\ValidationException Nếu có xung đột lịch
+     * @throws \Exception Nếu có lỗi khi lưu
      */
     public function store(StoreLichThiRequest $request)
     {
@@ -247,6 +280,18 @@ class LichThiController extends Controller
     /**
      * Hiển thị chi tiết lịch thi
      */
+    /**
+     * Hiển thị chi tiết lịch thi
+     * 
+     * Hiển thị đầy đủ thông tin lịch thi:
+     * - Thông tin môn thi, lớp, phòng, thời gian
+     * - Danh sách giám thị
+     * - Danh sách sinh viên dự thi với số báo danh
+     * 
+     * @param LichThi $lichThi Instance lịch thi
+     * @return \Illuminate\View\View Trang chi tiết lịch thi
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     */
     public function show(LichThi $lichThi)
     {
         $lichThi->load([
@@ -380,6 +425,15 @@ class LichThiController extends Controller
     /**
      * Hiển thị form chỉnh sửa lịch thi
      */
+    /**
+     * Hiển thị form chỉnh sửa lịch thi
+     * 
+     * Lấy thông tin lịch thi hiện tại và các danh sách cần thiết
+     * 
+     * @param LichThi $lichThi Instance lịch thi cần sửa
+     * @return \Illuminate\View\View Form chỉnh sửa
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     */
     public function edit(LichThi $lichThi)
     {
         $lopHocPhans = LopHocPhan::with('monHoc', 'hocKy')->get();
@@ -393,6 +447,18 @@ class LichThiController extends Controller
 
     /**
      * Cập nhật lịch thi
+     */
+    /**
+     * Cập nhật thông tin lịch thi
+     * 
+     * Validate tương tự store, kiểm tra xung đột lịch.
+     * Cập nhật lại thông tin lịch thi cho sinh viên nếu có thay đổi.
+     * 
+     * @param UpdateLichThiRequest $request Request đã validate
+     * @param LichThi $lichThi Instance lịch thi cần cập nhật
+     * @return \Illuminate\Http\RedirectResponse Redirect về danh sách
+     * @throws \Illuminate\Validation\ValidationException Nếu có xung đột
+     * @throws \Exception Nếu có lỗi
      */
     public function update(UpdateLichThiRequest $request, LichThi $lichThi)
     {
@@ -620,6 +686,17 @@ class LichThiController extends Controller
     /**
      * Xóa lịch thi
      */
+    /**
+     * Xóa lịch thi
+     * 
+     * Xóa lịch thi và tất cả dữ liệu liên quan:
+     * - Lịch thi sinh viên
+     * - Thông báo đã gửi
+     * 
+     * @param LichThi $lichThi Instance lịch thi cần xóa
+     * @return \Illuminate\Http\RedirectResponse Redirect về danh sách
+     * @throws \Exception Nếu có lỗi khi xóa
+     */
     public function destroy(LichThi $lichThi)
     {
         try {
@@ -645,6 +722,16 @@ class LichThiController extends Controller
     /**
      * Gửi thông báo lịch thi
      */
+    /**
+     * Gửi thông báo lịch thi cho sinh viên
+     * 
+     * Tạo và gửi thông báo tới tất cả sinh viên dự thi
+     * bao gồm thông tin: môn thi, ngày giờ, phòng, số báo danh
+     * 
+     * @param LichThi $lichThi Instance lịch thi
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang trước
+     * @throws \Exception Nếu có lỗi khi gửi thông báo
+     */
     public function guiThongBao(LichThi $lichThi)
     {
         try {
@@ -663,6 +750,15 @@ class LichThiController extends Controller
     /**
      * Xuất lịch thi Excel/PDF
      */
+    /**
+     * Xuất danh sách lịch thi ra file Excel
+     * 
+     * Tạo file Excel chứa danh sách lịch thi theo bộ lọc
+     * 
+     * @param Request $request Chứa các tham số lọc
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse File Excel
+     * @throws \Exception Nếu có lỗi khi tạo file
+     */
     public function export(Request $request)
     {
         // TODO: Implement export Excel/PDF
@@ -674,6 +770,15 @@ class LichThiController extends Controller
 
     /**
      * Tải đề thi
+     */
+    /**
+     * Tải xuống file đề thi
+     * 
+     * Kiểm tra quyền và download file đề thi nếu có
+     * 
+     * @param LichThi $lichThi Instance lịch thi
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse File đề thi
+     * @throws \Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException Nếu không tìm thấy file
      */
     public function downloadDeThi(LichThi $lichThi)
     {
@@ -695,6 +800,15 @@ class LichThiController extends Controller
     /**
      * Tải đáp án
      */
+    /**
+     * Tải xuống file đáp án
+     * 
+     * Kiểm tra quyền và download file đáp án nếu có
+     * 
+     * @param LichThi $lichThi Instance lịch thi
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse File đáp án
+     * @throws \Symfony\Component\HttpFoundation\File\Exception\FileNotFoundException Nếu không tìm thấy file
+     */
     public function downloadDapAn(LichThi $lichThi)
     {
         if (!$lichThi->dap_an_file) {
@@ -714,6 +828,16 @@ class LichThiController extends Controller
 
     /**
      * Trang phân phòng thi cho sinh viên
+     */
+    /**
+     * Hiển thị trang phân phòng thi tự động
+     * 
+     * Tính toán và đề xuất phân phòng thi tự động cho sinh viên
+     * dựa trên sức chứa của phòng và số lượng sinh viên
+     * 
+     * @param LichThi $lichThi Instance lịch thi
+     * @return \Illuminate\View\View Trang phân phòng thi
+     * @throws \Exception Nếu có lỗi khi tính toán
      */
     public function phanPhong(LichThi $lichThi)
     {
@@ -768,6 +892,17 @@ class LichThiController extends Controller
     /**
      * Cập nhật phòng thi cho sinh viên
      */
+    /**
+     * Cập nhật phân phòng thi cho sinh viên
+     * 
+     * Lưu thông tin phân phòng (phòng thi, số báo danh) cho từng sinh viên
+     * 
+     * @param Request $request Chứa dữ liệu phân phòng
+     * @param LichThi $lichThi Instance lịch thi
+     * @return \Illuminate\Http\RedirectResponse Redirect về chi tiết lịch thi
+     * @throws \Illuminate\Validation\ValidationException Nếu dữ liệu không hợp lệ
+     * @throws \Exception Nếu có lỗi khi lưu
+     */
     public function capNhatPhong(Request $request, LichThi $lichThi)
     {
         $request->validate([
@@ -816,6 +951,16 @@ class LichThiController extends Controller
     /**
      * Xem danh sách sinh viên dự thi
      */
+    /**
+     * Hiển thị danh sách sinh viên dự thi
+     * 
+     * Hiển thị danh sách tất cả sinh viên tham gia kỳ thi
+     * bao gồm thông tin: phòng thi, số báo danh, trạng thái
+     * 
+     * @param LichThi $lichThi Instance lịch thi
+     * @return \Illuminate\View\View Trang danh sách sinh viên
+     * @throws \Illuminate\Database\Eloquent\ModelNotFoundException Nếu không tìm thấy
+     */
     public function danhSachSinhVien(LichThi $lichThi)
     {
         $lichThi->load([
@@ -844,6 +989,11 @@ class LichThiController extends Controller
     /**
      * Hiển thị form import
      */
+    /**
+     * Hiển thị trang import lịch thi từ file Excel
+     * 
+     * @return \Illuminate\View\View Trang upload file Excel để import lịch thi
+     */
     public function showImportForm()
     {
         return view('daotao.lich-thi.import');
@@ -851,6 +1001,16 @@ class LichThiController extends Controller
 
     /**
      * Download template Excel/CSV
+     */
+    /**
+     * Tải file Excel mẫu để import lịch thi
+     * 
+     * Tạo file Excel với các cột:
+     * Mã lớp HP, Ngày thi, Giờ bắt đầu, Giờ kết thúc,
+     * Hình thức thi, Phòng thi, Giám thị 1, Giám thị 2, Ghi chú
+     * 
+     * @return \Symfony\Component\HttpFoundation\BinaryFileResponse File Excel mẫu
+     * @throws \Exception Nếu có lỗi khi tạo file
      */
     public function downloadTemplate()
     {
@@ -903,6 +1063,17 @@ class LichThiController extends Controller
 
     /**
      * Import lịch thi từ Excel hoặc CSV
+     */
+    /**
+     * Import danh sách lịch thi từ file Excel
+     * 
+     * Đọc file Excel và tạo hàng loạt lịch thi.
+     * Tự động validate xung đột lịch và tạo lịch thi cho sinh viên.
+     * 
+     * @param Request $request Chứa file Excel upload
+     * @return \Illuminate\Http\RedirectResponse Redirect về trang import với kết quả
+     * @throws \Illuminate\Validation\ValidationException Nếu file không hợp lệ
+     * @throws \Exception Nếu có lỗi khi import
      */
     public function import(Request $request)
     {
