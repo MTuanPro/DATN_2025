@@ -391,6 +391,18 @@ class SinhVienSeeder extends Seeder
         $countNN = 0;
 
         foreach ($sinhViens as $svData) {
+            // Kiểm tra xem sinh viên đã tồn tại chưa
+            $existingSinhVien = DB::table('sinh_vien')->where('ma_sinh_vien', $svData['ma_sinh_vien'])->first();
+            if ($existingSinhVien) {
+                continue; // Bỏ qua nếu đã tồn tại
+            }
+
+            // Kiểm tra email đã tồn tại chưa
+            $existingUser = DB::table('users')->where('email', $svData['email'])->first();
+            if ($existingUser) {
+                continue; // Bỏ qua nếu email đã tồn tại
+            }
+
             // Tạo user trước
             $userId = DB::table('users')->insertGetId([
                 'name' => $svData['ho_ten'],
@@ -452,6 +464,214 @@ class SinhVienSeeder extends Seeder
         echo "   👨‍🎓 Khoa Kinh tế: {$countKT} sinh viên\n";
         echo "   👨‍🎓 Khoa Ngoại ngữ: {$countNN} sinh viên\n";
         echo "   🔑 Mật khẩu mặc định: password\n";
+
+        // ========================================
+        // THÊM 200 SINH VIÊN MỚI - CHIA ĐỀU CHO CÁC CHUYÊN NGÀNH
+        // ========================================
+        $this->create200Students($khoaHocK25, $trangThaiDangHoc, $vaiTroSinhVien);
+    }
+
+    /**
+     * Tạo 200 sinh viên mới, chia đều cho các chuyên ngành
+     */
+    private function create200Students($khoaHocK25, $trangThaiDangHoc, $vaiTroSinhVien): void
+    {
+        // Lấy tất cả chuyên ngành
+        $chuyenNganhs = DB::table('chuyen_nganh')
+            ->join('nganh', 'chuyen_nganh.nganh_id', '=', 'nganh.id')
+            ->select('chuyen_nganh.id as chuyen_nganh_id', 'chuyen_nganh.nganh_id', 'nganh.ma_nganh')
+            ->orderBy('chuyen_nganh.id')
+            ->get();
+
+        if ($chuyenNganhs->isEmpty()) {
+            echo "❌ Không tìm thấy chuyên ngành nào\n";
+            return;
+        }
+
+        $totalChuyenNganh = $chuyenNganhs->count();
+        $studentsPerChuyenNganh = intval(200 / $totalChuyenNganh); // 11 sinh viên/chuyên ngành
+        $remainder = 200 % $totalChuyenNganh; // 2 sinh viên còn lại
+
+        // Lấy mapping ngành -> lớp hành chính
+        $lopMapping = $this->getLopHanhChinhMapping($khoaHocK25);
+
+        // Tìm số bắt đầu từ mã sinh viên lớn nhất hiện có
+        $maxMaSinhVien = DB::table('sinh_vien')
+            ->where('ma_sinh_vien', 'LIKE', 'SV25%')
+            ->orderBy('ma_sinh_vien', 'desc')
+            ->value('ma_sinh_vien');
+        
+        if ($maxMaSinhVien) {
+            // Lấy số từ mã sinh viên (ví dụ: SV25020 -> 25020)
+            $studentNumber = intval(substr($maxMaSinhVien, 2)) + 1;
+        } else {
+            $studentNumber = 25021; // Bắt đầu từ SV25021 nếu chưa có
+        }
+
+        // Danh sách họ và tên phổ biến
+        $ho = ['Nguyễn', 'Trần', 'Lê', 'Phạm', 'Hoàng', 'Đỗ', 'Vũ', 'Võ', 'Đặng', 'Bùi', 'Đinh', 'Lý', 'Phan', 'Trịnh', 'Cao', 'Hồ', 'Dương', 'Ngô', 'Lương', 'Tôn'];
+        $tenDem = ['Văn', 'Thị', 'Minh', 'Đức', 'Quang', 'Thanh', 'Hữu', 'Công', 'Đình', 'Xuân', 'Hồng', 'Thu', 'Bảo', 'Anh', 'Tuấn', 'Hùng', 'Duy', 'Khánh', 'Thành', 'Phúc'];
+        $ten = ['An', 'Bình', 'Cường', 'Dũng', 'Em', 'Giang', 'Hoa', 'Hùng', 'I', 'Khang', 'Long', 'Mai', 'Nam', 'Oanh', 'Phong', 'Quỳnh', 'Rộng', 'Sơn', 'Tâm', 'Uyên', 'Việt', 'Xuân', 'Yên', 'Ánh', 'Bảo', 'Cẩm', 'Đạt', 'Giang', 'Hạnh', 'Khoa'];
+        $count = 0;
+        $countByChuyenNganh = [];
+
+        foreach ($chuyenNganhs as $index => $chuyenNganh) {
+            // Số sinh viên cho chuyên ngành này (11 hoặc 12)
+            $numStudents = $studentsPerChuyenNganh + ($index < $remainder ? 1 : 0);
+            
+            // Lấy ngành và lớp hành chính tương ứng
+            $nganhId = $chuyenNganh->nganh_id;
+            $maNganh = $chuyenNganh->ma_nganh;
+            $lopHanhChinhIds = $lopMapping[$maNganh] ?? [];
+
+            if (empty($lopHanhChinhIds)) {
+                echo "⚠️  Không tìm thấy lớp hành chính cho ngành {$maNganh}\n";
+                continue;
+            }
+
+            $countByChuyenNganh[$chuyenNganh->chuyen_nganh_id] = 0;
+
+            $created = 0;
+            while ($created < $numStudents) {
+                // Tạo mã sinh viên
+                $maSinhVien = 'SV' . $studentNumber;
+                
+                // Kiểm tra xem mã sinh viên đã tồn tại chưa
+                $existingSinhVien = DB::table('sinh_vien')->where('ma_sinh_vien', $maSinhVien)->first();
+                if ($existingSinhVien) {
+                    $studentNumber++;
+                    continue; // Bỏ qua nếu đã tồn tại
+                }
+                
+                // Tạo email
+                $email = 'sv' . $studentNumber . '@sis.edu.vn';
+                
+                // Kiểm tra email đã tồn tại chưa
+                $existingUser = DB::table('users')->where('email', $email)->first();
+                if ($existingUser) {
+                    $studentNumber++;
+                    continue; // Bỏ qua nếu email đã tồn tại
+                }
+                
+                // Chọn lớp hành chính (luân phiên giữa các lớp)
+                $lopHanhChinhId = $lopHanhChinhIds[$created % count($lopHanhChinhIds)];
+
+                // Tạo tên ngẫu nhiên
+                $hoTen = $ho[array_rand($ho)] . ' ' . $tenDem[array_rand($tenDem)] . ' ' . $ten[array_rand($ten)];
+                
+                // Tạo ngày sinh ngẫu nhiên (2004-2006)
+                $year = rand(2004, 2006);
+                $month = str_pad(rand(1, 12), 2, '0', STR_PAD_LEFT);
+                $day = str_pad(rand(1, 28), 2, '0', STR_PAD_LEFT);
+                $ngaySinh = "{$year}-{$month}-{$day}";
+                
+                // Giới tính ngẫu nhiên
+                $gioiTinh = rand(0, 1) == 0 ? 'nam' : 'nu';
+                
+                // Số điện thoại
+                $soDienThoai = '09' . str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
+                
+                // CCCD (đảm bảo unique)
+                $canCuocCongDan = str_pad($year % 100, 2, '0', STR_PAD_LEFT) . $month . $day . str_pad($studentNumber, 6, '0', STR_PAD_LEFT);
+
+                // Tạo user
+                $userId = DB::table('users')->insertGetId([
+                    'name' => $hoTen,
+                    'email' => $email,
+                    'password' => Hash::make('password'),
+                    'email_verified_at' => now(),
+                    'trang_thai' => 'hoat_dong',
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Gán vai trò sinh viên
+                DB::table('tai_khoan_vai_tro')->insert([
+                    'tai_khoan_id' => $userId,
+                    'vai_tro_id' => $vaiTroSinhVien,
+                    'ngay_gan' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                // Tạo sinh viên
+                DB::table('sinh_vien')->insert([
+                    'user_id' => $userId,
+                    'ma_sinh_vien' => $maSinhVien,
+                    'ho_ten' => $hoTen,
+                    'email' => $email,
+                    'ngay_sinh' => $ngaySinh,
+                    'gioi_tinh' => $gioiTinh,
+                    'so_dien_thoai' => $soDienThoai,
+                    'can_cuoc_cong_dan' => $canCuocCongDan,
+                    'khoa_hoc_id' => $khoaHocK25,
+                    'lop_hanh_chinh_id' => $lopHanhChinhId,
+                    'nganh_id' => $nganhId,
+                    'chuyen_nganh_id' => $chuyenNganh->chuyen_nganh_id,
+                    'ky_hien_tai' => 1,
+                    'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
+                    'giang_vien_chu_nhiem_id' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                $studentNumber++;
+                $count++;
+                $created++;
+                $countByChuyenNganh[$chuyenNganh->chuyen_nganh_id]++;
+            }
+        }
+
+        echo "\n✅ Đã tạo thêm {$count} sinh viên mới (tổng cộng: " . ($count + 20) . " sinh viên)\n";
+        echo "   🔑 Mật khẩu đăng nhập: password\n";
+        echo "   📧 Email đăng nhập: sv[STT]@sis.edu.vn (ví dụ: sv25021@sis.edu.vn)\n";
+        echo "   📊 Phân bổ theo chuyên ngành:\n";
+        
+        // Hiển thị thống kê theo chuyên ngành
+        foreach ($chuyenNganhs as $chuyenNganh) {
+            $tenChuyenNganh = DB::table('chuyen_nganh')->where('id', $chuyenNganh->chuyen_nganh_id)->value('ten_chuyen_nganh');
+            $soLuong = $countByChuyenNganh[$chuyenNganh->chuyen_nganh_id] ?? 0;
+            echo "      • {$tenChuyenNganh}: {$soLuong} sinh viên\n";
+        }
+    }
+
+    /**
+     * Lấy mapping ngành -> danh sách lớp hành chính
+     */
+    private function getLopHanhChinhMapping($khoaHocK25): array
+    {
+        $mapping = [];
+        
+        // Mapping mã ngành -> prefix lớp
+        $nganhPrefix = [
+            '7480201' => ['CNTT25A', 'CNTT25B'], // Công nghệ thông tin
+            '7480202' => ['KHMT25A', 'KHMT25B'], // Khoa học máy tính
+            '7480299' => ['ATTT25A', 'ATTT25B'], // An toàn thông tin
+            '7340101' => ['QTKD25A', 'QTKD25B'], // Quản trị kinh doanh
+            '7340201' => ['TCNH25A', 'TCNH25B'], // Tài chính - Ngân hàng
+            '7340301' => ['KT25A', 'KT25B'],     // Kế toán
+            '7220201' => ['NNA25A', 'NNA25B'],   // Ngôn ngữ Anh
+            '7220203' => ['NNJ25A', 'NNJ25B'],   // Ngôn ngữ Nhật
+            '7220204' => ['NNC25A', 'NNC25B'],   // Ngôn ngữ Trung Quốc
+        ];
+
+        foreach ($nganhPrefix as $maNganh => $prefixes) {
+            $lopIds = [];
+            foreach ($prefixes as $prefix) {
+                $lopId = DB::table('lop_hanh_chinh')
+                    ->where('ma_lop', $prefix)
+                    ->where('khoa_hoc_id', $khoaHocK25)
+                    ->value('id');
+                if ($lopId) {
+                    $lopIds[] = $lopId;
+                }
+            }
+            if (!empty($lopIds)) {
+                $mapping[$maNganh] = $lopIds;
+            }
+        }
+
+        return $mapping;
     }
 }
 
