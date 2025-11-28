@@ -30,7 +30,76 @@ use PhpOffice\PhpSpreadsheet\Style\Fill;
 class BaoCaoController extends Controller
 {
     /**
-     * Trang chủ báo cáo - Danh sách các loại báo cáo
+     * Hiển thị trang chủ dashboard báo cáo đào tạo với tất cả loại báo cáo
+     *
+     * Function này tạo landing page cho hệ thống báo cáo đào tạo,
+     * cung cấp menu navigation đến 9 loại báo cáo khác nhau với
+     * visual cards, icons, và descriptions.
+     *
+     * Workflow:
+     * 1. Define reportTypes array với 9 report categories:
+     *    a. Báo cáo Sinh viên:
+     *       - Thống kê theo khoa, ngành, khóa, lớp
+     *       - Icon: people-fill (blue)
+     *       - Route: dao-tao.bao-cao.sinh-vien
+     *    b. Báo cáo Kết quả học tập:
+     *       - Phân bố điểm, GPA, tỷ lệ đỗ/trượt
+     *       - Icon: clipboard-data (green)
+     *       - Route: dao-tao.bao-cao.ket-qua
+     *    c. Báo cáo Điểm danh:
+     *       - Tỷ lệ vắng mặt theo lớp/môn học
+     *       - Icon: calendar-check (warning)
+     *       - Route: dao-tao.bao-cao.diem-danh
+     *    d. Báo cáo Học phí:
+     *       - Thu học phí, nợ học phí theo kỳ
+     *       - Icon: cash-stack (info)
+     *       - Route: dao-tao.bao-cao.hoc-phi
+     *    e. Báo cáo Đăng ký môn học:
+     *       - Thống kê đăng ký theo môn, lớp, học kỳ
+     *       - Icon: journal-bookmark (secondary)
+     *       - Route: dao-tao.bao-cao.dang-ky
+     *    f. Báo cáo Xếp lớp:
+     *       - Thành công/thất bại, tỷ lệ xếp lớp
+     *       - Icon: diagram-3 (dark)
+     *       - Route: dao-tao.bao-cao.xep-lop
+     *    g. Báo cáo Tải giảng viên:
+     *       - Số giờ giảng, số lớp, tải giảng
+     *       - Icon: person-workspace (danger)
+     *       - Route: dao-tao.bao-cao.tai-giang-vien
+     *    h. Báo cáo Phòng học:
+     *       - Sử dụng phòng, lịch phòng trống
+     *       - Icon: door-open (primary)
+     *       - Route: dao-tao.bao-cao.phong-hoc
+     *    i. Báo cáo Cảnh báo học vụ:
+     *       - Cảnh báo theo loại, mức độ, trạng thái
+     *       - Icon: exclamation-triangle (warning)
+     *       - Route: dao-tao.bao-cao.canh-bao
+     * 2. Return view với reportTypes array
+     *
+     * Dashboard features:
+     * - Grid layout với cards (3 columns)
+     * - Mỗi card có:
+     *   + Icon Bootstrap (bi-*)
+     *   + Color theme
+     *   + Title và description
+     *   + Link đến report page
+     * - Hover effects
+     * - Responsive design
+     * - Quick access menu
+     *
+     * Navigation:
+     * - Click card => Route to specific report
+     * - Breadcrumbs: Dashboard > Báo cáo
+     * - Sidebar menu highlighting
+     *
+     * Use cases:
+     * - Landing page cho reporting module
+     * - Quick overview các loại báo cáo
+     * - Central hub cho analytics
+     * - Admin/Đào tạo staff access point
+     *
+     * @return \Illuminate\View\View Dashboard với:
+     *   - reportTypes: Array 9 report categories
      */
     public function index()
     {
