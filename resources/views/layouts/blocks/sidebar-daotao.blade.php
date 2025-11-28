@@ -159,12 +159,8 @@
                         <span>Quản lý Lịch thi</span>
                     </a>
                     <ul class="submenu {{ Request::is('dao-tao/lich-thi*') ? 'active' : '' }}">
-                        <li
-                            class="submenu-item {{ Request::is('dao-tao/lich-thi') && !Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('dao-tao/lich-thi*') ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.lich-thi.index') }}">Danh sách Lịch thi</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('dao-tao/lich-thi/create') ? 'active' : '' }}">
-                            <a href="{{ route('dao-tao.lich-thi.create') }}">Tạo Lịch thi mới</a>
                         </li>
                     </ul>
                 </li>

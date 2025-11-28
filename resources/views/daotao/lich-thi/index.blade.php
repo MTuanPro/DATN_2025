@@ -100,9 +100,6 @@
                                 <a href="{{ route('dao-tao.lich-thi.show-import-form') }}" class="btn btn-info text-white">
                                     <i class="bi bi-upload"></i> Import Excel
                                 </a>
-                                <a href="{{ route('dao-tao.lich-thi.create') }}" class="btn btn-success">
-                                    <i class="bi bi-plus-circle"></i> Thêm lịch thi
-                                </a>
                             </div>
                         </div>
                     </div>
