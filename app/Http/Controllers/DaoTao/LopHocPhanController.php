@@ -20,7 +20,7 @@ class LopHocPhanController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LopHocPhan::with(['monHoc', 'hocKy', 'giangVienChinh.giangVien']);
+        $query = LopHocPhan::with(['monHoc', 'hocKy', 'lopHocPhanGiangVien.giangVien']);
 
         // Lọc theo học kỳ
         if ($request->has('hoc_ky_id') && $request->hoc_ky_id != '') {

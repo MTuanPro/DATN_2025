@@ -9,6 +9,8 @@ use App\Models\ChiTietHocPhiMon;
 use App\Models\DangKyMonHocTam;
 use App\Models\DaoTao\SinhVien;
 use App\Models\HocKy;
+use App\Services\NotificationService;
+use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -245,7 +247,19 @@ class HocPhiController extends Controller
                 $this->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
             }
 
+            // Tạo biên lai PDF và lưu vào storage
+            $bienLaiPdfPath = $this->generateBienLaiPdf($lichSu, $hocPhi);
+            
+            // Cập nhật lichSu với đường dẫn biên lai PDF
+            if ($bienLaiPdfPath) {
+                $lichSu->bien_lai_pdf = $bienLaiPdfPath;
+                $lichSu->save();
+            }
+
             DB::commit();
+            
+            // Gửi thông báo cho sinh viên
+            $this->sendPaymentNotification($lichSu, $hocPhi);
             
             // Lấy thông tin sinh viên để redirect đến trang thời khóa biểu
             $sinhVien = $hocPhi->sinhVien;
@@ -362,6 +376,208 @@ class HocPhiController extends Controller
         } catch (\Exception $e) {
             Log::error("❌ Lỗi khi thêm vào danh sách chờ xếp lớp: " . $e->getMessage());
         }
+    }
+
+    /**
+     * Tạo biên lai thanh toán PDF
+     * 
+     * @param LichSuDongHocPhi $lichSu
+     * @param HocPhiHocKy $hocPhi
+     * @return string|null Đường dẫn file PDF
+     */
+    private function generateBienLaiPdf($lichSu, $hocPhi)
+    {
+        try {
+            // Load lại relationships cần thiết nếu chưa được load
+            if (!$lichSu->relationLoaded('nguoiThu')) {
+                $lichSu->load('nguoiThu');
+            }
+            
+            if (!$hocPhi->relationLoaded('sinhVien')) {
+                $hocPhi->load('sinhVien');
+            }
+            
+            if (!$hocPhi->sinhVien->relationLoaded('lopHanhChinh')) {
+                $hocPhi->sinhVien->load('lopHanhChinh');
+            }
+            
+            if (!$hocPhi->relationLoaded('hocKy')) {
+                $hocPhi->load('hocKy');
+            }
+            
+            if (!$hocPhi->relationLoaded('chiTietHocPhiMon')) {
+                $hocPhi->load('chiTietHocPhiMon.monHoc');
+            }
+
+            // Tạo PDF
+            $pdf = Pdf::loadView('daotao.hoc-phi.bien-lai-pdf', [
+                'lichSu' => $lichSu,
+                'hocPhi' => $hocPhi,
+            ]);
+            
+            $pdf->setPaper('a4', 'portrait');
+            
+            // Tên file
+            $fileName = 'bien_lai_' . $lichSu->ma_giao_dich . '_' . now()->format('YmdHis') . '.pdf';
+            $filePath = 'bien-lai-pdf/' . $fileName;
+            
+            // Lưu vào storage
+            Storage::disk('public')->put($filePath, $pdf->output());
+            
+            return $filePath;
+        } catch (\Exception $e) {
+            Log::error('Lỗi tạo biên lai PDF: ' . $e->getMessage(), [
+                'lich_su_id' => $lichSu->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return null;
+        }
+    }
+
+    /**
+     * Gửi thông báo thanh toán cho sinh viên
+     * 
+     * @param LichSuDongHocPhi $lichSu
+     * @param HocPhiHocKy $hocPhi
+     * @return void
+     */
+    private function sendPaymentNotification($lichSu, $hocPhi)
+    {
+        try {
+            $sinhVien = $hocPhi->sinhVien;
+            
+            if (!$sinhVien || !$sinhVien->user_id) {
+                Log::warning('Không tìm thấy user_id của sinh viên để gửi thông báo', [
+                    'sinh_vien_id' => $hocPhi->sinh_vien_id,
+                    'lich_su_id' => $lichSu->id
+                ]);
+                return;
+            }
+
+            $notificationService = app(NotificationService::class);
+            
+            $tieuDe = "Xác nhận thanh toán học phí - Mã giao dịch: {$lichSu->ma_giao_dich}";
+            
+            $noiDung = "Kính gửi sinh viên {$sinhVien->ho_ten},\n\n"
+                . "Hệ thống xác nhận bạn đã thanh toán học phí thành công với thông tin sau:\n\n"
+                . "📋 Mã giao dịch: {$lichSu->ma_giao_dich}\n"
+                . "💰 Số tiền: " . number_format($lichSu->so_tien_dong, 0, ',', '.') . " đ\n"
+                . "📅 Ngày thanh toán: " . \Carbon\Carbon::parse($lichSu->ngay_dong)->format('d/m/Y H:i') . "\n"
+                . "💳 Phương thức: " . $this->getPhuongThucThanhToanText($lichSu->phuong_thuc_thanh_toan) . "\n"
+                . "📚 Học kỳ: {$hocPhi->hocKy->ten_hoc_ky} - {$hocPhi->hocKy->nam_hoc}\n\n"
+                . "📄 Biên lai thanh toán đã được tạo và đính kèm trong thông báo này. Vui lòng tải về để lưu trữ.\n\n"
+                . "Số tiền còn lại: " . number_format($hocPhi->so_tien_con_lai, 0, ',', '.') . " đ\n\n"
+                . "Trân trọng!\n"
+                . "Phòng Đào tạo";
+
+            // Lấy đường dẫn biên lai PDF (nếu có)
+            $bienLaiPdfPath = $lichSu->bien_lai_pdf;
+            $options = [
+                'muc_do_quan_trong' => 'quan_trong',
+                'gui_email' => false,
+                'gui_web_notification' => true,
+            ];
+            
+            // Chỉ thêm file đính kèm nếu biên lai PDF tồn tại
+            if ($bienLaiPdfPath && Storage::disk('public')->exists($bienLaiPdfPath)) {
+                $options['file_dinh_kem'] = $bienLaiPdfPath;
+            } else {
+                // Nếu không có biên lai PDF, cập nhật nội dung thông báo
+                $noiDung = str_replace(
+                    "📄 Biên lai thanh toán đã được tạo và đính kèm trong thông báo này. Vui lòng tải về để lưu trữ.\n\n",
+                    "📄 Biên lai thanh toán đã được tạo. Vui lòng vào menu 'Học phí' để xem và tải biên lai.\n\n",
+                    $noiDung
+                );
+            }
+
+            $notificationService->createAutoNotification(
+                'hoc_phi',
+                $tieuDe,
+                $noiDung,
+                [$sinhVien->user_id],
+                $options
+            );
+
+            Log::info('Đã gửi thông báo thanh toán cho sinh viên', [
+                'sinh_vien_id' => $sinhVien->id,
+                'lich_su_id' => $lichSu->id,
+                'ma_giao_dich' => $lichSu->ma_giao_dich
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Lỗi gửi thông báo thanh toán: ' . $e->getMessage(), [
+                'lich_su_id' => $lichSu->id,
+                'trace' => $e->getTraceAsString()
+            ]);
+        }
+    }
+
+    /**
+     * Lấy text phương thức thanh toán
+     * 
+     * @param string $phuongThuc
+     * @return string
+     */
+    private function getPhuongThucThanhToanText($phuongThuc)
+    {
+        $map = [
+            'tien_mat' => 'Tiền mặt',
+            'chuyen_khoan' => 'Chuyển khoản',
+            'VNPay' => 'VNPay',
+        ];
+
+        return $map[$phuongThuc] ?? $phuongThuc;
+    }
+
+    /**
+     * Xem/tải biên lai thanh toán PDF
+     * 
+     * @param int $lichSuId
+     * @return \Illuminate\Http\Response|\Symfony\Component\HttpFoundation\BinaryFileResponse
+     */
+    public function viewBienLai($lichSuId)
+    {
+        $lichSu = LichSuDongHocPhi::with([
+            'hocPhiHocKy.sinhVien.lopHanhChinh',
+            'hocPhiHocKy.hocKy',
+            'hocPhiHocKy.chiTietHocPhiMon.monHoc',
+            'nguoiThu'
+        ])->findOrFail($lichSuId);
+
+        $hocPhi = $lichSu->hocPhiHocKy;
+        $hocPhi->load(['sinhVien.lopHanhChinh', 'hocKy', 'chiTietHocPhiMon.monHoc']);
+
+        // Kiểm tra quyền truy cập
+        $user = auth()->user();
+        $hasAccess = false;
+
+        // Admin hoặc Đào tạo có quyền xem
+        if ($user && ($user->hasRole('admin') || $user->hasRole('dao_tao'))) {
+            $hasAccess = true;
+        }
+        // Sinh viên chỉ xem được biên lai của mình
+        elseif ($user && $user->sinhVien && $user->sinhVien->id == $hocPhi->sinh_vien_id) {
+            $hasAccess = true;
+        }
+
+        if (!$hasAccess) {
+            abort(403, 'Bạn không có quyền xem biên lai này');
+        }
+
+        // Nếu đã có file PDF đã lưu, tải file đó
+        if ($lichSu->bien_lai_pdf && Storage::disk('public')->exists($lichSu->bien_lai_pdf)) {
+            $filePath = Storage::disk('public')->path($lichSu->bien_lai_pdf);
+            return response()->download($filePath, 'bien_lai_' . $lichSu->ma_giao_dich . '.pdf');
+        }
+
+        // Nếu chưa có, tạo mới
+        $pdf = Pdf::loadView('daotao.hoc-phi.bien-lai-pdf', [
+            'lichSu' => $lichSu,
+            'hocPhi' => $hocPhi,
+        ]);
+        
+        $pdf->setPaper('a4', 'portrait');
+        
+        return $pdf->stream('bien_lai_' . $lichSu->ma_giao_dich . '.pdf');
     }
 }
 

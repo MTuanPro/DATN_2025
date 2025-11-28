@@ -6,8 +6,8 @@ use App\Http\Controllers\Controller;
 use App\Models\HocPhiHocKy;
 use App\Models\ChiTietHocPhiMon;
 use App\Models\LichSuDongHocPhi;
-use App\Services\MoMoService;
 use App\Services\HocPhiService;
+use App\Services\VNPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -126,9 +126,9 @@ class HocPhiController extends Controller
     }
 
     /**
-     * Show form to pay tuition via MoMo
+     * Show form to pay tuition via VNPay
      */
-    public function showMoMoPayment($id)
+    public function showVNPayPayment($id)
     {
         $user = auth()->user();
         $sinhVien = $user->sinhVien;
@@ -149,13 +149,13 @@ class HocPhiController extends Controller
                 ->with('info', 'Bạn đã thanh toán đủ học phí cho học kỳ này.');
         }
 
-        return view('sinhvien.hoc-phi.momo-payment', compact('hocPhi'));
+        return view('sinhvien.hoc-phi.vnpay-payment', compact('hocPhi'));
     }
 
     /**
-     * Initiate MoMo payment
+     * Initiate VNPay payment
      */
-    public function initiateMoMoPayment(Request $request, $id)
+    public function initiateVNPayPayment(Request $request, $id)
     {
         $user = auth()->user();
         $sinhVien = $user->sinhVien;
@@ -186,13 +186,6 @@ class HocPhiController extends Controller
         // Create order ID
         $orderId = 'HP_' . $hocPhi->id . '_' . $sinhVien->id . '_' . time();
 
-        // Extra data (JSON)
-        $extraData = json_encode([
-            'hoc_phi_hoc_ky_id' => $hocPhi->id,
-            'sinh_vien_id' => $sinhVien->id,
-            'so_tien_dong' => $amount,
-        ]);
-
         // Create temporary payment record (pending)
         try {
             DB::beginTransaction();
@@ -201,30 +194,30 @@ class HocPhiController extends Controller
                 'hoc_phi_hoc_ky_id' => $hocPhi->id,
                 'so_tien_dong' => $amount,
                 'ngay_dong' => now(),
-                'phuong_thuc_thanh_toan' => 'MoMo',
+                'phuong_thuc_thanh_toan' => 'VNPay',
                 'ma_giao_dich' => $orderId,
-                'ghi_chu' => 'Đang chờ xác nhận từ MoMo',
+                'ghi_chu' => 'Đang chờ xác nhận từ VNPay',
             ]);
 
             DB::commit();
 
-            // Initiate MoMo payment
-            $momoService = new MoMoService();
-            $result = $momoService->createPayment($orderId, $amount, $orderInfo, $extraData);
+            // Initiate VNPay payment
+            $vnpayService = new VNPayService();
+            $result = $vnpayService->createPaymentUrl($orderId, $amount, $orderInfo);
 
             if ($result['success']) {
                 // Store orderId in session for verification
-                session(['momo_order_id' => $orderId]);
-                session(['momo_hoc_phi_id' => $hocPhi->id]);
+                session(['vnpay_order_id' => $orderId]);
+                session(['vnpay_hoc_phi_id' => $hocPhi->id]);
 
-                // Redirect to MoMo payment page
-                return redirect($result['payUrl']);
+                // Redirect to VNPay payment page
+                return redirect($result['payment_url']);
             } else {
                 // Delete the pending record
                 $lichSu->delete();
 
                 return redirect()
-                    ->route('sinh-vien.hoc-phi.momo-payment', $id)
+                    ->route('sinh-vien.hoc-phi.vnpay-payment', $id)
                     ->with('error', $result['message'] ?? 'Không thể tạo yêu cầu thanh toán. Vui lòng thử lại.');
             }
 
@@ -232,20 +225,20 @@ class HocPhiController extends Controller
             DB::rollBack();
             
             return redirect()
-                ->route('sinh-vien.hoc-phi.momo-payment', $id)
+                ->route('sinh-vien.hoc-phi.vnpay-payment', $id)
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
         }
     }
 
     /**
-     * Handle MoMo payment callback (return URL)
+     * Handle VNPay payment callback (return URL)
      */
-    public function momoCallback(Request $request)
+    public function vnpayCallback(Request $request)
     {
-        $momoService = new MoMoService();
+        $vnpayService = new VNPayService();
         $data = $request->all();
 
-        $verifyResult = $momoService->verifyCallback($data);
+        $verifyResult = $vnpayService->verifyCallback($data);
 
         if (!$verifyResult['valid']) {
             return redirect()
@@ -254,10 +247,10 @@ class HocPhiController extends Controller
         }
 
         $orderId = $verifyResult['orderId'] ?? '';
-        $hocPhiId = session('momo_hoc_phi_id');
+        $hocPhiId = session('vnpay_hoc_phi_id');
 
         // Clear session
-        session()->forget(['momo_order_id', 'momo_hoc_phi_id']);
+        session()->forget(['vnpay_order_id', 'vnpay_hoc_phi_id']);
 
         if ($verifyResult['success']) {
             // Payment successful
@@ -273,7 +266,8 @@ class HocPhiController extends Controller
                     // Update payment record
                     $lichSu->update([
                         'ngay_dong' => now(),
-                        'ghi_chu' => 'Thanh toán thành công qua MoMo. Mã giao dịch: ' . ($verifyResult['transId'] ?? ''),
+                        'ngan_hang' => $verifyResult['bankCode'] ?? null,
+                        'ghi_chu' => 'Thanh toán thành công qua VNPay. Mã giao dịch: ' . ($verifyResult['transactionNo'] ?? ''),
                     ]);
 
                     // Update HocPhiHocKy
@@ -300,7 +294,7 @@ class HocPhiController extends Controller
 
                     return redirect()
                         ->route('sinh-vien.hoc-phi.show', $hocPhi->id)
-                        ->with('success', 'Thanh toán thành công! Mã giao dịch: ' . ($verifyResult['transId'] ?? $orderId));
+                        ->with('success', 'Thanh toán thành công! Mã giao dịch: ' . ($verifyResult['transactionNo'] ?? $orderId));
                 } else {
                     DB::rollBack();
                     return redirect()
@@ -317,38 +311,32 @@ class HocPhiController extends Controller
             }
         } else {
             // Payment failed or cancelled
-            $resultCode = $verifyResult['resultCode'] ?? -1;
+            $responseCode = $verifyResult['responseCode'] ?? '';
             $message = $verifyResult['message'] ?? 'Giao dịch thất bại';
 
             // Delete pending payment record
             LichSuDongHocPhi::where('ma_giao_dich', $orderId)->delete();
 
-            $errorMessage = match($resultCode) {
-                1003 => 'Bạn đã hủy giao dịch.',
-                1002 => 'Giao dịch thất bại. Vui lòng thử lại.',
-                default => $message,
-            };
-
             return redirect()
                 ->route('sinh-vien.hoc-phi.show', $hocPhiId ?? 0)
-                ->with('error', $errorMessage);
+                ->with('error', $message);
         }
     }
 
     /**
-     * Handle MoMo IPN (Instant Payment Notification) - Server to server
+     * Handle VNPay IPN (Instant Payment Notification) - Server to server
      */
-    public function momoIpn(Request $request)
+    public function vnpayIpn(Request $request)
     {
-        $momoService = new MoMoService();
+        $vnpayService = new VNPayService();
         $data = $request->all();
 
-        $verifyResult = $momoService->verifyCallback($data);
+        $verifyResult = $vnpayService->verifyCallback($data);
 
         if (!$verifyResult['valid']) {
             return response()->json([
-                'status' => 'error',
-                'message' => 'Invalid signature'
+                'RspCode' => '97',
+                'Message' => 'Invalid signature'
             ], 400);
         }
 
@@ -368,7 +356,8 @@ class HocPhiController extends Controller
                     if ($lichSu->ghi_chu && str_contains($lichSu->ghi_chu, 'Đang chờ')) {
                         $lichSu->update([
                             'ngay_dong' => now(),
-                            'ghi_chu' => 'Thanh toán thành công qua MoMo. Mã giao dịch: ' . ($verifyResult['transId'] ?? ''),
+                            'ngan_hang' => $verifyResult['bankCode'] ?? null,
+                            'ghi_chu' => 'Thanh toán thành công qua VNPay. Mã giao dịch: ' . ($verifyResult['transactionNo'] ?? ''),
                         ]);
 
                         // Update HocPhiHocKy
@@ -396,16 +385,16 @@ class HocPhiController extends Controller
                 }
 
                 return response()->json([
-                    'status' => 'success',
-                    'message' => 'Payment processed successfully'
+                    'RspCode' => '00',
+                    'Message' => 'Success'
                 ], 200);
 
             } catch (\Exception $e) {
                 DB::rollBack();
                 
                 return response()->json([
-                    'status' => 'error',
-                    'message' => $e->getMessage()
+                    'RspCode' => '99',
+                    'Message' => $e->getMessage()
                 ], 500);
             }
         } else {
@@ -413,8 +402,8 @@ class HocPhiController extends Controller
             LichSuDongHocPhi::where('ma_giao_dich', $orderId)->delete();
 
             return response()->json([
-                'status' => 'failed',
-                'message' => 'Payment failed'
+                'RspCode' => $verifyResult['responseCode'] ?? '01',
+                'Message' => $verifyResult['message'] ?? 'Payment failed'
             ], 200);
         }
     }

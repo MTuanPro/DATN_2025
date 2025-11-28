@@ -396,6 +396,7 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::put('/{id}', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'update'])->name('update');
         Route::get('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'payment'])->name('payment');
         Route::post('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'storePayment'])->name('storePayment');
+        Route::get('/bien-lai/{lichSuId}', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'viewBienLai'])->name('bien-lai');
     });
 
     // Báo cáo đào tạo
@@ -605,15 +606,15 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/{id}/lich-su', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'lichSu'])->name('lich-su');
         Route::get('/{id}/pdf', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'exportPdf'])->name('pdf');
         
-        // MoMo Payment routes
-        Route::get('/{id}/momo-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showMoMoPayment'])->name('momo-payment');
-        Route::post('/{id}/momo-initiate', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'initiateMoMoPayment'])->name('momo-initiate');
+        // VNPay Payment routes
+        Route::get('/{id}/vnpay-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showVNPayPayment'])->name('vnpay-payment');
+        Route::post('/{id}/vnpay-initiate', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'initiateVNPayPayment'])->name('vnpay-initiate');
     });
     
-    // MoMo Payment Callback (public routes - no auth required for IPN)
+    // VNPay Payment Callback (public routes - no auth required for IPN)
     Route::prefix('payment')->name('payment.')->group(function () {
-        Route::get('/momo/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'momoCallback'])->name('momo.callback');
-        Route::post('/momo/ipn', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'momoIpn'])->name('momo.ipn');
+        Route::get('/vnpay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'vnpayCallback'])->name('vnpay.callback');
+        Route::post('/vnpay/ipn', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'vnpayIpn'])->name('vnpay.ipn');
     });
 
     // PHASE 9.5: Xuất dữ liệu (Export Data)

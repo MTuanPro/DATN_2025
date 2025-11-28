@@ -43,7 +43,12 @@ class MonHocController extends Controller
             $query->where('so_tin_chi', $request->so_tin_chi);
         }
 
-        $monHocs = $query->latest()->paginate(15);
+        // Lọc theo hình thức dạy
+        if ($request->filled('hinh_thuc_day')) {
+            $query->where('hinh_thuc_day', $request->hinh_thuc_day);
+        }
+
+        $monHocs = $query->latest()->paginate(15)->appends($request->all());
         $khoas = Khoa::all();
 
         return view('daotao.mon-hoc.index', compact('monHocs', 'khoas'));
@@ -94,7 +99,7 @@ class MonHocController extends Controller
 
         MonHoc::create($validated);
 
-        return redirect()->route('dao-tao.mon-hoc.index')
+        return redirect()->route('dao-tao.mon-hoc.index', request()->query())
             ->with('success', 'Thêm môn học thành công!');
     }
 
@@ -153,7 +158,7 @@ class MonHocController extends Controller
 
         $monHoc->update($validated);
 
-        return redirect()->route('dao-tao.mon-hoc.index')
+        return redirect()->route('dao-tao.mon-hoc.index', request()->query())
             ->with('success', 'Cập nhật môn học thành công!');
     }
 
@@ -166,10 +171,10 @@ class MonHocController extends Controller
             $monHoc = MonHoc::findOrFail($id);
             $monHoc->delete();
 
-            return redirect()->route('dao-tao.mon-hoc.index')
+            return redirect()->route('dao-tao.mon-hoc.index', request()->query())
                 ->with('success', 'Xóa môn học thành công!');
         } catch (\Exception $e) {
-            return redirect()->route('dao-tao.mon-hoc.index')
+            return redirect()->route('dao-tao.mon-hoc.index', request()->query())
                 ->with('error', 'Không thể xóa môn học. Môn học đang được sử dụng.');
         }
     }

@@ -439,3 +439,5 @@ function exportToPDF(tableId, monHoc, maLop) {
 }
 </script>
 @endpush
+
+@endsection

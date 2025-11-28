@@ -35,15 +35,12 @@ return [
         ],
     ],
 
-    'momo' => [
-        'partner_code' => env('MOMO_PARTNER_CODE'),
-        'access_key' => env('MOMO_ACCESS_KEY'),
-        'secret_key' => env('MOMO_SECRET_KEY'),
-        'environment' => env('MOMO_ENVIRONMENT', 'sandbox'), // 'sandbox' or 'production'
-        'partner_name' => env('MOMO_PARTNER_NAME', 'Trường Đại Học'),
-        'store_id' => env('MOMO_STORE_ID'),
-        'return_url' => env('MOMO_RETURN_URL', env('APP_URL') . '/payment/momo/callback'),
-        'notify_url' => env('MOMO_NOTIFY_URL', env('APP_URL') . '/payment/momo/ipn'),
+    'vnpay' => [
+        'tmn_code' => env('VNPAY_TMN_CODE'),
+        'hash_secret' => env('VNPAY_HASH_SECRET'),
+        'environment' => env('VNPAY_ENVIRONMENT', 'sandbox'), // 'sandbox' or 'production'
+        'return_url' => env('VNPAY_RETURN_URL', env('APP_URL') . '/payment/vnpay/callback'),
+        'ipn_url' => env('VNPAY_IPN_URL', env('APP_URL') . '/payment/vnpay/ipn'),
     ],
 
 ];

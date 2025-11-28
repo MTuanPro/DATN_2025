@@ -104,14 +104,35 @@
 
                             <!-- File đính kèm -->
                             @if ($thongBao->file_dinh_kem)
-                                <div class="alert alert-light d-flex align-items-center">
-                                    <i class="bi bi-paperclip fs-4 me-3"></i>
-                                    <div>
-                                        <strong>File đính kèm:</strong><br>
-                                        <a href="{{ Storage::url($thongBao->file_dinh_kem) }}" target="_blank"
-                                            class="btn btn-sm btn-primary mt-2">
-                                            <i class="bi bi-download"></i> Tải xuống
-                                        </a>
+                                <div class="alert alert-{{ $thongBao->loai_thong_bao == 'hoc_phi' ? 'primary' : 'light' }} d-flex align-items-center">
+                                    <i class="bi bi-{{ $thongBao->loai_thong_bao == 'hoc_phi' ? 'receipt' : 'paperclip' }} fs-4 me-3"></i>
+                                    <div class="flex-grow-1">
+                                        <strong>
+                                            @if ($thongBao->loai_thong_bao == 'hoc_phi')
+                                                Biên lai thanh toán:
+                                            @else
+                                                File đính kèm:
+                                            @endif
+                                        </strong><br>
+                                        <small class="text-muted">
+                                            @if ($thongBao->loai_thong_bao == 'hoc_phi')
+                                                Vui lòng tải về để lưu trữ biên lai thanh toán học phí
+                                            @else
+                                                Click vào nút bên dưới để tải file
+                                            @endif
+                                        </small>
+                                        <div class="mt-2">
+                                            <a href="{{ Storage::url($thongBao->file_dinh_kem) }}" 
+                                               download
+                                               class="btn btn-{{ $thongBao->loai_thong_bao == 'hoc_phi' ? 'primary' : 'outline-primary' }} btn-sm">
+                                                <i class="bi bi-download"></i> 
+                                                @if ($thongBao->loai_thong_bao == 'hoc_phi')
+                                                    Tải biên lai về
+                                                @else
+                                                    Tải xuống
+                                                @endif
+                                            </a>
+                                        </div>
                                     </div>
                                 </div>
                             @endif

@@ -38,6 +38,17 @@ class SinhVienSeeder extends Seeder
         $nganhNNJ = DB::table('nganh')->where('ma_nganh', '7220203')->value('id'); // Ngôn ngữ Nhật
         $nganhNNC = DB::table('nganh')->where('ma_nganh', '7220204')->value('id'); // Ngôn ngữ Trung Quốc
 
+        // Lấy ID các chuyên ngành (mỗi ngành có 2 chuyên ngành)
+        $chuyenNganhCNTT = DB::table('chuyen_nganh')->where('nganh_id', $nganhCNTT)->orderBy('id')->pluck('id')->toArray();
+        $chuyenNganhKHMT = DB::table('chuyen_nganh')->where('nganh_id', $nganhKHMT)->orderBy('id')->pluck('id')->toArray();
+        $chuyenNganhATTT = DB::table('chuyen_nganh')->where('nganh_id', $nganhATTT)->orderBy('id')->pluck('id')->toArray();
+        $chuyenNganhQTKD = DB::table('chuyen_nganh')->where('nganh_id', $nganhQTKD)->orderBy('id')->pluck('id')->toArray();
+        $chuyenNganhTCNH = DB::table('chuyen_nganh')->where('nganh_id', $nganhTCNH)->orderBy('id')->pluck('id')->toArray();
+        $chuyenNganhKT = DB::table('chuyen_nganh')->where('nganh_id', $nganhKT)->orderBy('id')->pluck('id')->toArray();
+        $chuyenNganhNNA = DB::table('chuyen_nganh')->where('nganh_id', $nganhNNA)->orderBy('id')->pluck('id')->toArray();
+        $chuyenNganhNNJ = DB::table('chuyen_nganh')->where('nganh_id', $nganhNNJ)->orderBy('id')->pluck('id')->toArray();
+        $chuyenNganhNNC = DB::table('chuyen_nganh')->where('nganh_id', $nganhNNC)->orderBy('id')->pluck('id')->toArray();
+
         // Lấy ID các lớp hành chính K25
         $lopCNTT25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'CNTT25A')->value('id');
         $lopCNTT25B = DB::table('lop_hanh_chinh')->where('ma_lop', 'CNTT25B')->value('id');
@@ -79,6 +90,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopCNTT25A,
                 'nganh_id' => $nganhCNTT,
+                'chuyen_nganh_id' => $chuyenNganhCNTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -93,6 +105,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopCNTT25A,
                 'nganh_id' => $nganhCNTT,
+                'chuyen_nganh_id' => $chuyenNganhCNTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -107,6 +120,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopCNTT25B,
                 'nganh_id' => $nganhCNTT,
+                'chuyen_nganh_id' => $chuyenNganhCNTT[1] ?? $chuyenNganhCNTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -121,6 +135,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopKHMT25A,
                 'nganh_id' => $nganhKHMT,
+                'chuyen_nganh_id' => $chuyenNganhKHMT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -135,6 +150,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopKHMT25A,
                 'nganh_id' => $nganhKHMT,
+                'chuyen_nganh_id' => $chuyenNganhKHMT[1] ?? $chuyenNganhKHMT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -149,6 +165,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopATTT25A,
                 'nganh_id' => $nganhATTT,
+                'chuyen_nganh_id' => $chuyenNganhATTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -163,6 +180,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopATTT25A,
                 'nganh_id' => $nganhATTT,
+                'chuyen_nganh_id' => $chuyenNganhATTT[1] ?? $chuyenNganhATTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -179,6 +197,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopQTKD25A,
                 'nganh_id' => $nganhQTKD,
+                'chuyen_nganh_id' => $chuyenNganhQTKD[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -193,6 +212,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopQTKD25A,
                 'nganh_id' => $nganhQTKD,
+                'chuyen_nganh_id' => $chuyenNganhQTKD[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -207,6 +227,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopQTKD25B,
                 'nganh_id' => $nganhQTKD,
+                'chuyen_nganh_id' => $chuyenNganhQTKD[1] ?? $chuyenNganhQTKD[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -221,6 +242,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopTCNH25A,
                 'nganh_id' => $nganhTCNH,
+                'chuyen_nganh_id' => $chuyenNganhTCNH[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -235,6 +257,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopTCNH25A,
                 'nganh_id' => $nganhTCNH,
+                'chuyen_nganh_id' => $chuyenNganhTCNH[1] ?? $chuyenNganhTCNH[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -249,6 +272,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopKT25A,
                 'nganh_id' => $nganhKT,
+                'chuyen_nganh_id' => $chuyenNganhKT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -263,6 +287,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopKT25A,
                 'nganh_id' => $nganhKT,
+                'chuyen_nganh_id' => $chuyenNganhKT[1] ?? $chuyenNganhKT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -279,6 +304,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopNNA25A,
                 'nganh_id' => $nganhNNA,
+                'chuyen_nganh_id' => $chuyenNganhNNA[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -293,6 +319,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopNNA25A,
                 'nganh_id' => $nganhNNA,
+                'chuyen_nganh_id' => $chuyenNganhNNA[1] ?? $chuyenNganhNNA[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -307,6 +334,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopNNJ25A,
                 'nganh_id' => $nganhNNJ,
+                'chuyen_nganh_id' => $chuyenNganhNNJ[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -321,6 +349,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopNNJ25A,
                 'nganh_id' => $nganhNNJ,
+                'chuyen_nganh_id' => $chuyenNganhNNJ[1] ?? $chuyenNganhNNJ[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -335,6 +364,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopNNC25A,
                 'nganh_id' => $nganhNNC,
+                'chuyen_nganh_id' => $chuyenNganhNNC[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -349,6 +379,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $khoaHocK25,
                 'lop_hanh_chinh_id' => $lopNNC25A,
                 'nganh_id' => $nganhNNC,
+                'chuyen_nganh_id' => $chuyenNganhNNC[1] ?? $chuyenNganhNNC[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                 'ky_hien_tai' => 1,
             ],
@@ -393,7 +424,7 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $svData['khoa_hoc_id'],
                 'lop_hanh_chinh_id' => $svData['lop_hanh_chinh_id'],
                 'nganh_id' => $svData['nganh_id'],
-                'chuyen_nganh_id' => null,
+                'chuyen_nganh_id' => $svData['chuyen_nganh_id'] ?? null,
                 'ky_hien_tai' => $svData['ky_hien_tai'],
                 'trang_thai_hoc_tap_id' => $svData['trang_thai_hoc_tap_id'],
                 'giang_vien_chu_nhiem_id' => null,

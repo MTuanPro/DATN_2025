@@ -180,10 +180,11 @@
                                         <label for="mon_hoc_ids" class="form-label">
                                             Môn học có thể giảng dạy <span class="text-danger">*</span>
                                         </label>
-                                        <select multiple class="form-select @error('mon_hoc_ids') is-invalid @enderror"
+                                        <select multiple class="form-select no-select2 @error('mon_hoc_ids') is-invalid @enderror"
                                             id="mon_hoc_ids" name="mon_hoc_ids[]" required>
                                             @foreach ($monHocs as $monHoc)
                                                 <option value="{{ $monHoc->id }}"
+                                                    data-khoa-id="{{ $monHoc->khoa_id }}"
                                                     {{ in_array($monHoc->id, old('mon_hoc_ids', [])) ? 'selected' : '' }}>
                                                     {{ $monHoc->ma_mon }} - {{ $monHoc->ten_mon }}
                                                 </option>
@@ -251,3 +252,79 @@
         </section>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+// Lưu các option gốc ngay khi script load (trước khi DOM ready)
+const monHocOriginalOptions = [];
+@foreach ($monHocs as $monHoc)
+monHocOriginalOptions.push({
+    value: '{{ $monHoc->id }}',
+    text: '{{ $monHoc->ma_mon }} - {{ $monHoc->ten_mon }}',
+    khoaId: '{{ $monHoc->khoa_id }}'
+});
+@endforeach
+
+$(document).ready(function() {
+    const $khoaSelect = $('#khoa_id');
+    const $monHocSelect = $('#mon_hoc_ids');
+    
+    // Destroy Select2 nếu đã được khởi tạo tự động
+    if ($monHocSelect.hasClass('select2-hidden-accessible')) {
+        $monHocSelect.select2('destroy');
+    }
+    
+    // Lọc môn học theo khoa - CHỈ hiển thị môn học thuộc khoa đã chọn
+    function filterMonHocByKhoa() {
+        const khoaId = $khoaSelect.val();
+        
+        // Destroy Select2 nếu đã được khởi tạo
+        if ($monHocSelect.hasClass('select2-hidden-accessible')) {
+            $monHocSelect.select2('destroy');
+        }
+        
+        // Xóa tất cả options hiện tại
+        $monHocSelect.empty();
+        
+        if (!khoaId) {
+            // Nếu chưa chọn khoa, không có option nào
+            $monHocSelect.select2({
+                theme: 'bootstrap-5',
+                placeholder: 'Vui lòng chọn khoa trước',
+                allowClear: true,
+                width: '100%'
+            });
+            return;
+        }
+        
+        // Thêm lại CHỈ các môn học thuộc khoa đã chọn
+        monHocOriginalOptions.forEach(function(opt) {
+            if (opt.khoaId === khoaId) {
+                const $newOption = $('<option>', {
+                    value: opt.value,
+                    text: opt.text,
+                    'data-khoa-id': opt.khoaId
+                });
+                $monHocSelect.append($newOption);
+            }
+        });
+        
+        // Khởi tạo lại Select2
+        $monHocSelect.select2({
+            theme: 'bootstrap-5',
+            placeholder: 'Chọn môn học',
+            allowClear: true,
+            width: '100%'
+        });
+    }
+    
+    // Lọc khi thay đổi khoa
+    $khoaSelect.on('change', function() {
+        filterMonHocByKhoa();
+    });
+    
+    // Lọc ngay khi trang load
+    filterMonHocByKhoa();
+});
+</script>
+@endpush

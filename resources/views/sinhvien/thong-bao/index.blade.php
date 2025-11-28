@@ -181,7 +181,11 @@
                                                     {{ $tb->thongBao->muc_do_quan_trong }}
                                                 </span>
                                                 @if ($tb->thongBao->file_dinh_kem)
-                                                    <i class="bi bi-paperclip ms-2"></i>
+                                                    @if ($tb->thongBao->loai_thong_bao == 'hoc_phi')
+                                                        <i class="bi bi-receipt ms-2 text-primary" title="Có biên lai thanh toán"></i>
+                                                    @else
+                                                        <i class="bi bi-paperclip ms-2" title="Có file đính kèm"></i>
+                                                    @endif
                                                 @endif
                                             </div>
                                         </div>

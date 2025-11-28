@@ -125,6 +125,7 @@
                                     <th style="text-align: center;">Tên lớp HP</th>
                                     <th style="text-align: center;">Môn học</th>
                                     <th style="text-align: center;">Học kỳ</th>
+                                    <th style="text-align: center;">Giảng viên</th>
                                     <th style="text-align: center;">Sĩ số</th>
                                     <th style="text-align: center;">Hình thức</th>
                                     <th style="text-align: center;">Trạng thái</th>
@@ -142,6 +143,32 @@
                                         <td>{{ $lhp->ten_lop_hp }}</td>
                                         <td>{{ $lhp->monHoc->ten_mon ?? 'N/A' }}</td>
                                         <td>{{ $lhp->hocKy->ten_hoc_ky ?? 'N/A' }}</td>
+                                        <td>
+                                            @if($lhp->lopHocPhanGiangVien->isNotEmpty())
+                                                @foreach($lhp->lopHocPhanGiangVien as $phanCong)
+                                                    @if($phanCong->giangVien)
+                                                        <div class="mb-1">
+                                                            <span class="badge 
+                                                                @if($phanCong->vai_tro == 'giang_vien_chinh') bg-primary
+                                                                @elseif($phanCong->vai_tro == 'giang_vien_phu') bg-info
+                                                                @else bg-secondary
+                                                                @endif">
+                                                                {{ $phanCong->giangVien->ho_ten }}
+                                                                @if($phanCong->vai_tro == 'giang_vien_chinh')
+                                                                    <small>(Chính)</small>
+                                                                @elseif($phanCong->vai_tro == 'giang_vien_phu')
+                                                                    <small>(Phụ)</small>
+                                                                @else
+                                                                    <small>(Trợ giảng)</small>
+                                                                @endif
+                                                            </span>
+                                                        </div>
+                                                    @endif
+                                                @endforeach
+                                            @else
+                                                <span class="text-muted"><small>Chưa phân công</small></span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <span class="badge bg-info">
                                                 {{ $lhp->so_luong_thuc_te ?? $lhp->so_luong_dang_ky }}/{{ $lhp->suc_chua }}
@@ -200,7 +227,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="10" class="text-center">
+                                        <td colspan="11" class="text-center">
                                             <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                             <p class="mt-2">Chưa có lớp học phần nào</p>
                                         </td>

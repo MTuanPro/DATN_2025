@@ -121,8 +121,8 @@
                             </table>
 
                             @if($hocPhi->so_tien_con_lai > 0)
-                                <a href="{{ route('sinh-vien.hoc-phi.momo-payment', $hocPhi->id) }}" class="btn btn-primary w-100 mt-2">
-                                    <i class="bi bi-wallet2"></i> Thanh toán qua MoMo
+                                <a href="{{ route('sinh-vien.hoc-phi.vnpay-payment', $hocPhi->id) }}" class="btn btn-primary w-100 mt-2">
+                                    <i class="bi bi-credit-card"></i> Thanh toán qua VNPay
                                 </a>
                             @endif
                             <a href="{{ route('sinh-vien.hoc-phi.lich-su', $hocPhi->id) }}" class="btn btn-info w-100 mt-2">

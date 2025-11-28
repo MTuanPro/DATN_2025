@@ -20,6 +20,7 @@ class LichSuDongHocPhi extends Model
         'ngan_hang',
         'nguoi_thu_id',
         'bien_lai_file',
+        'bien_lai_pdf',
         'ghi_chu',
     ];
 

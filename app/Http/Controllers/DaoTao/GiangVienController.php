@@ -59,7 +59,8 @@ class GiangVienController extends Controller
     {
         $khoas = Khoa::all();
         $trinhDos = TrinhDo::all();
-        $monHocs = \App\Models\DaoTao\MonHoc::orderBy('ma_mon')->get();
+        // Lấy tất cả môn học để hiển thị, sẽ lọc theo khoa bằng JavaScript
+        $monHocs = \App\Models\DaoTao\MonHoc::with('khoa')->orderBy('ma_mon')->get();
         return view('daotao.giang-vien.create', compact('khoas', 'trinhDos', 'monHocs'));
     }
 
@@ -150,6 +151,18 @@ class GiangVienController extends Controller
                 'user_id' => $userId,
             ]);
 
+            // Kiểm tra tất cả môn học được chọn phải thuộc khoa của giảng viên
+            $monHocKhongThuocKhoa = \App\Models\DaoTao\MonHoc::whereIn('id', $validated['mon_hoc_ids'])
+                ->where('khoa_id', '!=', $validated['khoa_id'])
+                ->pluck('ma_mon', 'ten_mon')
+                ->toArray();
+            
+            if (!empty($monHocKhongThuocKhoa)) {
+                DB::rollBack();
+                return back()->withInput()
+                    ->with('error', 'Các môn học sau không thuộc khoa đã chọn: ' . implode(', ', array_keys($monHocKhongThuocKhoa)));
+            }
+
             // Gán môn học cho giảng viên
             $giangVien->monHocs()->sync($validated['mon_hoc_ids']);
 
@@ -182,7 +195,8 @@ class GiangVienController extends Controller
     {
         $khoas = Khoa::all();
         $trinhDos = TrinhDo::all();
-        $monHocs = \App\Models\DaoTao\MonHoc::orderBy('ma_mon')->get();
+        // Lấy tất cả môn học để hiển thị, sẽ lọc theo khoa bằng JavaScript
+        $monHocs = \App\Models\DaoTao\MonHoc::with('khoa')->orderBy('ma_mon')->get();
         return view('daotao.giang-vien.edit', compact('giangVien', 'khoas', 'trinhDos', 'monHocs'));
     }
 
@@ -234,7 +248,19 @@ class GiangVienController extends Controller
 
             // Lưu mon_hoc_ids trước khi update
             $monHocIds = $validated['mon_hoc_ids'];
+            $khoaId = $validated['khoa_id'];
             unset($validated['mon_hoc_ids']);
+
+            // Kiểm tra tất cả môn học được chọn phải thuộc khoa của giảng viên
+            $monHocKhongThuocKhoa = \App\Models\DaoTao\MonHoc::whereIn('id', $monHocIds)
+                ->where('khoa_id', '!=', $khoaId)
+                ->pluck('ma_mon', 'ten_mon')
+                ->toArray();
+            
+            if (!empty($monHocKhongThuocKhoa)) {
+                return back()->withInput()
+                    ->with('error', 'Các môn học sau không thuộc khoa đã chọn: ' . implode(', ', array_keys($monHocKhongThuocKhoa)));
+            }
 
             $giangVien->update($validated);
 

@@ -45,6 +45,9 @@ class DatabaseSeeder extends Seeder
         // Phụ thuộc Khoa, TrinhDo, MonHoc (giảng viên được gán môn học luôn)
         $this->call(GiangVienSeeder::class);
 
+        // Phụ thuộc GiangVien, MonHoc - Phân bổ giảng viên cho môn học
+        $this->call(PhanBoGiangVienMonHocSeeder::class);
+
         // Phụ thuộc ChuyenNganh, MonHoc
         $this->call(ChuongTrinhKhungSeeder::class);
         $this->call(ChuongTrinhDaoTaoTestSeeder::class);
@@ -54,6 +57,7 @@ class DatabaseSeeder extends Seeder
         // ========================================
         $this->call(KhoaHocSeeder::class);
         $this->call(HocKySeeder::class);
+        $this->call(CauHinhHocPhiSeeder::class);
 
         // Phụ thuộc HocKy, MonHoc, GiangVien
         $this->call(LopHocPhanSeeder::class);

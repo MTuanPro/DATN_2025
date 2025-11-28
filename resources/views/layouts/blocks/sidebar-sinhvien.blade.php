@@ -90,7 +90,10 @@
                 </li>
 
                 <!-- 6. ĐIỂM DANH -->
-                <li class="sidebar-item {{ Request::is('sinh-vien/diem-danh*') ? 'active' : '' }}">
+                @php
+                    $isDiemDanh = Request::is('sinh-vien/diem-danh*');
+                @endphp
+                <li class="sidebar-item {{ $isDiemDanh ? 'active' : '' }}">
                     <a href="{{ route('sinh-vien.diem-danh.index') }}" class='sidebar-link'>
                         <i class="bi bi-clipboard-check"></i>
                         <span>Lịch sử điểm danh</span>
@@ -98,12 +101,16 @@
                 </li>
 
                 <!-- 7. KẾT QUẢ HỌC TẬP -->
-                <li class="sidebar-item has-sub {{ Request::is('sinh-vien/diem*') ? 'active' : '' }}">
+                @php
+                    // Chỉ active khi là trang điểm, không phải điểm danh
+                    $isDiem = Request::is('sinh-vien/diem*') && !Request::is('sinh-vien/diem-danh*');
+                @endphp
+                <li class="sidebar-item has-sub {{ $isDiem ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-trophy"></i>
                         <span>Kết quả học tập</span>
                     </a>
-                    <ul class="submenu {{ Request::is('sinh-vien/diem*') ? 'active' : '' }}">
+                    <ul class="submenu {{ $isDiem ? 'active' : '' }}">
                         <li
                             class="submenu-item {{ Request::is('sinh-vien/diem') && !Request::is('sinh-vien/diem/*') ? 'active' : '' }}">
                             <a href="{{ route('sinh-vien.diem.index') }}">Điểm từng học kỳ</a>
