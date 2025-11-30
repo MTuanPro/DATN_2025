@@ -455,13 +455,6 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     Route::post('/yeu-cau-diem-danh-bu/{id}/tu-choi', [App\Http\Controllers\GiangVien\YeuCauDiemDanhBuController::class, 'tuChoi'])->name('yeu-cau-diem-danh-bu.tu-choi');
 
     // Lớp chủ nhiệm (GVCN)
-    Route::get('/lop-chu-nhiem', [GVCNController::class, 'index'])->name('lop-chu-nhiem.index');
-    Route::get('/lop-chu-nhiem/{id}', [GVCNController::class, 'show'])->name('lop-chu-nhiem.show');
-    Route::get('/lop-chu-nhiem/{id}/sinh-vien', [GVCNController::class, 'danhSachSinhVien'])->name('lop-chu-nhiem.sinh-vien');
-    Route::get('/lop-chu-nhiem/{id}/ket-qua-hoc-tap', [GVCNController::class, 'xemKetQuaHocTap'])->name('lop-chu-nhiem.ket-qua-hoc-tap');
-    Route::get('/lop-chu-nhiem/{id}/canh-bao-hoc-vu', [GVCNController::class, 'xemCanhBaoHocVu'])->name('lop-chu-nhiem.canh-bao-hoc-vu');
-    Route::get('/lop-chu-nhiem/{id}/export-excel', [GVCNController::class, 'exportExcel'])->name('lop-chu-nhiem.export-excel');
-    Route::get('/lop-chu-nhiem/{id}/export-pdf', [GVCNController::class, 'exportPDF'])->name('lop-chu-nhiem.export-pdf');
 
     // PHASE 7.5: Lịch thi
     Route::get('lich-thi', [\App\Http\Controllers\GiangVien\LichThiController::class, 'index'])->name('lich-thi.index');

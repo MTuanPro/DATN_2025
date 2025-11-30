@@ -123,19 +123,6 @@
                     </ul>
                 </li>
 
-                <!-- 10. LỚP CHỦ NHIỆM -->
-                <li class="sidebar-item has-sub {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-house-door"></i>
-                        <span>Lớp chủ nhiệm</span>
-                    </a>
-                    <ul class="submenu {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
-                        <li
-                            class="submenu-item {{ Request::is('giang-vien/lop-chu-nhiem') && !Request::is('giang-vien/lop-chu-nhiem/*') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.lop-chu-nhiem.index') }}">Danh sách lớp</a>
-                        </li>
-                    </ul>
-                </li>
 
                 <!-- PHASE 10: THÔNG BÁO -->
                 <li class="sidebar-item has-sub {{ Request::is('giang-vien/thong-bao*') || Request::is('giang-vien/yeu-cau-diem-danh-bu*') ? 'active' : '' }}">
