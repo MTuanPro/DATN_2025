@@ -606,15 +606,15 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/{id}/lich-su', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'lichSu'])->name('lich-su');
         Route::get('/{id}/pdf', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'exportPdf'])->name('pdf');
         
-        // VNPay Payment routes
-        Route::get('/{id}/vnpay-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showVNPayPayment'])->name('vnpay-payment');
-        Route::post('/{id}/vnpay-initiate', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'initiateVNPayPayment'])->name('vnpay-initiate');
+        // ZaloPay Payment routes
+        Route::get('/{id}/zalopay-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showZaloPayPayment'])->name('zalopay-payment');
+        Route::post('/{id}/zalopay-initiate', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'initiateZaloPayPayment'])->name('zalopay-initiate');
     });
     
-    // VNPay Payment Callback (public routes - no auth required for IPN)
+    // ZaloPay Payment Callback (public routes - no auth required for IPN)
     Route::prefix('payment')->name('payment.')->group(function () {
-        Route::get('/vnpay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'vnpayCallback'])->name('vnpay.callback');
-        Route::post('/vnpay/ipn', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'vnpayIpn'])->name('vnpay.ipn');
+        Route::get('/zalopay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'zaloPayCallback'])->name('zalopay.callback');
+        Route::post('/zalopay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'zaloPayIpn'])->name('zalopay.ipn');
     });
 
     // PHASE 9.5: Xuất dữ liệu (Export Data)

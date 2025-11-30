@@ -215,9 +215,9 @@
                         </div>
                         <div class="card-body">
                             @if($hocPhi->so_tien_con_lai > 0)
-                                <a href="{{ route('sinh-vien.hoc-phi.vnpay-payment', $hocPhi->id) }}" 
+                                <a href="{{ route('sinh-vien.hoc-phi.zalopay-payment', $hocPhi->id) }}" 
                                    class="btn btn-primary w-100 mb-2 btn-lg">
-                                    <i class="bi bi-credit-card-2-front"></i> Thanh toán VNPay
+                                    <i class="bi bi-credit-card-2-front"></i> Thanh toán ZaloPay
                                 </a>
                             @else
                                 <div class="alert alert-success mb-2">
