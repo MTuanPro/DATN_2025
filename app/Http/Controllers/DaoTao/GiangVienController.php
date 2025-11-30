@@ -69,6 +69,9 @@ class GiangVienController extends Controller
      */
     public function store(Request $request)
     {
+        // Debug log
+        \Log::info('Store giảng viên - Request data:', $request->all());
+
         $validated = $request->validate([
             'ma_giang_vien' => ['required', 'string', 'max:50', 'unique:giang_vien,ma_giang_vien'],
             'ho_ten' => ['required', 'string', 'max:255'],
@@ -78,7 +81,8 @@ class GiangVienController extends Controller
             'gioi_tinh' => ['nullable', 'in:Nam,Nữ,Khác'],
             'dia_chi' => ['nullable', 'string'],
             'trinh_do_id' => ['required', 'exists:dm_trinh_do,id'],
-            'chuyen_mon' => ['required', 'string', 'max:255'],
+            'mon_hoc_ids' => ['required', 'array', 'min:1'],
+            'mon_hoc_ids.*' => ['exists:mon_hoc,id'],
             'khoa_id' => ['required', 'exists:khoa,id'],
             'ngay_vao_truong' => ['required', 'date'],
             'anh_dai_dien' => ['nullable', 'image', 'mimes:jpeg,png,jpg', 'max:2048'],
@@ -123,6 +127,7 @@ class GiangVienController extends Controller
                     'name' => $validated['ho_ten'],
                     'email' => $validated['email'],
                     'password' => Hash::make('12345678'), // Mật khẩu mặc định
+                    'email_verified_at' => now(), // Xác thực email ngay
                     'trang_thai' => 'hoat_dong',
                 ]);
 
@@ -156,7 +161,7 @@ class GiangVienController extends Controller
                 ->where('khoa_id', '!=', $validated['khoa_id'])
                 ->pluck('ma_mon', 'ten_mon')
                 ->toArray();
-            
+
             if (!empty($monHocKhongThuocKhoa)) {
                 DB::rollBack();
                 return back()->withInput()
@@ -256,7 +261,7 @@ class GiangVienController extends Controller
                 ->where('khoa_id', '!=', $khoaId)
                 ->pluck('ma_mon', 'ten_mon')
                 ->toArray();
-            
+
             if (!empty($monHocKhongThuocKhoa)) {
                 return back()->withInput()
                     ->with('error', 'Các môn học sau không thuộc khoa đã chọn: ' . implode(', ', array_keys($monHocKhongThuocKhoa)));
