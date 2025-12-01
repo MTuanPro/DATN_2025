@@ -75,25 +75,31 @@ class XepLopController extends Controller
 
             $soLuongXepThanhCong = 0;
             $soLuongThatBai = 0;
-            $soLuongBoQua = 0;
-            $monBoQua = [];
+            $soLuongChoXepLop = 0;
+            $monChuaDu = [];
 
             foreach ($dangKysByMon as $monHocId => $dangKysMon) {
                 // Kiểm tra số lượng sinh viên đăng ký môn này
                 if ($dangKysMon->count() < 2) {
-                    // Chưa đủ 2 sinh viên, bỏ qua và cập nhật lý do
+                    // Chưa đủ 2 sinh viên, CẬP NHẬT lý do nhưng GIỮ NGUYÊN trạng thái "cho_xep_lop"
                     foreach ($dangKysMon as $dangKy) {
-                        $dangKy->update([
-                            'ly_do_that_bai' => 'Chưa đủ 2 sinh viên để mở lớp'
-                        ]);
-                        $soLuongBoQua++;
+                        $dangKy->ly_do_that_bai = 'Chưa đủ 2 sinh viên để mở lớp';
+                        $dangKy->save();
+                        $soLuongChoXepLop++;
                     }
-                    
-                    $monBoQua[] = $dangKysMon->first()->monHoc->ten_mon ?? "Môn #$monHocId";
+                    $monChuaDu[] = $dangKysMon->first()->monHoc->ten_mon ?? "Môn #$monHocId";
                     continue;
                 }
 
-                // Đủ số lượng, tiến hành xếp lớp theo thứ tự ưu tiên
+                // Đủ số lượng, XÓA lý do thất bại cũ (nếu có) và tiến hành xếp lớp
+                foreach ($dangKysMon as $dangKy) {
+                    if ($dangKy->ly_do_that_bai == 'Chưa đủ 2 sinh viên để mở lớp') {
+                        $dangKy->ly_do_that_bai = null;
+                        $dangKy->save();
+                    }
+                }
+
+                // Tiến hành xếp lớp theo thứ tự ưu tiên
                 $dangKysSorted = $dangKysMon->sortByDesc('uu_tien')
                     ->sortBy('ngay_dang_ky');
 
@@ -112,8 +118,15 @@ class XepLopController extends Controller
 
             $message = "Xếp lớp hoàn tất! Thành công: {$soLuongXepThanhCong}, Thất bại: {$soLuongThatBai}";
             
-            if ($soLuongBoQua > 0) {
-                $message .= ", Bỏ qua: {$soLuongBoQua} (chưa đủ 2 sinh viên)";
+            if ($soLuongChoXepLop > 0) {
+                $message .= ", Chờ đủ sinh viên: {$soLuongChoXepLop}";
+                if (!empty($monChuaDu)) {
+                    $message .= " (" . implode(', ', array_slice($monChuaDu, 0, 3));
+                    if (count($monChuaDu) > 3) {
+                        $message .= "...";
+                    }
+                    $message .= ")";
+                }
             }
 
             return response()->json([
@@ -122,8 +135,8 @@ class XepLopController extends Controller
                 'data' => [
                     'thanh_cong' => $soLuongXepThanhCong,
                     'that_bai' => $soLuongThatBai,
-                    'bo_qua' => $soLuongBoQua,
-                    'mon_bo_qua' => $monBoQua
+                    'cho_xep_lop' => $soLuongChoXepLop,
+                    'mon_chua_du' => $monChuaDu
                 ]
             ]);
         } catch (\Exception $e) {

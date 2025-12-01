@@ -1,8 +1,6 @@
-@extends('layouts.layout-daotao')
+<?php $__env->startSection('title', 'Xếp lớp tự động'); ?>
 
-@section('title', 'Xếp lớp tự động')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
     <div class="page-heading">
         <div class="page-title">
             <div class="row">
@@ -13,7 +11,7 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
+                            <li class="breadcrumb-item"><a href="<?php echo e(route('dao-tao.dashboard')); ?>">Dashboard</a></li>
                             <li class="breadcrumb-item active" aria-current="page">Xếp lớp</li>
                         </ol>
                     </nav>
@@ -29,7 +27,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-muted mb-1">Chờ đóng học phí</h6>
-                                <h3 class="mb-0 text-info">{{ $thongKe['cho_dong_hoc_phi'] ?? 0 }}</h3>
+                                <h3 class="mb-0 text-info"><?php echo e($thongKe['cho_dong_hoc_phi'] ?? 0); ?></h3>
                             </div>
                             <div class="avatar avatar-xl bg-info">
                                 <i class="bi bi-cash-stack text-white fs-3"></i>
@@ -44,7 +42,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-muted mb-1">Chờ xếp lớp</h6>
-                                <h3 class="mb-0 text-warning">{{ $thongKe['cho_xep_lop'] }}</h3>
+                                <h3 class="mb-0 text-warning"><?php echo e($thongKe['cho_xep_lop']); ?></h3>
                             </div>
                             <div class="avatar avatar-xl bg-warning">
                                 <i class="bi bi-hourglass-split text-white fs-3"></i>
@@ -59,7 +57,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-muted mb-1">Đã xếp lớp</h6>
-                                <h3 class="mb-0 text-success">{{ $thongKe['da_xep_lop'] }}</h3>
+                                <h3 class="mb-0 text-success"><?php echo e($thongKe['da_xep_lop']); ?></h3>
                             </div>
                             <div class="avatar avatar-xl bg-success">
                                 <i class="bi bi-check-circle text-white fs-3"></i>
@@ -74,7 +72,7 @@
                         <div class="d-flex justify-content-between align-items-center">
                             <div>
                                 <h6 class="text-muted mb-1">Thất bại</h6>
-                                <h3 class="mb-0 text-danger">{{ $thongKe['that_bai'] }}</h3>
+                                <h3 class="mb-0 text-danger"><?php echo e($thongKe['that_bai']); ?></h3>
                             </div>
                             <div class="avatar avatar-xl bg-danger">
                                 <i class="bi bi-x-circle text-white fs-3"></i>
@@ -88,26 +86,27 @@
         <!-- Bộ lọc và thao tác -->
         <div class="card mb-3">
             <div class="card-body">
-                <form method="GET" action="{{ route('dao-tao.xep-lop.index') }}" class="row g-3">
+                <form method="GET" action="<?php echo e(route('dao-tao.xep-lop.index')); ?>" class="row g-3">
                     <div class="col-md-3">
                         <label class="form-label">Học kỳ</label>
                         <select name="hoc_ky_id" class="form-select">
                             <option value="">Tất cả</option>
-                            @foreach ($hocKys as $hk)
-                                <option value="{{ $hk->id }}" {{ request('hoc_ky_id') == $hk->id ? 'selected' : '' }}>
-                                    {{ $hk->ten_hoc_ky }} - {{ $hk->nam_hoc }}
+                            <?php $__currentLoopData = $hocKys; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $hk): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
+                                <option value="<?php echo e($hk->id); ?>" <?php echo e(request('hoc_ky_id') == $hk->id ? 'selected' : ''); ?>>
+                                    <?php echo e($hk->ten_hoc_ky); ?> - <?php echo e($hk->nam_hoc); ?>
+
                                 </option>
-                            @endforeach
+                            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                         </select>
                     </div>
                     <div class="col-md-3">
                         <label class="form-label">Trạng thái</label>
                         <select name="trang_thai" class="form-select">
                             <option value="">Tất cả</option>
-                            <option value="cho_dong_hoc_phi" {{ request('trang_thai') == 'cho_dong_hoc_phi' ? 'selected' : '' }}>Chờ đóng học phí</option>
-                            <option value="cho_xep_lop" {{ request('trang_thai') == 'cho_xep_lop' ? 'selected' : '' }}>Chờ xếp lớp</option>
-                            <option value="da_xep_lop" {{ request('trang_thai') == 'da_xep_lop' ? 'selected' : '' }}>Đã xếp lớp</option>
-                            <option value="that_bai" {{ request('trang_thai') == 'that_bai' ? 'selected' : '' }}>Thất bại</option>
+                            <option value="cho_dong_hoc_phi" <?php echo e(request('trang_thai') == 'cho_dong_hoc_phi' ? 'selected' : ''); ?>>Chờ đóng học phí</option>
+                            <option value="cho_xep_lop" <?php echo e(request('trang_thai') == 'cho_xep_lop' ? 'selected' : ''); ?>>Chờ xếp lớp</option>
+                            <option value="da_xep_lop" <?php echo e(request('trang_thai') == 'da_xep_lop' ? 'selected' : ''); ?>>Đã xếp lớp</option>
+                            <option value="that_bai" <?php echo e(request('trang_thai') == 'that_bai' ? 'selected' : ''); ?>>Thất bại</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -139,11 +138,11 @@
                 </p>
             </div>
             <div class="card-body">
-                @if ($dangKys->isEmpty())
+                <?php if($dangKys->isEmpty()): ?>
                     <div class="alert alert-info mb-0">
                         Không có đăng ký nào.
                     </div>
-                @else
+                <?php else: ?>
                     <div class="table-responsive">
                         <table class="table table-hover table-sm">
                             <thead>
@@ -162,33 +161,34 @@
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach ($dangKys as $index => $dk)
+                                <?php $__currentLoopData = $dangKys; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $dk): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                                     <tr>
-                                        <td>{{ $dangKys->firstItem() + $index }}</td>
-                                        <td><code>{{ $dk->sinhVien->ma_sinh_vien }}</code></td>
-                                        <td>{{ $dk->sinhVien->ho_ten }}</td>
+                                        <td><?php echo e($dangKys->firstItem() + $index); ?></td>
+                                        <td><code><?php echo e($dk->sinhVien->ma_sinh_vien); ?></code></td>
+                                        <td><?php echo e($dk->sinhVien->ho_ten); ?></td>
                                         <td>
-                                            <strong>{{ $dk->monHoc->ten_mon }}</strong>
-                                            <br><small class="text-muted">{{ $dk->monHoc->ma_mon }}</small>
+                                            <strong><?php echo e($dk->monHoc->ten_mon); ?></strong>
+                                            <br><small class="text-muted"><?php echo e($dk->monHoc->ma_mon); ?></small>
                                         </td>
-                                        <td>{{ $dk->hocKy->ten_hoc_ky }}</td>
-                                        <td>{{ $dk->ngay_dang_ky->format('d/m/Y H:i') }}</td>
+                                        <td><?php echo e($dk->hocKy->ten_hoc_ky); ?></td>
+                                        <td><?php echo e($dk->ngay_dang_ky->format('d/m/Y H:i')); ?></td>
                                         <td>
-                                            @if ($dk->uu_tien >= 100)
-                                                <span class="badge bg-danger">{{ $dk->uu_tien }}</span>
-                                            @elseif($dk->uu_tien >= 50)
-                                                <span class="badge bg-warning">{{ $dk->uu_tien }}</span>
-                                            @else
-                                                <span class="badge bg-secondary">{{ $dk->uu_tien }}</span>
-                                            @endif
+                                            <?php if($dk->uu_tien >= 100): ?>
+                                                <span class="badge bg-danger"><?php echo e($dk->uu_tien); ?></span>
+                                            <?php elseif($dk->uu_tien >= 50): ?>
+                                                <span class="badge bg-warning"><?php echo e($dk->uu_tien); ?></span>
+                                            <?php else: ?>
+                                                <span class="badge bg-secondary"><?php echo e($dk->uu_tien); ?></span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
-                                            <span class="badge bg-{{ $dk->trang_thai_badge }}">
-                                                {{ $dk->trang_thai_label }}
+                                            <span class="badge bg-<?php echo e($dk->trang_thai_badge); ?>">
+                                                <?php echo e($dk->trang_thai_label); ?>
+
                                             </span>
                                         </td>
                                         <td>
-                                            @php
+                                            <?php
                                                 // Lấy thông tin học phí
                                                 $hocPhi = \App\Models\HocPhiHocKy::where('sinh_vien_id', $dk->sinh_vien_id)
                                                     ->where('hoc_ky_id', $dk->hoc_ky_id)
@@ -200,70 +200,71 @@
                                                         ->where('mon_hoc_id', $dk->mon_hoc_id)
                                                         ->first();
                                                 }
-                                            @endphp
+                                            ?>
                                             
-                                            @if ($chiTietHocPhi)
-                                                @if ($chiTietHocPhi->trang_thai == 'da_dong')
+                                            <?php if($chiTietHocPhi): ?>
+                                                <?php if($chiTietHocPhi->trang_thai == 'da_dong'): ?>
                                                     <span class="badge bg-success">
                                                         <i class="bi bi-check-circle"></i> Đã đóng
                                                     </span>
-                                                @elseif ($chiTietHocPhi->trang_thai == 'chua_dong')
+                                                <?php elseif($chiTietHocPhi->trang_thai == 'chua_dong'): ?>
                                                     <span class="badge bg-warning">
                                                         <i class="bi bi-exclamation-circle"></i> Chưa đóng
                                                     </span>
-                                                @elseif ($chiTietHocPhi->trang_thai == 'huy')
+                                                <?php elseif($chiTietHocPhi->trang_thai == 'huy'): ?>
                                                     <span class="badge bg-secondary">
                                                         <i class="bi bi-x-circle"></i> Đã hủy
                                                     </span>
-                                                @endif
+                                                <?php endif; ?>
                                                 <br>
                                                 <small class="text-muted">
-                                                    {{ number_format($chiTietHocPhi->thanh_tien, 0, ',', '.') }} đ
+                                                    <?php echo e(number_format($chiTietHocPhi->thanh_tien, 0, ',', '.')); ?> đ
                                                 </small>
-                                            @else
+                                            <?php else: ?>
                                                 <span class="text-muted">-</span>
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
                                         <td>
-                                            @if ($dk->ly_do_that_bai)
-                                                @if ($dk->trang_thai == 'that_bai')
-                                                    <small class="text-danger">{{ $dk->ly_do_that_bai }}</small>
-                                                @elseif ($dk->trang_thai == 'cho_xep_lop')
-                                                    <small class="text-warning">{{ $dk->ly_do_that_bai }}</small>
-                                                @else
-                                                    <small class="text-muted">{{ $dk->ly_do_that_bai }}</small>
-                                                @endif
-                                            @else
+                                            <?php if($dk->ly_do_that_bai): ?>
+                                                <?php if($dk->trang_thai == 'that_bai'): ?>
+                                                    <small class="text-danger"><?php echo e($dk->ly_do_that_bai); ?></small>
+                                                <?php elseif($dk->trang_thai == 'cho_xep_lop'): ?>
+                                                    <small class="text-warning"><?php echo e($dk->ly_do_that_bai); ?></small>
+                                                <?php else: ?>
+                                                    <small class="text-muted"><?php echo e($dk->ly_do_that_bai); ?></small>
+                                                <?php endif; ?>
+                                            <?php else: ?>
                                                 -
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
                                         <td>
-                                            @if ($dk->trang_thai == 'cho_xep_lop')
+                                            <?php if($dk->trang_thai == 'cho_xep_lop'): ?>
                                                 <button type="button" class="btn btn-sm btn-primary btn-xep-thu-cong"
-                                                    data-dang-ky-id="{{ $dk->id }}"
-                                                    data-sinh-vien="{{ $dk->sinhVien->ho_ten }}"
-                                                    data-mon-hoc-id="{{ $dk->mon_hoc_id }}">
+                                                    data-dang-ky-id="<?php echo e($dk->id); ?>"
+                                                    data-sinh-vien="<?php echo e($dk->sinhVien->ho_ten); ?>"
+                                                    data-mon-hoc-id="<?php echo e($dk->mon_hoc_id); ?>">
                                                     <i class="bi bi-pencil"></i> Xếp
                                                 </button>
-                                            @elseif($dk->trang_thai == 'cho_dong_hoc_phi')
+                                            <?php elseif($dk->trang_thai == 'cho_dong_hoc_phi'): ?>
                                                 <span class="text-muted small">Chờ đóng học phí</span>
-                                            @elseif($dk->lopHocPhanSinhVien)
-                                                <a href="{{ route('dao-tao.xep-lop.danh-sach-lop', $dk->lopHocPhanSinhVien->lop_hoc_phan_id) }}"
+                                            <?php elseif($dk->lopHocPhanSinhVien): ?>
+                                                <a href="<?php echo e(route('dao-tao.xep-lop.danh-sach-lop', $dk->lopHocPhanSinhVien->lop_hoc_phan_id)); ?>"
                                                     class="btn btn-sm btn-info">
                                                     <i class="bi bi-eye"></i> Xem lớp
                                                 </a>
-                                            @endif
+                                            <?php endif; ?>
                                         </td>
                                     </tr>
-                                @endforeach
+                                <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
                             </tbody>
                         </table>
                     </div>
 
                     <div class="mt-3">
-                        {{ $dangKys->links() }}
+                        <?php echo e($dangKys->links()); ?>
+
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
         </div>
     </div>
@@ -294,7 +295,7 @@
         </div>
     </div>
 
-    @push('scripts')
+    <?php $__env->startPush('scripts'); ?>
         <script>
             let currentDangKyId = null;
 
@@ -322,10 +323,10 @@
                         showLoaderOnConfirm: true,
                         preConfirm: () => {
                             return $.ajax({
-                                url: '{{ route('dao-tao.xep-lop.auto-assign') }}',
+                                url: '<?php echo e(route('dao-tao.xep-lop.auto-assign')); ?>',
                                 method: 'POST',
                                 data: {
-                                    _token: '{{ csrf_token() }}',
+                                    _token: '<?php echo e(csrf_token()); ?>',
                                     hoc_ky_id: hocKyId
                                 }
                             });
@@ -394,10 +395,10 @@
                     }
 
                     $.ajax({
-                        url: '{{ route('dao-tao.xep-lop.manual-assign') }}',
+                        url: '<?php echo e(route('dao-tao.xep-lop.manual-assign')); ?>',
                         method: 'POST',
                         data: {
-                            _token: '{{ csrf_token() }}',
+                            _token: '<?php echo e(csrf_token()); ?>',
                             dang_ky_tam_id: currentDangKyId,
                             lop_hoc_phan_id: lopHocPhanId
                         },
@@ -422,5 +423,7 @@
                 });
             });
         </script>
-    @endpush
-@endsection
+    <?php $__env->stopPush(); ?>
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.layout-daotao', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Users\Admin\Downloads\DATN_2025_new\resources\views/daotao/xep-lop/index.blade.php ENDPATH**/ ?>
