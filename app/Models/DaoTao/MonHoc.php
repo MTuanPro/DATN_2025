@@ -87,4 +87,10 @@ class MonHoc extends Model
             'giang_vien_id'
         )->withTimestamps();
     }
+
+    // Relationship: Cấu hình đầu điểm mặc định của môn học
+    public function cauHinhDauDiemMacDinh()
+    {
+        return $this->hasMany(\App\Models\CauHinhDauDiemMacDinh::class, 'mon_hoc_id');
+    }
 }

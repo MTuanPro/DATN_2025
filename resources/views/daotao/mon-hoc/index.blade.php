@@ -215,6 +215,10 @@
                                                     class="btn btn-sm btn-info" title="Môn tiên quyết">
                                                     <i class="bi bi-diagram-3"></i>
                                                 </a>
+                                                <a href="{{ route('dao-tao.mon-hoc.cau-hinh-diem', $monHoc->id) }}"
+                                                    class="btn btn-sm btn-primary" title="Cấu hình đầu điểm">
+                                                    <i class="bi bi-sliders"></i>
+                                                </a>
                                                 <form action="{{ route('dao-tao.mon-hoc.destroy', $monHoc->id) }}"
                                                     method="POST" onsubmit="return confirm('Bạn có chắc chắn muốn xóa?')">
                                                     @csrf

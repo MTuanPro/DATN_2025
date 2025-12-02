@@ -49,19 +49,6 @@ class SinhVienSeeder extends Seeder
         $chuyenNganhNNJ = DB::table('chuyen_nganh')->where('nganh_id', $nganhNNJ)->orderBy('id')->pluck('id')->toArray();
         $chuyenNganhNNC = DB::table('chuyen_nganh')->where('nganh_id', $nganhNNC)->orderBy('id')->pluck('id')->toArray();
 
-        // Lấy ID các lớp hành chính K25
-        $lopCNTT25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'CNTT25A')->value('id');
-        $lopCNTT25B = DB::table('lop_hanh_chinh')->where('ma_lop', 'CNTT25B')->value('id');
-        $lopKHMT25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'KHMT25A')->value('id');
-        $lopATTT25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'ATTT25A')->value('id');
-        $lopQTKD25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'QTKD25A')->value('id');
-        $lopQTKD25B = DB::table('lop_hanh_chinh')->where('ma_lop', 'QTKD25B')->value('id');
-        $lopTCNH25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'TCNH25A')->value('id');
-        $lopKT25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'KT25A')->value('id');
-        $lopNNA25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'NNA25A')->value('id');
-        $lopNNJ25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'NNJ25A')->value('id');
-        $lopNNC25A = DB::table('lop_hanh_chinh')->where('ma_lop', 'NNC25A')->value('id');
-
         // Lấy ID trạng thái học tập "Đang học"
         $trangThaiDangHoc = DB::table('trang_thai_hoc_tap')->where('ten_trang_thai', 'Đang học')->value('id');
         if (!$trangThaiDangHoc) {
@@ -88,7 +75,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234001',
                 'can_cuoc_cong_dan' => '001205030001',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopCNTT25A,
                 'nganh_id' => $nganhCNTT,
                 'chuyen_nganh_id' => $chuyenNganhCNTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -103,7 +89,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234002',
                 'can_cuoc_cong_dan' => '001205070002',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopCNTT25A,
                 'nganh_id' => $nganhCNTT,
                 'chuyen_nganh_id' => $chuyenNganhCNTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -118,7 +103,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234003',
                 'can_cuoc_cong_dan' => '001205110003',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopCNTT25B,
                 'nganh_id' => $nganhCNTT,
                 'chuyen_nganh_id' => $chuyenNganhCNTT[1] ?? $chuyenNganhCNTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -133,7 +117,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234004',
                 'can_cuoc_cong_dan' => '001205050004',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopKHMT25A,
                 'nganh_id' => $nganhKHMT,
                 'chuyen_nganh_id' => $chuyenNganhKHMT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -148,7 +131,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234005',
                 'can_cuoc_cong_dan' => '001205090005',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopKHMT25A,
                 'nganh_id' => $nganhKHMT,
                 'chuyen_nganh_id' => $chuyenNganhKHMT[1] ?? $chuyenNganhKHMT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -163,7 +145,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234006',
                 'can_cuoc_cong_dan' => '001205040006',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopATTT25A,
                 'nganh_id' => $nganhATTT,
                 'chuyen_nganh_id' => $chuyenNganhATTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -178,7 +159,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234007',
                 'can_cuoc_cong_dan' => '001205080007',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopATTT25A,
                 'nganh_id' => $nganhATTT,
                 'chuyen_nganh_id' => $chuyenNganhATTT[1] ?? $chuyenNganhATTT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -195,7 +175,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234008',
                 'can_cuoc_cong_dan' => '001205030008',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopQTKD25A,
                 'nganh_id' => $nganhQTKD,
                 'chuyen_nganh_id' => $chuyenNganhQTKD[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -210,7 +189,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234009',
                 'can_cuoc_cong_dan' => '001205110009',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopQTKD25A,
                 'nganh_id' => $nganhQTKD,
                 'chuyen_nganh_id' => $chuyenNganhQTKD[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -225,7 +203,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234010',
                 'can_cuoc_cong_dan' => '001205050010',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopQTKD25B,
                 'nganh_id' => $nganhQTKD,
                 'chuyen_nganh_id' => $chuyenNganhQTKD[1] ?? $chuyenNganhQTKD[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -240,7 +217,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234011',
                 'can_cuoc_cong_dan' => '001205090011',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopTCNH25A,
                 'nganh_id' => $nganhTCNH,
                 'chuyen_nganh_id' => $chuyenNganhTCNH[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -255,7 +231,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234012',
                 'can_cuoc_cong_dan' => '001205070012',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopTCNH25A,
                 'nganh_id' => $nganhTCNH,
                 'chuyen_nganh_id' => $chuyenNganhTCNH[1] ?? $chuyenNganhTCNH[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -270,7 +245,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234013',
                 'can_cuoc_cong_dan' => '001205120013',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopKT25A,
                 'nganh_id' => $nganhKT,
                 'chuyen_nganh_id' => $chuyenNganhKT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -285,7 +259,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234014',
                 'can_cuoc_cong_dan' => '001205040014',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopKT25A,
                 'nganh_id' => $nganhKT,
                 'chuyen_nganh_id' => $chuyenNganhKT[1] ?? $chuyenNganhKT[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -302,7 +275,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234015',
                 'can_cuoc_cong_dan' => '001205120015',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopNNA25A,
                 'nganh_id' => $nganhNNA,
                 'chuyen_nganh_id' => $chuyenNganhNNA[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -317,7 +289,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234016',
                 'can_cuoc_cong_dan' => '001205030016',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopNNA25A,
                 'nganh_id' => $nganhNNA,
                 'chuyen_nganh_id' => $chuyenNganhNNA[1] ?? $chuyenNganhNNA[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -332,7 +303,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234017',
                 'can_cuoc_cong_dan' => '001205070017',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopNNJ25A,
                 'nganh_id' => $nganhNNJ,
                 'chuyen_nganh_id' => $chuyenNganhNNJ[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -347,7 +317,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234018',
                 'can_cuoc_cong_dan' => '001205010018',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopNNJ25A,
                 'nganh_id' => $nganhNNJ,
                 'chuyen_nganh_id' => $chuyenNganhNNJ[1] ?? $chuyenNganhNNJ[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -362,7 +331,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234019',
                 'can_cuoc_cong_dan' => '001205110019',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopNNC25A,
                 'nganh_id' => $nganhNNC,
                 'chuyen_nganh_id' => $chuyenNganhNNC[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -377,7 +345,6 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => '0901234020',
                 'can_cuoc_cong_dan' => '001205060020',
                 'khoa_hoc_id' => $khoaHocK25,
-                'lop_hanh_chinh_id' => $lopNNC25A,
                 'nganh_id' => $nganhNNC,
                 'chuyen_nganh_id' => $chuyenNganhNNC[1] ?? $chuyenNganhNNC[0] ?? null,
                 'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
@@ -434,12 +401,10 @@ class SinhVienSeeder extends Seeder
                 'so_dien_thoai' => $svData['so_dien_thoai'],
                 'can_cuoc_cong_dan' => $svData['can_cuoc_cong_dan'],
                 'khoa_hoc_id' => $svData['khoa_hoc_id'],
-                'lop_hanh_chinh_id' => $svData['lop_hanh_chinh_id'],
                 'nganh_id' => $svData['nganh_id'],
                 'chuyen_nganh_id' => $svData['chuyen_nganh_id'] ?? null,
                 'ky_hien_tai' => $svData['ky_hien_tai'],
                 'trang_thai_hoc_tap_id' => $svData['trang_thai_hoc_tap_id'],
-                'giang_vien_chu_nhiem_id' => null,
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
@@ -492,8 +457,6 @@ class SinhVienSeeder extends Seeder
         $studentsPerChuyenNganh = intval(200 / $totalChuyenNganh); // 11 sinh viên/chuyên ngành
         $remainder = 200 % $totalChuyenNganh; // 2 sinh viên còn lại
 
-        // Lấy mapping ngành -> lớp hành chính
-        $lopMapping = $this->getLopHanhChinhMapping($khoaHocK25);
 
         // Tìm số bắt đầu từ mã sinh viên lớn nhất hiện có
         $maxMaSinhVien = DB::table('sinh_vien')
@@ -519,15 +482,8 @@ class SinhVienSeeder extends Seeder
             // Số sinh viên cho chuyên ngành này (11 hoặc 12)
             $numStudents = $studentsPerChuyenNganh + ($index < $remainder ? 1 : 0);
             
-            // Lấy ngành và lớp hành chính tương ứng
+            // Lấy ngành
             $nganhId = $chuyenNganh->nganh_id;
-            $maNganh = $chuyenNganh->ma_nganh;
-            $lopHanhChinhIds = $lopMapping[$maNganh] ?? [];
-
-            if (empty($lopHanhChinhIds)) {
-                echo "⚠️  Không tìm thấy lớp hành chính cho ngành {$maNganh}\n";
-                continue;
-            }
 
             $countByChuyenNganh[$chuyenNganh->chuyen_nganh_id] = 0;
 
@@ -553,8 +509,6 @@ class SinhVienSeeder extends Seeder
                     continue; // Bỏ qua nếu email đã tồn tại
                 }
                 
-                // Chọn lớp hành chính (luân phiên giữa các lớp)
-                $lopHanhChinhId = $lopHanhChinhIds[$created % count($lopHanhChinhIds)];
 
                 // Tạo tên ngẫu nhiên
                 $hoTen = $ho[array_rand($ho)] . ' ' . $tenDem[array_rand($tenDem)] . ' ' . $ten[array_rand($ten)];
@@ -605,12 +559,10 @@ class SinhVienSeeder extends Seeder
                     'so_dien_thoai' => $soDienThoai,
                     'can_cuoc_cong_dan' => $canCuocCongDan,
                     'khoa_hoc_id' => $khoaHocK25,
-                    'lop_hanh_chinh_id' => $lopHanhChinhId,
                     'nganh_id' => $nganhId,
                     'chuyen_nganh_id' => $chuyenNganh->chuyen_nganh_id,
                     'ky_hien_tai' => 1,
                     'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
-                    'giang_vien_chu_nhiem_id' => null,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
@@ -635,43 +587,5 @@ class SinhVienSeeder extends Seeder
         }
     }
 
-    /**
-     * Lấy mapping ngành -> danh sách lớp hành chính
-     */
-    private function getLopHanhChinhMapping($khoaHocK25): array
-    {
-        $mapping = [];
-        
-        // Mapping mã ngành -> prefix lớp
-        $nganhPrefix = [
-            '7480201' => ['CNTT25A', 'CNTT25B'], // Công nghệ thông tin
-            '7480202' => ['KHMT25A', 'KHMT25B'], // Khoa học máy tính
-            '7480299' => ['ATTT25A', 'ATTT25B'], // An toàn thông tin
-            '7340101' => ['QTKD25A', 'QTKD25B'], // Quản trị kinh doanh
-            '7340201' => ['TCNH25A', 'TCNH25B'], // Tài chính - Ngân hàng
-            '7340301' => ['KT25A', 'KT25B'],     // Kế toán
-            '7220201' => ['NNA25A', 'NNA25B'],   // Ngôn ngữ Anh
-            '7220203' => ['NNJ25A', 'NNJ25B'],   // Ngôn ngữ Nhật
-            '7220204' => ['NNC25A', 'NNC25B'],   // Ngôn ngữ Trung Quốc
-        ];
-
-        foreach ($nganhPrefix as $maNganh => $prefixes) {
-            $lopIds = [];
-            foreach ($prefixes as $prefix) {
-                $lopId = DB::table('lop_hanh_chinh')
-                    ->where('ma_lop', $prefix)
-                    ->where('khoa_hoc_id', $khoaHocK25)
-                    ->value('id');
-                if ($lopId) {
-                    $lopIds[] = $lopId;
-                }
-            }
-            if (!empty($lopIds)) {
-                $mapping[$maNganh] = $lopIds;
-            }
-        }
-
-        return $mapping;
-    }
 }
 

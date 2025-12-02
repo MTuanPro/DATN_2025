@@ -75,12 +75,6 @@
                 </li>
 
                 <!-- 6. CẤU HÌNH ĐIỂM -->
-                <li class="sidebar-item {{ Request::is('giang-vien/cau-hinh-diem*') ? 'active' : '' }}">
-                    <a href="{{ route('giangvien.cau-hinh-diem.index') }}" class='sidebar-link'>
-                        <i class="bi bi-sliders"></i>
-                        <span>Cấu hình điểm</span>
-                    </a>
-                </li>
 
                 <!-- 7. NHẬP ĐIỂM -->
                 <li class="sidebar-item {{ Request::is('giang-vien/nhap-diem*') ? 'active' : '' }}">
@@ -123,19 +117,6 @@
                     </ul>
                 </li>
 
-                <!-- 10. LỚP CHỦ NHIỆM -->
-                <li class="sidebar-item has-sub {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-house-door"></i>
-                        <span>Lớp chủ nhiệm</span>
-                    </a>
-                    <ul class="submenu {{ Request::is('giang-vien/lop-chu-nhiem*') ? 'active' : '' }}">
-                        <li
-                            class="submenu-item {{ Request::is('giang-vien/lop-chu-nhiem') && !Request::is('giang-vien/lop-chu-nhiem/*') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.lop-chu-nhiem.index') }}">Danh sách lớp</a>
-                        </li>
-                    </ul>
-                </li>
 
                 <!-- PHASE 10: THÔNG BÁO -->
                 <li class="sidebar-item has-sub {{ Request::is('giang-vien/thong-bao*') || Request::is('giang-vien/yeu-cau-diem-danh-bu*') ? 'active' : '' }}">
@@ -176,15 +157,6 @@
                                         ->pluck('sinh_vien_id')
                                         ->toArray();
                                     $sinhVienIds = array_merge($sinhVienIds, $svTrongLopHocPhan);
-                                }
-                                
-                                // Sinh viên trong lớp chủ nhiệm
-                                $lopChuNhiem = \App\Models\DaoTao\LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)->first();
-                                if ($lopChuNhiem) {
-                                    $svTrongLopChuNhiem = \App\Models\DaoTao\SinhVien::where('lop_hanh_chinh_id', $lopChuNhiem->id)
-                                        ->pluck('id')
-                                        ->toArray();
-                                    $sinhVienIds = array_merge($sinhVienIds, $svTrongLopChuNhiem);
                                 }
                                 
                                 $sinhVienIds = array_unique($sinhVienIds);

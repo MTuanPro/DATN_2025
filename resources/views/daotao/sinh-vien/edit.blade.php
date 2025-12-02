@@ -230,25 +230,6 @@
                                 @enderror
                             </div>
                             <div class="col-md-6 mb-3">
-                                <label for="lop_hanh_chinh_id" class="form-label">Lớp hành chính <span
-                                        class="text-danger">*</span></label>
-                                <select class="form-select @error('lop_hanh_chinh_id') is-invalid @enderror"
-                                    id="lop_hanh_chinh_id" name="lop_hanh_chinh_id" required>
-                                    <option value="">-- Chọn lớp --</option>
-                                    @foreach ($lopHanhChinhs as $lop)
-                                        <option value="{{ $lop->id }}" data-nganh-id="{{ $lop->nganh_id }}"
-                                            data-khoa-hoc-id="{{ $lop->khoa_hoc_id }}"
-                                            {{ old('lop_hanh_chinh_id', $sinhVien->lop_hanh_chinh_id) == $lop->id ? 'selected' : '' }}>
-                                            {{ $lop->ma_lop }} - {{ $lop->ten_lop }}
-                                        </option>
-                                    @endforeach
-                                </select>
-                                <small class="text-info">⚠️ Chuyển lớp sẽ tự động cập nhật sĩ số</small>
-                                @error('lop_hanh_chinh_id')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                            <div class="col-md-6 mb-3">
                                 <label for="nganh_id" class="form-label">Ngành <span class="text-danger">*</span></label>
                                 <select class="form-select @error('nganh_id') is-invalid @enderror" id="nganh_id"
                                     name="nganh_id" required>
@@ -327,7 +308,6 @@
 @push('scripts')
     @php
         $oldChuyenNganhId = old('chuyen_nganh_id', $sinhVien->chuyen_nganh_id ?? '');
-        $oldLopHanhChinhId = old('lop_hanh_chinh_id', $sinhVien->lop_hanh_chinh_id ?? '');
         
         // Chuẩn bị dữ liệu cho JavaScript
         $chuyenNganhsData = $chuyenNganhs->map(function($cn) {
@@ -335,15 +315,6 @@
                 'value' => $cn->id,
                 'text' => $cn->ma_chuyen_nganh . ' - ' . $cn->ten_chuyen_nganh,
                 'nganhId' => (string)$cn->nganh_id
-            ];
-        })->toArray();
-        
-        $lopHanhChinhsData = $lopHanhChinhs->map(function($lop) {
-            return [
-                'value' => $lop->id,
-                'text' => $lop->ma_lop . ' - ' . $lop->ten_lop,
-                'nganhId' => (string)$lop->nganh_id,
-                'khoaHocId' => (string)$lop->khoa_hoc_id
             ];
         })->toArray();
     @endphp
@@ -354,14 +325,11 @@
                 const $nganhSelect = $('#nganh_id');
                 const $chuyenNganhSelect = $('#chuyen_nganh_id');
                 const $khoaHocSelect = $('#khoa_hoc_id');
-                const $lopHanhChinhSelect = $('#lop_hanh_chinh_id');
 
                 // Lưu trữ dữ liệu từ PHP
                 const allChuyenNganhs = @json($chuyenNganhsData);
-                const allLopHanhChinhs = @json($lopHanhChinhsData);
 
                 const currentChuyenNganhId = '{{ $oldChuyenNganhId }}';
-                const currentLopHanhChinhId = '{{ $oldLopHanhChinhId }}';
 
                 // Hàm lọc chuyên ngành theo ngành
                 function filterChuyenNganh(nganhId) {
@@ -399,89 +367,22 @@
                     $chuyenNganhSelect.trigger('change.select2');
                 }
 
-                // Hàm lọc lớp hành chính theo ngành và khóa học
-                function filterLopHanhChinh() {
-                    let nganhId = String($nganhSelect.val() || '').trim();
-                    let khoaHocId = String($khoaHocSelect.val() || '').trim();
-
-                    // Lưu giá trị hiện tại trước khi xóa
-                    const currentValue = $lopHanhChinhSelect.val();
-
-                    // Xóa tất cả options trừ option đầu tiên
-                    $lopHanhChinhSelect.find('option:not(:first)').remove();
-
-                    if (!nganhId || !khoaHocId) {
-                        $lopHanhChinhSelect.prop('disabled', true);
-                        $lopHanhChinhSelect.html('<option value="">-- Chọn khóa học và ngành trước --</option>');
-                    } else {
-                        $lopHanhChinhSelect.prop('disabled', false);
-                        $lopHanhChinhSelect.html('<option value="">-- Chọn lớp hành chính --</option>');
-
-                        let hasOptions = false;
-                        allLopHanhChinhs.forEach(lop => {
-                            if (lop.nganhId === nganhId && lop.khoaHocId === khoaHocId) {
-                                $lopHanhChinhSelect.append(
-                                    $('<option></option>')
-                                        .attr('value', lop.value)
-                                        .attr('data-nganh-id', lop.nganhId)
-                                        .attr('data-khoa-hoc-id', lop.khoaHocId)
-                                        .text(lop.text)
-                                );
-                                hasOptions = true;
-                            }
-                        });
-
-                        if (!hasOptions) {
-                            $lopHanhChinhSelect.append('<option value="">-- Không có lớp phù hợp --</option>');
-                        }
-                    }
-                    
-                    // Trigger Select2 để cập nhật UI
-                    $lopHanhChinhSelect.trigger('change.select2');
-
-                    // Khôi phục giá trị đã chọn nếu còn tồn tại
-                    if (currentValue) {
-                        setTimeout(() => {
-                            if ($lopHanhChinhSelect.find(`option[value="${currentValue}"]`).length > 0) {
-                                $lopHanhChinhSelect.val(currentValue).trigger('change.select2');
-                            }
-                        }, 300);
-                    }
-                }
-
                 // Lắng nghe sự kiện thay đổi ngành (Select2 event)
                 $nganhSelect.on('change.select2', function() {
                     filterChuyenNganh($(this).val());
-                    filterLopHanhChinh();
-                });
-
-                // Lắng nghe sự kiện thay đổi khóa học (Select2 event)
-                $khoaHocSelect.on('change.select2', function() {
-                    filterLopHanhChinh();
                 });
 
                 // Khởi tạo trạng thái ban đầu
                 const initialNganhId = String($nganhSelect.val() || '').trim();
-                const initialKhoaHocId = String($khoaHocSelect.val() || '').trim();
 
                 // Luôn gọi filter để khởi tạo đúng trạng thái
                 filterChuyenNganh(initialNganhId);
-                filterLopHanhChinh();
 
                 // Khôi phục giá trị chuyên ngành đã chọn nếu có
                 if (currentChuyenNganhId && initialNganhId) {
                     setTimeout(() => {
                         if ($chuyenNganhSelect.find(`option[value="${currentChuyenNganhId}"]`).length > 0) {
                             $chuyenNganhSelect.val(currentChuyenNganhId).trigger('change.select2');
-                        }
-                    }, 300);
-                }
-
-                // Khôi phục giá trị lớp đã chọn nếu có
-                if (currentLopHanhChinhId && initialNganhId && initialKhoaHocId) {
-                    setTimeout(() => {
-                        if ($lopHanhChinhSelect.find(`option[value="${currentLopHanhChinhId}"]`).length > 0) {
-                            $lopHanhChinhSelect.val(currentLopHanhChinhId).trigger('change.select2');
                         }
                     }, 300);
                 }

@@ -6,7 +6,6 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\User;
 use App\Models\DaoTao\KhoaHoc;
-use App\Models\DaoTao\LopHanhChinh;
 use App\Models\DaoTao\Nganh;
 use App\Models\DaoTao\ChuyenNganh;
 use App\Models\DanhMuc\TrangThaiHocTap;
@@ -34,12 +33,10 @@ class SinhVien extends Model
         'noi_cap_cccd',
         'anh_dai_dien',
         'khoa_hoc_id',
-        'lop_hanh_chinh_id',
         'nganh_id',
         'chuyen_nganh_id',
         'ky_hien_tai',
         'trang_thai_hoc_tap_id',
-        'giang_vien_chu_nhiem_id',
         'user_id',
     ];
 
@@ -61,12 +58,6 @@ class SinhVien extends Model
         return $this->belongsTo(KhoaHoc::class, 'khoa_hoc_id');
     }
 
-    // Relationship: Lớp hành chính
-    public function lopHanhChinh()
-    {
-        return $this->belongsTo(LopHanhChinh::class, 'lop_hanh_chinh_id');
-    }
-
     // Relationship: Ngành
     public function nganh()
     {
@@ -83,12 +74,6 @@ class SinhVien extends Model
     public function trangThaiHocTap()
     {
         return $this->belongsTo(TrangThaiHocTap::class, 'trang_thai_hoc_tap_id');
-    }
-
-    // Relationship: Giảng viên chủ nhiệm
-    public function giangVienChuNhiem()
-    {
-        return $this->belongsTo(GiangVien::class, 'giang_vien_chu_nhiem_id');
     }
 
     // Relationship: Đăng ký môn học tạm

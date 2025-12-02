@@ -139,8 +139,20 @@
                                             <input type="checkbox" class="checkbox-lop-hoc-phan" value="{{ $lhp->id }}" onchange="toggleDeleteButton()">
                                         </td>
                                         <td>{{ $lopHocPhans->firstItem() + $index }}</td>
-                                        <td><strong>{{ $lhp->ma_lop_hp }}</strong></td>
-                                        <td>{{ $lhp->ten_lop_hp }}</td>
+                                        <td>
+                                            <a href="{{ route('dao-tao.lop-hoc-phan.show', $lhp->id) }}" 
+                                               class="text-decoration-none fw-bold text-primary fs-6"
+                                               style="font-weight: 700 !important; color: #0d6efd !important;">
+                                                {{ $lhp->ma_lop_hp }}
+                                            </a>
+                                        </td>
+                                        <td>
+                                            <a href="{{ route('dao-tao.lop-hoc-phan.show', $lhp->id) }}" 
+                                               class="text-decoration-none fw-bold text-dark fs-6"
+                                               style="font-weight: 700 !important; color: #212529 !important;">
+                                                {{ $lhp->ten_lop_hp }}
+                                            </a>
+                                        </td>
                                         <td>{{ $lhp->monHoc->ten_mon ?? 'N/A' }}</td>
                                         <td>{{ $lhp->hocKy->ten_hoc_ky ?? 'N/A' }}</td>
                                         <td>

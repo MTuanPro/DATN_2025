@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\CauHinhDauDiemMacDinh;
 
 class MonHocSeeder extends Seeder
 {
@@ -91,7 +92,7 @@ class MonHocSeeder extends Seeder
         ];
 
         foreach ($data as $item) {
-            DB::table('mon_hoc')->updateOrInsert(
+            $monHocId = DB::table('mon_hoc')->updateOrInsert(
                 ['ma_mon' => $item['ma_mon']],
                 array_merge($item, [
                     'mo_ta' => $item['ten_mon'] . ' - Môn học thuộc khối ' . $item['loai_mon'],
@@ -99,6 +100,20 @@ class MonHocSeeder extends Seeder
                     'updated_at' => now(),
                 ])
             );
+
+            // Lấy ID môn học vừa tạo/cập nhật
+            $monHocId = DB::table('mon_hoc')->where('ma_mon', $item['ma_mon'])->value('id');
+
+            // Tự động tạo cấu hình đầu điểm mặc định nếu chưa có
+            if ($monHocId) {
+                $existingCauHinh = DB::table('cau_hinh_dau_diem_mac_dinh')
+                    ->where('mon_hoc_id', $monHocId)
+                    ->exists();
+
+                if (!$existingCauHinh) {
+                    $this->taoCauHinhDauDiemMacDinh($monHocId);
+                }
+            }
         }
 
         $this->command->info('✅ Đã tạo ' . count($data) . ' môn học');
@@ -224,5 +239,29 @@ class MonHocSeeder extends Seeder
         }
 
         $this->command->info('✅ Đã tạo ' . $count . ' mối quan hệ môn tiên quyết');
+    }
+
+    /**
+     * Tạo cấu hình đầu điểm mặc định cho môn học
+     */
+    private function taoCauHinhDauDiemMacDinh($monHocId)
+    {
+        // Cấu hình mặc định: Chuyên cần 10%, Giữa kỳ 30%, Cuối kỳ 60%
+        $cauHinhMacDinh = [
+            ['ten_dau_diem' => 'Chuyên cần', 'ty_le' => 10, 'so_cot' => 1],
+            ['ten_dau_diem' => 'Giữa kỳ', 'ty_le' => 30, 'so_cot' => 1],
+            ['ten_dau_diem' => 'Cuối kỳ', 'ty_le' => 60, 'so_cot' => 1],
+        ];
+
+        foreach ($cauHinhMacDinh as $cauHinh) {
+            DB::table('cau_hinh_dau_diem_mac_dinh')->insert([
+                'mon_hoc_id' => $monHocId,
+                'ten_dau_diem' => $cauHinh['ten_dau_diem'],
+                'ty_le' => $cauHinh['ty_le'],
+                'so_cot' => $cauHinh['so_cot'],
+                'created_at' => now(),
+                'updated_at' => now(),
+            ]);
+        }
     }
 }
