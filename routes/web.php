@@ -414,6 +414,7 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
     // Lớp giảng dạy
     Route::get('/lop-giang-day', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'index'])->name('lop-giang-day.index');
     Route::get('/lop-giang-day/{id}', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'show'])->name('lop-giang-day.show');
+    Route::get('/lop-giang-day/{lopHocPhanId}/sinh-vien/{sinhVienId}', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'showStudent'])->name('lop-giang-day.show-student');
     Route::get('/lop-giang-day/{id}/export-students', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'exportStudents'])->name('lop-giang-day.export-students');
     Route::get('/lop-giang-day/{id}/export-students-pdf', [App\Http\Controllers\GiangVien\TeachingClassController::class, 'exportStudentsPdf'])->name('lop-giang-day.export-students-pdf');
 

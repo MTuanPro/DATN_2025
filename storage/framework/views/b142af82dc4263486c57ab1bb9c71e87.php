@@ -45,6 +45,7 @@
                                     <th>Học kỳ</th>
                                     <th>Vai trò</th>
                                     <th>Số SV</th>
+                                    <th>Tiến độ điểm</th>
                                     <th>Trạng thái</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -79,9 +80,22 @@
                                         </td>
                                         <td>
                                             <span class="badge bg-light-primary">
-                                                <?php echo e($phanCong->lopHocPhan->so_sinh_vien); ?>/<?php echo e($phanCong->lopHocPhan->suc_chua); ?>
+                                                <?php echo e($phanCong->lopHocPhan->so_sinh_vien ?? 0); ?>/<?php echo e($phanCong->lopHocPhan->suc_chua); ?>
 
                                             </span>
+                                        </td>
+                                        <td>
+                                            <?php if(isset($phanCong->lopHocPhan->ty_le_nhap_diem)): ?>
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar <?php echo e($phanCong->lopHocPhan->ty_le_nhap_diem >= 100 ? 'bg-success' : 'bg-warning'); ?>" 
+                                                         role="progressbar" 
+                                                         style="width: <?php echo e($phanCong->lopHocPhan->ty_le_nhap_diem); ?>%">
+                                                        <?php echo e($phanCong->lopHocPhan->sv_co_diem ?? 0); ?>/<?php echo e($phanCong->lopHocPhan->so_sinh_vien ?? 0); ?> (<?php echo e($phanCong->lopHocPhan->ty_le_nhap_diem); ?>%)
+                                                    </div>
+                                                </div>
+                                            <?php else: ?>
+                                                <span class="text-muted">-</span>
+                                            <?php endif; ?>
                                         </td>
                                         <td>
                                             <?php if($phanCong->lopHocPhan->trang_thai_lop == 'mo_dang_ky'): ?>
@@ -92,21 +106,37 @@
                                                 <span class="badge bg-secondary">Kết thúc</span>
                                             <?php elseif($phanCong->lopHocPhan->trang_thai_lop == 'huy'): ?>
                                                 <span class="badge bg-danger">Hủy</span>
+                                            <?php elseif($phanCong->lopHocPhan->trang_thai_lop == 'da_khoa_diem'): ?>
+                                                <span class="badge bg-danger">Đã khóa điểm</span>
                                             <?php else: ?>
                                                 <span class="badge bg-light text-dark"><?php echo e($phanCong->lopHocPhan->trang_thai_lop); ?></span>
                                             <?php endif; ?>
                                         </td>
                                         <td>
-                                            <a href="<?php echo e(route('giangvien.lop-giang-day.show', $phanCong->lop_hoc_phan_id)); ?>" 
-                                               class="btn btn-sm btn-primary" 
-                                               title="Xem chi tiết">
-                                                <i class="bi bi-eye"></i> Chi tiết
-                                            </a>
+                                            <div class="btn-group" role="group">
+                                                <a href="<?php echo e(route('giangvien.lop-giang-day.show', $phanCong->lop_hoc_phan_id)); ?>" 
+                                                   class="btn btn-sm btn-primary" 
+                                                   title="Xem chi tiết">
+                                                    <i class="bi bi-eye"></i> Chi tiết
+                                                </a>
+                                                <?php if(!isset($phanCong->lopHocPhan->da_ket_thuc) || !$phanCong->lopHocPhan->da_ket_thuc): ?>
+                                                    <a href="<?php echo e(route('giangvien.nhap-diem.show', $phanCong->lop_hoc_phan_id)); ?>" 
+                                                       class="btn btn-sm btn-success" 
+                                                       title="Nhập điểm">
+                                                        <i class="bi bi-pencil-square"></i> Nhập điểm
+                                                    </a>
+                                                <?php endif; ?>
+                                                <a href="<?php echo e(route('giangvien.lop-giang-day.show', $phanCong->lop_hoc_phan_id)); ?>#results" 
+                                                   class="btn btn-sm btn-info" 
+                                                   title="Kết quả học tập">
+                                                    <i class="bi bi-trophy"></i> Kết quả
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="10" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                             <p class="mt-2">Không có lớp học phần nào được phân công.</p>
                                         </td>

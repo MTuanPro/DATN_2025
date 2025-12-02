@@ -307,16 +307,6 @@
                         @endif
                     </div>
                 </div>
-                <div class="card">
-                    <div class="card-header">
-                        <h4>Lớp chủ nhiệm</h4>
-                    </div>
-                    <div class="card-content pb-4">
-                        <div class="px-4 py-3">
-                            <p class="text-muted mb-0">{{ $homeRoomClass ?? 'Chưa có lớp chủ nhiệm' }}</p>
-                        </div>
-                    </div>
-                </div>
             </div>
         </section>
     </div>

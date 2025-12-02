@@ -57,48 +57,7 @@
                     </ul>
                 </li>
 
-                <!-- 5. ĐIỂM DANH -->
-                <li class="sidebar-item has-sub {{ Request::is('giang-vien/diem-danh*') ? 'active' : '' }}">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-clipboard-check"></i>
-                        <span>Điểm danh</span>
-                    </a>
-                    <ul class="submenu {{ Request::is('giang-vien/diem-danh*') ? 'active' : '' }}">
-                        <li
-                            class="submenu-item {{ Request::is('giang-vien/diem-danh') && !Request::is('giang-vien/diem-danh/bao-cao') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.diem-danh.index') }}">Điểm danh sinh viên</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('giang-vien/diem-danh/bao-cao') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.diem-danh.report') }}">Báo cáo điểm danh</a>
-                        </li>
-                    </ul>
-                </li>
-
                 <!-- 6. CẤU HÌNH ĐIỂM -->
-
-                <!-- 7. NHẬP ĐIỂM -->
-                <li class="sidebar-item {{ Request::is('giang-vien/nhap-diem*') ? 'active' : '' }}">
-                    <a href="{{ route('giangvien.nhap-diem.index') }}" class='sidebar-link'>
-                        <i class="bi bi-pencil-square"></i>
-                        <span>Nhập điểm</span>
-                    </a>
-                </li>
-
-                <!-- 8. KẾT QUẢ HỌC TẬP -->
-                <li class="sidebar-item has-sub {{ Request::is('giang-vien/ket-qua-hoc-tap*') || Request::is('giang-vien/xuat-danh-sach-thi*') ? 'active' : '' }}">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-trophy"></i>
-                        <span>Kết quả học tập</span>
-                    </a>
-                    <ul class="submenu {{ Request::is('giang-vien/ket-qua-hoc-tap*') || Request::is('giang-vien/xuat-danh-sach-thi*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('giang-vien/ket-qua-hoc-tap*') && !Request::is('giang-vien/xuat-danh-sach-thi*') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.ket-qua-hoc-tap.index') }}">Kết quả học tập</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('giang-vien/xuat-danh-sach-thi*') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.xuat-danh-sach-thi.index') }}">Xuất danh sách thi</a>
-                        </li>
-                    </ul>
-                </li>
 
                 <!-- 9. THI & ĐỀ THI -->
                 <li class="sidebar-item has-sub {{ Request::is('giang-vien/lich-thi*') ? 'active' : '' }}">
