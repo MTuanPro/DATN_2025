@@ -11,58 +11,81 @@ class ZaloPayService
     private $key1;
     private $key2;
     private $endpoint;
+    private $isSandbox;
 
     public function __construct()
     {
-        $this->appId = env('ZALOPAY_APP_ID');
-        $this->key1 = env('ZALOPAY_KEY1');
-        $this->key2 = env('ZALOPAY_KEY2');
-        $this->endpoint = env('ZALOPAY_ENDPOINT', 'https://sb-openapi.zalopay.vn/v2');
+        $this->appId = env('ZALOPAY_APP_ID', '');
+        $this->key1 = env('ZALOPAY_KEY1', '');
+        $this->key2 = env('ZALOPAY_KEY2', '');
+        $this->isSandbox = env('ZALOPAY_SANDBOX', true);
+        
+        // API v1 endpoints
+        if ($this->isSandbox) {
+            $this->endpoint = 'https://sandbox.zalopay.com.vn/v001/tpe';
+        } else {
+            $this->endpoint = 'https://zalopay.com.vn/v001/tpe';
+        }
     }
 
     /**
-     * Create ZaloPay order
+     * Create ZaloPay order (API v1)
      * 
      * @param string $appTransId Mã giao dịch của ứng dụng (format: yyMMdd_xxxxx)
      * @param int $amount Số tiền (VND)
      * @param string $description Mô tả đơn hàng
-     * @param array $embedData Dữ liệu nhúng (tuỳ chọn)
+     * @param string $appUser Thông tin người dùng (id/username/tên/số điện thoại/email)
+     * @param array $items Danh sách sản phẩm (optional)
+     * @param array $embedData Dữ liệu nhúng (optional)
+     * @param string $bankcode Mã ngân hàng (optional, để trống để user chọn)
      * @return array
      */
-    public function createOrder($appTransId, $amount, $description, $embedData = [])
+    public function createOrder($appTransId, $amount, $description, $appUser = null, $items = [], $embedData = [], $bankcode = '')
     {
         try {
-            $transId = (int) (microtime(true) * 10000); // timestamp
-            $appUser = 'user_' . time(); // Tên người dùng
+            // Default appuser
+            if (!$appUser) {
+                $appUser = 'user_' . time();
+            }
+
+            // App time (unix timestamp in milliseconds)
+            $appTime = round(microtime(true) * 1000);
 
             // Embed data - thông tin bổ sung
-            $embedDataStr = json_encode(array_merge([
-                'redirecturl' => route('payment.zalopay.callback')
-            ], $embedData));
+            $embedDataStr = !empty($embedData) ? json_encode($embedData, JSON_UNESCAPED_UNICODE) : '{}';
 
-            // Tạo MAC để xác thực
-            $data = [
-                'app_id' => $this->appId,
-                'app_trans_id' => $appTransId,
-                'app_user' => $appUser,
-                'app_time' => round(microtime(true) * 1000), // milliseconds
-                'embed_data' => $embedDataStr,
-                'item' => json_encode([]), // Danh sách sản phẩm (để trống)
+            // Items - danh sách sản phẩm
+            $itemStr = !empty($items) ? json_encode($items, JSON_UNESCAPED_UNICODE) : '[]';
+
+            // Tạo MAC theo công thức ZaloPay v1: appid|apptransid|appuser|amount|apptime|embeddata|item
+            $data = $this->appId . '|' . $appTransId . '|' . $appUser . '|' . $amount 
+                  . '|' . $appTime . '|' . $embedDataStr . '|' . $itemStr;
+            $mac = hash_hmac('sha256', $data, $this->key1);
+
+            // Prepare request parameters
+            $params = [
+                'appid' => $this->appId,
+                'apptransid' => $appTransId,
+                'appuser' => $appUser,
+                'apptime' => $appTime,
                 'amount' => $amount,
                 'description' => $description,
-                'bank_code' => '', // Để trống để user chọn
+                'embeddata' => $embedDataStr,
+                'item' => $itemStr,
+                'mac' => $mac,
             ];
 
-            // Tạo MAC theo công thức ZaloPay
-            $macData = $data['app_id'] . '|' . $data['app_trans_id'] . '|' . $data['app_user'] . '|' 
-                     . $data['amount'] . '|' . $data['app_time'] . '|' . $data['embed_data'] . '|' . $data['item'];
-            $data['mac'] = hash_hmac('sha256', $macData, $this->key1);
+            // Add bankcode if provided
+            if (!empty($bankcode)) {
+                $params['bankcode'] = $bankcode;
+            }
 
             // Gửi request đến ZaloPay
-            $response = Http::asForm()->post($this->endpoint . '/create', $data);
+            $response = Http::asForm()->post($this->endpoint . '/createorder', $params);
 
             $result = $response->json();
 
+            Log::info('ZaloPay Create Order Request:', $params);
             Log::info('ZaloPay Create Order Response:', $result);
 
             return $result;
@@ -71,14 +94,14 @@ class ZaloPayService
             Log::error('ZaloPay Create Order Error: ' . $e->getMessage());
             
             return [
-                'return_code' => 0,
-                'return_message' => 'Có lỗi xảy ra khi tạo đơn hàng: ' . $e->getMessage()
+                'returncode' => 0,
+                'returnmessage' => 'Có lỗi xảy ra khi tạo đơn hàng: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Query order status from ZaloPay
+     * Query order status from ZaloPay (API v1)
      * 
      * @param string $appTransId Mã giao dịch của ứng dụng
      * @return array
@@ -86,20 +109,22 @@ class ZaloPayService
     public function queryOrder($appTransId)
     {
         try {
-            $data = [
-                'app_id' => $this->appId,
-                'app_trans_id' => $appTransId,
+            // Tạo MAC: appid|apptransid|key1
+            $data = $this->appId . '|' . $appTransId . '|' . $this->key1;
+            $mac = hash_hmac('sha256', $data, $this->key1);
+
+            $params = [
+                'appid' => $this->appId,
+                'apptransid' => $appTransId,
+                'mac' => $mac,
             ];
 
-            // Tạo MAC
-            $macData = $data['app_id'] . '|' . $data['app_trans_id'] . '|' . $this->key1;
-            $data['mac'] = hash_hmac('sha256', $macData, $this->key1);
-
-            // Gửi request query
-            $response = Http::asForm()->post($this->endpoint . '/query', $data);
+            // Gửi request query (GET method)
+            $response = Http::get($this->endpoint . '/getstatusbyapptransid', $params);
 
             $result = $response->json();
 
+            Log::info('ZaloPay Query Order Request:', $params);
             Log::info('ZaloPay Query Order Response:', $result);
 
             return $result;
@@ -108,29 +133,39 @@ class ZaloPayService
             Log::error('ZaloPay Query Order Error: ' . $e->getMessage());
             
             return [
-                'return_code' => 0,
-                'return_message' => 'Có lỗi xảy ra khi truy vấn đơn hàng: ' . $e->getMessage()
+                'returncode' => 0,
+                'returnmessage' => 'Có lỗi xảy ra khi truy vấn đơn hàng: ' . $e->getMessage()
             ];
         }
     }
 
     /**
-     * Verify callback data from ZaloPay (for IPN)
+     * Verify callback data from ZaloPay (for IPN) - API v1
      * 
-     * @param array $data Dữ liệu callback từ ZaloPay
+     * @param array $callbackData Dữ liệu callback từ ZaloPay
      * @return bool
      */
-    public function verifyCallback($data)
+    public function verifyCallback($callbackData)
     {
         try {
-            $mac = $data['mac'] ?? '';
+            $requestMac = $callbackData['mac'] ?? '';
+            $dataStr = $callbackData['data'] ?? '';
             
-            // Tạo lại MAC từ dữ liệu nhận được
-            $dataStr = $data['data'] ?? '';
+            // Tạo lại MAC từ dữ liệu nhận được: HMAC(sha256, key2, data)
             $reqMac = hash_hmac('sha256', $dataStr, $this->key2);
 
             // So sánh MAC
-            return $mac === $reqMac;
+            $isValid = strcmp($requestMac, $reqMac) === 0;
+
+            if (!$isValid) {
+                Log::warning('ZaloPay Callback MAC verification failed', [
+                    'request_mac' => $requestMac,
+                    'calculated_mac' => $reqMac,
+                    'data' => $dataStr
+                ]);
+            }
+
+            return $isValid;
 
         } catch (\Exception $e) {
             Log::error('ZaloPay Verify Callback Error: ' . $e->getMessage());
@@ -139,9 +174,25 @@ class ZaloPayService
     }
 
     /**
-     * Refund order (if needed)
+     * Parse callback data from ZaloPay
      * 
-     * @param string $zpTransId Mã giao dịch ZaloPay
+     * @param string $dataStr JSON string from callback
+     * @return array|null
+     */
+    public function parseCallbackData($dataStr)
+    {
+        try {
+            return json_decode($dataStr, true);
+        } catch (\Exception $e) {
+            Log::error('ZaloPay Parse Callback Data Error: ' . $e->getMessage());
+            return null;
+        }
+    }
+
+    /**
+     * Refund order (API v1)
+     * 
+     * @param int $zpTransId Mã giao dịch ZaloPay
      * @param int $amount Số tiền hoàn (VND)
      * @param string $description Mô tả lý do hoàn tiền
      * @return array
@@ -149,28 +200,32 @@ class ZaloPayService
     public function refund($zpTransId, $amount, $description)
     {
         try {
-            $timestamp = round(microtime(true) * 1000);
-            $uid = $timestamp . ''; // unique id
+            $timestamp = round(microtime(true) * 1000); // milliseconds
+            $uid = $timestamp . rand(111, 999); // unique id
 
-            $data = [
-                'app_id' => $this->appId,
-                'm_refund_id' => date('ymd') . '_' . $this->appId . '_' . $uid,
+            $mrefundid = date('ymd') . '_' . $this->appId . '_' . $uid;
+
+            // Tạo MAC: appid|zptransid|amount|description|timestamp
+            $data = $this->appId . '|' . $zpTransId . '|' . $amount 
+                  . '|' . $description . '|' . $timestamp;
+            $mac = hash_hmac('sha256', $data, $this->key1);
+
+            $params = [
+                'appid' => $this->appId,
+                'mrefundid' => $mrefundid,
                 'timestamp' => $timestamp,
-                'zp_trans_id' => $zpTransId,
+                'zptransid' => $zpTransId,
                 'amount' => $amount,
                 'description' => $description,
+                'mac' => $mac,
             ];
 
-            // Tạo MAC
-            $macData = $data['app_id'] . '|' . $data['zp_trans_id'] . '|' . $data['amount'] 
-                     . '|' . $description . '|' . $timestamp;
-            $data['mac'] = hash_hmac('sha256', $macData, $this->key1);
-
             // Gửi request refund
-            $response = Http::asForm()->post($this->endpoint . '/refund', $data);
+            $response = Http::asForm()->post($this->endpoint . '/partialrefund', $params);
 
             $result = $response->json();
 
+            Log::info('ZaloPay Refund Request:', $params);
             Log::info('ZaloPay Refund Response:', $result);
 
             return $result;
@@ -179,8 +234,50 @@ class ZaloPayService
             Log::error('ZaloPay Refund Error: ' . $e->getMessage());
             
             return [
-                'return_code' => 0,
-                'return_message' => 'Có lỗi xảy ra khi hoàn tiền: ' . $e->getMessage()
+                'returncode' => 0,
+                'returnmessage' => 'Có lỗi xảy ra khi hoàn tiền: ' . $e->getMessage()
+            ];
+        }
+    }
+
+    /**
+     * Query refund status (API v1)
+     * 
+     * @param string $mrefundid Mã hoàn tiền
+     * @return array
+     */
+    public function queryRefundStatus($mrefundid)
+    {
+        try {
+            $timestamp = round(microtime(true) * 1000); // milliseconds
+
+            // Tạo MAC: appid|mrefundid|timestamp
+            $data = $this->appId . '|' . $mrefundid . '|' . $timestamp;
+            $mac = hash_hmac('sha256', $data, $this->key1);
+
+            $params = [
+                'appid' => $this->appId,
+                'mrefundid' => $mrefundid,
+                'timestamp' => $timestamp,
+                'mac' => $mac,
+            ];
+
+            // Gửi request query (GET method)
+            $response = Http::get($this->endpoint . '/getpartialrefundstatus', $params);
+
+            $result = $response->json();
+
+            Log::info('ZaloPay Query Refund Status Request:', $params);
+            Log::info('ZaloPay Query Refund Status Response:', $result);
+
+            return $result;
+
+        } catch (\Exception $e) {
+            Log::error('ZaloPay Query Refund Status Error: ' . $e->getMessage());
+            
+            return [
+                'returncode' => 0,
+                'returnmessage' => 'Có lỗi xảy ra khi truy vấn trạng thái hoàn tiền: ' . $e->getMessage()
             ];
         }
     }

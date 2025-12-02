@@ -96,13 +96,33 @@ class HocPhiController extends Controller
     {
         $hocPhi = HocPhiHocKy::with([
             'sinhVien.user',
-            'sinhVien.lopHanhChinh',
             'hocKy',
             'chiTietHocPhiMon.monHoc',
             'lichSuDongHocPhi.nguoiThu.user'
         ])->findOrFail($id);
 
         return view('daotao.hoc-phi.show', compact('hocPhi'));
+    }
+
+    /**
+     * Show ZaloPay payment page (for admin view only)
+     */
+    public function showZaloPayPayment($id)
+    {
+        $hocPhi = HocPhiHocKy::with(['sinhVien.user', 'hocKy'])
+            ->findOrFail($id);
+
+        // Check if there's remaining amount to pay
+        if ($hocPhi->so_tien_con_lai <= 0) {
+            return redirect()
+                ->route('dao-tao.hoc-phi.show', $id)
+                ->with('info', 'Sinh viên đã thanh toán đủ học phí cho học kỳ này.');
+        }
+
+        // Pass a flag to indicate this is admin view (read-only)
+        $isAdminView = true;
+
+        return view('sinhvien.hoc-phi.zalopay-payment', compact('hocPhi', 'isAdminView'));
     }
 
     /**
@@ -397,10 +417,6 @@ class HocPhiController extends Controller
                 $hocPhi->load('sinhVien');
             }
             
-            if (!$hocPhi->sinhVien->relationLoaded('lopHanhChinh')) {
-                $hocPhi->sinhVien->load('lopHanhChinh');
-            }
-            
             if (!$hocPhi->relationLoaded('hocKy')) {
                 $hocPhi->load('hocKy');
             }
@@ -537,14 +553,14 @@ class HocPhiController extends Controller
     public function viewBienLai($lichSuId)
     {
         $lichSu = LichSuDongHocPhi::with([
-            'hocPhiHocKy.sinhVien.lopHanhChinh',
+            'hocPhiHocKy.sinhVien',
             'hocPhiHocKy.hocKy',
             'hocPhiHocKy.chiTietHocPhiMon.monHoc',
             'nguoiThu'
         ])->findOrFail($lichSuId);
 
         $hocPhi = $lichSu->hocPhiHocKy;
-        $hocPhi->load(['sinhVien.lopHanhChinh', 'hocKy', 'chiTietHocPhiMon.monHoc']);
+        $hocPhi->load(['sinhVien', 'hocKy', 'chiTietHocPhiMon.monHoc']);
 
         // Kiểm tra quyền truy cập
         $user = auth()->user();

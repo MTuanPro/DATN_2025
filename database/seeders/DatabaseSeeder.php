@@ -61,7 +61,7 @@ class DatabaseSeeder extends Seeder
 
         // Phụ thuộc HocKy, MonHoc, GiangVien
         $this->call(LopHocPhanSeeder::class);
-        
+
         // Copy cấu hình đầu điểm từ môn học sang lớp học phần
         $this->call(CopyCauHinhDauDiemToLopHocPhanSeeder::class);
 

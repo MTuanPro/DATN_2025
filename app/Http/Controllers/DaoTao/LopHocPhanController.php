@@ -162,7 +162,7 @@ class LopHocPhanController extends Controller
 
             DB::commit();
 
-            return redirect()->route('dao-tao.lop-hoc-phan.index')
+        return redirect()->route('dao-tao.lop-hoc-phan.index')
                 ->with('success', 'Tạo lớp học phần thành công! Đã tự động tạo cấu hình đầu điểm từ môn học.');
         } catch (\Exception $e) {
             DB::rollBack();

@@ -38,7 +38,6 @@ class DashboardController extends Controller
 
         // Load relationships
         $sinhVien->load([
-            'lopHanhChinh',
             'khoaHoc',
             'nganh',
             'chuyenNganh',
@@ -159,7 +158,7 @@ class DashboardController extends Controller
             'currentClasses' => $currentClasses,
             'debt' => $debt,
             'studentCode' => $sinhVien->ma_sinh_vien,
-            'className' => $sinhVien->lopHanhChinh ? $sinhVien->lopHanhChinh->ten_lop : null,
+            'className' => null, // Lớp hành chính đã được xóa
             'course' => $sinhVien->khoaHoc ? $sinhVien->khoaHoc->ten_khoa_hoc : null,
             'warnings' => $warnings,
             'sinhVien' => $sinhVien,

@@ -18,9 +18,9 @@
                         <i class="bi bi-pencil-square"></i> Nhập điểm
                     </a>
                 @endif
-                <a href="{{ route('giangvien.lop-giang-day.index') }}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Quay lại
-                </a>
+            <a href="{{ route('giangvien.lop-giang-day.index') }}" class="btn btn-secondary">
+                <i class="bi bi-arrow-left"></i> Quay lại
+            </a>
             </div>
         </div>
     </div>
@@ -106,56 +106,56 @@
                         </div>
                     </div>
 
-                    <!-- Thông tin lớp học phần -->
-                    <div class="card mb-4">
+            <!-- Thông tin lớp học phần -->
+            <div class="card mb-4">
                         <div class="card-header bg-primary text-white">
                             <h4 class="card-title mb-0">
                                 <i class="bi bi-info-circle"></i> Thông tin lớp học phần
                             </h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="row">
-                                <div class="col-md-6">
-                                    <table class="table table-borderless">
-                                        <tr>
+                </div>
+                <div class="card-body">
+                    <div class="row">
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
                                             <th style="width: 40%;" class="text-muted">Mã lớp HP:</th>
                                             <td><strong class="text-primary">{{ $lopHocPhan->ma_lop_hp }}</strong></td>
-                                        </tr>
-                                        <tr>
+                                </tr>
+                                <tr>
                                             <th class="text-muted">Tên lớp HP:</th>
-                                            <td>{{ $lopHocPhan->ten_lop_hp }}</td>
-                                        </tr>
-                                        <tr>
+                                    <td>{{ $lopHocPhan->ten_lop_hp }}</td>
+                                </tr>
+                                <tr>
                                             <th class="text-muted">Môn học:</th>
-                                            <td>
+                                    <td>
                                                 <strong>{{ $lopHocPhan->monHoc->ma_mon ?? '' }}</strong> - {{ $lopHocPhan->monHoc->ten_mon ?? 'N/A' }}<br>
                                                 <span class="badge bg-info">{{ $lopHocPhan->monHoc->so_tin_chi ?? 0 }} tín chỉ</span>
-                                            </td>
-                                        </tr>
-                                        <tr>
+                                    </td>
+                                </tr>
+                                <tr>
                                             <th class="text-muted">Học kỳ:</th>
                                             <td>
                                                 <i class="bi bi-calendar3"></i> {{ $lopHocPhan->hocKy->ten_hoc_ky }}<br>
                                                 <small class="text-muted">{{ $lopHocPhan->hocKy->nam_hoc }}</small>
                                             </td>
-                                        </tr>
-                                        <tr>
+                                </tr>
+                                <tr>
                                             <th class="text-muted">Vai trò của bạn:</th>
-                                            <td>
-                                                @if($phanCong->vai_tro == 'giang_vien_chinh')
+                                    <td>
+                                        @if($phanCong->vai_tro == 'giang_vien_chinh')
                                                     <span class="badge bg-primary"><i class="bi bi-star-fill"></i> Giảng viên chính</span>
-                                                @elseif($phanCong->vai_tro == 'giang_vien_phu')
+                                        @elseif($phanCong->vai_tro == 'giang_vien_phu')
                                                     <span class="badge bg-info"><i class="bi bi-person"></i> Giảng viên phụ</span>
-                                                @elseif($phanCong->vai_tro == 'tro_giang')
+                                        @elseif($phanCong->vai_tro == 'tro_giang')
                                                     <span class="badge bg-secondary"><i class="bi bi-person-check"></i> Trợ giảng</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </div>
-                                <div class="col-md-6">
-                                    <table class="table table-borderless">
-                                        <tr>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
+                        </div>
+                        <div class="col-md-6">
+                            <table class="table table-borderless">
+                                <tr>
                                             <th style="width: 40%;" class="text-muted">Nhóm lớp:</th>
                                             <td>
                                                 @if($lopHocPhan->nhom_lop)
@@ -164,16 +164,16 @@
                                                     <span class="text-muted">N/A</span>
                                                 @endif
                                             </td>
-                                        </tr>
-                                        <tr>
+                                </tr>
+                                <tr>
                                             <th class="text-muted">Sức chứa:</th>
                                             <td>
                                                 <i class="bi bi-people"></i> {{ $lopHocPhan->suc_chua }} sinh viên
                                             </td>
-                                        </tr>
-                                        <tr>
+                                </tr>
+                                <tr>
                                             <th class="text-muted">Số lượng đăng ký:</th>
-                                            <td>
+                                    <td>
                                                 <strong class="text-primary">{{ $lopHocPhan->so_luong_dang_ky }}</strong> / {{ $lopHocPhan->suc_chua }}
                                                 @php
                                                     $tyLeDangKy = $lopHocPhan->suc_chua > 0 ? round(($lopHocPhan->so_luong_dang_ky / $lopHocPhan->suc_chua) * 100, 1) : 0;
@@ -181,24 +181,24 @@
                                                 <span class="badge {{ $tyLeDangKy >= 100 ? 'bg-danger' : ($tyLeDangKy >= 80 ? 'bg-warning' : 'bg-success') }} ms-2">
                                                     {{ $tyLeDangKy }}%
                                                 </span>
-                                                @if($lopHocPhan->so_luong_dang_ky >= $lopHocPhan->suc_chua)
-                                                    <span class="badge bg-danger ms-2">Đầy</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                        <tr>
+                                        @if($lopHocPhan->so_luong_dang_ky >= $lopHocPhan->suc_chua)
+                                            <span class="badge bg-danger ms-2">Đầy</span>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
                                             <th class="text-muted">Hình thức:</th>
-                                            <td>
-                                                @if($lopHocPhan->hinh_thuc == 'truc_tiep')
+                                    <td>
+                                        @if($lopHocPhan->hinh_thuc == 'truc_tiep')
                                                     <span class="badge bg-success"><i class="bi bi-building"></i> Trực tiếp</span>
-                                                @elseif($lopHocPhan->hinh_thuc == 'online')
+                                        @elseif($lopHocPhan->hinh_thuc == 'online')
                                                     <span class="badge bg-info"><i class="bi bi-camera-video"></i> Online</span>
-                                                @elseif($lopHocPhan->hinh_thuc == 'hybrid')
+                                        @elseif($lopHocPhan->hinh_thuc == 'hybrid')
                                                     <span class="badge bg-warning"><i class="bi bi-laptop"></i> Hybrid</span>
                                                 @else
                                                     <span class="text-muted">N/A</span>
-                                                @endif
-                                                @if($lopHocPhan->link_online)
+                                        @endif
+                                        @if($lopHocPhan->link_online)
                                                     <br><small><a href="{{ $lopHocPhan->link_online }}" target="_blank" class="text-primary">
                                                         <i class="bi bi-link-45deg"></i> {{ $lopHocPhan->link_online }}
                                                     </a></small>
@@ -212,47 +212,47 @@
                                                     <i class="bi bi-calendar-event"></i> {{ \Carbon\Carbon::parse($lopHocPhan->ngay_bat_dau)->format('d/m/Y') }}
                                                 @else
                                                     <span class="text-muted">Chưa có</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                        <tr>
+                                        @endif
+                                    </td>
+                                </tr>
+                                <tr>
                                             <th class="text-muted">Ngày kết thúc:</th>
-                                            <td>
+                                    <td>
                                                 @if($lopHocPhan->ngay_ket_thuc)
                                                     <i class="bi bi-calendar-x"></i> {{ \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc)->format('d/m/Y') }}
                                                 @else
                                                     <span class="text-muted">Chưa có</span>
-                                                @endif
-                                            </td>
-                                        </tr>
-                                    </table>
-                                </div>
-                            </div>
+                                        @endif
+                                    </td>
+                                </tr>
+                            </table>
                         </div>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Giảng viên phụ trách -->
-                    <div class="card mb-4">
+            <!-- Giảng viên phụ trách -->
+            <div class="card mb-4">
                         <div class="card-header bg-info text-white">
                             <h4 class="card-title mb-0">
                                 <i class="bi bi-person-badge"></i> Giảng viên phụ trách
                             </h4>
-                        </div>
-                        <div class="card-body">
-                            <div class="table-responsive">
-                                <table class="table table-hover">
+                </div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-hover">
                                     <thead class="table-light">
-                                        <tr>
-                                            <th>Mã GV</th>
-                                            <th>Họ tên</th>
-                                            <th>Email</th>
+                                <tr>
+                                    <th>Mã GV</th>
+                                    <th>Họ tên</th>
+                                    <th>Email</th>
                                             <th>Số điện thoại</th>
-                                            <th>Vai trò</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
+                                    <th>Vai trò</th>
+                                </tr>
+                            </thead>
+                            <tbody>
                                         @forelse($lopHocPhan->lopHocPhanGiangVien as $pc)
-                                            <tr>
+                                    <tr>
                                                 <td><strong>{{ $pc->giangVien->ma_giang_vien }}</strong></td>
                                                 <td>
                                                     <i class="bi bi-person-circle"></i> {{ $pc->giangVien->ho_ten }}
@@ -268,52 +268,52 @@
                                                         <span class="text-muted">-</span>
                                                     @endif
                                                 </td>
-                                                <td>
-                                                    @if($pc->vai_tro == 'giang_vien_chinh')
+                                        <td>
+                                            @if($pc->vai_tro == 'giang_vien_chinh')
                                                         <span class="badge bg-primary"><i class="bi bi-star-fill"></i> GV Chính</span>
-                                                    @elseif($pc->vai_tro == 'giang_vien_phu')
+                                            @elseif($pc->vai_tro == 'giang_vien_phu')
                                                         <span class="badge bg-info"><i class="bi bi-person"></i> GV Phụ</span>
-                                                    @elseif($pc->vai_tro == 'tro_giang')
+                                            @elseif($pc->vai_tro == 'tro_giang')
                                                         <span class="badge bg-secondary"><i class="bi bi-person-check"></i> Trợ giảng</span>
                                                     @else
                                                         <span class="badge bg-light text-dark">{{ $pc->vai_tro }}</span>
-                                                    @endif
-                                                </td>
+                                            @endif
+                                        </td>
                                             </tr>
                                         @empty
                                             <tr>
                                                 <td colspan="5" class="text-center text-muted">Chưa có giảng viên được phân công</td>
-                                            </tr>
+                                    </tr>
                                         @endforelse
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
+                            </tbody>
+                        </table>
                     </div>
+                </div>
+            </div>
 
-                    <!-- Lịch học cố định -->
-                    @if($lichHocCoDinh->isNotEmpty())
-                        <div class="card mb-4">
+            <!-- Lịch học cố định -->
+            @if($lichHocCoDinh->isNotEmpty())
+                <div class="card mb-4">
                             <div class="card-header bg-success text-white">
                                 <h4 class="card-title mb-0">
                                     <i class="bi bi-calendar-week"></i> Lịch học cố định
                                 </h4>
-                            </div>
-                            <div class="card-body">
-                                <div class="table-responsive">
-                                    <table class="table table-hover">
+                    </div>
+                    <div class="card-body">
+                        <div class="table-responsive">
+                            <table class="table table-hover">
                                         <thead class="table-light">
-                                            <tr>
-                                                <th>Thứ</th>
+                                    <tr>
+                                        <th>Thứ</th>
                                                 <th>Tiết</th>
                                                 <th>Giờ học</th>
-                                                <th>Phòng học</th>
-                                                <th>Ghi chú</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
-                                            @foreach($lichHocCoDinh as $lich)
-                                                <tr>
+                                        <th>Phòng học</th>
+                                        <th>Ghi chú</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    @foreach($lichHocCoDinh as $lich)
+                                        <tr>
                                                     <td>
                                                         <span class="badge bg-primary">
                                                             @php
@@ -353,42 +353,42 @@
                                                             <span class="text-muted">{{ $lich->ghi_chu ?? '-' }}</span>
                                                         @endif
                                                     </td>
-                                                </tr>
-                                            @endforeach
-                                        </tbody>
-                                    </table>
-                                </div>
-                            </div>
+                                        </tr>
+                                    @endforeach
+                                </tbody>
+                            </table>
                         </div>
-                    @endif
+                    </div>
+                </div>
+            @endif
 
-                    <!-- Danh sách sinh viên -->
-                    <div class="card">
+            <!-- Danh sách sinh viên -->
+            <div class="card">
                         <div class="card-header bg-warning text-dark">
-                            <div class="d-flex justify-content-between align-items-center">
+                    <div class="d-flex justify-content-between align-items-center">
                                 <h4 class="card-title mb-0">
                                     <i class="bi bi-people"></i> Danh sách sinh viên 
                                     <span class="badge bg-light text-dark">{{ $sinhViens->count() }}</span>
                                 </h4>
-                                <div>
-                                    <a href="{{ route('giangvien.lop-giang-day.export-students', $lopHocPhan->id) }}" 
-                                       class="btn btn-success btn-sm">
-                                        <i class="bi bi-file-earmark-excel"></i> Xuất Excel
-                                    </a>
-                                    <a href="{{ route('giangvien.lop-giang-day.export-students-pdf', $lopHocPhan->id) }}" 
-                                       class="btn btn-danger btn-sm"
-                                       target="_blank">
-                                        <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
-                                    </a>
-                                </div>
-                            </div>
+                        <div>
+                            <a href="{{ route('giangvien.lop-giang-day.export-students', $lopHocPhan->id) }}" 
+                               class="btn btn-success btn-sm">
+                                <i class="bi bi-file-earmark-excel"></i> Xuất Excel
+                            </a>
+                            <a href="{{ route('giangvien.lop-giang-day.export-students-pdf', $lopHocPhan->id) }}" 
+                               class="btn btn-danger btn-sm"
+                               target="_blank">
+                                <i class="bi bi-file-earmark-pdf"></i> Xuất PDF
+                            </a>
                         </div>
-                        <div class="card-body">
+                    </div>
+                </div>
+                <div class="card-body">
                             @if($sinhViens->count() > 0)
-                                <div class="table-responsive">
-                                    <table class="table table-hover table-striped">
+                    <div class="table-responsive">
+                        <table class="table table-hover table-striped">
                                         <thead class="table-light">
-                                            <tr>
+                                <tr>
                                                 <th style="width: 4%;">#</th>
                                                 <th style="width: 9%;">Mã SV</th>
                                                 <th style="width: 18%;">Họ tên</th>
@@ -398,14 +398,14 @@
                                                 <th style="width: 9%;">Trạng thái</th>
                                                 <th style="width: 10%;">Ngày đăng ký</th>
                                                 <th style="width: 10%;">Thao tác</th>
-                                            </tr>
-                                        </thead>
-                                        <tbody>
+                                </tr>
+                            </thead>
+                            <tbody>
                                             @foreach($sinhViens as $index => $lhpsv)
-                                                <tr>
-                                                    <td>{{ $index + 1 }}</td>
+                                    <tr>
+                                        <td>{{ $index + 1 }}</td>
                                                     <td><strong class="text-primary">{{ $lhpsv->sinhVien->ma_sinh_vien }}</strong></td>
-                                                    <td>{{ $lhpsv->sinhVien->ho_ten }}</td>
+                                        <td>{{ $lhpsv->sinhVien->ho_ten }}</td>
                                                     <td>
                                                         <a href="mailto:{{ $lhpsv->sinhVien->email }}">
                                                             <i class="bi bi-envelope"></i> {{ $lhpsv->sinhVien->email }}
@@ -425,16 +425,16 @@
                                                             <span class="text-muted">-</span>
                                                         @endif
                                                     </td>
-                                                    <td>
-                                                        @if($lhpsv->trang_thai == 'da_xep_lop')
+                                        <td>
+                                            @if($lhpsv->trang_thai == 'da_xep_lop')
                                                             <span class="badge bg-info"><i class="bi bi-check-circle"></i> Đã xếp lớp</span>
-                                                        @elseif($lhpsv->trang_thai == 'dang_hoc')
+                                            @elseif($lhpsv->trang_thai == 'dang_hoc')
                                                             <span class="badge bg-success"><i class="bi bi-person-check"></i> Đang học</span>
-                                                        @elseif($lhpsv->trang_thai == 'da_hoan_thanh')
+                                            @elseif($lhpsv->trang_thai == 'da_hoan_thanh')
                                                             <span class="badge bg-primary"><i class="bi bi-trophy"></i> Đã hoàn thành</span>
-                                                        @elseif($lhpsv->trang_thai == 'bo_hoc')
+                                            @elseif($lhpsv->trang_thai == 'bo_hoc')
                                                             <span class="badge bg-danger"><i class="bi bi-x-circle"></i> Bỏ học</span>
-                                                        @elseif($lhpsv->trang_thai == 'huy_dang_ky')
+                                            @elseif($lhpsv->trang_thai == 'huy_dang_ky')
                                                             <span class="badge bg-secondary"><i class="bi bi-x-octagon"></i> Hủy đăng ký</span>
                                                         @endif
                                                     </td>
@@ -650,20 +650,20 @@
                                                             @endif
                                                         @else
                                                             <span class="badge bg-secondary">Chưa có</span>
-                                                        @endif
-                                                    </td>
-                                                </tr>
-                                            @empty
-                                                <tr>
+                                            @endif
+                                        </td>
+                                    </tr>
+                                @empty
+                                    <tr>
                                                     <td colspan="20" class="text-center text-muted py-4">
                                                         <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                                         <p class="mt-2 mb-0">Chưa có dữ liệu điểm</p>
-                                                    </td>
-                                                </tr>
-                                            @endforelse
-                                        </tbody>
-                                    </table>
-                                </div>
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
                             </div>
                         </div>
                     @else

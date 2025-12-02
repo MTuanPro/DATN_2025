@@ -279,7 +279,7 @@ class KetQuaHocTapController extends Controller
 
         $danhSachDiem = DangKyMonHoc::where('lop_hoc_phan_id', $id)
             ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
-            ->with(['sinhVien.lopHanhChinh'])
+            ->with(['sinhVien'])
             ->get()
             ->map(function ($dk) use ($cauHinh) {
                 $nhapDiem = NhapDiem::where('dang_ky_mon_hoc_id', $dk->id)->first();

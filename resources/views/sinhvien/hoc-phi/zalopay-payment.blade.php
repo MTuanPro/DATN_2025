@@ -1,4 +1,8 @@
-@extends('layouts.layout-sinhvien')
+@if(isset($isAdminView) && $isAdminView)
+    @extends('layouts.layout-daotao')
+@else
+    @extends('layouts.layout-sinhvien')
+@endif
 
 @section('title', 'Thanh toán học phí qua ZaloPay')
 
@@ -13,9 +17,15 @@
                 <div class="col-12 col-md-6 order-md-2 order-first">
                     <nav aria-label="breadcrumb" class="breadcrumb-header float-start float-lg-end">
                         <ol class="breadcrumb">
-                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.hoc-phi.index') }}">Học phí</a></li>
-                            <li class="breadcrumb-item"><a href="{{ route('sinh-vien.hoc-phi.show', $hocPhi->id) }}">Chi tiết</a></li>
+                            @if(isset($isAdminView) && $isAdminView)
+                                <li class="breadcrumb-item"><a href="{{ route('dao-tao.dashboard') }}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('dao-tao.hoc-phi.index') }}">Học phí</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('dao-tao.hoc-phi.show', $hocPhi->id) }}">Chi tiết</a></li>
+                            @else
+                                <li class="breadcrumb-item"><a href="{{ route('sinh-vien.dashboard') }}">Dashboard</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('sinh-vien.hoc-phi.index') }}">Học phí</a></li>
+                                <li class="breadcrumb-item"><a href="{{ route('sinh-vien.hoc-phi.show', $hocPhi->id) }}">Chi tiết</a></li>
+                            @endif
                             <li class="breadcrumb-item active" aria-current="page">Thanh toán ZaloPay</li>
                         </ol>
                     </nav>
@@ -60,15 +70,86 @@
                         </div>
                     </div>
 
-                    <!-- Form thanh toán -->
-                    <div class="card shadow-sm mb-4">
-                        <div class="card-header bg-gradient-primary text-white">
-                            <h5 class="mb-0">
-                                <i class="bi bi-wallet2 me-2"></i>Thông tin thanh toán
-                            </h5>
+                    @if(isset($orderUrl) && $orderUrl)
+                        <!-- Hiển thị QR Code -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-gradient-success text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-qr-code me-2"></i>Quét mã QR để thanh toán
+                                </h5>
+                            </div>
+                            <div class="card-body text-center">
+                                @if(session('success'))
+                                    <div class="alert alert-success">
+                                        <i class="bi bi-check-circle-fill"></i> {{ session('success') }}
+                                    </div>
+                                @endif
+                                
+                                <div class="mb-4">
+                                    <p class="text-muted mb-3">Quét mã QR bằng ứng dụng ZaloPay để thanh toán</p>
+                                    <div class="d-flex justify-content-center">
+                                        <div class="border p-3 bg-white rounded shadow-sm">
+                                            {!! QrCode::size(300)->generate($orderUrl) !!}
+                                        </div>
+                                    </div>
+                                    <p class="mt-3 mb-0">
+                                        <small class="text-muted">Hoặc click vào nút bên dưới để mở trang thanh toán</small>
+                                    </p>
+                                </div>
+                                
+                                <div class="alert alert-info">
+                                    <i class="bi bi-info-circle"></i>
+                                    <strong>Hướng dẫn:</strong>
+                                    <ol class="text-start mt-2 mb-0">
+                                        <li>Mở ứng dụng ZaloPay trên điện thoại</li>
+                                        <li>Chọn "Quét mã" hoặc "Scan QR"</li>
+                                        <li>Quét mã QR ở trên</li>
+                                        <li>Xác nhận thanh toán trên ứng dụng</li>
+                                    </ol>
+                                </div>
+                                
+                                <div class="d-grid gap-2 mt-4">
+                                    <a href="{{ $orderUrl }}" target="_blank" class="btn btn-primary btn-lg">
+                                        <i class="bi bi-box-arrow-up-right me-2"></i>
+                                        Mở trang thanh toán ZaloPay
+                                    </a>
+                                    <a href="{{ route('sinh-vien.hoc-phi.show', $hocPhi->id) }}" class="btn btn-outline-secondary">
+                                        <i class="bi bi-arrow-left me-2"></i>
+                                        Quay lại
+                                    </a>
+                                </div>
+                                
+                                <div class="mt-3">
+                                    <small class="text-muted">
+                                        <i class="bi bi-clock"></i> 
+                                        Mã QR này có hiệu lực trong 15 phút. Vui lòng thanh toán sớm.
+                                    </small>
+                                </div>
+                            </div>
                         </div>
-                        <div class="card-body">
-                            <form action="{{ route('sinh-vien.hoc-phi.zalopay-initiate', $hocPhi->id) }}" method="POST" id="paymentForm">
+                    @else
+                        <!-- Form thanh toán -->
+                        <div class="card shadow-sm mb-4">
+                            <div class="card-header bg-gradient-primary text-white">
+                                <h5 class="mb-0">
+                                    <i class="bi bi-wallet2 me-2"></i>Thông tin thanh toán
+                                </h5>
+                            </div>
+                            <div class="card-body">
+                                @if(isset($isAdminView) && $isAdminView)
+                                    <div class="alert alert-info">
+                                        <i class="bi bi-info-circle"></i> 
+                                        <strong>Chế độ xem:</strong> Bạn đang xem trang thanh toán ZaloPay ở chế độ chỉ đọc. 
+                                        Sinh viên cần đăng nhập vào tài khoản của mình để thực hiện thanh toán.
+                                    </div>
+                                    <div class="text-center py-4">
+                                        <p class="text-muted">Trang này chỉ dành cho sinh viên thực hiện thanh toán.</p>
+                                        <a href="{{ route('dao-tao.hoc-phi.show', $hocPhi->id) }}" class="btn btn-secondary">
+                                            <i class="bi bi-arrow-left"></i> Quay lại
+                                        </a>
+                                    </div>
+                                @else
+                                <form action="{{ route('sinh-vien.hoc-phi.zalopay-initiate', $hocPhi->id) }}" method="POST" id="paymentForm">
                                 @csrf
 
                                 <div class="mb-4">
@@ -150,8 +231,10 @@
                                     </a>
                                 </div>
                             </form>
+                            @endif
                         </div>
                     </div>
+                    @endif
 
                     <!-- Hướng dẫn -->
                     <div class="card shadow-sm">

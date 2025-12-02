@@ -339,7 +339,7 @@ class XepLopController extends Controller
             ->findOrFail($lopHocPhanId);
 
         $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
-            ->with(['sinhVien.lopHanhChinh', 'dangKyTam'])
+            ->with(['sinhVien', 'dangKyTam'])
             ->orderBy('ngay_xep_lop', 'asc')
             ->get();
 

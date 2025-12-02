@@ -129,7 +129,6 @@ class TeachingClassController extends Controller
         }
         
         $sinhViens = LopHocPhanSinhVien::with([
-            'sinhVien.lopHanhChinh',
             'ketQuaHocTap'
         ])
         ->where('lop_hoc_phan_id', $id)
@@ -216,7 +215,6 @@ class TeachingClassController extends Controller
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy'])->findOrFail($id);
         
         $sinhViens = LopHocPhanSinhVien::with([
-            'sinhVien.lopHanhChinh',
             'ketQuaHocTap'
         ])
         ->where('lop_hoc_phan_id', $id)
@@ -259,7 +257,7 @@ class TeachingClassController extends Controller
                     $lhpsv->sinhVien->ho_ten ?? '',
                     $lhpsv->sinhVien->email ?? '',
                     $lhpsv->sinhVien->so_dien_thoai ?? '',
-                    $lhpsv->sinhVien->lopHanhChinh->ma_lop ?? '',
+                    '', // Lớp hành chính đã được xóa
                     $this->getTrangThaiText($lhpsv->trang_thai),
                     $lhpsv->ngay_dang_ky ? $lhpsv->ngay_dang_ky->format('d/m/Y H:i') : '',
                     $lhpsv->ngay_xep_lop ? $lhpsv->ngay_xep_lop->format('d/m/Y H:i') : ''
@@ -292,7 +290,6 @@ class TeachingClassController extends Controller
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy'])->findOrFail($id);
         
         $sinhViens = LopHocPhanSinhVien::with([
-            'sinhVien.lopHanhChinh',
             'ketQuaHocTap'
         ])
         ->where('lop_hoc_phan_id', $id)
@@ -321,7 +318,7 @@ class TeachingClassController extends Controller
             ->firstOrFail();
 
         // Lấy thông tin sinh viên
-        $sinhVien = \App\Models\DaoTao\SinhVien::with(['lopHanhChinh', 'user'])
+        $sinhVien = \App\Models\DaoTao\SinhVien::with(['user'])
             ->findOrFail($sinhVienId);
 
         // Lấy tất cả môn học của sinh viên (đã có điểm hoặc đang học)
@@ -374,7 +371,7 @@ class TeachingClassController extends Controller
                 'ho_ten' => $sinhVien->ho_ten,
                 'email' => $sinhVien->email,
                 'so_dien_thoai' => $sinhVien->so_dien_thoai,
-                'lop_hanh_chinh' => $sinhVien->lopHanhChinh->ma_lop ?? 'N/A',
+                'lop_hanh_chinh' => 'N/A', // Lớp hành chính đã được xóa
                 'ngay_sinh' => $sinhVien->ngay_sinh ? \Carbon\Carbon::parse($sinhVien->ngay_sinh)->format('d/m/Y') : 'N/A',
                 'gioi_tinh' => $sinhVien->gioi_tinh,
             ],

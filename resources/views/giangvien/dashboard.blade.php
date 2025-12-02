@@ -141,10 +141,10 @@
                             </div>
                             <div class="card-body p-0">
                                 @if($lichDayTuanNay && $lichDayTuanNay->count() > 0)
-                                    <div class="table-responsive">
+                                <div class="table-responsive">
                                         <table class="table table-hover mb-0">
                                             <thead class="table-light">
-                                                <tr>
+                                            <tr>
                                                     <th style="width: 10%;">Ngày</th>
                                                     <th style="width: 8%;">Thứ</th>
                                                     <th style="width: 8%;">Ca</th>
@@ -228,11 +228,11 @@
                                                                 </span>
                                                             @endif
                                                         </td>
-                                                    </tr>
+                                                </tr>
                                                 @endforeach
-                                            </tbody>
-                                        </table>
-                                    </div>
+                                        </tbody>
+                                    </table>
+                                </div>
                                 @else
                                     <div class="text-center py-5">
                                         <i class="bi bi-calendar-x" style="font-size: 4rem; color: #dee2e6;"></i>

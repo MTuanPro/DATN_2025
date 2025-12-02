@@ -385,6 +385,7 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::put('/{id}', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'update'])->name('update');
         Route::get('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'payment'])->name('payment');
         Route::post('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'storePayment'])->name('storePayment');
+        Route::get('/{id}/zalopay-payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'showZaloPayPayment'])->name('zalopay-payment');
         Route::get('/bien-lai/{lichSuId}', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'viewBienLai'])->name('bien-lai');
     });
 

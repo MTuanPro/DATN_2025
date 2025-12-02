@@ -114,11 +114,11 @@
                                         </td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('giangvien.lop-giang-day.show', $phanCong->lop_hoc_phan_id) }}" 
-                                                   class="btn btn-sm btn-primary" 
-                                                   title="Xem chi tiết">
-                                                    <i class="bi bi-eye"></i> Chi tiết
-                                                </a>
+                                            <a href="{{ route('giangvien.lop-giang-day.show', $phanCong->lop_hoc_phan_id) }}" 
+                                               class="btn btn-sm btn-primary" 
+                                               title="Xem chi tiết">
+                                                <i class="bi bi-eye"></i> Chi tiết
+                                            </a>
                                                 @if(!isset($phanCong->lopHocPhan->da_ket_thuc) || !$phanCong->lopHocPhan->da_ket_thuc)
                                                     <a href="{{ route('giangvien.nhap-diem.show', $phanCong->lop_hoc_phan_id) }}" 
                                                        class="btn btn-sm btn-success" 

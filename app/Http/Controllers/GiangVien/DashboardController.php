@@ -85,7 +85,7 @@ class DashboardController extends Controller
         // 6. Lịch dạy tuần này - Lấy tất cả lịch dạy của tất cả giảng viên
         // Lấy danh sách giảng viên cho filter
         $giangViens = GiangVien::orderBy('ho_ten')->get();
-
+        
         $query = LichHocChiTiet::whereBetween('ngay_hoc', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
             ->where('trang_thai', '!=', 'huy')
             ->with([

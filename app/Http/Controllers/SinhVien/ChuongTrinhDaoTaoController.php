@@ -20,19 +20,18 @@ class ChuongTrinhDaoTaoController extends Controller
         
         // Lấy thông tin sinh viên
         $sinhVien = SinhVien::with([
-            'lopHanhChinh.nganh.khoa',
-            'lopHanhChinh.khoaHoc',
             'chuyenNganh.nganh.khoa',
-            'nganh.khoa'
+            'nganh.khoa',
+            'khoaHoc'
         ])->where('user_id', $user->id)->firstOrFail();
 
-        // Lấy chuyên ngành của sinh viên (từ bảng sinh_vien, không phải từ lop_hanh_chinh)
+        // Lấy chuyên ngành của sinh viên (từ bảng sinh_vien)
         $chuyenNganh = $sinhVien->chuyenNganh;
         
         // Nếu chưa có chuyên ngành, lấy từ ngành
         if (!$chuyenNganh) {
-            // Fallback: lấy ngành từ sinh viên hoặc từ lớp hành chính
-            $nganh = $sinhVien->nganh ?? $sinhVien->lopHanhChinh->nganh;
+            // Fallback: lấy ngành từ sinh viên
+            $nganh = $sinhVien->nganh;
             if ($nganh) {
                 // Tìm chuyên ngành mặc định của ngành này
                 $chuyenNganh = \App\Models\DaoTao\ChuyenNganh::where('nganh_id', $nganh->id)->first();
@@ -121,10 +120,9 @@ class ChuongTrinhDaoTaoController extends Controller
         
         // Lấy thông tin sinh viên
         $sinhVien = SinhVien::with([
-            'lopHanhChinh.nganh.khoa',
-            'lopHanhChinh.khoaHoc',
             'chuyenNganh.nganh.khoa',
-            'nganh.khoa'
+            'nganh.khoa',
+            'khoaHoc'
         ])->where('user_id', $user->id)->firstOrFail();
 
         // Lấy chuyên ngành của sinh viên (từ bảng sinh_vien)
@@ -132,7 +130,7 @@ class ChuongTrinhDaoTaoController extends Controller
         
         // Nếu chưa có chuyên ngành, lấy từ ngành
         if (!$chuyenNganh) {
-            $nganh = $sinhVien->nganh ?? $sinhVien->lopHanhChinh->nganh;
+            $nganh = $sinhVien->nganh;
             if ($nganh) {
                 $chuyenNganh = \App\Models\DaoTao\ChuyenNganh::where('nganh_id', $nganh->id)->first();
             }
@@ -301,7 +299,7 @@ class ChuongTrinhDaoTaoController extends Controller
     public function chiTietMonHoc($id)
     {
         $user = Auth::user();
-        $sinhVien = SinhVien::with(['chuyenNganh', 'nganh', 'lopHanhChinh.nganh'])
+        $sinhVien = SinhVien::with(['chuyenNganh', 'nganh'])
             ->where('user_id', $user->id)->firstOrFail();
 
         // Lấy thông tin môn học trong chương trình khung
@@ -316,7 +314,7 @@ class ChuongTrinhDaoTaoController extends Controller
         
         // Nếu chưa có chuyên ngành, thử lấy từ ngành
         if (!$chuyenNganhId) {
-            $nganh = $sinhVien->nganh ?? $sinhVien->lopHanhChinh->nganh;
+            $nganh = $sinhVien->nganh;
             if ($nganh) {
                 $chuyenNganh = \App\Models\DaoTao\ChuyenNganh::where('nganh_id', $nganh->id)->first();
                 $chuyenNganhId = $chuyenNganh ? $chuyenNganh->id : null;

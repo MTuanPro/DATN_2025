@@ -479,7 +479,7 @@ class LichThiController extends Controller
         // Lấy tất cả sinh viên trong lớp học phần
         $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
             ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
-            ->with(['sinhVien.lopHanhChinh'])
+            ->with(['sinhVien'])
             ->get();
 
         // Đếm tổng số buổi học đã diễn ra

@@ -110,7 +110,7 @@ class MonHocController extends Controller
 
             DB::commit();
 
-            return redirect()->route('dao-tao.mon-hoc.index', request()->query())
+        return redirect()->route('dao-tao.mon-hoc.index', request()->query())
                 ->with('success', 'Thêm môn học thành công! Đã tự động tạo cấu hình đầu điểm mặc định.');
         } catch (\Exception $e) {
             DB::rollBack();
@@ -346,7 +346,7 @@ class MonHocController extends Controller
         }
 
         return false;
-    }
+}
 
 
 
