@@ -86,11 +86,32 @@
                                 @endif
                                 
                                 <div class="mb-4">
-                                    <p class="text-muted mb-3">Quét mã QR bằng ứng dụng ZaloPay để thanh toán</p>
+                                    <p class="text-muted mb-3">Quét mã QR bằng ứng dụng ZaloPay hoặc ngân hàng để thanh toán</p>
                                     <div class="d-flex justify-content-center">
-                                        <div class="border p-3 bg-white rounded shadow-sm">
-                                            {!! QrCode::size(300)->generate($orderUrl) !!}
+                                        <div class="border p-3 bg-white rounded shadow-sm" style="background-color: #ffffff !important;">
+                                            @php
+                                                // ✅ Sử dụng URL gốc từ ZaloPay, không decode hay modify
+                                                // URL từ ZaloPay đã được encode đúng và cần giữ nguyên
+                                                // URL gateway của ZaloPay có format đặc biệt: https://qcgateway.zalopay.vn/pay/v2/vietqr?order=...
+                                                $qrCodeUrl = trim($orderUrl);
+                                            @endphp
+                                            {!! QrCode::size(300)
+                                                ->errorCorrection('H')
+                                                ->margin(2)
+                                                ->format('svg')
+                                                ->generate($qrCodeUrl) !!}
                                         </div>
+                                    </div>
+                                    <div class="mt-2">
+                                        <small class="text-muted">
+                                            <i class="bi bi-info-circle"></i> 
+                                            URL: <code style="font-size: 0.75rem; word-break: break-all;">{{ $qrCodeUrl }}</code>
+                                        </small>
+                                        <br>
+                                        <small class="text-muted">
+                                            <i class="bi bi-exclamation-triangle"></i> 
+                                            Nếu quét không thành công, vui lòng click vào nút "Mở trang thanh toán ZaloPay" bên dưới
+                                        </small>
                                     </div>
                                     <p class="mt-3 mb-0">
                                         <small class="text-muted">Hoặc click vào nút bên dưới để mở trang thanh toán</small>
@@ -292,7 +313,7 @@
         // Form validation
         document.getElementById('paymentForm').addEventListener('submit', function(e) {
             const amount = parseInt(document.getElementById('so_tien_dong').value);
-            const maxAmount = {{ $hocPhi->so_tien_con_lai }};
+            const maxAmount = {{ (int)$hocPhi->so_tien_con_lai }};
 
             if (amount < 1000) {
                 e.preventDefault();

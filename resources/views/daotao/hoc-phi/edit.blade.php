@@ -64,10 +64,30 @@
                         </div>
 
                         <div class="row">
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Học phí môn học</label>
+                                    <input type="text" class="form-control" value="{{ number_format($hocPhi->tong_hoc_phi_mon_hoc, 0, ',', '.') }} đ" readonly>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="mb-3">
+                                    <label class="form-label">Phí dịch vụ <span class="text-danger">*</span></label>
+                                    <input type="number" name="phi_dich_vu" class="form-control @error('phi_dich_vu') is-invalid @enderror" 
+                                           value="{{ old('phi_dich_vu', $hocPhi->phi_dich_vu) }}" min="0" step="1000" required>
+                                    @error('phi_dich_vu')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Phí dịch vụ, bảo hiểm</small>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="row">
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Tổng học phí</label>
-                                    <input type="text" class="form-control" value="{{ number_format($hocPhi->tong_so_tien, 0, ',', '.') }} đ" readonly>
+                                    <input type="text" class="form-control" id="tong_hoc_phi_display" value="{{ number_format($hocPhi->tong_so_tien, 0, ',', '.') }} đ" readonly>
                                 </div>
                             </div>
                             <div class="col-md-4">
@@ -79,7 +99,7 @@
                             <div class="col-md-4">
                                 <div class="mb-3">
                                     <label class="form-label">Còn lại</label>
-                                    <input type="text" class="form-control text-danger" value="{{ number_format($hocPhi->so_tien_con_lai, 0, ',', '.') }} đ" readonly>
+                                    <input type="text" class="form-control text-danger" id="con_lai_display" value="{{ number_format($hocPhi->so_tien_con_lai, 0, ',', '.') }} đ" readonly>
                                 </div>
                             </div>
                         </div>
@@ -98,4 +118,36 @@
             </div>
         </section>
     </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const phiDichVuInput = document.querySelector('input[name="phi_dich_vu"]');
+            const tongHocPhiDisplay = document.getElementById('tong_hoc_phi_display');
+            const conLaiDisplay = document.getElementById('con_lai_display');
+            
+            const tongHocPhiMonHoc = {{ $hocPhi->tong_hoc_phi_mon_hoc }};
+            const soTienDaDong = {{ $hocPhi->so_tien_da_dong }};
+
+            function updateTotals() {
+                const phiDichVu = parseFloat(phiDichVuInput.value) || 0;
+                const tongHocPhi = tongHocPhiMonHoc + phiDichVu;
+                const conLai = tongHocPhi - soTienDaDong;
+
+                tongHocPhiDisplay.value = new Intl.NumberFormat('vi-VN').format(tongHocPhi) + ' đ';
+                conLaiDisplay.value = new Intl.NumberFormat('vi-VN').format(conLai) + ' đ';
+                
+                if (conLai < 0) {
+                    conLaiDisplay.classList.add('text-success');
+                    conLaiDisplay.classList.remove('text-danger');
+                } else {
+                    conLaiDisplay.classList.add('text-danger');
+                    conLaiDisplay.classList.remove('text-success');
+                }
+            }
+
+            if (phiDichVuInput) {
+                phiDichVuInput.addEventListener('input', updateTotals);
+            }
+        });
+    </script>
 @endsection

@@ -161,8 +161,7 @@
                                                             {{ request('giang_vien_id') == $gv->id ? 'selected' : '' }}>
                                                         {{ $gv->ma_giang_vien ?? '' }} - {{ $gv->ho_ten }}
                                                     </option>
-                                                    @endforeach
-                                                @endif
+                                                @endforeach
                                             </select>
                                         </div>
                                         <div class="col-md-4">

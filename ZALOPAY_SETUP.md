@@ -80,13 +80,30 @@ $result = $zaloPayService->createOrder(
 
 **MAC Format:** `appid|apptransid|key1`
 
-### 3. Xử lý Callback (IPN)
+### 3. Xử lý Callback (Return URL & IPN)
 
-**Route:** `POST /sinh-vien/zalopay/callback`
+**Return URL (GET):** `GET /payment/zalopay/callback`
+- URL đầy đủ: `http://your-domain.com/payment/zalopay/callback?apptransid=xxx`
+- Sau khi thanh toán thành công, ZaloPay sẽ redirect user về URL này
+- Hệ thống sẽ query trạng thái thanh toán và redirect về trang chi tiết học phí
 
-**MAC Verification:** `HMAC(sha256, key2, data)`
+**IPN Callback (POST):** `POST /payment/zalopay/callback`
+- URL đầy đủ: `http://your-domain.com/payment/zalopay/callback`
+- ZaloPay server sẽ gửi POST request đến URL này để thông báo kết quả thanh toán
+- **MAC Verification:** `HMAC(sha256, key2, data)`
+- Callback từ ZaloPay server sẽ được xác thực và tự động cập nhật trạng thái thanh toán
 
-Callback từ ZaloPay server sẽ được xác thực và tự động cập nhật trạng thái thanh toán.
+**Cấu hình Callback URL trong ZaloPay Merchant Portal:**
+1. Đăng nhập vào https://merchant.zalopay.vn/
+2. Vào phần "Cài đặt" → "Thông tin tích hợp"
+3. Cấu hình:
+   - **Return URL:** `http://your-domain.com/payment/zalopay/callback`
+   - **IPN URL:** `http://your-domain.com/payment/zalopay/callback`
+4. Lưu cấu hình
+
+**Sau khi thanh toán thành công:**
+- User sẽ được redirect về: `/sinh-vien/hoc-phi/{id}` (trang chi tiết học phí)
+- Hiển thị thông báo: "Thanh toán thành công! Mã giao dịch: xxx"
 
 ### 4. Hoàn tiền (`refund`)
 
@@ -115,11 +132,48 @@ Callback từ ZaloPay server sẽ được xác thực và tự động cập nh
 
 ---
 
+## 💰 Quản lý tiền thanh toán
+
+### Tiền sẽ được chuyển vào đâu?
+
+**Tiền thanh toán sẽ được chuyển vào:**
+1. **Tài khoản Merchant ZaloPay** của bạn (tài khoản đã đăng ký tại https://merchant.zalopay.vn/)
+2. Sau đó bạn có thể rút tiền về **tài khoản ngân hàng** đã liên kết
+
+### Cấu hình tài khoản ngân hàng nhận tiền
+
+1. **Đăng nhập vào ZaloPay Merchant Portal:**
+   - Truy cập: https://merchant.zalopay.vn/
+   - Đăng nhập bằng tài khoản merchant của bạn
+
+2. **Vào phần "Quản lý tài chính" hoặc "Tài khoản":**
+   - Chọn "Liên kết tài khoản ngân hàng"
+   - Nhập thông tin tài khoản ngân hàng:
+     - Tên chủ tài khoản
+     - Số tài khoản
+     - Ngân hàng
+     - Chi nhánh
+   - Xác thực thông tin
+
+3. **Rút tiền:**
+   - Tiền sẽ tự động tích lũy trong tài khoản ZaloPay Merchant
+   - Bạn có thể rút tiền về tài khoản ngân hàng đã liên kết
+   - Thời gian xử lý: 1-3 ngày làm việc
+
+### Lưu ý quan trọng:
+
+- **Phí giao dịch:** ZaloPay sẽ thu phí giao dịch (thường từ 1-3% tùy loại giao dịch)
+- **Thời gian thanh toán:** Tiền sẽ được chuyển vào tài khoản merchant sau khi giao dịch thành công
+- **Báo cáo:** Bạn có thể xem báo cáo giao dịch trong ZaloPay Merchant Portal
+
+---
+
 ## 📞 Liên hệ hỗ trợ
 
 - **Email:** support@zalopay.vn
 - **Hotline:** 1900 5555 77
 - **Docs:** https://developers.zalopay.vn/v1/general/overview.html
+- **Merchant Portal:** https://merchant.zalopay.vn/
 
 ---
 

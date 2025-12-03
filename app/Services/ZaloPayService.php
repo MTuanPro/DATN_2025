@@ -43,6 +43,20 @@ class ZaloPayService
     public function createOrder($appTransId, $amount, $description, $appUser = null, $items = [], $embedData = [], $bankcode = '')
     {
         try {
+            // Validate credentials
+            if (empty($this->appId) || empty($this->key1) || empty($this->key2)) {
+                Log::error('ZaloPay credentials not configured', [
+                    'appId' => !empty($this->appId),
+                    'key1' => !empty($this->key1),
+                    'key2' => !empty($this->key2)
+                ]);
+                return [
+                    'returncode' => -1,
+                    'returnmessage' => 'ZaloPay chưa được cấu hình. Vui lòng liên hệ quản trị viên.',
+                    'orderurl' => ''
+                ];
+            }
+
             // Default appuser
             if (!$appUser) {
                 $appUser = 'user_' . time();

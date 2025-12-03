@@ -257,15 +257,31 @@ class HocPhiController extends Controller
                 session(['zalopay_hoc_phi_id' => $hocPhi->id]);
 
                 // Store orderurl to display QR code
-                if (isset($result['orderurl'])) {
-                    $orderUrl = $result['orderurl'];
+                if (isset($result['orderurl']) && !empty($result['orderurl'])) {
+                    // ✅ Sử dụng URL gốc từ ZaloPay, không decode hay modify
+                    // URL từ ZaloPay đã được encode đúng và cần giữ nguyên
+                    $orderUrl = trim($result['orderurl']);
+                    
+                    // Chỉ validate cơ bản - không decode vì có thể làm hỏng URL
+                    // URL gateway của ZaloPay có format đặc biệt và cần giữ nguyên
+                    if (empty($orderUrl) || strlen($orderUrl) < 10) {
+                        Log::error('ZaloPay orderurl too short or empty:', [
+                            'orderurl' => $orderUrl,
+                            'original' => $result['orderurl'] ?? null
+                        ]);
+                        throw new \Exception('URL thanh toán từ ZaloPay không hợp lệ');
+                    }
+                    
                     session(['zalopay_orderurl' => $orderUrl]);
                     session(['zalopay_zptranstoken' => $result['zptranstoken'] ?? null]);
                     
                     Log::info('ZaloPay Order created successfully:', [
                         'app_trans_id' => $appTransId,
                         'orderurl' => $orderUrl,
-                        'result' => $result
+                        'orderurl_length' => strlen($orderUrl),
+                        'orderurl_preview' => substr($orderUrl, 0, 50) . '...',
+                        'zptranstoken' => isset($result['zptranstoken']) ? 'present' : 'missing',
+                        'result_keys' => array_keys($result)
                     ]);
                     
                     // Return to payment page with QR code
@@ -280,7 +296,31 @@ class HocPhiController extends Controller
                 // Delete the pending record
                 $lichSu->delete();
 
-                $errorMessage = $result['returnmessage'] ?? 'Không thể tạo yêu cầu thanh toán. Vui lòng thử lại.';
+                // Get error message from response
+                $errorMessage = $result['returnmessage'] ?? 'Không thể tạo yêu cầu thanh toán.';
+                
+                // Provide more specific error messages
+                if (isset($result['returncode'])) {
+                    switch ($result['returncode']) {
+                        case -1:
+                            $errorMessage = 'ZaloPay chưa được cấu hình. Vui lòng liên hệ quản trị viên.';
+                            break;
+                        case -2:
+                            $errorMessage = 'Thông tin xác thực ZaloPay không hợp lệ. Vui lòng kiểm tra cấu hình.';
+                            break;
+                        default:
+                            if (empty($errorMessage)) {
+                                $errorMessage = 'Không thể tạo yêu cầu thanh toán. Mã lỗi: ' . $result['returncode'];
+                            }
+                    }
+                }
+                
+                Log::error('ZaloPay Create Order Failed:', [
+                    'returncode' => $result['returncode'] ?? 'unknown',
+                    'returnmessage' => $errorMessage,
+                    'result' => $result
+                ]);
+                
                 return redirect()
                     ->route('sinh-vien.hoc-phi.zalopay-payment', $id)
                     ->with('error', $errorMessage);
