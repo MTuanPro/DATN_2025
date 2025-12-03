@@ -27,11 +27,22 @@
         <section class="section">
             {{-- Nút hành động --}}
             <div class="mb-3">
-                <a href="{{ route('sinh-vien.lop-hoc-phan.lich-su-diem-danh', $lopHocPhanSinhVien->id) }}" class="btn btn-primary">
-                    <i class="bi bi-calendar-check"></i> Xem lịch sử điểm danh
-                </a>
+                <div class="btn-group me-2" role="group">
+                    <a href="{{ route('sinh-vien.thoi-khoa-bieu.index', ['hoc_ky_id' => $lopHocPhanSinhVien->lopHocPhan->hoc_ky_id]) }}" class="btn btn-primary">
+                        <i class="bi bi-calendar-week"></i> Thời khóa biểu
+                    </a>
+                    <a href="{{ route('sinh-vien.lich-thi.index', ['hoc_ky_id' => $lopHocPhanSinhVien->lopHocPhan->hoc_ky_id]) }}" class="btn btn-info">
+                        <i class="bi bi-calendar-event"></i> Lịch thi
+                    </a>
+                    <a href="{{ route('sinh-vien.lop-hoc-phan.lich-su-diem-danh', $lopHocPhanSinhVien->id) }}" class="btn btn-success">
+                        <i class="bi bi-calendar-check"></i> Điểm danh
+                    </a>
+                    <a href="{{ route('sinh-vien.diem.show', $lopHocPhanSinhVien->lopHocPhan->id) }}" class="btn btn-warning">
+                        <i class="bi bi-clipboard-check"></i> Xem điểm
+                    </a>
+                </div>
                 <a href="{{ route('sinh-vien.lop-hoc-phan.index') }}" class="btn btn-secondary">
-                    <i class="bi bi-arrow-left"></i> Quay lại danh sách
+                    <i class="bi bi-arrow-left"></i> Quay lại
                 </a>
             </div>
 

@@ -22,6 +22,27 @@
         </div>
 
         <section class="section">
+            {{-- Nút chức năng --}}
+            <div class="mb-3">
+                <div class="btn-group me-2" role="group">
+                    <a href="{{ route('sinh-vien.thoi-khoa-bieu.index', ['hoc_ky_id' => $selectedHocKy?->id]) }}" class="btn btn-primary">
+                        <i class="bi bi-calendar-week"></i> Thời khóa biểu
+                    </a>
+                    <a href="{{ route('sinh-vien.thoi-khoa-bieu.lich-hoc') }}" class="btn btn-success">
+                        <i class="bi bi-calendar3"></i> Lịch học
+                    </a>
+                    <a href="{{ route('sinh-vien.lich-thi.index', ['hoc_ky_id' => $selectedHocKy?->id]) }}" class="btn btn-info">
+                        <i class="bi bi-calendar-event"></i> Lịch thi
+                    </a>
+                    <a href="{{ route('sinh-vien.diem-danh.index') }}" class="btn btn-warning">
+                        <i class="bi bi-clipboard-check"></i> Lịch sử điểm danh
+                    </a>
+                </div>
+                <a href="{{ route('sinh-vien.dashboard') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay lại
+                </a>
+            </div>
+
             {{-- Thống kê --}}
             <div class="row mb-4">
                 <div class="col-md-4">
@@ -128,7 +149,6 @@
                                     <th>Tín chỉ</th>
                                     <th>Trạng thái</th>
                                     <th>Điểm</th>
-                                    <th>Thao tác</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -191,22 +211,10 @@
                                                 <span class="text-muted">Chưa có điểm</span>
                                             @endif
                                         </td>
-                                        <td>
-                                            <div class="btn-group btn-group-sm">
-                                                <a href="{{ route('sinh-vien.lop-hoc-phan.show', $lhpsv->id) }}" 
-                                                   class="btn btn-info" title="Chi tiết">
-                                                    <i class="bi bi-eye"></i>
-                                                </a>
-                                                <a href="{{ route('sinh-vien.diem.show', $lhpsv->lopHocPhan->id) }}" 
-                                                   class="btn btn-primary" title="Xem điểm">
-                                                    <i class="bi bi-clipboard-check"></i>
-                                                </a>
-                                            </div>
-                                        </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="8" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox" style="font-size: 3rem;"></i>
                                             <p class="mt-2">Chưa có lớp học phần nào</p>
                                         </td>

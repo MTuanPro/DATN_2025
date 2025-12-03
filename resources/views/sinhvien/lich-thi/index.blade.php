@@ -111,6 +111,9 @@
         <!-- Quick Actions -->
         <div class="row mb-3">
             <div class="col-12">
+                <a href="{{ route('sinh-vien.lop-hoc-phan.index') }}" class="btn btn-secondary">
+                    <i class="bi bi-arrow-left"></i> Quay lại Lớp của tôi
+                </a>
                 <a href="{{ route('sinh-vien.lich-thi.calendar') }}" class="btn btn-outline-primary">
                     <i class="bi bi-calendar3"></i> Xem dạng lịch
                 </a>

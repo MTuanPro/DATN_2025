@@ -84,14 +84,14 @@
                     <div class="col-12">
                         <div class="card">
                             <div class="card-header">
-                                <h4>Thời khóa biểu tuần này</h4>
+                                <h4>Lịch học 7 ngày tới</h4>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
                                     <table class="table table-hover">
                                         <thead>
                                             <tr>
-                                                <th>Thứ</th>
+                                                <th>Ngày</th>
                                                 <th>Ca</th>
                                                 <th>Học phần</th>
                                                 <th>Phòng</th>
@@ -103,21 +103,18 @@
                                                 @foreach($weeklyTimetable as $lich)
                                                     @php
                                                         $ngayHoc = \Carbon\Carbon::parse($lich->ngay_hoc);
-                                                        $thuTrongTuan = $ngayHoc->dayOfWeek; // 0 = CN, 1 = T2, ..., 6 = T7
-                                                        $thuNames = [
-                                                            0 => 'Chủ nhật',
-                                                            1 => 'Thứ Hai',
-                                                            2 => 'Thứ Ba',
-                                                            3 => 'Thứ Tư',
-                                                            4 => 'Thứ Năm',
-                                                            5 => 'Thứ Sáu',
-                                                            6 => 'Thứ Bảy',
-                                                        ];
-                                                        $tenThu = $thuNames[$thuTrongTuan] ?? 'N/A';
                                                         $monHoc = $lich->lopHocPhan->monHoc ?? null;
+                                                        $isToday = $ngayHoc->isToday();
                                                     @endphp
-                                                    <tr>
-                                                        <td>{{ $tenThu }}</td>
+                                                    <tr class="{{ $isToday ? 'table-info' : '' }}">
+                                                        <td>
+                                                            <strong>{{ $ngayHoc->format('d/m/Y') }}</strong>
+                                                            <br>
+                                                            <small class="text-muted">{{ $ngayHoc->locale('vi')->isoFormat('dddd') }}</small>
+                                                            @if($isToday)
+                                                                <span class="badge bg-primary ms-1">Hôm nay</span>
+                                                            @endif
+                                                        </td>
                                                         <td>
                                                             @if($lich->caHoc)
                                                                 <span class="badge bg-primary">{{ $lich->caHoc->ten_ca }}</span>
@@ -135,7 +132,7 @@
                                                 @endforeach
                                             @else
                                                 <tr>
-                                                    <td colspan="5" class="text-center">Chưa có lịch học</td>
+                                                    <td colspan="5" class="text-center">Không có lịch học trong 7 ngày tới</td>
                                                 </tr>
                                             @endif
                                         </tbody>
@@ -192,7 +189,7 @@
                     <div class="col-12 col-xl-6">
                         <div class="card">
                             <div class="card-header">
-                                <h4>Lịch thi sắp tới</h4>
+                                <h4>Lịch thi 7 ngày tới</h4>
                             </div>
                             <div class="card-body">
                                 <div class="table-responsive">
@@ -200,7 +197,8 @@
                                         <thead>
                                             <tr>
                                                 <th>Học phần</th>
-                                                <th>Ngày thi</th>
+                                                <th>Ngày & Giờ thi</th>
+                                                <th>Phòng</th>
                                             </tr>
                                         </thead>
                                         <tbody>
@@ -208,21 +206,31 @@
                                                 @foreach($upcomingExams as $exam)
                                                     @php
                                                         $monHoc = $exam->lopHocPhan->monHoc ?? null;
+                                                        $ngayThi = \Carbon\Carbon::parse($exam->ngay_thi);
+                                                        $isToday = $ngayThi->isToday();
                                                     @endphp
-                                                    <tr>
-                                                        <td>{{ $monHoc ? $monHoc->ten_mon : 'N/A' }}</td>
+                                                    <tr class="{{ $isToday ? 'table-warning' : '' }}">
                                                         <td>
-                                                            <strong>{{ \Carbon\Carbon::parse($exam->ngay_thi)->format('d/m/Y') }}</strong>
-                                                            @if($exam->gio_bat_dau)
-                                                                <br>
-                                                                <small class="text-muted">{{ \Carbon\Carbon::parse($exam->gio_bat_dau)->format('H:i') }}</small>
+                                                            {{ $monHoc ? $monHoc->ten_mon : 'N/A' }}
+                                                            @if($isToday)
+                                                                <span class="badge bg-danger ms-1">Hôm nay</span>
                                                             @endif
                                                         </td>
+                                                        <td>
+                                                            <strong>{{ $ngayThi->format('d/m/Y') }}</strong>
+                                                            <br>
+                                                            <small class="text-muted">{{ $ngayThi->locale('vi')->isoFormat('dddd') }}</small>
+                                                            @if($exam->gio_bat_dau)
+                                                                <br>
+                                                                <span class="badge bg-primary">{{ \Carbon\Carbon::parse($exam->gio_bat_dau)->format('H:i') }}</span>
+                                                            @endif
+                                                        </td>
+                                                        <td>{{ $exam->phongHoc ? $exam->phongHoc->ten_phong : 'TBA' }}</td>
                                                     </tr>
                                                 @endforeach
                                             @else
                                                 <tr>
-                                                    <td colspan="2" class="text-center">Chưa có lịch thi</td>
+                                                    <td colspan="3" class="text-center">Không có lịch thi trong 7 ngày tới</td>
                                                 </tr>
                                             @endif
                                         </tbody>

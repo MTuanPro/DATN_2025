@@ -48,6 +48,9 @@
                                 <input type="hidden" name="view_mode" value="{{ $viewMode ?? 'co_dinh' }}" id="viewModeInput">
                                 <input type="hidden" name="mon_hoc_id" value="{{ $monHocFilter ?? '' }}" id="monHocInput">
                             </form>
+                            <a href="{{ route('sinh-vien.lop-hoc-phan.index') }}" class="btn btn-secondary w-100 mt-2">
+                                <i class="bi bi-arrow-left"></i> Quay lại Lớp của tôi
+                            </a>
                         </div>
                         <div class="col-md-8 mb-3 mb-md-0">
                             <div class="row">

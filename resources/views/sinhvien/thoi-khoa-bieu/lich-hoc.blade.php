@@ -70,6 +70,11 @@
                             <i class="bi bi-search me-1"></i> Xem lịch học
                         </button>
                     </div>
+                    <div class="col-12">
+                        <a href="{{ route('sinh-vien.lop-hoc-phan.index') }}" class="btn btn-secondary">
+                            <i class="bi bi-arrow-left"></i> Quay lại Lớp của tôi
+                        </a>
+                    </div>
                 </form>
             </div>
         </div>

@@ -143,12 +143,6 @@
                         <li class="submenu-item {{ Request::is('giang-vien/bao-cao') && !Request::is('giang-vien/bao-cao/*') ? 'active' : '' }}">
                             <a href="{{ route('giangvien.bao-cao.index') }}">Tổng quan</a>
                         </li>
-                        <li class="submenu-item {{ Request::is('giang-vien/bao-cao/tien-do') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.bao-cao.tien-do') }}">Tiến độ giảng dạy</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('giang-vien/bao-cao/diem-danh') ? 'active' : '' }}">
-                            <a href="{{ route('giangvien.bao-cao.diem-danh') }}">Báo cáo điểm danh</a>
-                        </li>
                         <li class="submenu-item {{ Request::is('giang-vien/bao-cao/phan-tich-diem') ? 'active' : '' }}">
                             <a href="{{ route('giangvien.bao-cao.phan-tich-diem') }}">Phân tích điểm</a>
                         </li>

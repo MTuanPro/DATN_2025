@@ -108,16 +108,16 @@ class DashboardController extends Controller
             'thong_bao_ids' => $thongBaoMoiNhat->pluck('thong_bao_id')->toArray()
         ]);
 
-        // Lấy thời khóa biểu tuần này
-        $startOfWeek = Carbon::now()->startOfWeek(Carbon::MONDAY);
-        $endOfWeek = Carbon::now()->endOfWeek(Carbon::SUNDAY);
+        // Lấy thời khóa biểu 1 tuần tới (7 ngày kể từ hôm nay)
+        $startDate = Carbon::now()->startOfDay();
+        $endDate = Carbon::now()->addDays(6)->endOfDay();
         
         $lopHocPhanIds = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
             ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
             ->pluck('lop_hoc_phan_id');
         
         $weeklyTimetable = LichHocChiTiet::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-            ->whereBetween('ngay_hoc', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+            ->whereBetween('ngay_hoc', [$startDate->toDateString(), $endDate->toDateString()])
             ->where('trang_thai', '!=', 'huy')
             ->with([
                 'lopHocPhan.monHoc',
@@ -140,16 +140,18 @@ class DashboardController extends Controller
             ->limit(5)
             ->get();
 
-        // Lấy lịch thi sắp tới (5 lịch thi gần nhất)
+        // Lấy lịch thi trong 7 ngày tới
         $upcomingExams = LichThi::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-            ->where('ngay_thi', '>=', now()->toDateString())
+            ->whereBetween('ngay_thi', [
+                now()->toDateString(),
+                now()->addDays(6)->toDateString()
+            ])
             ->with([
                 'lopHocPhan.monHoc',
                 'phongHoc'
             ])
             ->orderBy('ngay_thi', 'asc')
             ->orderBy('gio_bat_dau', 'asc')
-            ->limit(5)
             ->get();
 
         $data = [
