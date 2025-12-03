@@ -1,0 +1,412 @@
+﻿<?php
+
+namespace App\Http\Controllers\SinhVien;
+
+use App\Http\Controllers\Controller;
+use App\Models\HocPhiHocKy;
+use App\Models\ChiTietHocPhiMon;
+use App\Models\LichSuDongHocPhi;
+use App\Services\HocPhiService;
+use App\Services\ZaloPayService;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Barryvdh\DomPDF\Facade\Pdf;
+
+class HocPhiController extends Controller
+{
+    /**
+     * Display student's tuition fees
+     */
+    public function index()
+    {
+        $user = auth()->user();
+        $sinhVien = $user->sinhVien;
+
+        if (!$sinhVien) {
+            return redirect()->route('sinh-vien.dashboard')
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
+        }
+
+        $hocPhis = HocPhiHocKy::with(['hocKy'])
+            ->where('sinh_vien_id', $sinhVien->id)
+            ->orderBy('created_at', 'desc')
+            ->paginate(10);
+
+        // Calculate summary
+        $tongHocPhi = $hocPhis->sum('tong_so_tien');
+        $daDong = $hocPhis->sum('so_tien_da_dong');
+        $conLai = $hocPhis->sum('so_tien_con_lai');
+
+        return view('sinhvien.hoc-phi.index', compact('hocPhis', 'tongHocPhi', 'daDong', 'conLai'));
+    }
+
+    /**
+     * Display details of a specific tuition fee
+     */
+    public function show($id)
+    {
+        $user = auth()->user();
+        $sinhVien = $user->sinhVien;
+
+        if (!$sinhVien) {
+            return redirect()->route('sinh-vien.dashboard')
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
+        }
+
+        $hocPhi = HocPhiHocKy::with([
+            'hocKy',
+            'chiTietHocPhiMon.monHoc',
+            'chiTietHocPhiMon.lopHocPhanSinhVien.lopHocPhan'
+        ])
+            ->where('sinh_vien_id', $sinhVien->id)
+            ->findOrFail($id);
+
+        return view('sinhvien.hoc-phi.show', compact('hocPhi'));
+    }
+
+    /**
+     * Display payment history
+     */
+    public function lichSu($id)
+    {
+        $user = auth()->user();
+        $sinhVien = $user->sinhVien;
+
+        if (!$sinhVien) {
+            return redirect()->route('sinh-vien.dashboard')
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
+        }
+
+        $hocPhi = HocPhiHocKy::with(['hocKy'])
+            ->where('sinh_vien_id', $sinhVien->id)
+            ->findOrFail($id);
+
+        $lichSuDong = LichSuDongHocPhi::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+            ->orderBy('ngay_dong', 'desc')
+            ->paginate(10);
+
+        return view('sinhvien.hoc-phi.lich-su', compact('hocPhi', 'lichSuDong'));
+    }
+
+    /**
+     * Export tuition fee invoice to PDF
+     */
+    public function exportPdf($id)
+    {
+        $user = auth()->user();
+        $sinhVien = $user->sinhVien;
+
+        if (!$sinhVien) {
+            abort(403, 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
+        }
+
+        $hocPhi = HocPhiHocKy::with([
+            'sinhVien.user',
+            'sinhVien.lopHanhChinh.khoaHoc',
+            'sinhVien.lopHanhChinh.nganh.khoa',
+            'sinhVien.chuyenNganh.nganh.khoa',
+            'sinhVien.nganh.khoa',
+            'hocKy',
+            'chiTietHocPhiMon.monHoc',
+            'lichSuDongHocPhi'
+        ])
+            ->where('sinh_vien_id', $sinhVien->id)
+            ->findOrFail($id);
+
+        $pdf = Pdf::loadView('sinhvien.hoc-phi.pdf', compact('hocPhi'))
+            ->setPaper('a4', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('defaultFont', 'DejaVu Sans');
+
+        $fileName = 'HocPhi_' . $sinhVien->ma_sinh_vien . '_' . $hocPhi->hocKy->ten_hoc_ky . '.pdf';
+
+        return $pdf->download($fileName);
+    }
+
+    /**
+     * View payment guide
+     */
+    public function huongDan()
+    {
+        return view('sinhvien.hoc-phi.huong-dan');
+    }
+
+    /**
+     * Show form to pay tuition via ZaloPay
+     */
+    public function showZaloPayPayment($id)
+    {
+        $user = auth()->user();
+        $sinhVien = $user->sinhVien;
+
+        if (!$sinhVien) {
+            return redirect()->route('sinh-vien.dashboard')
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
+        }
+
+        $hocPhi = HocPhiHocKy::with(['hocKy'])
+            ->where('sinh_vien_id', $sinhVien->id)
+            ->findOrFail($id);
+
+        // Check if there's remaining amount to pay
+        if ($hocPhi->so_tien_con_lai <= 0) {
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $id)
+                ->with('info', 'Báº¡n Ä‘Ã£ thanh toÃ¡n Ä‘á»§ há»c phÃ­ cho há»c ká»³ nÃ y.');
+        }
+
+        return view('sinhvien.hoc-phi.zalopay-payment', compact('hocPhi'));
+    }
+
+    /**
+     * Initiate ZaloPay payment
+     */
+    public function initiateZaloPayPayment(Request $request, $id)
+    {
+        $user = auth()->user();
+        $sinhVien = $user->sinhVien;
+
+        if (!$sinhVien) {
+            return redirect()->route('sinh-vien.dashboard')
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
+        }
+
+        $hocPhi = HocPhiHocKy::with(['hocKy'])
+            ->where('sinh_vien_id', $sinhVien->id)
+            ->findOrFail($id);
+
+        $validated = $request->validate([
+            'so_tien_dong' => 'required|numeric|min:1000|max:' . $hocPhi->so_tien_con_lai,
+        ], [
+            'so_tien_dong.required' => 'Vui lÃ²ng nháº­p sá»‘ tiá»n thanh toÃ¡n',
+            'so_tien_dong.numeric' => 'Sá»‘ tiá»n pháº£i lÃ  sá»‘',
+            'so_tien_dong.min' => 'Sá»‘ tiá»n tá»‘i thiá»ƒu lÃ  1,000 Ä‘',
+            'so_tien_dong.max' => 'Sá»‘ tiá»n khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ sá»‘ tiá»n cÃ²n láº¡i',
+        ]);
+
+        $amount = (int) $validated['so_tien_dong'];
+
+        // Create order info
+        $orderInfo = "Thanh toan hoc phi - {$hocPhi->hocKy->ten_hoc_ky} - {$sinhVien->ma_sinh_vien}";
+        
+        // Create order ID (app_trans_id format: yyMMdd_xxxxx)
+        $appTransId = date('ymd') . '_' . $hocPhi->id . '_' . $sinhVien->id . '_' . time();
+
+        // Create temporary payment record (pending)
+        try {
+            DB::beginTransaction();
+
+            $lichSu = LichSuDongHocPhi::create([
+                'hoc_phi_hoc_ky_id' => $hocPhi->id,
+                'so_tien_dong' => $amount,
+                'ngay_dong' => now(),
+                'phuong_thuc_thanh_toan' => 'ZaloPay',
+                'ma_giao_dich' => $appTransId,
+                'ghi_chu' => 'Äang chá» xÃ¡c nháº­n tá»« ZaloPay',
+            ]);
+
+            DB::commit();
+
+            // Initiate ZaloPay payment
+            $zaloPayService = new ZaloPayService();
+            $result = $zaloPayService->createOrder($appTransId, $amount, $orderInfo, [
+                'hoc_phi_id' => $hocPhi->id,
+                'sinh_vien_id' => $sinhVien->id,
+            ]);
+
+            if ($result['return_code'] == 1) {
+                // Store transaction info in session for verification
+                session(['zalopay_app_trans_id' => $appTransId]);
+                session(['zalopay_hoc_phi_id' => $hocPhi->id]);
+
+                // Redirect to ZaloPay payment page
+                return redirect($result['order_url']);
+            } else {
+                // Delete the pending record
+                $lichSu->delete();
+
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.zalopay-payment', $id)
+                    ->with('error', $result['return_message'] ?? 'KhÃ´ng thá»ƒ táº¡o yÃªu cáº§u thanh toÃ¡n. Vui lÃ²ng thá»­ láº¡i.');
+            }
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return redirect()
+                ->route('sinh-vien.hoc-phi.zalopay-payment', $id)
+                ->with('error', 'CÃ³ lá»—i xáº£y ra: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle ZaloPay payment callback (return URL)
+     */
+    public function zaloPayCallback(Request $request)
+    {
+        $zaloPayService = new ZaloPayService();
+        $appTransId = $request->get('apptransid');
+        $hocPhiId = session('zalopay_hoc_phi_id');
+
+        // Clear session
+        session()->forget(['zalopay_app_trans_id', 'zalopay_hoc_phi_id']);
+
+        if (!$appTransId) {
+            return redirect()
+                ->route('sinh-vien.hoc-phi.index')
+                ->with('error', 'Giao dá»‹ch khÃ´ng há»£p lá»‡.');
+        }
+
+        // Query payment status from ZaloPay
+        $statusResult = $zaloPayService->queryOrder($appTransId);
+
+        if ($statusResult['return_code'] == 1) {
+            // Payment successful
+            try {
+                DB::beginTransaction();
+
+                // Find the payment record
+                $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $appTransId)->first();
+
+                if ($lichSu && str_contains($lichSu->ghi_chu ?? '', 'Äang chá»')) {
+                    $hocPhi = $lichSu->hocPhiHocKy;
+
+                    // Update payment record
+                    $lichSu->update([
+                        'ngay_dong' => now(),
+                        'ghi_chu' => 'Thanh toÃ¡n thÃ nh cÃ´ng qua ZaloPay. MÃ£ giao dá»‹ch: ' . $appTransId,
+                    ]);
+
+                    // Update HocPhiHocKy
+                    $hocPhi->so_tien_da_dong += $lichSu->so_tien_dong;
+                    $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
+                    $hocPhi->ngay_dong_lan_cuoi = now();
+                    $hocPhi->save();
+
+                    // Update status
+                    $hocPhi->updateTrangThai();
+
+                    // Update chi tiáº¿t há»c phÃ­ mÃ´n thÃ nh Ä‘Ã£ thanh toÃ¡n (náº¿u thanh toÃ¡n Ä‘á»§)
+                    if ($hocPhi->so_tien_con_lai == 0) {
+                        ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                            ->where('trang_thai', 'chua_thanh_toan')
+                            ->update(['trang_thai' => 'da_thanh_toan']);
+
+                        // âœ… KHI ÄÃ“NG Äá»¦ Há»ŒC PHÃ: Tá»± Ä‘á»™ng thÃªm vÃ o danh sÃ¡ch chá» xáº¿p lá»›p
+                        $hocPhiService = new HocPhiService();
+                        $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
+                    }
+
+                    DB::commit();
+
+                    return redirect()
+                        ->route('sinh-vien.hoc-phi.show', $hocPhi->id)
+                        ->with('success', 'Thanh toÃ¡n thÃ nh cÃ´ng! MÃ£ giao dá»‹ch: ' . $appTransId);
+                } else {
+                    DB::rollBack();
+                    return redirect()
+                        ->route('sinh-vien.hoc-phi.index')
+                        ->with('error', 'KhÃ´ng tÃ¬m tháº¥y giao dá»‹ch hoáº·c Ä‘Ã£ Ä‘Æ°á»£c xá»­ lÃ½.');
+                }
+
+            } catch (\Exception $e) {
+                DB::rollBack();
+                
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.index')
+                    ->with('error', 'CÃ³ lá»—i xáº£y ra khi xá»­ lÃ½ thanh toÃ¡n: ' . $e->getMessage());
+            }
+        } elseif ($statusResult['return_code'] == 2) {
+            // Payment failed or cancelled
+            // Delete pending payment record
+            LichSuDongHocPhi::where('ma_giao_dich', $appTransId)->delete();
+
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $hocPhiId ?? 0)
+                ->with('error', 'Giao dá»‹ch tháº¥t báº¡i hoáº·c Ä‘Ã£ bá»‹ há»§y.');
+        } else {
+            // Payment processing
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $hocPhiId ?? 0)
+                ->with('info', 'Giao dá»‹ch Ä‘ang Ä‘Æ°á»£c xá»­ lÃ½. Vui lÃ²ng kiá»ƒm tra láº¡i sau.');
+        }
+    }
+
+    /**
+     * Handle ZaloPay IPN (Callback from ZaloPay server)
+     */
+    public function zaloPayIpn(Request $request)
+    {
+        $zaloPayService = new ZaloPayService();
+        $data = $request->all();
+
+        // Verify MAC
+        if (!$zaloPayService->verifyCallback($data)) {
+            return response()->json([
+                'return_code' => -1,
+                'return_message' => 'Invalid MAC'
+            ]);
+        }
+
+        $appTransId = $data['apptransid'] ?? '';
+
+        // Payment successful - update database
+        try {
+            DB::beginTransaction();
+
+            $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $appTransId)->first();
+
+            if ($lichSu && str_contains($lichSu->ghi_chu ?? '', 'Äang chá»')) {
+                $hocPhi = $lichSu->hocPhiHocKy;
+
+                // Update payment record
+                $lichSu->update([
+                    'ngay_dong' => now(),
+                    'ghi_chu' => 'Thanh toÃ¡n thÃ nh cÃ´ng qua ZaloPay. MÃ£ giao dá»‹ch: ' . $appTransId,
+                ]);
+
+                // Update HocPhiHocKy
+                $hocPhi->so_tien_da_dong += $lichSu->so_tien_dong;
+                $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
+                $hocPhi->ngay_dong_lan_cuoi = now();
+                $hocPhi->save();
+
+                // Update status
+                $hocPhi->updateTrangThai();
+
+                // Update chi tiáº¿t há»c phÃ­ mÃ´n thÃ nh Ä‘Ã£ thanh toÃ¡n (náº¿u thanh toÃ¡n Ä‘á»§)
+                if ($hocPhi->so_tien_con_lai == 0) {
+                    ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                        ->where('trang_thai', 'chua_thanh_toan')
+                        ->update(['trang_thai' => 'da_thanh_toan']);
+
+                    // âœ… KHI ÄÃ“NG Äá»¦ Há»ŒC PHÃ: Tá»± Ä‘á»™ng thÃªm vÃ o danh sÃ¡ch chá» xáº¿p lá»›p
+                    $hocPhiService = new HocPhiService();
+                    $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
+                }
+
+                DB::commit();
+
+                return response()->json([
+                    'return_code' => 1,
+                    'return_message' => 'Success'
+                ]);
+            }
+
+            DB::rollBack();
+            return response()->json([
+                'return_code' => 0,
+                'return_message' => 'Order not found'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            return response()->json([
+                'return_code' => 0,
+                'return_message' => $e->getMessage()
+            ]);
+        }
+    }
+}

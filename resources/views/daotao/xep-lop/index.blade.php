@@ -23,7 +23,22 @@
 
         <!-- Thống kê -->
         <div class="row mb-4">
-            <div class="col-md-4">
+            <div class="col-md-3">
+                <div class="card">
+                    <div class="card-body">
+                        <div class="d-flex justify-content-between align-items-center">
+                            <div>
+                                <h6 class="text-muted mb-1">Chờ đóng học phí</h6>
+                                <h3 class="mb-0 text-info">{{ $thongKe['cho_dong_hoc_phi'] ?? 0 }}</h3>
+                            </div>
+                            <div class="avatar avatar-xl bg-info">
+                                <i class="bi bi-cash-stack text-white fs-3"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-3">
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -38,7 +53,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -53,7 +68,7 @@
                     </div>
                 </div>
             </div>
-            <div class="col-md-4">
+            <div class="col-md-3">
                 <div class="card">
                     <div class="card-body">
                         <div class="d-flex justify-content-between align-items-center">
@@ -89,12 +104,10 @@
                         <label class="form-label">Trạng thái</label>
                         <select name="trang_thai" class="form-select">
                             <option value="">Tất cả</option>
-                            <option value="cho_xep_lop" {{ request('trang_thai') == 'cho_xep_lop' ? 'selected' : '' }}>Chờ
-                                xếp lớp</option>
-                            <option value="da_xep_lop" {{ request('trang_thai') == 'da_xep_lop' ? 'selected' : '' }}>Đã xếp
-                                lớp</option>
-                            <option value="that_bai" {{ request('trang_thai') == 'that_bai' ? 'selected' : '' }}>Thất bại
-                            </option>
+                            <option value="cho_dong_hoc_phi" {{ request('trang_thai') == 'cho_dong_hoc_phi' ? 'selected' : '' }}>Chờ đóng học phí</option>
+                            <option value="cho_xep_lop" {{ request('trang_thai') == 'cho_xep_lop' ? 'selected' : '' }}>Chờ xếp lớp</option>
+                            <option value="da_xep_lop" {{ request('trang_thai') == 'da_xep_lop' ? 'selected' : '' }}>Đã xếp lớp</option>
+                            <option value="that_bai" {{ request('trang_thai') == 'that_bai' ? 'selected' : '' }}>Thất bại</option>
                         </select>
                     </div>
                     <div class="col-md-3">
@@ -117,6 +130,13 @@
         <div class="card">
             <div class="card-header">
                 <h5 class="card-title mb-0">Danh sách đăng ký môn học</h5>
+                <p class="text-muted small mb-0">
+                    <i class="bi bi-info-circle"></i> 
+                    <strong>Lưu ý:</strong> 
+                    • Sinh viên có trạng thái <span class="badge bg-info">Chờ đóng học phí</span> cần đóng tiền trước khi xếp lớp.
+                    <br>
+                    • Chỉ sinh viên có trạng thái <span class="badge bg-warning">Chờ xếp lớp</span> (đã đóng học phí) mới có thể xếp vào lớp.
+                </p>
             </div>
             <div class="card-body">
                 @if ($dangKys->isEmpty())
@@ -136,6 +156,7 @@
                                     <th>Ngày ĐK</th>
                                     <th>Ưu tiên</th>
                                     <th>Trạng thái</th>
+                                    <th>Học phí</th>
                                     <th>Lý do</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -167,8 +188,51 @@
                                             </span>
                                         </td>
                                         <td>
+                                            @php
+                                                // Lấy thông tin học phí
+                                                $hocPhi = \App\Models\HocPhiHocKy::where('sinh_vien_id', $dk->sinh_vien_id)
+                                                    ->where('hoc_ky_id', $dk->hoc_ky_id)
+                                                    ->first();
+                                                
+                                                $chiTietHocPhi = null;
+                                                if ($hocPhi) {
+                                                    $chiTietHocPhi = \App\Models\ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                                                        ->where('mon_hoc_id', $dk->mon_hoc_id)
+                                                        ->first();
+                                                }
+                                            @endphp
+                                            
+                                            @if ($chiTietHocPhi)
+                                                @if ($chiTietHocPhi->trang_thai == 'da_dong')
+                                                    <span class="badge bg-success">
+                                                        <i class="bi bi-check-circle"></i> Đã đóng
+                                                    </span>
+                                                @elseif ($chiTietHocPhi->trang_thai == 'chua_dong')
+                                                    <span class="badge bg-warning">
+                                                        <i class="bi bi-exclamation-circle"></i> Chưa đóng
+                                                    </span>
+                                                @elseif ($chiTietHocPhi->trang_thai == 'huy')
+                                                    <span class="badge bg-secondary">
+                                                        <i class="bi bi-x-circle"></i> Đã hủy
+                                                    </span>
+                                                @endif
+                                                <br>
+                                                <small class="text-muted">
+                                                    {{ number_format($chiTietHocPhi->thanh_tien, 0, ',', '.') }} đ
+                                                </small>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
+                                        <td>
                                             @if ($dk->ly_do_that_bai)
-                                                <small class="text-danger">{{ $dk->ly_do_that_bai }}</small>
+                                                @if ($dk->trang_thai == 'that_bai')
+                                                    <small class="text-danger">{{ $dk->ly_do_that_bai }}</small>
+                                                @elseif ($dk->trang_thai == 'cho_xep_lop')
+                                                    <small class="text-warning">{{ $dk->ly_do_that_bai }}</small>
+                                                @else
+                                                    <small class="text-muted">{{ $dk->ly_do_that_bai }}</small>
+                                                @endif
                                             @else
                                                 -
                                             @endif
@@ -181,6 +245,8 @@
                                                     data-mon-hoc-id="{{ $dk->mon_hoc_id }}">
                                                     <i class="bi bi-pencil"></i> Xếp
                                                 </button>
+                                            @elseif($dk->trang_thai == 'cho_dong_hoc_phi')
+                                                <span class="text-muted small">Chờ đóng học phí</span>
                                             @elseif($dk->lopHocPhanSinhVien)
                                                 <a href="{{ route('dao-tao.xep-lop.danh-sach-lop', $dk->lopHocPhanSinhVien->lop_hoc_phan_id) }}"
                                                     class="btn btn-sm btn-info">

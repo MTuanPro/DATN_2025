@@ -8,6 +8,8 @@ use App\Models\LopHocPhan;
 use App\Models\DaoTao\MonHoc;
 use App\Models\HocKy;
 use App\Models\PhanCongGiangDay;
+use App\Models\CauHinhDauDiem;
+use App\Models\CauHinhDauDiemMacDinh;
 use Carbon\Carbon;
 
 class LopHocPhanSeeder extends Seeder
@@ -112,6 +114,9 @@ class LopHocPhanSeeder extends Seeder
                     'ngay_phan_cong' => Carbon::now(),
                 ]);
 
+                // Tự động copy cấu hình đầu điểm từ môn học sang lớp học phần
+                $this->copyCauHinhDauDiemTuMonHoc($lopHocPhan->id, $monHoc->id);
+
                 $count++;
             }
         }
@@ -123,5 +128,42 @@ class LopHocPhanSeeder extends Seeder
         }
         
         $this->command->info("📝 Lưu ý: Seeder này không tạo lịch học. Vui lòng tạo lịch học thủ công sau khi tạo lớp học phần.");
+    }
+
+    /**
+     * Copy cấu hình đầu điểm từ môn học sang lớp học phần
+     */
+    private function copyCauHinhDauDiemTuMonHoc($lopHocPhanId, $monHocId)
+    {
+        // Lấy cấu hình mặc định của môn học
+        $cauHinhMacDinhs = CauHinhDauDiemMacDinh::where('mon_hoc_id', $monHocId)->get();
+
+        if ($cauHinhMacDinhs->isEmpty()) {
+            // Nếu môn học chưa có cấu hình mặc định, tạo cấu hình mặc định
+            $cauHinhMacDinh = [
+                ['ten_dau_diem' => 'Chuyên cần', 'ty_le' => 10, 'so_cot' => 1],
+                ['ten_dau_diem' => 'Giữa kỳ', 'ty_le' => 30, 'so_cot' => 1],
+                ['ten_dau_diem' => 'Cuối kỳ', 'ty_le' => 60, 'so_cot' => 1],
+            ];
+
+            foreach ($cauHinhMacDinh as $cauHinh) {
+                CauHinhDauDiem::create([
+                    'lop_hoc_phan_id' => $lopHocPhanId,
+                    'ten_dau_diem' => $cauHinh['ten_dau_diem'],
+                    'ty_le' => $cauHinh['ty_le'],
+                    'so_cot' => $cauHinh['so_cot'],
+                ]);
+            }
+        } else {
+            // Copy từ cấu hình mặc định
+            foreach ($cauHinhMacDinhs as $cauHinhMacDinh) {
+                CauHinhDauDiem::create([
+                    'lop_hoc_phan_id' => $lopHocPhanId,
+                    'ten_dau_diem' => $cauHinhMacDinh->ten_dau_diem,
+                    'ty_le' => $cauHinhMacDinh->ty_le,
+                    'so_cot' => $cauHinhMacDinh->so_cot,
+                ]);
+            }
+        }
     }
 }

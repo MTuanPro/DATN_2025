@@ -78,7 +78,9 @@
                                 <td><strong>Tỷ lệ lấp đầy:</strong></td>
                                 <td>
                                     @php
-                                        $tiLe = ($lopHocPhan->so_luong_hien_tai / $lopHocPhan->so_luong_toi_da) * 100;
+                                        $tiLe = $lopHocPhan->so_luong_toi_da > 0 
+                                            ? ($lopHocPhan->so_luong_hien_tai / $lopHocPhan->so_luong_toi_da) * 100 
+                                            : 0;
                                     @endphp
                                     <div class="progress" style="height: 20px;">
                                         <div class="progress-bar {{ $tiLe >= 100 ? 'bg-danger' : ($tiLe >= 80 ? 'bg-warning' : 'bg-success') }}"

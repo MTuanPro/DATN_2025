@@ -11,13 +11,13 @@ use App\Models\LichHocChiTiet;
 use App\Models\LopHocPhan;
 use App\Models\CauHinhDauDiem;
 use App\Models\NhapDiem;
-use App\Models\DaoTao\LopHanhChinh;
 use App\Models\NguoiNhanThongBao;
+use App\Models\GiangVien;
 use Carbon\Carbon;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function index(Request $request)
     {
         $user = Auth::user();
         $giangVien = $user->giangVien;
@@ -79,21 +79,39 @@ class DashboardController extends Controller
             }
         }
 
-        // 5. Lớp chủ nhiệm
-        $homeRoomClass = LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)
-            ->with(['khoaHoc', 'nganh'])
-            ->first();
-        
-        $homeRoomClassName = $homeRoomClass 
-            ? $homeRoomClass->ten_lop . ' (' . $homeRoomClass->khoaHoc->ten_khoa_hoc . ')' 
-            : null;
+        // 5. Lớp chủ nhiệm (đã xóa chức năng này)
+        $homeRoomClassName = null;
 
-        // 6. Lịch dạy tuần này
-        $lichDayTuanNay = LichHocChiTiet::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-            ->whereBetween('ngay_hoc', [$startOfWeek, $endOfWeek])
-            ->with(['lopHocPhan.monHoc', 'phongHoc', 'lichHocCoDinh'])
-            ->orderBy('ngay_hoc', 'asc')
-            ->orderBy('tiet_bat_dau', 'asc')
+        // 6. Lịch dạy tuần này - Lấy tất cả lịch dạy của tất cả giảng viên
+        // Lấy danh sách giảng viên cho filter
+        $giangViens = GiangVien::orderBy('ho_ten')->get();
+        
+        $query = LichHocChiTiet::whereBetween('ngay_hoc', [$startOfWeek->toDateString(), $endOfWeek->toDateString()])
+            ->where('trang_thai', '!=', 'huy')
+            ->with([
+                'lopHocPhan.monHoc',
+                'phongHoc',
+                'giangVien',
+                'caHoc',
+                'lichHocCoDinh'
+            ]);
+
+        // Lọc theo giảng viên nếu có
+        if ($request->has('giang_vien_id') && $request->giang_vien_id) {
+            $query->where('giang_vien_id', $request->giang_vien_id);
+        }
+
+        // Lọc theo tên hoặc mã giảng viên nếu có
+        if ($request->has('tim_kiem_giang_vien') && $request->tim_kiem_giang_vien) {
+            $searchTerm = $request->tim_kiem_giang_vien;
+            $query->whereHas('giangVien', function($q) use ($searchTerm) {
+                $q->where('ho_ten', 'like', '%' . $searchTerm . '%')
+                  ->orWhere('ma_giang_vien', 'like', '%' . $searchTerm . '%');
+            });
+        }
+
+        $lichDayTuanNay = $query->orderBy('ngay_hoc', 'asc')
+            ->orderBy('gio_bat_dau', 'asc')
             ->get();
 
         // 7. Điểm danh gần đây (5 buổi gần nhất)
@@ -122,6 +140,7 @@ class DashboardController extends Controller
             'lichDayTuanNay' => $lichDayTuanNay,
             'diemDanhGanDay' => $diemDanhGanDay,
             'thongBaoMoi' => $thongBaoMoi,
+            'giangViens' => $giangViens,
         ];
 
         return view('giangvien.dashboard', $data);

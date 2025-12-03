@@ -84,31 +84,27 @@
                     </ul>
                 </li>
 
-                {{-- 3. LỚP HÀNH CHÍNH & SINH VIÊN --}}
-                <li
-                    class="sidebar-item has-sub {{ Request::is('dao-tao/lop-hanh-chinh*', 'dao-tao/sinh-vien*') ? 'active' : '' }}">
+                {{-- 3. QUẢN LÝ NGƯỜI DÙNG --}}
+                @php
+                    $isQuanLyNguoiDung = Request::is('dao-tao/sinh-vien*') || Request::is('dao-tao/giang-vien*');
+                @endphp
+                <li class="sidebar-item has-sub {{ $isQuanLyNguoiDung ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
-                        <i class="bi bi-people"></i>
-                        <span>Lớp hành chính & Sinh viên</span>
+                        <i class="bi bi-people-fill"></i>
+                        <span>Quản lý Người dùng</span>
                     </a>
-                    <ul
-                        class="submenu {{ Request::is('dao-tao/lop-hanh-chinh*', 'dao-tao/sinh-vien*') ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('dao-tao/lop-hanh-chinh*') ? 'active' : '' }}"><a
-                                href="{{ route('dao-tao.lop-hanh-chinh.index') }}">Quản lý Lớp hành
-                                chính</a></li>
-                        <li class="submenu-item {{ Request::is('dao-tao/sinh-vien*') ? 'active' : '' }}"><a
-                                href="{{ route('dao-tao.sinh-vien.index') }}">Quản lý Sinh viên</a>
+                    <ul class="submenu {{ $isQuanLyNguoiDung ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('dao-tao/sinh-vien*') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.sinh-vien.index') }}">
+                                <i class="bi bi-people"></i> Quản lý Sinh viên
+                            </a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/giang-vien*') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.giang-vien.index') }}">
+                                <i class="bi bi-person-workspace"></i> Quản lý Giảng viên
+                            </a>
                         </li>
                     </ul>
-                </li>
-
-                {{-- 4. GIẢNG VIÊN --}}
-                <li class="sidebar-item {{ Request::is('dao-tao/giang-vien*') ? 'active' : '' }}">
-                    <a href="{{ route('dao-tao.giang-vien.index') }}"
-                        class="sidebar-link {{ Request::is('dao-tao/giang-vien*') ? 'active' : '' }}">
-                        <i class="bi bi-person-workspace"></i>
-                        <span>Quản lý Giảng viên</span>
-                    </a>
                 </li>
 
                 {{-- 5. LỚP HỌC PHẦN --}}
@@ -129,30 +125,7 @@
                     </ul>
                 </li>
 
-                {{-- 6. THỜI KHÓA BIỂU --}}
-                @php
-                    $isThoiKhoaBieu = Request::is('dao-tao/thoi-khoa-bieu*') || 
-                                      Request::is('dao-tao/lop-hoc-phan/*/lich-co-dinh*') || 
-                                      Request::is('dao-tao/lop-hoc-phan/*/lich-chi-tiet*') ||
-                                      (Request::is('dao-tao/lich-co-dinh*') && !Request::is('dao-tao/lop-hoc-phan/*/lich-co-dinh*')) ||
-                                      (Request::is('dao-tao/lich-chi-tiet*') && !Request::is('dao-tao/lop-hoc-phan/*/lich-chi-tiet*'));
-                @endphp
-                <li class="sidebar-item has-sub {{ $isThoiKhoaBieu ? 'active' : '' }}">
-                    <a href="#" class="sidebar-link">
-                        <i class="bi bi-calendar-check"></i>
-                        <span>Thời khóa biểu</span>
-                    </a>
-                    <ul class="submenu {{ $isThoiKhoaBieu ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('dao-tao/thoi-khoa-bieu/lich-theo-phong') ? 'active' : '' }}">
-                            <a href="{{ route('dao-tao.thoi-khoa-bieu.lich-theo-phong') }}">Lịch theo Phòng học</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('dao-tao/thoi-khoa-bieu/lich-theo-giang-vien') ? 'active' : '' }}">
-                            <a href="{{ route('dao-tao.thoi-khoa-bieu.lich-theo-giang-vien') }}">Lịch theo Giảng viên</a>
-                        </li>
-                    </ul>
-                </li>
-
-                {{-- 7. LỊCH THI --}}
+                {{-- 6. LỊCH THI --}}
                 <li class="sidebar-item has-sub {{ Request::is('dao-tao/lich-thi*') ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
                         <i class="bi bi-pencil-square"></i>
@@ -182,15 +155,7 @@
                     </ul>
                 </li>
 
-                {{-- 9. CẤU HÌNH ĐIỂM --}}
-                <li class="sidebar-item {{ Request::is('dao-tao/cau-hinh-diem*') || Request::is('dao-tao/lop-hoc-phan/*/cau-hinh-diem*') ? 'active' : '' }}">
-                    <a href="{{ route('dao-tao.cau-hinh-diem.list') }}" class="sidebar-link">
-                        <i class="bi bi-sliders"></i>
-                        <span>Cấu hình điểm</span>
-                    </a>
-                </li>
-
-                {{-- 10. DUYỆT ĐIỂM --}}
+                {{-- 9. DUYỆT ĐIỂM --}}
                 @php
                     $isDuyetDiem = Request::is('dao-tao/duyet-diem*');
                     $isQuanLyGuiDiem = Request::is('dao-tao/duyet-diem/quan-ly-gui-diem*');

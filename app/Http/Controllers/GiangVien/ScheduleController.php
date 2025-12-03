@@ -7,6 +7,8 @@ use Illuminate\Http\Request;
 use Carbon\Carbon;
 use App\Models\LichHocChiTiet;
 use App\Models\LichHocCoDinh;
+use App\Models\PhanCongGiangDay;
+use App\Models\DiemDanh;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class ScheduleController extends Controller
@@ -135,7 +137,65 @@ class ScheduleController extends Controller
             return strcmp($a['date'] ?? '', $b['date'] ?? '');
         });
 
-        return view('giangvien.schedule.index', compact('events', 'period', 'date', 'start', 'end'));
+        // Lấy dữ liệu điểm danh nếu cần
+        $tab = $request->get('tab', 'schedule'); // schedule hoặc attendance
+        
+        $buoiHocList = null;
+        $danhSachLopHocPhan = null;
+        
+        if ($tab === 'attendance') {
+            // Lấy các lớp được phân công
+            $lopHocPhanIds = PhanCongGiangDay::where('giang_vien_id', $giangVien->id)
+                ->pluck('lop_hoc_phan_id')
+                ->toArray();
+
+            // Query buổi học - sắp xếp theo ngày giờ gần nhất (asc)
+            $query = LichHocChiTiet::with(['lopHocPhan.monHoc', 'phongHoc'])
+                ->whereIn('lop_hoc_phan_id', $lopHocPhanIds)
+                ->orderBy('ngay_hoc', 'asc')
+                ->orderBy('gio_bat_dau', 'asc');
+
+            // Bộ lọc điểm danh
+            if ($request->filled('lop_hoc_phan_id')) {
+                $query->where('lop_hoc_phan_id', $request->lop_hoc_phan_id);
+            }
+
+            if ($request->filled('trang_thai')) {
+                $query->where('trang_thai', $request->trang_thai);
+            }
+
+            if ($request->filled('tu_ngay')) {
+                $query->whereDate('ngay_hoc', '>=', $request->tu_ngay);
+            }
+
+            if ($request->filled('den_ngay')) {
+                $query->whereDate('ngay_hoc', '<=', $request->den_ngay);
+            }
+
+            $buoiHocList = $query->paginate(20);
+
+            // Lấy danh sách lớp để filter
+            $danhSachLopHocPhan = \App\Models\LopHocPhan::with('monHoc')
+                ->whereIn('id', $lopHocPhanIds)
+                ->get();
+
+            // Thống kê điểm danh cho mỗi buổi
+            foreach ($buoiHocList as $buoiHoc) {
+                $diemDanhStats = DiemDanh::where('lich_hoc_chi_tiet_id', $buoiHoc->id)
+                    ->selectRaw('
+                        COUNT(*) as tong,
+                        SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
+                        SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang,
+                        SUM(CASE WHEN trang_thai = "di_tre" THEN 1 ELSE 0 END) as di_tre,
+                        SUM(CASE WHEN trang_thai = "nghi_phep" THEN 1 ELSE 0 END) as nghi_phep
+                    ')
+                    ->first();
+
+                $buoiHoc->diem_danh_stats = $diemDanhStats;
+            }
+        }
+
+        return view('giangvien.schedule.index', compact('events', 'period', 'date', 'start', 'end', 'tab', 'buoiHocList', 'danhSachLopHocPhan'));
     }
 
     /**

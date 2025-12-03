@@ -47,6 +47,7 @@
                                     <th>Học kỳ</th>
                                     <th>Vai trò</th>
                                     <th>Số SV</th>
+                                    <th>Tiến độ điểm</th>
                                     <th>Trạng thái</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -80,8 +81,21 @@
                                         </td>
                                         <td>
                                             <span class="badge bg-light-primary">
-                                                {{ $phanCong->lopHocPhan->so_sinh_vien }}/{{ $phanCong->lopHocPhan->suc_chua }}
+                                                {{ $phanCong->lopHocPhan->so_sinh_vien ?? 0 }}/{{ $phanCong->lopHocPhan->suc_chua }}
                                             </span>
+                                        </td>
+                                        <td>
+                                            @if(isset($phanCong->lopHocPhan->ty_le_nhap_diem))
+                                                <div class="progress" style="height: 20px;">
+                                                    <div class="progress-bar {{ $phanCong->lopHocPhan->ty_le_nhap_diem >= 100 ? 'bg-success' : 'bg-warning' }}" 
+                                                         role="progressbar" 
+                                                         style="width: {{ $phanCong->lopHocPhan->ty_le_nhap_diem }}%">
+                                                        {{ $phanCong->lopHocPhan->sv_co_diem ?? 0 }}/{{ $phanCong->lopHocPhan->so_sinh_vien ?? 0 }} ({{ $phanCong->lopHocPhan->ty_le_nhap_diem }}%)
+                                                    </div>
+                                                </div>
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
                                         </td>
                                         <td>
                                             @if($phanCong->lopHocPhan->trang_thai_lop == 'mo_dang_ky')
@@ -92,21 +106,37 @@
                                                 <span class="badge bg-secondary">Kết thúc</span>
                                             @elseif($phanCong->lopHocPhan->trang_thai_lop == 'huy')
                                                 <span class="badge bg-danger">Hủy</span>
+                                            @elseif($phanCong->lopHocPhan->trang_thai_lop == 'da_khoa_diem')
+                                                <span class="badge bg-danger">Đã khóa điểm</span>
                                             @else
                                                 <span class="badge bg-light text-dark">{{ $phanCong->lopHocPhan->trang_thai_lop }}</span>
                                             @endif
                                         </td>
                                         <td>
+                                            <div class="btn-group" role="group">
                                             <a href="{{ route('giangvien.lop-giang-day.show', $phanCong->lop_hoc_phan_id) }}" 
                                                class="btn btn-sm btn-primary" 
                                                title="Xem chi tiết">
                                                 <i class="bi bi-eye"></i> Chi tiết
                                             </a>
+                                                @if(!isset($phanCong->lopHocPhan->da_ket_thuc) || !$phanCong->lopHocPhan->da_ket_thuc)
+                                                    <a href="{{ route('giangvien.nhap-diem.show', $phanCong->lop_hoc_phan_id) }}" 
+                                                       class="btn btn-sm btn-success" 
+                                                       title="Nhập điểm">
+                                                        <i class="bi bi-pencil-square"></i> Nhập điểm
+                                                    </a>
+                                                @endif
+                                                <a href="{{ route('giangvien.lop-giang-day.show', $phanCong->lop_hoc_phan_id) }}#results" 
+                                                   class="btn btn-sm btn-info" 
+                                                   title="Kết quả học tập">
+                                                    <i class="bi bi-trophy"></i> Kết quả
+                                                </a>
+                                            </div>
                                         </td>
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="9" class="text-center text-muted py-4">
+                                        <td colspan="10" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                             <p class="mt-2">Không có lớp học phần nào được phân công.</p>
                                         </td>

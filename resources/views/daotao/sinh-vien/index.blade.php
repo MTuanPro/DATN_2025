@@ -48,17 +48,6 @@
                                         placeholder="MSSV, họ tên, email..." value="{{ request('search') }}">
                                 </div>
                                 <div class="col-md-2">
-                                    <select name="lop_hanh_chinh_id" class="form-select form-select-sm">
-                                        <option value="">-- Lớp --</option>
-                                        @foreach ($lopHanhChinhs as $lop)
-                                            <option value="{{ $lop->id }}"
-                                                {{ request('lop_hanh_chinh_id') == $lop->id ? 'selected' : '' }}>
-                                                {{ $lop->ma_lop }}
-                                            </option>
-                                        @endforeach
-                                    </select>
-                                </div>
-                                <div class="col-md-2">
                                     <select name="khoa_hoc_id" class="form-select form-select-sm">
                                         <option value="">-- Khóa --</option>
                                         @foreach ($khoaHocs as $kh)
@@ -124,7 +113,6 @@
                                     <th>#</th>
                                     <th>MSSV</th>
                                     <th>Họ tên</th>
-                                    <th>Lớp</th>
                                     <th>Ngành</th>
                                     <th>Chuyên ngành</th>
                                     <th>Kỳ</th>
@@ -143,11 +131,6 @@
                                         <td>
                                             {{ $sv->ho_ten }}
                                             <br><small class="text-muted">{{ $sv->email }}</small>
-                                        </td>
-                                        <td>
-                                            @if ($sv->lopHanhChinh)
-                                                <span class="badge bg-secondary">{{ $sv->lopHanhChinh->ma_lop }}</span>
-                                            @endif
                                         </td>
                                         <td>
                                             @if ($sv->nganh)

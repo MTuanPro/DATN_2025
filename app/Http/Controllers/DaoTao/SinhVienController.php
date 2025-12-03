@@ -4,7 +4,6 @@ namespace App\Http\Controllers\DaoTao;
 
 use App\Http\Controllers\Controller;
 use App\Models\DaoTao\SinhVien;
-use App\Models\DaoTao\LopHanhChinh;
 use App\Models\DaoTao\KhoaHoc;
 use App\Models\DaoTao\Nganh;
 use App\Models\DaoTao\ChuyenNganh;
@@ -29,7 +28,6 @@ class SinhVienController extends Controller
     public function index(Request $request)
     {
         $query = SinhVien::with([
-            'lopHanhChinh',
             'khoaHoc',
             'nganh',
             'chuyenNganh',
@@ -45,11 +43,6 @@ class SinhVienController extends Controller
                     ->orWhere('email', 'like', "%{$search}%")
                     ->orWhere('so_dien_thoai', 'like', "%{$search}%");
             });
-        }
-
-        // Lọc theo lớp
-        if ($request->filled('lop_hanh_chinh_id')) {
-            $query->where('lop_hanh_chinh_id', $request->lop_hanh_chinh_id);
         }
 
         // Lọc theo khóa học
@@ -70,12 +63,11 @@ class SinhVienController extends Controller
         $sinhViens = $query->orderBy('created_at', 'desc')->paginate(15);
 
         // Dữ liệu cho bộ lọc
-        $lopHanhChinhs = LopHanhChinh::orderBy('ma_lop')->get();
         $khoaHocs = KhoaHoc::orderBy('ten_khoa_hoc')->get();
         $nganhs = Nganh::with('khoa')->orderBy('ten_nganh')->get();
         $trangThais = TrangThaiHocTap::orderBy('ten_trang_thai')->get();
 
-        return view('daotao.sinh-vien.index', compact('sinhViens', 'lopHanhChinhs', 'khoaHocs', 'nganhs', 'trangThais'));
+        return view('daotao.sinh-vien.index', compact('sinhViens', 'khoaHocs', 'nganhs', 'trangThais'));
     }
 
     /**
@@ -83,13 +75,12 @@ class SinhVienController extends Controller
      */
     public function create()
     {
-        $lopHanhChinhs = LopHanhChinh::with(['khoaHoc', 'nganh'])->orderBy('ma_lop')->get();
         $khoaHocs = KhoaHoc::orderBy('ten_khoa_hoc')->get();
         $nganhs = Nganh::with('khoa')->orderBy('ten_nganh')->get();
         $chuyenNganhs = ChuyenNganh::with('nganh')->orderBy('ten_chuyen_nganh')->get();
         $trangThais = TrangThaiHocTap::orderBy('ten_trang_thai')->get();
 
-        return view('daotao.sinh-vien.create', compact('lopHanhChinhs', 'khoaHocs', 'nganhs', 'chuyenNganhs', 'trangThais'));
+        return view('daotao.sinh-vien.create', compact('khoaHocs', 'nganhs', 'chuyenNganhs', 'trangThais'));
     }
 
     /**
@@ -123,7 +114,6 @@ class SinhVienController extends Controller
             'noi_cap_cccd' => 'nullable|string|max:255',
             'anh_dai_dien' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'khoa_hoc_id' => 'required|exists:khoa_hoc,id',
-            'lop_hanh_chinh_id' => 'required|exists:lop_hanh_chinh,id',
             'nganh_id' => 'required|exists:nganh,id',
             'chuyen_nganh_id' => 'nullable|exists:chuyen_nganh,id',
             'ky_hien_tai' => 'required|integer|min:1|max:8',
@@ -143,18 +133,6 @@ class SinhVienController extends Controller
             if (!$chuyenNganh || $chuyenNganh->nganh_id != $validated['nganh_id']) {
                 return back()->withInput()->with('error', 'Chuyên ngành không thuộc ngành đã chọn!');
             }
-        }
-
-        // Validation: Lớp hành chính phải thuộc ngành và khóa học đã chọn
-        $lopHanhChinh = LopHanhChinh::find($validated['lop_hanh_chinh_id']);
-        if (!$lopHanhChinh) {
-            return back()->withInput()->with('error', 'Lớp hành chính không tồn tại!');
-        }
-        if ($lopHanhChinh->nganh_id != $validated['nganh_id']) {
-            return back()->withInput()->with('error', 'Lớp hành chính không thuộc ngành đã chọn!');
-        }
-        if ($lopHanhChinh->khoa_hoc_id != $validated['khoa_hoc_id']) {
-            return back()->withInput()->with('error', 'Lớp hành chính không thuộc khóa học đã chọn!');
         }
 
         DB::beginTransaction();
@@ -191,17 +169,9 @@ class SinhVienController extends Controller
             // Tạo sinh viên với user_id
             $validated['user_id'] = $user->id;
 
-            // Lấy GVCN từ lớp hành chính (đã lấy ở trên)
-            if ($lopHanhChinh && $lopHanhChinh->giang_vien_chu_nhiem_id) {
-                $validated['giang_vien_chu_nhiem_id'] = $lopHanhChinh->giang_vien_chu_nhiem_id;
-            }
-
             $sinhVien = SinhVien::create($validated);
 
             Log::info('Đã tạo Sinh viên ID: ' . $sinhVien->id);
-
-            // Cập nhật sĩ số lớp
-            $lopHanhChinh->increment('si_so');
 
             DB::commit();
 
@@ -223,11 +193,9 @@ class SinhVienController extends Controller
         $sinhVien = SinhVien::with([
             'user',
             'khoaHoc',
-            'lopHanhChinh.nganh.khoa',
             'nganh.khoa',
             'chuyenNganh',
-            'trangThaiHocTap',
-            'giangVienChuNhiem'
+            'trangThaiHocTap'
         ])->findOrFail($id);
 
         return view('daotao.sinh-vien.show', compact('sinhVien'));
@@ -239,13 +207,12 @@ class SinhVienController extends Controller
     public function edit(string $id)
     {
         $sinhVien = SinhVien::findOrFail($id);
-        $lopHanhChinhs = LopHanhChinh::with(['khoaHoc', 'nganh'])->orderBy('ma_lop')->get();
         $khoaHocs = KhoaHoc::orderBy('ten_khoa_hoc')->get();
         $nganhs = Nganh::with('khoa')->orderBy('ten_nganh')->get();
         $chuyenNganhs = ChuyenNganh::with('nganh')->orderBy('ten_chuyen_nganh')->get();
         $trangThais = TrangThaiHocTap::orderBy('ten_trang_thai')->get();
 
-        return view('daotao.sinh-vien.edit', compact('sinhVien', 'lopHanhChinhs', 'khoaHocs', 'nganhs', 'chuyenNganhs', 'trangThais'));
+        return view('daotao.sinh-vien.edit', compact('sinhVien', 'khoaHocs', 'nganhs', 'chuyenNganhs', 'trangThais'));
     }
 
     /**
@@ -271,7 +238,6 @@ class SinhVienController extends Controller
             'noi_cap_cccd' => 'nullable|string|max:255',
             'anh_dai_dien' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'khoa_hoc_id' => 'required|exists:khoa_hoc,id',
-            'lop_hanh_chinh_id' => 'required|exists:lop_hanh_chinh,id',
             'nganh_id' => 'required|exists:nganh,id',
             'chuyen_nganh_id' => 'nullable|exists:chuyen_nganh,id',
             'ky_hien_tai' => 'required|integer|min:1|max:8',
@@ -286,18 +252,6 @@ class SinhVienController extends Controller
             }
         }
 
-        // Validation: Lớp hành chính phải thuộc ngành và khóa học đã chọn
-        $lopHanhChinh = LopHanhChinh::find($validated['lop_hanh_chinh_id']);
-        if (!$lopHanhChinh) {
-            return back()->withInput()->with('error', 'Lớp hành chính không tồn tại!');
-        }
-        if ($lopHanhChinh->nganh_id != $validated['nganh_id']) {
-            return back()->withInput()->with('error', 'Lớp hành chính không thuộc ngành đã chọn!');
-        }
-        if ($lopHanhChinh->khoa_hoc_id != $validated['khoa_hoc_id']) {
-            return back()->withInput()->with('error', 'Lớp hành chính không thuộc khóa học đã chọn!');
-        }
-
         DB::beginTransaction();
         try {
             // Xử lý upload ảnh mới
@@ -307,22 +261,6 @@ class SinhVienController extends Controller
                     Storage::disk('public')->delete($sinhVien->anh_dai_dien);
                 }
                 $validated['anh_dai_dien'] = $request->file('anh_dai_dien')->store('sinh-vien', 'public');
-            }
-
-            // Kiểm tra nếu đổi lớp
-            $lopCu = $sinhVien->lop_hanh_chinh_id;
-            $lopMoi = $validated['lop_hanh_chinh_id'];
-
-            if ($lopCu != $lopMoi) {
-                // Giảm sĩ số lớp cũ
-                LopHanhChinh::find($lopCu)->decrement('si_so');
-                // Tăng sĩ số lớp mới
-                $lopHanhChinh->increment('si_so');
-
-                // Cập nhật GVCN từ lớp mới (đã lấy ở trên)
-                if ($lopHanhChinh->giang_vien_chu_nhiem_id) {
-                    $validated['giang_vien_chu_nhiem_id'] = $lopHanhChinh->giang_vien_chu_nhiem_id;
-                }
             }
 
             $sinhVien->update($validated);
@@ -351,9 +289,6 @@ class SinhVienController extends Controller
 
         DB::beginTransaction();
         try {
-            // Lưu lớp hành chính ID để đồng bộ lại sĩ số sau
-            $lopHanhChinhId = $sinhVien->lop_hanh_chinh_id;
-
             // Xóa ảnh đại diện
             if ($sinhVien->anh_dai_dien) {
                 Storage::disk('public')->delete($sinhVien->anh_dai_dien);
@@ -365,14 +300,6 @@ class SinhVienController extends Controller
             }
 
             $sinhVien->delete();
-
-            // Đồng bộ lại sĩ số cho lớp hành chính
-            if ($lopHanhChinhId) {
-                $lop = LopHanhChinh::withCount('sinhVien')->find($lopHanhChinhId);
-                if ($lop) {
-                    $lop->update(['si_so' => $lop->sinh_vien_count]);
-                }
-            }
 
             DB::commit();
 
@@ -404,7 +331,6 @@ class SinhVienController extends Controller
         try {
             $deleted = 0;
             $errors = [];
-            $affectedLopIds = []; // Lưu các lớp bị ảnh hưởng để đồng bộ lại sĩ số
 
             foreach ($ids as $id) {
                 try {
@@ -412,11 +338,6 @@ class SinhVienController extends Controller
                     if (!$sinhVien) {
                         $errors[] = "Sinh viên ID {$id} không tồn tại";
                         continue;
-                    }
-
-                    // Lưu lớp hành chính ID để đồng bộ lại sau
-                    if ($sinhVien->lop_hanh_chinh_id) {
-                        $affectedLopIds[] = $sinhVien->lop_hanh_chinh_id;
                     }
 
                     // Xóa ảnh đại diện
@@ -434,17 +355,6 @@ class SinhVienController extends Controller
                 } catch (\Exception $e) {
                     $errors[] = "Lỗi khi xóa sinh viên ID {$id}: " . $e->getMessage();
                     Log::error("Lỗi xóa sinh viên ID {$id}: " . $e->getMessage());
-                }
-            }
-
-            // Đồng bộ lại sĩ số cho các lớp bị ảnh hưởng
-            if (!empty($affectedLopIds)) {
-                $uniqueLopIds = array_unique($affectedLopIds);
-                foreach ($uniqueLopIds as $lopId) {
-                    $lop = LopHanhChinh::withCount('sinhVien')->find($lopId);
-                    if ($lop) {
-                        $lop->update(['si_so' => $lop->sinh_vien_count]);
-                    }
                 }
             }
 
@@ -490,7 +400,6 @@ class SinhVienController extends Controller
             'gioi_tinh',
             'so_dien_thoai',
             'can_cuoc_cong_dan',
-            'ma_lop',
             'khoa_hoc',
             'nganh',
             'chuyen_nganh',
@@ -514,7 +423,6 @@ class SinhVienController extends Controller
                 'nam',
                 '0901234567',
                 '001203012345',
-                'CNTT-K15-01',
                 'K15', // Tên khóa học
                 'Công nghệ thông tin', // Tên ngành
                 'CNTT01', // Mã chuyên ngành
@@ -596,15 +504,11 @@ class SinhVienController extends Controller
                     $gioiTinh = trim($row[4] ?? '');
                     $sdt = trim($row[5] ?? '');
                     $cccd = trim($row[6] ?? '');
-                    $maLop = trim($row[7] ?? '');
-                    $tenKhoaHoc = trim($row[8] ?? ''); // Tên khóa học
-                    $tenNganh = trim($row[9] ?? ''); // Tên ngành
-                    $maChuyenNganh = trim($row[10] ?? ''); // Mã chuyên ngành
-                    $kyHienTai = !empty($row[11]) ? (int)$row[11] : 1;
-                    $tenTrangThai = trim($row[12] ?? ''); // Tên trạng thái
-
-                    // Tìm ID từ tên/mã
-                    $lopHanhChinh = LopHanhChinh::where('ma_lop', $maLop)->first();
+                    $tenKhoaHoc = trim($row[7] ?? ''); // Tên khóa học
+                    $tenNganh = trim($row[8] ?? ''); // Tên ngành
+                    $maChuyenNganh = trim($row[9] ?? ''); // Mã chuyên ngành
+                    $kyHienTai = !empty($row[10]) ? (int)$row[10] : 1;
+                    $tenTrangThai = trim($row[11] ?? ''); // Tên trạng thái 
                     
                     // Tìm khóa học theo tên
                     $khoaHoc = KhoaHoc::where('ten_khoa_hoc', $tenKhoaHoc)->first();
@@ -627,11 +531,6 @@ class SinhVienController extends Controller
                     }
 
                     // Kiểm tra và báo lỗi chi tiết
-                    if (!$lopHanhChinh) {
-                        $errors[] = "Dòng {$rowNum}: Không tìm thấy lớp với mã: {$maLop}";
-                        continue;
-                    }
-                    
                     if (!$khoaHoc) {
                         $errors[] = "Dòng {$rowNum}: Không tìm thấy khóa học với tên: {$tenKhoaHoc}";
                         continue;
@@ -720,11 +619,9 @@ class SinhVienController extends Controller
                         'so_dien_thoai' => $sdt,
                         'can_cuoc_cong_dan' => $cccd,
                         'khoa_hoc_id' => $khoaHoc->id,
-                        'lop_hanh_chinh_id' => $lopHanhChinh->id,
                         'nganh_id' => $nganh->id,
                         'ky_hien_tai' => $kyHienTai,
                         'trang_thai_hoc_tap_id' => $trangThai->id,
-                        'giang_vien_chu_nhiem_id' => $lopHanhChinh->giang_vien_chu_nhiem_id,
                         'user_id' => $user->id,
                     ];
                     
@@ -737,11 +634,6 @@ class SinhVienController extends Controller
                         ['ma_sinh_vien' => $maSV],
                         $sinhVienData
                     );
-
-                    // Chỉ tăng sĩ số lớp khi tạo mới
-                    if ($isNew) {
-                        $lopHanhChinh->increment('si_so');
-                    }
 
                     $imported++;
                 } catch (\Exception $e) {

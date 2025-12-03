@@ -7,9 +7,13 @@ use App\Models\LopHocPhan;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\DaoTao\MonHoc;
 use App\Models\HocKy;
+use App\Models\CauHinhDauDiem;
+use App\Models\CauHinhDauDiemMacDinh;
+use App\Models\LichHocChiTiet;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use App\Traits\ImportHelper;
 
 class LopHocPhanController extends Controller
@@ -173,10 +177,21 @@ class LopHocPhanController extends Controller
             }
         }
         
-        LopHocPhan::create($validated);
+        DB::beginTransaction();
+        try {
+            $lopHocPhan = LopHocPhan::create($validated);
+
+            // Tự động copy cấu hình đầu điểm từ môn học sang lớp học phần
+            $this->copyCauHinhDauDiemTuMonHoc($lopHocPhan->id, $validated['mon_hoc_id']);
+
+            DB::commit();
 
         return redirect()->route('dao-tao.lop-hoc-phan.index')
-            ->with('success', 'Tạo lớp học phần thành công!');
+                ->with('success', 'Tạo lớp học phần thành công! Đã tự động tạo cấu hình đầu điểm từ môn học.');
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return back()->withInput()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
     }
 
     /**
@@ -193,7 +208,36 @@ class LopHocPhanController extends Controller
     {
         $lopHocPhan->load(['monHoc', 'hocKy', 'lopHocPhanGiangVien.giangVien', 'cauHinhDauDiem']);
 
-        return view('daotao.lop-hoc-phan.show', compact('lopHocPhan'));
+        // Lấy lịch học chi tiết của lớp học phần
+        $lichHocChiTiets = \App\Models\LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhan->id)
+            ->with(['phongHoc', 'giangVien', 'caHoc', 'lichHocCoDinh'])
+            ->orderBy('ngay_hoc', 'asc')
+            ->orderBy('tiet_bat_dau', 'asc')
+            ->get();
+
+        // Nhóm lịch theo phòng học
+        $lichTheoPhong = $lichHocChiTiets->groupBy(function ($item) {
+            return $item->phongHoc ? $item->phongHoc->id : 'no-room';
+        })->map(function ($group, $phongId) {
+            $phong = $group->first()->phongHoc;
+            return [
+                'phong' => $phong ? $phong->ten_phong : 'Chưa phân phòng',
+                'phong_id' => $phong ? $phong->id : null,
+                'lich_hocs' => $group
+            ];
+        });
+
+        // Nhóm lịch theo giảng viên
+        $lichTheoGiangVien = $lichHocChiTiets->groupBy('giang_vien_id')->map(function ($group, $gvId) {
+            $giangVien = $group->first()->giangVien;
+            return [
+                'giang_vien' => $giangVien ? $giangVien->ho_ten : 'Chưa phân công',
+                'giang_vien_id' => $gvId,
+                'lich_hocs' => $group
+            ];
+        });
+
+        return view('daotao.lop-hoc-phan.show', compact('lopHocPhan', 'lichTheoPhong', 'lichTheoGiangVien', 'lichHocChiTiets'));
     }
 
     /**
@@ -774,7 +818,7 @@ class LopHocPhanController extends Controller
                     $deleted++;
                 } catch (\Exception $e) {
                     $errors[] = "Lỗi khi xóa lớp học phần ID {$id}: " . $e->getMessage();
-                    \Log::error("Lỗi xóa lớp học phần ID {$id}: " . $e->getMessage());
+                    Log::error("Lỗi xóa lớp học phần ID {$id}: " . $e->getMessage());
                 }
             }
 
@@ -792,8 +836,45 @@ class LopHocPhanController extends Controller
                 ->with('success', $message);
         } catch (\Exception $e) {
             DB::rollBack();
-            \Log::error('Lỗi xóa nhiều lớp học phần: ' . $e->getMessage());
+            Log::error('Lỗi xóa nhiều lớp học phần: ' . $e->getMessage());
             return back()->with('error', 'Có lỗi xảy ra khi xóa: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Copy cấu hình đầu điểm từ môn học sang lớp học phần
+     */
+    private function copyCauHinhDauDiemTuMonHoc($lopHocPhanId, $monHocId)
+    {
+        // Lấy cấu hình mặc định của môn học
+        $cauHinhMacDinhs = CauHinhDauDiemMacDinh::where('mon_hoc_id', $monHocId)->get();
+
+        if ($cauHinhMacDinhs->isEmpty()) {
+            // Nếu môn học chưa có cấu hình mặc định, tạo cấu hình mặc định
+            $cauHinhMacDinh = [
+                ['ten_dau_diem' => 'Chuyên cần', 'ty_le' => 10, 'so_cot' => 1],
+                ['ten_dau_diem' => 'Giữa kỳ', 'ty_le' => 30, 'so_cot' => 1],
+                ['ten_dau_diem' => 'Cuối kỳ', 'ty_le' => 60, 'so_cot' => 1],
+            ];
+
+            foreach ($cauHinhMacDinh as $cauHinh) {
+                CauHinhDauDiem::create([
+                    'lop_hoc_phan_id' => $lopHocPhanId,
+                    'ten_dau_diem' => $cauHinh['ten_dau_diem'],
+                    'ty_le' => $cauHinh['ty_le'],
+                    'so_cot' => $cauHinh['so_cot'],
+                ]);
+            }
+        } else {
+            // Copy từ cấu hình mặc định
+            foreach ($cauHinhMacDinhs as $cauHinhMacDinh) {
+                CauHinhDauDiem::create([
+                    'lop_hoc_phan_id' => $lopHocPhanId,
+                    'ten_dau_diem' => $cauHinhMacDinh->ten_dau_diem,
+                    'ty_le' => $cauHinhMacDinh->ty_le,
+                    'so_cot' => $cauHinhMacDinh->so_cot,
+                ]);
+            }
         }
     }
 }

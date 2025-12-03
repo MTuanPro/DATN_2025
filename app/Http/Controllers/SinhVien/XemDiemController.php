@@ -327,7 +327,7 @@ class XemDiemController extends Controller
         }
 
         // Load relationships
-        $sinhVien->load(['user', 'lopHanhChinh', 'lopHanhChinh.khoa']);
+        $sinhVien->load(['user', 'nganh.khoa', 'chuyenNganh.nganh.khoa']);
 
         // Lấy tất cả môn đã học (đã duyệt điểm)
         $monHocs = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)

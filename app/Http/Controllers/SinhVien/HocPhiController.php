@@ -7,9 +7,10 @@ use App\Models\HocPhiHocKy;
 use App\Models\ChiTietHocPhiMon;
 use App\Models\LichSuDongHocPhi;
 use App\Services\HocPhiService;
-use App\Services\VNPayService;
+use App\Services\ZaloPayService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Barryvdh\DomPDF\Facade\Pdf;
 
 class HocPhiController extends Controller
@@ -33,7 +34,7 @@ class HocPhiController extends Controller
 
         if (!$sinhVien) {
             return redirect()->route('sinh-vien.dashboard')
-                ->with('error', 'Không tìm thấy thông tin sinh viên!');
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
         }
 
         $hocPhis = HocPhiHocKy::with(['hocKy'])
@@ -69,7 +70,7 @@ class HocPhiController extends Controller
 
         if (!$sinhVien) {
             return redirect()->route('sinh-vien.dashboard')
-                ->with('error', 'Không tìm thấy thông tin sinh viên!');
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
         }
 
         $hocPhi = HocPhiHocKy::with([
@@ -103,7 +104,7 @@ class HocPhiController extends Controller
 
         if (!$sinhVien) {
             return redirect()->route('sinh-vien.dashboard')
-                ->with('error', 'Không tìm thấy thông tin sinh viên!');
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
         }
 
         $hocPhi = HocPhiHocKy::with(['hocKy'])
@@ -139,12 +140,14 @@ class HocPhiController extends Controller
         $sinhVien = $user->sinhVien;
 
         if (!$sinhVien) {
-            abort(403, 'Không tìm thấy thông tin sinh viên!');
+            abort(403, 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
         }
 
         $hocPhi = HocPhiHocKy::with([
             'sinhVien.user',
-            'sinhVien.lopHanhChinh.chuyenNganh.nganh.khoa',
+            'sinhVien.chuyenNganh.nganh.khoa',
+            'sinhVien.nganh.khoa',
+            'sinhVien.khoaHoc',
             'hocKy',
             'chiTietHocPhiMon.monHoc',
             'lichSuDongHocPhi'
@@ -152,7 +155,11 @@ class HocPhiController extends Controller
             ->where('sinh_vien_id', $sinhVien->id)
             ->findOrFail($id);
 
-        $pdf = Pdf::loadView('sinhvien.hoc-phi.pdf', compact('hocPhi'));
+        $pdf = Pdf::loadView('sinhvien.hoc-phi.pdf', compact('hocPhi'))
+            ->setPaper('a4', 'portrait')
+            ->setOption('isHtml5ParserEnabled', true)
+            ->setOption('isRemoteEnabled', true)
+            ->setOption('defaultFont', 'DejaVu Sans');
 
         $fileName = 'HocPhi_' . $sinhVien->ma_sinh_vien . '_' . $hocPhi->hocKy->ten_hoc_ky . '.pdf';
 
@@ -176,6 +183,7 @@ class HocPhiController extends Controller
     }
 
     /**
+<<<<<<< HEAD
      * Hiển thị form thanh toán học phí qua VNPay
      *
      * Kiểm tra:
@@ -188,15 +196,18 @@ class HocPhiController extends Controller
      * @param int $id ID của khoản học phí cần thanh toán
      * @return \Illuminate\View\View Form thanh toán VNPay
      * @return \Illuminate\Http\RedirectResponse Redirect nếu đã thanh toán đủ hoặc không tìm thấy
+=======
+     * Show form to pay tuition via ZaloPay
+>>>>>>> b05ccc9876a8b428a1cb263d9332ed1a628483f1
      */
-    public function showVNPayPayment($id)
+    public function showZaloPayPayment($id)
     {
         $user = auth()->user();
         $sinhVien = $user->sinhVien;
 
         if (!$sinhVien) {
             return redirect()->route('sinh-vien.dashboard')
-                ->with('error', 'Không tìm thấy thông tin sinh viên!');
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
         }
 
         $hocPhi = HocPhiHocKy::with(['hocKy'])
@@ -210,10 +221,23 @@ class HocPhiController extends Controller
                 ->with('info', 'Bạn đã thanh toán đủ học phí cho học kỳ này.');
         }
 
-        return view('sinhvien.hoc-phi.vnpay-payment', compact('hocPhi'));
+        // Get orderurl from session if exists (after creating order)
+        // Don't clear session here - keep it so QR code can be displayed
+        $orderUrl = session('zalopay_orderurl');
+        $zpTransToken = session('zalopay_zptranstoken');
+        
+        // Debug: Log to check if orderUrl exists
+        if ($orderUrl) {
+            Log::info('ZaloPay OrderUrl in session:', ['orderurl' => $orderUrl]);
+        } else {
+            Log::info('ZaloPay OrderUrl not found in session');
+        }
+
+        return view('sinhvien.hoc-phi.zalopay-payment', compact('hocPhi', 'orderUrl', 'zpTransToken'));
     }
 
     /**
+<<<<<<< HEAD
      * Khởi tạo yêu cầu thanh toán học phí qua cổng thanh toán VNPay
      *
      * Quy trình:
@@ -237,15 +261,18 @@ class HocPhiController extends Controller
      * @param int $id ID của khoản học phí cần thanh toán
      * @return \Illuminate\Http\RedirectResponse Redirect đến VNPay payment URL hoặc về form với lỗi
      * @throws \Exception Khi có lỗi tạo giao dịch
+=======
+     * Initiate ZaloPay payment
+>>>>>>> b05ccc9876a8b428a1cb263d9332ed1a628483f1
      */
-    public function initiateVNPayPayment(Request $request, $id)
+    public function initiateZaloPayPayment(Request $request, $id)
     {
         $user = auth()->user();
         $sinhVien = $user->sinhVien;
 
         if (!$sinhVien) {
             return redirect()->route('sinh-vien.dashboard')
-                ->with('error', 'Không tìm thấy thông tin sinh viên!');
+                ->with('error', 'KhÃ´ng tÃ¬m tháº¥y thÃ´ng tin sinh viÃªn!');
         }
 
         $hocPhi = HocPhiHocKy::with(['hocKy'])
@@ -255,10 +282,10 @@ class HocPhiController extends Controller
         $validated = $request->validate([
             'so_tien_dong' => 'required|numeric|min:1000|max:' . $hocPhi->so_tien_con_lai,
         ], [
-            'so_tien_dong.required' => 'Vui lòng nhập số tiền thanh toán',
-            'so_tien_dong.numeric' => 'Số tiền phải là số',
-            'so_tien_dong.min' => 'Số tiền tối thiểu là 1,000 đ',
-            'so_tien_dong.max' => 'Số tiền không được vượt quá số tiền còn lại',
+            'so_tien_dong.required' => 'Vui lÃ²ng nháº­p sá»‘ tiá»n thanh toÃ¡n',
+            'so_tien_dong.numeric' => 'Sá»‘ tiá»n pháº£i lÃ  sá»‘',
+            'so_tien_dong.min' => 'Sá»‘ tiá»n tá»‘i thiá»ƒu lÃ  1,000 Ä‘',
+            'so_tien_dong.max' => 'Sá»‘ tiá»n khÃ´ng Ä‘Æ°á»£c vÆ°á»£t quÃ¡ sá»‘ tiá»n cÃ²n láº¡i',
         ]);
 
         $amount = (int) $validated['so_tien_dong'];
@@ -266,8 +293,8 @@ class HocPhiController extends Controller
         // Create order info
         $orderInfo = "Thanh toan hoc phi - {$hocPhi->hocKy->ten_hoc_ky} - {$sinhVien->ma_sinh_vien}";
         
-        // Create order ID
-        $orderId = 'HP_' . $hocPhi->id . '_' . $sinhVien->id . '_' . time();
+        // Create order ID (app_trans_id format: yyMMdd_xxxxx)
+        $appTransId = date('ymd') . '_' . $hocPhi->id . '_' . $sinhVien->id . '_' . time();
 
         // Create temporary payment record (pending)
         try {
@@ -277,43 +304,130 @@ class HocPhiController extends Controller
                 'hoc_phi_hoc_ky_id' => $hocPhi->id,
                 'so_tien_dong' => $amount,
                 'ngay_dong' => now(),
-                'phuong_thuc_thanh_toan' => 'VNPay',
-                'ma_giao_dich' => $orderId,
-                'ghi_chu' => 'Đang chờ xác nhận từ VNPay',
+                'phuong_thuc_thanh_toan' => 'ZaloPay',
+                'ma_giao_dich' => $appTransId,
+                'ghi_chu' => 'Đang chờ xác nhận từ ZaloPay',
             ]);
 
             DB::commit();
 
-            // Initiate VNPay payment
-            $vnpayService = new VNPayService();
-            $result = $vnpayService->createPaymentUrl($orderId, $amount, $orderInfo);
+            // Prepare items for ZaloPay
+            $items = [
+                [
+                    'itemid' => 'hocphi_' . $hocPhi->id,
+                    'itemname' => 'Học phí ' . $hocPhi->hocKy->ten_hoc_ky,
+                    'itemprice' => $amount,
+                    'itemquantity' => 1,
+                ]
+            ];
 
-            if ($result['success']) {
-                // Store orderId in session for verification
-                session(['vnpay_order_id' => $orderId]);
-                session(['vnpay_hoc_phi_id' => $hocPhi->id]);
+            // Embed data
+            $embedData = [
+                'merchantinfo' => json_encode([
+                    'hoc_phi_id' => $hocPhi->id,
+                    'sinh_vien_id' => $sinhVien->id,
+                    'ma_sinh_vien' => $sinhVien->ma_sinh_vien,
+                ], JSON_UNESCAPED_UNICODE)
+            ];
 
-                // Redirect to VNPay payment page
-                return redirect($result['payment_url']);
+            // Initiate ZaloPay payment (API v1)
+            $zaloPayService = new ZaloPayService();
+            $result = $zaloPayService->createOrder(
+                $appTransId,
+                $amount,
+                $orderInfo,
+                $sinhVien->ma_sinh_vien, // appuser
+                $items,
+                $embedData,
+                '' // bankcode - để trống để user chọn
+            );
+
+            if (isset($result['returncode']) && $result['returncode'] == 1) {
+                // Store transaction info in session for verification
+                session(['zalopay_app_trans_id' => $appTransId]);
+                session(['zalopay_hoc_phi_id' => $hocPhi->id]);
+
+                // Store orderurl to display QR code
+                if (isset($result['orderurl']) && !empty($result['orderurl'])) {
+                    // ✅ Sử dụng URL gốc từ ZaloPay, không decode hay modify
+                    // URL từ ZaloPay đã được encode đúng và cần giữ nguyên
+                    $orderUrl = trim($result['orderurl']);
+                    
+                    // Chỉ validate cơ bản - không decode vì có thể làm hỏng URL
+                    // URL gateway của ZaloPay có format đặc biệt và cần giữ nguyên
+                    if (empty($orderUrl) || strlen($orderUrl) < 10) {
+                        Log::error('ZaloPay orderurl too short or empty:', [
+                            'orderurl' => $orderUrl,
+                            'original' => $result['orderurl'] ?? null
+                        ]);
+                        throw new \Exception('URL thanh toán từ ZaloPay không hợp lệ');
+                    }
+                    
+                    session(['zalopay_orderurl' => $orderUrl]);
+                    session(['zalopay_zptranstoken' => $result['zptranstoken'] ?? null]);
+                    
+                    Log::info('ZaloPay Order created successfully:', [
+                        'app_trans_id' => $appTransId,
+                        'orderurl' => $orderUrl,
+                        'orderurl_length' => strlen($orderUrl),
+                        'orderurl_preview' => substr($orderUrl, 0, 50) . '...',
+                        'zptranstoken' => isset($result['zptranstoken']) ? 'present' : 'missing',
+                        'result_keys' => array_keys($result)
+                    ]);
+                    
+                    // Return to payment page with QR code
+                    return redirect()
+                        ->route('sinh-vien.hoc-phi.zalopay-payment', $id)
+                        ->with('success', 'Đã tạo đơn hàng thành công. Vui lòng quét QR code để thanh toán.');
+                } else {
+                    Log::error('ZaloPay response missing orderurl:', ['result' => $result]);
+                    throw new \Exception('Không nhận được URL thanh toán từ ZaloPay. Response: ' . json_encode($result));
+                }
             } else {
                 // Delete the pending record
                 $lichSu->delete();
 
+                // Get error message from response
+                $errorMessage = $result['returnmessage'] ?? 'Không thể tạo yêu cầu thanh toán.';
+                
+                // Provide more specific error messages
+                if (isset($result['returncode'])) {
+                    switch ($result['returncode']) {
+                        case -1:
+                            $errorMessage = 'ZaloPay chưa được cấu hình. Vui lòng liên hệ quản trị viên.';
+                            break;
+                        case -2:
+                            $errorMessage = 'Thông tin xác thực ZaloPay không hợp lệ. Vui lòng kiểm tra cấu hình.';
+                            break;
+                        default:
+                            if (empty($errorMessage)) {
+                                $errorMessage = 'Không thể tạo yêu cầu thanh toán. Mã lỗi: ' . $result['returncode'];
+                            }
+                    }
+                }
+                
+                Log::error('ZaloPay Create Order Failed:', [
+                    'returncode' => $result['returncode'] ?? 'unknown',
+                    'returnmessage' => $errorMessage,
+                    'result' => $result
+                ]);
+                
                 return redirect()
-                    ->route('sinh-vien.hoc-phi.vnpay-payment', $id)
-                    ->with('error', $result['message'] ?? 'Không thể tạo yêu cầu thanh toán. Vui lòng thử lại.');
+                    ->route('sinh-vien.hoc-phi.zalopay-payment', $id)
+                    ->with('error', $errorMessage);
             }
 
         } catch (\Exception $e) {
             DB::rollBack();
             
             return redirect()
-                ->route('sinh-vien.hoc-phi.vnpay-payment', $id)
-                ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+                ->route('sinh-vien.hoc-phi.zalopay-payment', $id)
+                ->with('error', 'CÃ³ lá»—i xáº£y ra: ' . $e->getMessage());
         }
     }
 
     /**
+<<<<<<< HEAD
      * Xử lý callback từ VNPay sau khi sinh viên hoàn tất thanh toán (Return URL)
      *
      * Quy trình:
@@ -343,42 +457,43 @@ class HocPhiController extends Controller
      * @param Request $request Chứa toàn bộ query params từ VNPay callback
      * @return \Illuminate\Http\RedirectResponse Redirect với thông báo thành công/thất bại
      * @throws \Exception Khi có lỗi cập nhật database
+=======
+     * Handle ZaloPay payment callback (return URL)
+>>>>>>> b05ccc9876a8b428a1cb263d9332ed1a628483f1
      */
-    public function vnpayCallback(Request $request)
+    public function zaloPayCallback(Request $request)
     {
-        $vnpayService = new VNPayService();
-        $data = $request->all();
-
-        $verifyResult = $vnpayService->verifyCallback($data);
-
-        if (!$verifyResult['valid']) {
-            return redirect()
-                ->route('sinh-vien.hoc-phi.index')
-                ->with('error', 'Giao dịch không hợp lệ. Vui lòng liên hệ bộ phận tài vụ.');
-        }
-
-        $orderId = $verifyResult['orderId'] ?? '';
-        $hocPhiId = session('vnpay_hoc_phi_id');
+        $zaloPayService = new ZaloPayService();
+        $appTransId = $request->get('apptransid');
+        $hocPhiId = session('zalopay_hoc_phi_id');
 
         // Clear session
-        session()->forget(['vnpay_order_id', 'vnpay_hoc_phi_id']);
+        session()->forget(['zalopay_app_trans_id', 'zalopay_hoc_phi_id']);
 
-        if ($verifyResult['success']) {
+        if (!$appTransId) {
+            return redirect()
+                ->route('sinh-vien.hoc-phi.index')
+                ->with('error', 'Giao dá»‹ch khÃ´ng há»£p lá»‡.');
+        }
+
+        // Query payment status from ZaloPay
+        $statusResult = $zaloPayService->queryOrder($appTransId);
+
+        if (isset($statusResult['returncode']) && $statusResult['returncode'] == 1) {
             // Payment successful
             try {
                 DB::beginTransaction();
 
                 // Find the payment record
-                $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $orderId)->first();
+                $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $appTransId)->first();
 
-                if ($lichSu) {
+                if ($lichSu && str_contains($lichSu->ghi_chu ?? '', 'Đang chờ')) {
                     $hocPhi = $lichSu->hocPhiHocKy;
 
                     // Update payment record
                     $lichSu->update([
                         'ngay_dong' => now(),
-                        'ngan_hang' => $verifyResult['bankCode'] ?? null,
-                        'ghi_chu' => 'Thanh toán thành công qua VNPay. Mã giao dịch: ' . ($verifyResult['transactionNo'] ?? ''),
+                        'ghi_chu' => 'Thanh toán thành công qua ZaloPay. Mã giao dịch: ' . $appTransId,
                     ]);
 
                     // Update HocPhiHocKy
@@ -390,27 +505,30 @@ class HocPhiController extends Controller
                     // Update status
                     $hocPhi->updateTrangThai();
 
-                    // Update chi tiết học phí môn thành đã thanh toán (nếu thanh toán đủ)
+                    // Update chi tiáº¿t há»c phÃ­ mÃ´n thÃ nh Ä‘Ã£ thanh toÃ¡n (náº¿u thanh toÃ¡n Ä‘á»§)
                     if ($hocPhi->so_tien_con_lai == 0) {
                         ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
                             ->where('trang_thai', 'chua_thanh_toan')
                             ->update(['trang_thai' => 'da_thanh_toan']);
 
-                        // ✅ KHI ĐÓNG ĐỦ HỌC PHÍ: Tự động thêm vào danh sách chờ xếp lớp
+                        // âœ… KHI ÄÃ“NG Äá»¦ Há»ŒC PHÃ: Tá»± Ä‘á»™ng thÃªm vÃ o danh sÃ¡ch chá» xáº¿p lá»›p
                         $hocPhiService = new HocPhiService();
                         $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
                     }
 
                     DB::commit();
 
+                    // Clear ZaloPay session after successful payment
+                    session()->forget(['zalopay_app_trans_id', 'zalopay_hoc_phi_id', 'zalopay_orderurl', 'zalopay_zptranstoken']);
+
                     return redirect()
                         ->route('sinh-vien.hoc-phi.show', $hocPhi->id)
-                        ->with('success', 'Thanh toán thành công! Mã giao dịch: ' . ($verifyResult['transactionNo'] ?? $orderId));
+                        ->with('success', 'Thanh toán thành công! Mã giao dịch: ' . $appTransId);
                 } else {
                     DB::rollBack();
                     return redirect()
                         ->route('sinh-vien.hoc-phi.index')
-                        ->with('error', 'Không tìm thấy giao dịch. Vui lòng liên hệ bộ phận tài vụ.');
+                        ->with('error', 'KhÃ´ng tÃ¬m tháº¥y giao dá»‹ch hoáº·c Ä‘Ã£ Ä‘Æ°á»£c xá»­ lÃ½.');
                 }
 
             } catch (\Exception $e) {
@@ -418,105 +536,118 @@ class HocPhiController extends Controller
                 
                 return redirect()
                     ->route('sinh-vien.hoc-phi.index')
-                    ->with('error', 'Có lỗi xảy ra khi xử lý thanh toán: ' . $e->getMessage());
+                    ->with('error', 'CÃ³ lá»—i xáº£y ra khi xá»­ lÃ½ thanh toÃ¡n: ' . $e->getMessage());
             }
-        } else {
+        } elseif (isset($statusResult['returncode']) && $statusResult['returncode'] == 2) {
             // Payment failed or cancelled
-            $responseCode = $verifyResult['responseCode'] ?? '';
-            $message = $verifyResult['message'] ?? 'Giao dịch thất bại';
-
             // Delete pending payment record
-            LichSuDongHocPhi::where('ma_giao_dich', $orderId)->delete();
+            LichSuDongHocPhi::where('ma_giao_dich', $appTransId)->delete();
 
             return redirect()
                 ->route('sinh-vien.hoc-phi.show', $hocPhiId ?? 0)
-                ->with('error', $message);
+                ->with('error', 'Giao dá»‹ch tháº¥t báº¡i hoáº·c Ä‘Ã£ bá»‹ há»§y.');
+        } else {
+            // Payment processing
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $hocPhiId ?? 0)
+                ->with('info', 'Giao dá»‹ch Ä‘ang Ä‘Æ°á»£c xá»­ lÃ½. Vui lÃ²ng kiá»ƒm tra láº¡i sau.');
         }
     }
 
     /**
+<<<<<<< HEAD
      * X\u1eed l\u00fd VNPay IPN (Instant Payment Notification) - Server-to-Server webhook
      *
      * \u0110\u00e2y l\u00e0 endpoint cho VNPay g\u1ecdi th\u00f4ng b\u00e1o thanh to\u00e1n t\u1ef1 \u0111\u1ed9ng (kh\u00f4ng qua browser).
      * S\u1eed d\u1ee5ng \u0111\u1ec3 \u0111\u1ed3ng b\u1ed9 k\u1ebft qu\u1ea3 thanh to\u00e1n v\u1edbi h\u1ec7 th\u1ed1ng VNPay.\n     *\n     * Quy tr\u00ecnh:\n     * 1. Nh\u1eadn POST request t\u1eeb VNPay server (kh\u00f4ng ph\u1ea3i t\u1eeb browser)\n     * 2. X\u00e1c th\u1ef1c Secure Hash \u0111\u1ec3 \u0111\u1ea3m b\u1ea3o request t\u1eeb VNPay ch\u00ednh th\u1ee9c\n     * 3. Ki\u1ec3m tra m\u00e3 response:\n     *    - '00' = Giao d\u1ecbch th\u00e0nh c\u00f4ng\n     *    - Kh\u00e1c '00' = Giao d\u1ecbch th\u1ea5t b\u1ea1i\n     * 4. N\u1ebfu th\u00e0nh c\u00f4ng v\u00e0 ch\u01b0a c\u1eadp nh\u1eadt:\n     *    - C\u1eadp nh\u1eadt LichSuDongHocPhi (t\u01b0\u01a1ng t\u1ef1 vnpayCallback)\n     *    - C\u1eadp nh\u1eadt HocPhiHocKy\n     *    - C\u1eadp nh\u1eadt ChiTietHocPhiMon n\u1ebfu thanh to\u00e1n \u0111\u1ee7\n     *    - Th\u00eam v\u00e0o danh s\u00e1ch ch\u1edd x\u1ebfp l\u1edbp n\u1ebfu thanh to\u00e1n \u0111\u1ee7\n     * 5. Tr\u1ea3 v\u1ec1 JSON response cho VNPay:\n     *    - RspCode: '00' = Success, '97' = Invalid signature, '99' = Error\n     *    - Message: Chi ti\u1ebft k\u1ebft qu\u1ea3\n     *\n     * L\u01b0u \u00fd:\n     * - IPN c\u00f3 th\u1ec3 \u0111\u1ebfn tr\u01b0\u1edbc/sau vnpayCallback, c\u1ea7n ki\u1ec3m tra tr\u1ea1ng th\u00e1i tr\u01b0\u1edbc khi c\u1eadp nh\u1eadt\n     * - Idempotent: Kh\u00f4ng c\u1eadp nh\u1eadt 2 l\u1ea7n cho c\u00f9ng 1 giao d\u1ecbch\n     * - VNPay c\u00f3 th\u1ec3 g\u1eedi IPN nhi\u1ec1u l\u1ea7n n\u1ebfu kh\u00f4ng nh\u1eadn \u0111\u01b0\u1ee3c RspCode '00'\n     *\n     * @param Request $request POST data t\u1eeb VNPay server\n     * @return \\Illuminate\\Http\\JsonResponse JSON {RspCode, Message}\n     * @throws \\Exception Khi c\u00f3 l\u1ed7i c\u1eadp nh\u1eadt database\n     */\n    public function vnpayIpn(Request $request)
+=======
+     * Handle ZaloPay IPN (Callback from ZaloPay server)
+     */
+    public function zaloPayIpn(Request $request)
+>>>>>>> b05ccc9876a8b428a1cb263d9332ed1a628483f1
     {
-        $vnpayService = new VNPayService();
-        $data = $request->all();
-
-        $verifyResult = $vnpayService->verifyCallback($data);
-
-        if (!$verifyResult['valid']) {
+        $zaloPayService = new ZaloPayService();
+        
+        // Get JSON data from request body
+        $postData = $request->all();
+        
+        // Verify MAC
+        if (!$zaloPayService->verifyCallback($postData)) {
             return response()->json([
-                'RspCode' => '97',
-                'Message' => 'Invalid signature'
-            ], 400);
+                'returncode' => -1,
+                'returnmessage' => 'mac not equal'
+            ]);
         }
 
-        $orderId = $verifyResult['orderId'] ?? '';
+        // Parse callback data
+        $dataJson = $zaloPayService->parseCallbackData($postData['data'] ?? '{}');
+        
+        if (!$dataJson) {
+            return response()->json([
+                'returncode' => 0,
+                'returnmessage' => 'Invalid callback data'
+            ]);
+        }
 
-        if ($verifyResult['success']) {
-            // Payment successful - update database
-            try {
-                DB::beginTransaction();
+        $appTransId = $dataJson['apptransid'] ?? '';
 
-                $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $orderId)->first();
+        // Payment successful - update database
+        try {
+            DB::beginTransaction();
 
-                if ($lichSu) {
-                    $hocPhi = $lichSu->hocPhiHocKy;
+            $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $appTransId)->first();
 
-                    // Update payment record if not already updated
-                    if ($lichSu->ghi_chu && str_contains($lichSu->ghi_chu, 'Đang chờ')) {
-                        $lichSu->update([
-                            'ngay_dong' => now(),
-                            'ngan_hang' => $verifyResult['bankCode'] ?? null,
-                            'ghi_chu' => 'Thanh toán thành công qua VNPay. Mã giao dịch: ' . ($verifyResult['transactionNo'] ?? ''),
-                        ]);
+            if ($lichSu && str_contains($lichSu->ghi_chu ?? '', 'Đang chờ')) {
+                $hocPhi = $lichSu->hocPhiHocKy;
 
-                        // Update HocPhiHocKy
-                        $hocPhi->so_tien_da_dong += $lichSu->so_tien_dong;
-                        $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
-                        $hocPhi->ngay_dong_lan_cuoi = now();
-                        $hocPhi->save();
+                // Update payment record
+                $lichSu->update([
+                    'ngay_dong' => now(),
+                    'ghi_chu' => 'Thanh toán thành công qua ZaloPay. Mã giao dịch: ' . $appTransId,
+                ]);
 
-                        // Update status
-                        $hocPhi->updateTrangThai();
+                // Update HocPhiHocKy
+                $hocPhi->so_tien_da_dong += $lichSu->so_tien_dong;
+                $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
+                $hocPhi->ngay_dong_lan_cuoi = now();
+                $hocPhi->save();
 
-                        // Update chi tiết học phí môn thành đã thanh toán (nếu thanh toán đủ)
-                        if ($hocPhi->so_tien_con_lai == 0) {
-                            ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
-                                ->where('trang_thai', 'chua_thanh_toan')
-                                ->update(['trang_thai' => 'da_thanh_toan']);
+                // Update status
+                $hocPhi->updateTrangThai();
 
-                            // ✅ KHI ĐÓNG ĐỦ HỌC PHÍ: Tự động thêm vào danh sách chờ xếp lớp
-                            $hocPhiService = new HocPhiService();
-                            $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
-                        }
-                    }
+                // Update chi tiáº¿t há»c phÃ­ mÃ´n thÃ nh Ä‘Ã£ thanh toÃ¡n (náº¿u thanh toÃ¡n Ä‘á»§)
+                if ($hocPhi->so_tien_con_lai == 0) {
+                    ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                        ->where('trang_thai', 'chua_thanh_toan')
+                        ->update(['trang_thai' => 'da_thanh_toan']);
 
-                    DB::commit();
+                    // âœ… KHI ÄÃ“NG Äá»¦ Há»ŒC PHÃ: Tá»± Ä‘á»™ng thÃªm vÃ o danh sÃ¡ch chá» xáº¿p lá»›p
+                    $hocPhiService = new HocPhiService();
+                    $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
                 }
 
-                return response()->json([
-                    'RspCode' => '00',
-                    'Message' => 'Success'
-                ], 200);
+                DB::commit();
 
-            } catch (\Exception $e) {
-                DB::rollBack();
-                
                 return response()->json([
-                    'RspCode' => '99',
-                    'Message' => $e->getMessage()
-                ], 500);
+                    'returncode' => 1,
+                    'returnmessage' => 'success'
+                ]);
             }
-        } else {
-            // Payment failed - delete pending record
-            LichSuDongHocPhi::where('ma_giao_dich', $orderId)->delete();
 
+            DB::rollBack();
             return response()->json([
-                'RspCode' => $verifyResult['responseCode'] ?? '01',
-                'Message' => $verifyResult['message'] ?? 'Payment failed'
-            ], 200);
+                'returncode' => 0,
+                'returnmessage' => 'Order not found'
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            Log::error('ZaloPay IPN Error: ' . $e->getMessage());
+            
+            return response()->json([
+                'returncode' => 0, // ZaloPay server sẽ callback lại (tối đa 3 lần)
+                'returnmessage' => $e->getMessage()
+            ]);
         }
     }
 }

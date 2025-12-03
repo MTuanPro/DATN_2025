@@ -31,9 +31,8 @@ class XepLopController extends Controller
         // Lọc theo trạng thái
         if ($request->filled('trang_thai')) {
             $query->where('trang_thai', $request->trang_thai);
-        } else {
-            $query->where('trang_thai', 'cho_xep_lop'); // Mặc định chỉ hiện chờ xếp lớp
         }
+        // Mặc định hiển thị tất cả trạng thái
 
         // Lọc theo môn học
         if ($request->filled('mon_hoc_id')) {
@@ -44,6 +43,7 @@ class XepLopController extends Controller
 
         // Thống kê
         $thongKe = [
+            'cho_dong_hoc_phi' => DangKyMonHocTam::where('trang_thai', 'cho_dong_hoc_phi')->count(),
             'cho_xep_lop' => DangKyMonHocTam::choXepLop()->count(),
             'da_xep_lop' => DangKyMonHocTam::daXepLop()->count(),
             'that_bai' => DangKyMonHocTam::thatBai()->count(),
@@ -67,34 +67,76 @@ class XepLopController extends Controller
 
         DB::beginTransaction();
         try {
-            // Lấy tất cả đăng ký chờ xếp lớp, sắp xếp theo độ ưu tiên
-            $dangKys = DangKyMonHocTam::where('hoc_ky_id', $hocKyId)
+            // Lấy tất cả đăng ký chờ xếp lớp, nhóm theo môn học
+            $dangKysByMon = DangKyMonHocTam::where('hoc_ky_id', $hocKyId)
                 ->where('trang_thai', 'cho_xep_lop')
-                ->orderBy('uu_tien', 'desc')
-                ->orderBy('ngay_dang_ky', 'asc')
-                ->get();
+                ->get()
+                ->groupBy('mon_hoc_id');
 
             $soLuongXepThanhCong = 0;
             $soLuongThatBai = 0;
+            $soLuongChoXepLop = 0;
+            $monChuaDu = [];
 
-            foreach ($dangKys as $dangKy) {
-                $result = $this->xepLopChoSinhVien($dangKy);
+            foreach ($dangKysByMon as $monHocId => $dangKysMon) {
+                // Kiểm tra số lượng sinh viên đăng ký môn này
+                if ($dangKysMon->count() < 2) {
+                    // Chưa đủ 2 sinh viên, CẬP NHẬT lý do nhưng GIỮ NGUYÊN trạng thái "cho_xep_lop"
+                    foreach ($dangKysMon as $dangKy) {
+                        $dangKy->ly_do_that_bai = 'Chưa đủ 2 sinh viên để mở lớp';
+                        $dangKy->save();
+                        $soLuongChoXepLop++;
+                    }
+                    $monChuaDu[] = $dangKysMon->first()->monHoc->ten_mon ?? "Môn #$monHocId";
+                    continue;
+                }
 
-                if ($result['success']) {
-                    $soLuongXepThanhCong++;
-                } else {
-                    $soLuongThatBai++;
+                // Đủ số lượng, XÓA lý do thất bại cũ (nếu có) và tiến hành xếp lớp
+                foreach ($dangKysMon as $dangKy) {
+                    if ($dangKy->ly_do_that_bai == 'Chưa đủ 2 sinh viên để mở lớp') {
+                        $dangKy->ly_do_that_bai = null;
+                        $dangKy->save();
+                    }
+                }
+
+                // Tiến hành xếp lớp theo thứ tự ưu tiên
+                $dangKysSorted = $dangKysMon->sortByDesc('uu_tien')
+                    ->sortBy('ngay_dang_ky');
+
+                foreach ($dangKysSorted as $dangKy) {
+                    $result = $this->xepLopChoSinhVien($dangKy);
+
+                    if ($result['success']) {
+                        $soLuongXepThanhCong++;
+                    } else {
+                        $soLuongThatBai++;
+                    }
                 }
             }
 
             DB::commit();
 
+            $message = "Xếp lớp hoàn tất! Thành công: {$soLuongXepThanhCong}, Thất bại: {$soLuongThatBai}";
+            
+            if ($soLuongChoXepLop > 0) {
+                $message .= ", Chờ đủ sinh viên: {$soLuongChoXepLop}";
+                if (!empty($monChuaDu)) {
+                    $message .= " (" . implode(', ', array_slice($monChuaDu, 0, 3));
+                    if (count($monChuaDu) > 3) {
+                        $message .= "...";
+                    }
+                    $message .= ")";
+                }
+            }
+
             return response()->json([
                 'success' => true,
-                'message' => "Xếp lớp hoàn tất! Thành công: {$soLuongXepThanhCong}, Thất bại: {$soLuongThatBai}",
+                'message' => $message,
                 'data' => [
                     'thanh_cong' => $soLuongXepThanhCong,
-                    'that_bai' => $soLuongThatBai
+                    'that_bai' => $soLuongThatBai,
+                    'cho_xep_lop' => $soLuongChoXepLop,
+                    'mon_chua_du' => $monChuaDu
                 ]
             ]);
         } catch (\Exception $e) {
@@ -187,6 +229,19 @@ class XepLopController extends Controller
         try {
             $dangKy = DangKyMonHocTam::findOrFail($request->dang_ky_tam_id);
             $lopHocPhan = LopHocPhan::findOrFail($request->lop_hoc_phan_id);
+
+            // Kiểm tra số lượng sinh viên đã đăng ký môn này
+            $soLuongDangKyMon = DangKyMonHocTam::where('hoc_ky_id', $dangKy->hoc_ky_id)
+                ->where('mon_hoc_id', $dangKy->mon_hoc_id)
+                ->where('trang_thai', 'cho_xep_lop')
+                ->count();
+
+            if ($soLuongDangKyMon < 2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Không thể xếp lớp! Môn học này chỉ có {$soLuongDangKyMon} sinh viên đăng ký (cần tối thiểu 2 sinh viên)."
+                ], 400);
+            }
 
             // Kiểm tra lớp còn chỗ không - tính từ bảng thực tế
             $sucChua = $lopHocPhan->suc_chua ?? 0;
@@ -284,7 +339,7 @@ class XepLopController extends Controller
             ->findOrFail($lopHocPhanId);
 
         $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
-            ->with(['sinhVien.lopHanhChinh', 'dangKyTam'])
+            ->with(['sinhVien', 'dangKyTam'])
             ->orderBy('ngay_xep_lop', 'asc')
             ->get();
 

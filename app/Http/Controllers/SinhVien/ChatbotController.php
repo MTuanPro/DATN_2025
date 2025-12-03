@@ -11,6 +11,7 @@ use App\Services\AdvancedChatbotMatchingService;
 use App\Services\ChatbotContextService;
 use App\Services\ChatbotGPTService;
 use App\Services\ChatbotGeminiService;
+use App\Services\ChatbotDatabaseService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +25,7 @@ class ChatbotController extends Controller
     protected $contextService;
     protected $gptService;
     protected $geminiService;
+    protected $databaseService;
 
     /**
      * Khởi tạo ChatbotController với 5 service dependencies cho AI chatbot
@@ -47,13 +49,15 @@ class ChatbotController extends Controller
         AdvancedChatbotMatchingService $advancedMatchingService,
         ChatbotContextService $contextService,
         ChatbotGPTService $gptService,
-        ChatbotGeminiService $geminiService
+        ChatbotGeminiService $geminiService,
+        ChatbotDatabaseService $databaseService
     ) {
         $this->matchingService = $matchingService;
         $this->advancedMatchingService = $advancedMatchingService;
         $this->contextService = $contextService;
         $this->gptService = $gptService;
         $this->geminiService = $geminiService;
+        $this->databaseService = $databaseService;
     }
 
     /**
@@ -224,15 +228,40 @@ class ChatbotController extends Controller
         $usedAI = false;
         $aiProvider = null;
         $aiTokensUsed = 0;
+        $usedDatabase = false;
         
-        if ($knowledge) {
+        // BƯỚC 1: Thử query database trước (ưu tiên cao nhất cho câu hỏi cụ thể)
+        $dbIntent = $this->databaseService->detectIntent($cleanMessage, $sinhVien->id);
+        
+        if ($dbIntent['intent'] && $dbIntent['confidence'] > 0.7) {
+            $dbResponse = $this->databaseService->queryDatabase(
+                $dbIntent['intent'],
+                $sinhVien->id,
+                $dbIntent['entities']
+            );
+            
+            if ($dbResponse) {
+                $botResponse = $dbResponse;
+                $usedDatabase = true;
+                $knowledgeId = null;
+                
+                Log::info('Chatbot used Database Query', [
+                    'intent' => $dbIntent['intent'],
+                    'entities' => $dbIntent['entities'],
+                    'question' => $cleanMessage,
+                ]);
+            }
+        }
+        
+        // BƯỚC 2: Nếu không query được database, thử knowledge base
+        if (!$usedDatabase && $knowledge) {
             // Có câu trả lời từ knowledge base
             $botResponse = $knowledge->cau_tra_loi;
             $knowledgeId = $knowledge->id;
 
             // Tăng lượt truy cập
             $knowledge->tangLuotTruyCap();
-        } else {
+        } elseif (!$usedDatabase && !$knowledge) {
             // Không tìm thấy trong knowledge base
             $knowledgeId = null;
             

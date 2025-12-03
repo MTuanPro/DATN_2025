@@ -166,9 +166,17 @@
                             </table>
 
                             @if ($hocPhi->so_tien_con_lai > 0)
-                                <a href="{{ route('dao-tao.hoc-phi.payment', $hocPhi->id) }}" class="btn btn-success w-100 mt-3">
-                                    <i class="bi bi-cash"></i> Ghi nhận thanh toán
-                                </a>
+                                <div class="d-grid gap-2 mt-3">
+                                    <a href="{{ route('dao-tao.hoc-phi.zalopay-payment', $hocPhi->id) }}" 
+                                       class="btn btn-primary w-100" 
+                                       target="_blank"
+                                       title="Xem trang thanh toán ZaloPay">
+                                        <i class="bi bi-credit-card-2-front"></i> Xem thanh toán ZaloPay
+                                    </a>
+                                    <a href="{{ route('dao-tao.hoc-phi.payment', $hocPhi->id) }}" class="btn btn-success w-100">
+                                        <i class="bi bi-cash"></i> Ghi nhận thanh toán
+                                    </a>
+                                </div>
                             @endif
                         </div>
                     </div>

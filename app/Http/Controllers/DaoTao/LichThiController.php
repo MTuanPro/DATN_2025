@@ -974,7 +974,7 @@ class LichThiController extends Controller
         // Lọc theo phòng nếu có
         $phongThiId = request('phong_thi_id');
         $sinhViens = $lichThi->lichThiSinhViens()
-            ->with(['sinhVien.lopHanhChinh', 'phongThi'])
+            ->with(['sinhVien', 'phongThi'])
             ->when($phongThiId, function($q) use ($phongThiId) {
                 $q->where('phong_thi_id', $phongThiId);
             })

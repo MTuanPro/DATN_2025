@@ -74,15 +74,6 @@
                             <h6 class="text-primary mb-3">Thông tin học vụ</h6>
                             <table class="table table-borderless">
                                 <tr>
-                                    <th width="40%">Lớp:</th>
-                                    <td>
-                                        @if ($sinhVien->lopHanhChinh)
-                                            <span class="badge bg-secondary">{{ $sinhVien->lopHanhChinh->ma_lop }}</span>
-                                            <br>{{ $sinhVien->lopHanhChinh->ten_lop }}
-                                        @endif
-                                    </td>
-                                </tr>
-                                <tr>
                                     <th>Khóa học:</th>
                                     <td>
                                         @if ($sinhVien->khoaHoc)

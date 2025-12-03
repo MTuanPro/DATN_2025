@@ -52,6 +52,13 @@ class HocPhiService
                 ]
             );
 
+            // ✅ Cập nhật phi_dich_vu từ cấu hình hiện tại nếu học phí đã tồn tại và chưa thanh toán
+            // Chỉ cập nhật khi chưa thanh toán để tránh ảnh hưởng đến các giao dịch đã thực hiện
+            if ($hocPhi->wasRecentlyCreated === false && $hocPhi->so_tien_da_dong == 0) {
+                $hocPhi->phi_dich_vu = $cauHinh->phi_dich_vu;
+                $hocPhi->save();
+            }
+
             // Process each course registration
             foreach ($lopHocPhanSinhVienIds as $lopHocPhanSinhVienId) {
                 $lopHocPhanSinhVien = LopHocPhanSinhVien::with(['lopHocPhan.monHoc'])
@@ -283,6 +290,13 @@ class HocPhiService
                     'trang_thai' => 'chua_nop',
                 ]
             );
+
+            // ✅ Cập nhật phi_dich_vu từ cấu hình hiện tại nếu học phí đã tồn tại và chưa thanh toán
+            // Chỉ cập nhật khi chưa thanh toán để tránh ảnh hưởng đến các giao dịch đã thực hiện
+            if ($hocPhi->wasRecentlyCreated === false && $hocPhi->so_tien_da_dong == 0) {
+                $hocPhi->phi_dich_vu = $cauHinh->phi_dich_vu;
+                $hocPhi->save();
+            }
 
             // Get subject information
             $monHoc = \App\Models\DaoTao\MonHoc::find($monHocId);

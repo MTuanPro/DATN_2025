@@ -57,14 +57,6 @@ class GiangVien extends Model
     }
 
     /**
-     * Relationship: Giảng viên chủ nhiệm nhiều lớp hành chính
-     */
-    public function lopHanhChinhChuNhiem()
-    {
-        return $this->hasMany(\App\Models\DaoTao\LopHanhChinh::class, 'giang_vien_chu_nhiem_id');
-    }
-
-    /**
      * Relationship: Giảng viên dạy nhiều lớp học phần
      */
     public function lopHocPhans()
