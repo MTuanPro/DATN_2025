@@ -89,8 +89,8 @@ Route::middleware(['guest', 'prevent.back'])->group(function () {
 Route::get('/reset-password/{token}', [AdminUserController::class, 'showResetForm'])->name('password.reset.form');
 Route::post('/reset-password', [AdminUserController::class, 'processReset'])->name('password.reset.process');
 
-// Logout (Cần đăng nhập)
-Route::post('/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+// Logout (Cần đăng nhập) - Hỗ trợ cả GET và POST
+Route::match(['get', 'post'], '/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
 
 // ========== Profile & Settings Routes (All roles) ==========
 Route::middleware(['auth'])->group(function () {
