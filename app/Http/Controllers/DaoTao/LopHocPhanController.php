@@ -35,7 +35,15 @@ class LopHocPhanController extends Controller
      */
     public function index(Request $request)
     {
-        $query = LopHocPhan::with(['monHoc', 'hocKy', 'lopHocPhanGiangVien.giangVien']);
+        $query = LopHocPhan::with([
+            'monHoc', 
+            'hocKy', 
+            'lopHocPhanGiangVien' => function($q) {
+                $q->orderByRaw("CASE WHEN vai_tro = 'giang_vien_chinh' THEN 1 WHEN vai_tro = 'giang_vien_phu' THEN 2 ELSE 3 END")
+                  ->orderBy('created_at', 'asc');
+            },
+            'lopHocPhanGiangVien.giangVien'
+        ]);
 
         // Lọc theo học kỳ
         if ($request->has('hoc_ky_id') && $request->hoc_ky_id != '') {

@@ -16,7 +16,15 @@ class PhanCongGiangDayController extends Controller
      */
     public function index($lopHocPhanId)
     {
-        $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy', 'lopHocPhanGiangVien.giangVien'])->findOrFail($lopHocPhanId);
+        $lopHocPhan = LopHocPhan::with([
+            'monHoc', 
+            'hocKy', 
+            'lopHocPhanGiangVien' => function($q) {
+                $q->orderByRaw("CASE WHEN vai_tro = 'giang_vien_chinh' THEN 1 WHEN vai_tro = 'giang_vien_phu' THEN 2 ELSE 3 END")
+                  ->orderBy('created_at', 'asc');
+            },
+            'lopHocPhanGiangVien.giangVien'
+        ])->findOrFail($lopHocPhanId);
 
         // Chỉ lấy những giảng viên có thể dạy môn học này
         $giangViens = GiangVien::whereHas('monHocs', function ($query) use ($lopHocPhan) {
@@ -80,7 +88,8 @@ class PhanCongGiangDayController extends Controller
         ]);
 
         return redirect()->back()
-            ->with('success', 'Phân công giảng viên thành công!');
+            ->with('success', 'Phân công giảng viên thành công!')
+            ->with('refresh', true); // Thêm flag để frontend biết cần refresh
     }
 
     /**
@@ -114,7 +123,8 @@ class PhanCongGiangDayController extends Controller
         $phanCong->update($validated);
 
         return redirect()->back()
-            ->with('success', 'Cập nhật phân công thành công!');
+            ->with('success', 'Cập nhật phân công thành công!')
+            ->with('refresh', true);
     }
 
     /**
@@ -126,6 +136,6 @@ class PhanCongGiangDayController extends Controller
         $phanCong->delete();
 
         return redirect()->back()
-            ->with('success', 'Xóa phân công thành công!');
-    }
+            ->with('success', 'Xóa phân công thành công!')
+            ->with('refresh', true);
 }

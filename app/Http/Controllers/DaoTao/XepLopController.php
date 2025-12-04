@@ -79,19 +79,7 @@ class XepLopController extends Controller
             $monChuaDu = [];
 
             foreach ($dangKysByMon as $monHocId => $dangKysMon) {
-                // Kiểm tra số lượng sinh viên đăng ký môn này
-                if ($dangKysMon->count() < 2) {
-                    // Chưa đủ 2 sinh viên, CẬP NHẬT lý do nhưng GIỮ NGUYÊN trạng thái "cho_xep_lop"
-                    foreach ($dangKysMon as $dangKy) {
-                        $dangKy->ly_do_that_bai = 'Chưa đủ 2 sinh viên để mở lớp';
-                        $dangKy->save();
-                        $soLuongChoXepLop++;
-                    }
-                    $monChuaDu[] = $dangKysMon->first()->monHoc->ten_mon ?? "Môn #$monHocId";
-                    continue;
-                }
-
-                // Đủ số lượng, XÓA lý do thất bại cũ (nếu có) và tiến hành xếp lớp
+                // XÓA lý do thất bại cũ (nếu có) trước khi xếp lớp
                 foreach ($dangKysMon as $dangKy) {
                     if ($dangKy->ly_do_that_bai == 'Chưa đủ 2 sinh viên để mở lớp') {
                         $dangKy->ly_do_that_bai = null;
@@ -100,6 +88,7 @@ class XepLopController extends Controller
                 }
 
                 // Tiến hành xếp lớp theo thứ tự ưu tiên
+                // Logic kiểm tra lớp trống sẽ được xử lý trong xepLopChoSinhVien
                 $dangKysSorted = $dangKysMon->sortByDesc('uu_tien')
                     ->sortBy('ngay_dang_ky');
 
@@ -109,7 +98,19 @@ class XepLopController extends Controller
                     if ($result['success']) {
                         $soLuongXepThanhCong++;
                     } else {
-                        $soLuongThatBai++;
+                        // Kiểm tra trạng thái sau khi xếp lớp
+                        $dangKy->refresh();
+                        if ($dangKy->trang_thai == 'cho_xep_lop') {
+                            // Vẫn ở trạng thái chờ xếp lớp (do chưa đủ sinh viên)
+                            $soLuongChoXepLop++;
+                            $monTen = $dangKy->monHoc->ten_mon ?? "Môn #$monHocId";
+                            if (!in_array($monTen, $monChuaDu)) {
+                                $monChuaDu[] = $monTen;
+                            }
+                        } else {
+                            // Thất bại vì lý do khác
+                            $soLuongThatBai++;
+                        }
                     }
                 }
             }
@@ -161,52 +162,90 @@ class XepLopController extends Controller
             ->whereIn('trang_thai_lop', ['mo_dang_ky', 'dang_hoc'])
             ->get();
 
-        foreach ($lopHocPhans as $lopHocPhan) {
-            // Lấy sức chứa và số lượng thực tế từ bảng lop_hoc_phan_sinh_vien
-            $sucChua = $lopHocPhan->suc_chua ?? 0;
+        // Tính số lượng sinh viên hiện có trong từng lớp và sắp xếp theo ưu tiên
+        // Ưu tiên lớp có nhiều sinh viên trước (lớp đã có sinh viên)
+        $lopHocPhansWithCount = $lopHocPhans->map(function ($lopHocPhan) {
             $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
                 ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
                 ->count();
+            return [
+                'lop' => $lopHocPhan,
+                'so_luong' => $soLuongThucTe
+            ];
+        })->sortByDesc('so_luong'); // Sắp xếp: lớp có nhiều sinh viên trước
+
+        // Đếm số lượng sinh viên đang chờ xếp cùng môn
+        $soLuongChoXepCungMon = DangKyMonHocTam::where('hoc_ky_id', $dangKy->hoc_ky_id)
+            ->where('mon_hoc_id', $dangKy->mon_hoc_id)
+            ->where('trang_thai', 'cho_xep_lop')
+            ->count();
+
+        foreach ($lopHocPhansWithCount as $item) {
+            $lopHocPhan = $item['lop'];
+            $soLuongThucTe = $item['so_luong'];
+            $sucChua = $lopHocPhan->suc_chua ?? 0;
 
             // Kiểm tra còn chỗ không
-            if ($soLuongThucTe < $sucChua) {
-                // Đồng bộ so_luong_dang_ky với số lượng thực tế trước khi xếp lớp
-                if ($lopHocPhan->so_luong_dang_ky != $soLuongThucTe) {
-                    $lopHocPhan->so_luong_dang_ky = $soLuongThucTe;
-                    $lopHocPhan->save();
-                }
-
-                // Kiểm tra sinh viên đã đăng ký lớp này chưa
-                $exists = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
-                    ->where('sinh_vien_id', $dangKy->sinh_vien_id)
-                    ->exists();
-
-                if ($exists) {
-                    continue; // Đã đăng ký rồi, thử lớp khác
-                }
-
-                // Xếp vào lớp này
-                // Observer sẽ tự động cập nhật so_luong_dang_ky, không cần cập nhật thủ công
-                LopHocPhanSinhVien::create([
-                    'lop_hoc_phan_id' => $lopHocPhan->id,
-                    'sinh_vien_id' => $dangKy->sinh_vien_id,
-                    'dang_ky_tam_id' => $dangKy->id,
-                    'ngay_dang_ky' => $dangKy->ngay_dang_ky,
-                    'ngay_xep_lop' => now(),
-                    'phuong_thuc_xep' => 'tu_dong',
-                    'trang_thai' => 'da_xep_lop',
-                ]);
-
-                // Cập nhật trạng thái đăng ký tạm
-                $dangKy->update([
-                    'trang_thai' => 'da_xep_lop',
-                ]);
-
-                return ['success' => true, 'lop_hoc_phan_id' => $lopHocPhan->id];
+            if ($soLuongThucTe >= $sucChua) {
+                continue; // Lớp đã đầy
             }
+
+            // Kiểm tra quy tắc: Nếu lớp trống (0 sinh viên) thì cần ít nhất 2 sinh viên đang chờ xếp
+            if ($soLuongThucTe == 0 && $soLuongChoXepCungMon < 2) {
+                continue; // Lớp trống nhưng chưa đủ 2 sinh viên, bỏ qua
+            }
+
+            // Đồng bộ so_luong_dang_ky với số lượng thực tế trước khi xếp lớp
+            if ($lopHocPhan->so_luong_dang_ky != $soLuongThucTe) {
+                $lopHocPhan->so_luong_dang_ky = $soLuongThucTe;
+                $lopHocPhan->save();
+            }
+
+            // Kiểm tra sinh viên đã đăng ký lớp này chưa
+            $exists = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
+                ->where('sinh_vien_id', $dangKy->sinh_vien_id)
+                ->exists();
+
+            if ($exists) {
+                continue; // Đã đăng ký rồi, thử lớp khác
+            }
+
+            // Xếp vào lớp này
+            // Observer sẽ tự động cập nhật so_luong_dang_ky, không cần cập nhật thủ công
+            LopHocPhanSinhVien::create([
+                'lop_hoc_phan_id' => $lopHocPhan->id,
+                'sinh_vien_id' => $dangKy->sinh_vien_id,
+                'dang_ky_tam_id' => $dangKy->id,
+                'ngay_dang_ky' => $dangKy->ngay_dang_ky,
+                'ngay_xep_lop' => now(),
+                'phuong_thuc_xep' => 'tu_dong',
+                'trang_thai' => 'da_xep_lop',
+            ]);
+
+            // Cập nhật trạng thái đăng ký tạm
+            $dangKy->update([
+                'trang_thai' => 'da_xep_lop',
+            ]);
+
+            return ['success' => true, 'lop_hoc_phan_id' => $lopHocPhan->id];
         }
 
         // Không tìm thấy lớp phù hợp
+        // Kiểm tra xem có phải do lớp trống chưa đủ sinh viên không
+        $coLopTrong = $lopHocPhansWithCount->filter(function ($item) {
+            return $item['so_luong'] == 0;
+        })->isNotEmpty();
+
+        if ($coLopTrong && $soLuongChoXepCungMon < 2) {
+            // Có lớp trống nhưng chưa đủ 2 sinh viên, giữ trạng thái chờ xếp lớp
+            $dangKy->update([
+                'trang_thai' => 'cho_xep_lop',
+                'ly_do_that_bai' => 'Chưa đủ 2 sinh viên để mở lớp (hiện có: ' . $soLuongChoXepCungMon . ' sinh viên)'
+            ]);
+            return ['success' => false, 'message' => 'Chưa đủ 2 sinh viên để mở lớp'];
+        }
+
+        // Không còn chỗ hoặc lý do khác
         $dangKy->update([
             'trang_thai' => 'that_bai',
             'ly_do_that_bai' => 'Không còn chỗ trong các lớp học phần'
@@ -230,19 +269,6 @@ class XepLopController extends Controller
             $dangKy = DangKyMonHocTam::findOrFail($request->dang_ky_tam_id);
             $lopHocPhan = LopHocPhan::findOrFail($request->lop_hoc_phan_id);
 
-            // Kiểm tra số lượng sinh viên đã đăng ký môn này
-            $soLuongDangKyMon = DangKyMonHocTam::where('hoc_ky_id', $dangKy->hoc_ky_id)
-                ->where('mon_hoc_id', $dangKy->mon_hoc_id)
-                ->where('trang_thai', 'cho_xep_lop')
-                ->count();
-
-            if ($soLuongDangKyMon < 2) {
-                return response()->json([
-                    'success' => false,
-                    'message' => "Không thể xếp lớp! Môn học này chỉ có {$soLuongDangKyMon} sinh viên đăng ký (cần tối thiểu 2 sinh viên)."
-                ], 400);
-            }
-
             // Kiểm tra lớp còn chỗ không - tính từ bảng thực tế
             $sucChua = $lopHocPhan->suc_chua ?? 0;
             $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
@@ -254,6 +280,21 @@ class XepLopController extends Controller
                     'success' => false,
                     'message' => 'Lớp học phần đã đầy!'
                 ], 400);
+            }
+
+            // Kiểm tra quy tắc: Nếu lớp trống (0 sinh viên) thì cần ít nhất 2 sinh viên đang chờ xếp cùng môn
+            if ($soLuongThucTe == 0) {
+                $soLuongChoXepCungMon = DangKyMonHocTam::where('hoc_ky_id', $dangKy->hoc_ky_id)
+                    ->where('mon_hoc_id', $dangKy->mon_hoc_id)
+                    ->where('trang_thai', 'cho_xep_lop')
+                    ->count();
+
+                if ($soLuongChoXepCungMon < 2) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => "Không thể xếp vào lớp trống! Cần ít nhất 2 sinh viên đang chờ xếp cùng môn (hiện có: {$soLuongChoXepCungMon} sinh viên)."
+                    ], 400);
+                }
             }
 
             // Đồng bộ so_luong_dang_ky với số lượng thực tế trước khi xếp lớp
@@ -379,7 +420,8 @@ class XepLopController extends Controller
             })
             ->filter(function ($lop) {
                 return $lop['con_trong'] > 0;
-            });
+            })
+            ->sortByDesc('so_luong_hien_tai'); // Sắp xếp: lớp có nhiều sinh viên trước
 
         return response()->json([
             'success' => true,

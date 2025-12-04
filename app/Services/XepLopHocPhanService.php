@@ -132,23 +132,60 @@ class XepLopHocPhanService
     {
         // 1. Lấy các lớp có thể xếp
         $dsLop = LopHocPhan::where('mon_hoc_id', $dangKy->getAttribute('mon_hoc_id'))
-->where('hoc_ky_id', $dangKy->getAttribute('hoc_ky_id'))
+            ->where('hoc_ky_id', $dangKy->getAttribute('hoc_ky_id'))
             ->where('trang_thai_lop', 'mo_dang_ky')
-            ->whereColumn('so_luong_dang_ky', '<', 'suc_chua')
             ->get();
 
         if ($dsLop->isEmpty()) {
             return null;
         }
 
-        // 2. Lấy lịch học hiện tại của sinh viên
+        // 2. Tính số lượng sinh viên hiện có trong từng lớp và sắp xếp theo ưu tiên
+        // Ưu tiên lớp có nhiều sinh viên trước (lớp đã có sinh viên)
+        $dsLopWithCount = $dsLop->map(function ($lop) {
+            $soLuongThucTe = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lop->id)
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                ->count();
+            $sucChua = $lop->suc_chua ?? 0;
+            return [
+                'lop' => $lop,
+                'so_luong' => $soLuongThucTe,
+                'suc_chua' => $sucChua,
+                'con_trong' => $sucChua - $soLuongThucTe
+            ];
+        })
+        ->filter(function ($item) {
+            return $item['con_trong'] > 0; // Chỉ lấy lớp còn chỗ
+        })
+        ->sortByDesc('so_luong'); // Sắp xếp: lớp có nhiều sinh viên trước
+
+        if ($dsLopWithCount->isEmpty()) {
+            return null;
+        }
+
+        // 3. Đếm số lượng sinh viên đang chờ xếp cùng môn
+        $soLuongChoXepCungMon = DangKyMonHocTam::where('hoc_ky_id', $dangKy->getAttribute('hoc_ky_id'))
+            ->where('mon_hoc_id', $dangKy->getAttribute('mon_hoc_id'))
+            ->where('trang_thai', 'cho_xep_lop')
+            ->count();
+
+        // 4. Lấy lịch học hiện tại của sinh viên
         $lichHienTai = $this->layLichHocHienTai(
             $dangKy->getAttribute('sinh_vien_id'),
             $dangKy->getAttribute('hoc_ky_id')
         );
 
-        // 3. Tìm lớp không trùng lịch
-        foreach ($dsLop as $lop) {
+        // 5. Tìm lớp không trùng lịch, ưu tiên lớp có sinh viên
+        foreach ($dsLopWithCount as $item) {
+            $lop = $item['lop'];
+            $soLuongThucTe = $item['so_luong'];
+
+            // Kiểm tra quy tắc: Nếu lớp trống (0 sinh viên) thì cần ít nhất 2 sinh viên đang chờ xếp
+            if ($soLuongThucTe == 0 && $soLuongChoXepCungMon < 2) {
+                continue; // Lớp trống nhưng chưa đủ 2 sinh viên, bỏ qua
+            }
+
+            // Kiểm tra không trùng lịch
             if (!$this->kiemTraTrungLich($lichHienTai, $lop->getKey())) {
                 return $lop;
             }
