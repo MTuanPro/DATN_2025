@@ -24,14 +24,22 @@ class GiangVienController extends Controller
     {
         $query = GiangVien::with(['khoa', 'trinhDo', 'user', 'monHocs']);
 
-        // Tìm kiếm
+        // Tìm kiếm tương đối
         if ($request->filled('search')) {
-            $search = $request->search;
+            $search = trim($request->search);
+            
             $query->where(function ($q) use ($search) {
                 $q->where('ma_giang_vien', 'like', "%{$search}%")
                     ->orWhere('ho_ten', 'like', "%{$search}%")
                     ->orWhere('email', 'like', "%{$search}%")
-                    ->orWhere('so_dien_thoai', 'like', "%{$search}%");
+                    ->orWhere('so_dien_thoai', 'like', "%{$search}%")
+                    ->orWhereHas('khoa', function ($query) use ($search) {
+                        $query->where('ten_khoa', 'like', "%{$search}%")
+                              ->orWhere('ma_khoa', 'like', "%{$search}%");
+                    })
+                    ->orWhereHas('trinhDo', function ($query) use ($search) {
+                        $query->where('ten_trinh_do', 'like', "%{$search}%");
+                    });
             });
         }
 
