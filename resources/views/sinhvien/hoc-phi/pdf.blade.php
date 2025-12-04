@@ -478,35 +478,66 @@
         <strong>So tien viet bang chu:</strong> {{ $amountInWords }}
     </div>
     
-    @if ($hocPhi->lichSuDongHocPhi->isNotEmpty())
+    @php
+        // Lọc bỏ các giao dịch đang chờ xác nhận
+        $lichSuThanhToan = $hocPhi->lichSuDongHocPhi->filter(function($ls) {
+            return !str_contains($ls->ghi_chu ?? '', 'Đang chờ');
+        });
+    @endphp
+    
+    @if ($lichSuThanhToan->isNotEmpty())
         <div class="payment-history-section">
             <div class="section-header">CHI TIET THANH TOAN</div>
             <table class="detail-table">
                 <thead>
                     <tr>
-                        <th width="40">STT</th>
-                        <th width="120">NGAY THANH TOAN</th>
-                        <th width="120">SO TIEN (d)</th>
-                        <th>HINH THUC THANH TOAN</th>
-                        <th width="140">MA GIAO DICH</th>
+                        <th width="35">STT</th>
+                        <th width="100">NGAY THANH TOAN</th>
+                        <th width="100">SO TIEN (d)</th>
+                        <th width="100">HINH THUC</th>
+                        <th width="120">MA GIAO DICH</th>
+                        <th>TRANG THAI / GHI CHU</th>
                     </tr>
                 </thead>
                 <tbody>
-                    @foreach ($hocPhi->lichSuDongHocPhi as $index => $ls)
+                    @foreach ($lichSuThanhToan as $index => $ls)
+                        @php
+                            // Xác định trạng thái thanh toán
+                            $trangThai = '';
+                            $ghiChu = $ls->ghi_chu ?? '';
+                            
+                            if (str_contains($ghiChu, 'thành công') || str_contains($ghiChu, 'Thanh toán thành công')) {
+                                $trangThai = 'THÀNH CÔNG';
+                            } elseif (str_contains($ghiChu, 'Đang chờ')) {
+                                $trangThai = 'ĐANG CHỜ';
+                            } elseif (str_contains($ghiChu, 'hủy') || str_contains($ghiChu, 'Hủy')) {
+                                $trangThai = 'ĐÃ HỦY';
+                            } elseif (str_contains($ghiChu, 'thất bại') || str_contains($ghiChu, 'Thất bại')) {
+                                $trangThai = 'THẤT BẠI';
+                            } else {
+                                $trangThai = 'ĐÃ XÁC NHẬN';
+                            }
+                        @endphp
                         <tr>
                             <td class="text-center">{{ $index + 1 }}</td>
                             <td class="text-center">{{ $ls->ngay_dong->format('d/m/Y H:i') }}</td>
                             <td class="text-right amount">{{ number_format($ls->so_tien_dong, 0, ',', '.') }}</td>
-                            <td class="text-center text-uppercase">
+                            <td class="text-center text-uppercase" style="font-size: 9pt;">
                                 @if($ls->phuong_thuc_thanh_toan == 'vnpay')
-                                    CHUYEN KHOAN QUA VNPAY
+                                    VNPAY
                                 @elseif($ls->phuong_thuc_thanh_toan == 'tien_mat')
                                     TIEN MAT
                                 @else
                                     {{ strtoupper($ls->phuong_thuc_thanh_toan) }}
                                 @endif
                             </td>
-                            <td class="text-center subject-code">{{ $ls->ma_giao_dich ?? '-' }}</td>
+                            <td class="text-center subject-code" style="font-size: 9pt;">{{ $ls->ma_giao_dich ?? '-' }}</td>
+                            <td style="font-size: 9pt;">
+                                <strong style="color: {{ $trangThai == 'THÀNH CÔNG' ? '#2e7d32' : ($trangThai == 'ĐÃ HỦY' || $trangThai == 'THẤT BẠI' ? '#c62828' : '#f57c00') }};">{{ $trangThai }}</strong>
+                                @if($ghiChu && $ghiChu != '')
+                                    <br><span style="font-size: 8pt; color: #666;">{{ mb_strlen($ghiChu) > 80 ? mb_substr($ghiChu, 0, 80) . '...' : $ghiChu }}</span>
+                                @endif
+                            </td>
                         </tr>
                     @endforeach
                 </tbody>

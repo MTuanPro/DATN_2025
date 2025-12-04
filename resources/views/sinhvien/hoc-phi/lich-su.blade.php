@@ -30,12 +30,12 @@
                             <h4>Lịch sử thanh toán - {{ $hocPhi->hocKy->ten_hoc_ky }}</h4>
                         </div>
                         <div class="card-body">
-                            @forelse ($hocPhi->lichSuDongHocPhi as $ls)
+                            @forelse ($lichSuDong as $ls)
                                 <div class="card mb-3">
                                     <div class="card-body">
                                         <div class="row">
                                             <div class="col-md-8">
-                                                <h5 class="text-success">{{ number_format($ls->so_tien, 0, ',', '.') }} đ</h5>
+                                                <h5 class="text-success">{{ number_format($ls->so_tien_dong, 0, ',', '.') }} đ</h5>
                                                 <p class="mb-1"><strong>Ngày đóng:</strong> {{ $ls->ngay_dong->format('d/m/Y H:i') }}</p>
                                                 <p class="mb-1"><strong>Phương thức:</strong> {{ $ls->phuong_thuc_thanh_toan }}</p>
                                                 @if ($ls->ghi_chu)
@@ -43,8 +43,8 @@
                                                 @endif
                                             </div>
                                             <div class="col-md-4 text-end">
-                                                @if ($ls->bien_lai_path)
-                                                    <a href="{{ Storage::url($ls->bien_lai_path) }}" target="_blank" class="btn btn-sm btn-outline-primary">
+                                                @if ($ls->bien_lai_file)
+                                                    <a href="{{ Storage::url($ls->bien_lai_file) }}" target="_blank" class="btn btn-sm btn-outline-primary">
                                                         <i class="bi bi-file-earmark-pdf"></i> Xem biên lai
                                                     </a>
                                                 @endif

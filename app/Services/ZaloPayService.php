@@ -20,11 +20,20 @@ class ZaloPayService
         $this->key2 = env('ZALOPAY_KEY2', '');
         $this->isSandbox = env('ZALOPAY_SANDBOX', true);
         
-        // API v1 endpoints
+        // API v1 endpoints theo tài liệu ZaloPay
+        // Sandbox: https://sandbox.zalopay.com.vn/v001/tpe/createorder
+        // Production: https://zalopay.com.vn/v001/tpe/createorder
         if ($this->isSandbox) {
             $this->endpoint = 'https://sandbox.zalopay.com.vn/v001/tpe';
+            Log::info('ZaloPay Service initialized in SANDBOX mode', [
+                'endpoint' => $this->endpoint,
+                'app_id' => $this->appId ? 'configured' : 'missing'
+            ]);
         } else {
             $this->endpoint = 'https://zalopay.com.vn/v001/tpe';
+            Log::info('ZaloPay Service initialized in PRODUCTION mode', [
+                'endpoint' => $this->endpoint
+            ]);
         }
     }
 
@@ -90,17 +99,92 @@ class ZaloPayService
             ];
 
             // Add bankcode if provided
+            // Lưu ý: Để trống bankcode sẽ cho phép user chọn tất cả phương thức thanh toán
+            // bao gồm ZaloPay wallet, ngân hàng, thẻ ATM/Visa/Mastercard
+            // Nếu chỉ muốn thanh toán qua ngân hàng, truyền bankcode cụ thể
             if (!empty($bankcode)) {
                 $params['bankcode'] = $bankcode;
+            } else {
+                // Log để debug - không truyền bankcode để user có thể chọn ZaloPay wallet
+                Log::info('ZaloPay Create Order - No bankcode specified, allowing all payment methods');
             }
 
-            // Gửi request đến ZaloPay
-            $response = Http::asForm()->post($this->endpoint . '/createorder', $params);
+            // Gửi request đến ZaloPay (Content-Type: application/x-www-form-urlencoded)
+            // Theo tài liệu: https://developers.zalopay.vn/v1/general/overview.html
+            $url = $this->endpoint . '/createorder';
+            $response = Http::timeout(30)->asForm()->post($url, $params);
+            
+            // Log request details for sandbox debugging
+            if ($this->isSandbox) {
+                Log::info('ZaloPay Sandbox Create Order Request:', [
+                    'url' => $url,
+                    'method' => 'POST',
+                    'content_type' => 'application/x-www-form-urlencoded',
+                    'params_keys' => array_keys($params),
+                    'appid' => $this->appId,
+                    'apptransid' => $appTransId,
+                    'amount' => $amount,
+                    'sandbox_mode' => true
+                ]);
+            }
+
+            // Kiểm tra HTTP status code
+            if (!$response->successful()) {
+                Log::error('ZaloPay Create Order HTTP Error:', [
+                    'status' => $response->status(),
+                    'body' => $response->body(),
+                    'headers' => $response->headers()
+                ]);
+                
+                return [
+                    'returncode' => -2,
+                    'returnmessage' => 'Không thể kết nối đến ZaloPay. Vui lòng thử lại sau. (HTTP ' . $response->status() . ')',
+                    'orderurl' => ''
+                ];
+            }
 
             $result = $response->json();
 
+            // Validate response structure
+            if (!is_array($result)) {
+                Log::error('ZaloPay Create Order Invalid Response:', [
+                    'response_body' => $response->body(),
+                    'response_status' => $response->status()
+                ]);
+                
+                return [
+                    'returncode' => -2,
+                    'returnmessage' => 'Phản hồi không hợp lệ từ ZaloPay. Vui lòng thử lại sau.',
+                    'orderurl' => ''
+                ];
+            }
+
             Log::info('ZaloPay Create Order Request:', $params);
             Log::info('ZaloPay Create Order Response:', $result);
+            
+            // Log thông tin về payment methods và sandbox mode
+            if (isset($result['returncode']) && $result['returncode'] == 1) {
+                Log::info('ZaloPay Order created successfully:', [
+                    'sandbox_mode' => $this->isSandbox,
+                    'bankcode_provided' => !empty($bankcode),
+                    'bankcode_value' => $bankcode ?: 'empty (all methods allowed)',
+                    'expected_methods' => 'ZaloPay wallet, Bank transfer, ATM/Visa/Mastercard',
+                    'orderurl_received' => !empty($result['orderurl']),
+                    'note' => $this->isSandbox 
+                        ? 'SANDBOX MODE: Use test cards (4111111111111111) - No real money will be charged'
+                        : 'PRODUCTION MODE: Real money will be charged'
+                ]);
+                
+                if ($this->isSandbox && !empty($result['orderurl'])) {
+                    Log::info('ZaloPay Sandbox Order URL:', [
+                        'url_preview' => substr($result['orderurl'], 0, 100) . '...',
+                        'test_cards' => [
+                            'visa_master' => '4111111111111111',
+                            'atm' => '9704540000000062'
+                        ]
+                    ]);
+                }
+            }
 
             return $result;
 
@@ -133,8 +217,8 @@ class ZaloPayService
                 'mac' => $mac,
             ];
 
-            // Gửi request query (GET method)
-            $response = Http::get($this->endpoint . '/getstatusbyapptransid', $params);
+            // Gửi request query (POST method theo tài liệu ZaloPay)
+            $response = Http::asForm()->post($this->endpoint . '/getstatusbyapptransid', $params);
 
             $result = $response->json();
 
@@ -276,8 +360,8 @@ class ZaloPayService
                 'mac' => $mac,
             ];
 
-            // Gửi request query (GET method)
-            $response = Http::get($this->endpoint . '/getpartialrefundstatus', $params);
+            // Gửi request query (POST method theo tài liệu ZaloPay)
+            $response = Http::asForm()->post($this->endpoint . '/getpartialrefundstatus', $params);
 
             $result = $response->json();
 
