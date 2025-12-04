@@ -188,22 +188,17 @@ class HocPhiController extends Controller
     }
 
     /**
-<<<<<<< HEAD
-     * Hiển thị form thanh toán học phí qua VNPay
+     * Show form to pay tuition via ZaloPay
      *
      * Kiểm tra:
      * - Sinh viên có quyền truy cập khoản học phí này không
      * - Còn số tiền cần thanh toán không (so_tien_con_lai > 0)
      * - Nếu đã thanh toán đủ: redirect về trang chi tiết với thông báo
      *
-     * Form cho phép nhập số tiền muốn thanh toán (tối thiểu 1,000 đ, tối đa = so_tien_con_lai).
-     *
+     * @param Request $request
      * @param int $id ID của khoản học phí cần thanh toán
-     * @return \Illuminate\View\View Form thanh toán VNPay
+     * @return \Illuminate\View\View Form thanh toán ZaloPay
      * @return \Illuminate\Http\RedirectResponse Redirect nếu đã thanh toán đủ hoặc không tìm thấy
-=======
-     * Show form to pay tuition via ZaloPay
->>>>>>> b05ccc9876a8b428a1cb263d9332ed1a628483f1
      */
     public function showZaloPayPayment(Request $request, $id)
     {
@@ -276,33 +271,29 @@ class HocPhiController extends Controller
     }
 
     /**
-<<<<<<< HEAD
-     * Khởi tạo yêu cầu thanh toán học phí qua cổng thanh toán VNPay
+     * Initiate ZaloPay payment
      *
      * Quy trình:
      * 1. Validate quyền truy cập và số tiền thanh toán:
-     *    - Số tiền ≥ 1,000 đ (VNPay minimum)
+     *    - Số tiền ≥ 1,000 đ (ZaloPay minimum)
      *    - Số tiền ≤ so_tien_con_lai (không cho thanh toán thừa)
      * 2. Tạo thông tin đơn hàng (orderInfo):
      *    - Nội dung: "Thanh toan hoc phi - [Ten hoc ky] - [MSSV]"
-     *    - OrderID: HP_[hoc_phi_id]_[sinh_vien_id]_[timestamp]
+     *    - AppTransId: yyMMdd_[hoc_phi_id]_[sinh_vien_id]_[timestamp]
      * 3. Sử dụng database transaction để đảm bảo data integrity:
-     *    - Tạo bản ghi LichSuDongHocPhi với trạng thái 'Đang chờ xác nhận từ VNPay'
-     *    - Lưu ma_giao_dich = orderId để tra cứu sau này
-     * 4. Gọi VNPayService để tạo payment URL:
-     *    - Thêm chữ ký số (HMAC SHA512) bảo mật
-     *    - Encrypt dữ liệu theo chuẩn VNPay
-     * 5. Lưu orderId và hocPhiId vào session để verify callback
-     * 6. Redirect sinh viên đến trang thanh toán VNPay
+     *    - Tạo bản ghi LichSuDongHocPhi với trạng thái 'Đang chờ xác nhận từ ZaloPay'
+     *    - Lưu ma_giao_dich = appTransId để tra cứu sau này
+     * 4. Gọi ZaloPayService để tạo payment URL:
+     *    - Thêm chữ ký số (HMAC SHA256) bảo mật
+     *    - Tạo orderUrl và zptranstoken
+     * 5. Lưu appTransId và hocPhiId vào session để verify callback
+     * 6. Redirect sinh viên đến trang thanh toán ZaloPay hoặc hiển thị QR code
      * 7. Nếu có lỗi: Rollback transaction, xóa bản ghi pending, hiển thông báo lỗi
      *
      * @param Request $request Chứa so_tien_dong (số tiền muốn thanh toán)
      * @param int $id ID của khoản học phí cần thanh toán
-     * @return \Illuminate\Http\RedirectResponse Redirect đến VNPay payment URL hoặc về form với lỗi
+     * @return \Illuminate\Http\RedirectResponse Redirect đến ZaloPay payment URL hoặc về form với lỗi
      * @throws \Exception Khi có lỗi tạo giao dịch
-=======
-     * Initiate ZaloPay payment
->>>>>>> b05ccc9876a8b428a1cb263d9332ed1a628483f1
      */
     public function initiateZaloPayPayment(Request $request, $id)
     {
@@ -511,23 +502,23 @@ class HocPhiController extends Controller
     }
 
     /**
-<<<<<<< HEAD
-     * Xử lý callback từ VNPay sau khi sinh viên hoàn tất thanh toán (Return URL)
+     * Handle ZaloPay payment callback (return URL)
      *
      * Quy trình:
-     * 1. Nhận toàn bộ query params từ VNPay
-     * 2. Xác thực chữ ký số (Secure Hash) bằng VNPayService:
-     *    - Kiểm tra chữ ký HMAC SHA512
+     * 1. Nhận toàn bộ query params từ ZaloPay
+     * 2. Xác thực chữ ký số (MAC) bằng ZaloPayService:
+     *    - Kiểm tra chữ ký HMAC SHA256
      *    - Đảm bảo dữ liệu không bị giả mạo
-     * 3. Kiểm tra mã response (responseCode):
-     *    - '00' = Giao dịch thành công
-     *    - Khác '00' = Giao dịch thất bại/bị hủy
-     * 4. Nếu thành công (responseCode = '00'):
+     * 3. Kiểm tra mã response (returncode):
+     *    - '1' = Giao dịch thành công
+     *    - Khác '1' = Giao dịch thất bại/bị hủy
+     * 4. Nếu thành công (returncode = '1'):
      *    - Sử dụng database transaction
-     *    - Tìm bản ghi LichSuDongHocPhi theo orderId
-     *    - Cập nhật thông tin: ngay_dong, ngan_hang, ma_giao_dich VNPay, ghi_chu
+     *    - Query lại trạng thái từ ZaloPay để đảm bảo chính xác
+     *    - Tìm bản ghi LichSuDongHocPhi theo appTransId
+     *    - Cập nhật thông tin: ngay_dong, ghi_chu
      *    - Cập nhật HocPhiHocKy: so_tien_da_dong, so_tien_con_lai, ngay_dong_lan_cuoi
-     *    - Gọi updateTrangThai() để tự động cập nhật trạng thái (chua_dong/dang_dong/da_dong/qua_han)
+     *    - Gọi updateTrangThai() để tự động cập nhật trạng thái
      *    - Nếu thanh toán đủ (so_tien_con_lai = 0):
      *      + Cập nhật tất cả ChiTietHocPhiMon -> trang_thai = 'da_thanh_toan'
      *      + Tự động thêm sinh viên vào danh sách chờ xếp lớp (HocPhiService)
@@ -535,15 +526,12 @@ class HocPhiController extends Controller
      *    - Redirect đến trang chi tiết học phí với thông báo thành công
      * 5. Nếu thất bại:
      *    - Xóa bản ghi LichSuDongHocPhi pending
-     *    - Redirect với thông báo lỗi (từ VNPay response)
-     * 6. Xóa orderId và hocPhiId khỏi session sau khi xử lý xong
+     *    - Redirect với thông báo lỗi (từ ZaloPay response)
+     * 6. Xóa appTransId và hocPhiId khỏi session sau khi xử lý xong
      *
-     * @param Request $request Chứa toàn bộ query params từ VNPay callback
+     * @param Request $request Chứa toàn bộ query params từ ZaloPay callback
      * @return \Illuminate\Http\RedirectResponse Redirect với thông báo thành công/thất bại
      * @throws \Exception Khi có lỗi cập nhật database
-=======
-     * Handle ZaloPay payment callback (return URL)
->>>>>>> b05ccc9876a8b428a1cb263d9332ed1a628483f1
      */
     public function zaloPayCallback(Request $request)
     {
@@ -1027,24 +1015,37 @@ class HocPhiController extends Controller
     }
 
     /**
-<<<<<<< HEAD
-     * X\u1eed l\u00fd VNPay IPN (Instant Payment Notification) - Server-to-Server webhook
-     *
-     * \u0110\u00e2y l\u00e0 endpoint cho VNPay g\u1ecdi th\u00f4ng b\u00e1o thanh to\u00e1n t\u1ef1 \u0111\u1ed9ng (kh\u00f4ng qua browser).
-     * S\u1eed d\u1ee5ng \u0111\u1ec3 \u0111\u1ed3ng b\u1ed9 k\u1ebft qu\u1ea3 thanh to\u00e1n v\u1edbi h\u1ec7 th\u1ed1ng VNPay.\n     *\n     * Quy tr\u00ecnh:\n     * 1. Nh\u1eadn POST request t\u1eeb VNPay server (kh\u00f4ng ph\u1ea3i t\u1eeb browser)\n     * 2. X\u00e1c th\u1ef1c Secure Hash \u0111\u1ec3 \u0111\u1ea3m b\u1ea3o request t\u1eeb VNPay ch\u00ednh th\u1ee9c\n     * 3. Ki\u1ec3m tra m\u00e3 response:\n     *    - '00' = Giao d\u1ecbch th\u00e0nh c\u00f4ng\n     *    - Kh\u00e1c '00' = Giao d\u1ecbch th\u1ea5t b\u1ea1i\n     * 4. N\u1ebfu th\u00e0nh c\u00f4ng v\u00e0 ch\u01b0a c\u1eadp nh\u1eadt:\n     *    - C\u1eadp nh\u1eadt LichSuDongHocPhi (t\u01b0\u01a1ng t\u1ef1 vnpayCallback)\n     *    - C\u1eadp nh\u1eadt HocPhiHocKy\n     *    - C\u1eadp nh\u1eadt ChiTietHocPhiMon n\u1ebfu thanh to\u00e1n \u0111\u1ee7\n     *    - Th\u00eam v\u00e0o danh s\u00e1ch ch\u1edd x\u1ebfp l\u1edbp n\u1ebfu thanh to\u00e1n \u0111\u1ee7\n     * 5. Tr\u1ea3 v\u1ec1 JSON response cho VNPay:\n     *    - RspCode: '00' = Success, '97' = Invalid signature, '99' = Error\n     *    - Message: Chi ti\u1ebft k\u1ebft qu\u1ea3\n     *\n     * L\u01b0u \u00fd:\n     * - IPN c\u00f3 th\u1ec3 \u0111\u1ebfn tr\u01b0\u1edbc/sau vnpayCallback, c\u1ea7n ki\u1ec3m tra tr\u1ea1ng th\u00e1i tr\u01b0\u1edbc khi c\u1eadp nh\u1eadt\n     * - Idempotent: Kh\u00f4ng c\u1eadp nh\u1eadt 2 l\u1ea7n cho c\u00f9ng 1 giao d\u1ecbch\n     * - VNPay c\u00f3 th\u1ec3 g\u1eedi IPN nhi\u1ec1u l\u1ea7n n\u1ebfu kh\u00f4ng nh\u1eadn \u0111\u01b0\u1ee3c RspCode '00'\n     *\n     * @param Request $request POST data t\u1eeb VNPay server\n     * @return \\Illuminate\\Http\\JsonResponse JSON {RspCode, Message}\n     * @throws \\Exception Khi c\u00f3 l\u1ed7i c\u1eadp nh\u1eadt database\n     */\n    public function vnpayIpn(Request $request)
-=======
      * Handle ZaloPay IPN (Callback from ZaloPay server)
      * 
-     * Theo tài liệu ZaloPay API v1:
-     * - ZaloPay Server POST callback với: data (JSON string), mac (HMAC)
-     * - Merchant dùng key2 để xác thực MAC: HMAC(sha256, key2, data)
-     * - Response format:
-     *   + returncode = 1, returnmessage = "success" nếu hợp lệ và xử lý thành công
-     *   + returncode = -1, returnmessage = "invalid callback" nếu MAC không hợp lệ
-     *   + returncode = 0, returnmessage = "exception" nếu có lỗi (ZaloPay sẽ callback lại tối đa 3 lần)
+     * Đây là endpoint cho ZaloPay gọi thông báo thanh toán tự động (không qua browser).
+     * Sử dụng để đồng bộ kết quả thanh toán với hệ thống ZaloPay.
+     * 
+     * Quy trình:
+     * 1. Nhận POST request từ ZaloPay server (không phải từ browser)
+     * 2. Xác thực MAC (HMAC SHA256) để đảm bảo request từ ZaloPay chính thức
+     * 3. Kiểm tra mã response:
+     *    - returncode = 1 = Giao dịch thành công
+     *    - returncode != 1 = Giao dịch thất bại
+     * 4. Nếu thành công và chưa cập nhật:
+     *    - Cập nhật LichSuDongHocPhi (tương tự zaloPayCallback)
+     *    - Cập nhật HocPhiHocKy
+     *    - Cập nhật ChiTietHocPhiMon nếu thanh toán đủ
+     *    - Thêm vào danh sách chờ xếp lớp nếu thanh toán đủ
+     * 5. Trả về JSON response cho ZaloPay:
+     *    - returncode = 1, returnmessage = "success" nếu hợp lệ và xử lý thành công
+     *    - returncode = -1, returnmessage = "invalid callback" nếu MAC không hợp lệ
+     *    - returncode = 0, returnmessage = "exception" nếu có lỗi (ZaloPay sẽ callback lại tối đa 3 lần)
+     * 
+     * Lưu ý:
+     * - IPN có thể đến trước/sau zaloPayCallback, cần kiểm tra trạng thái trước khi cập nhật
+     * - Idempotent: Không cập nhật 2 lần cho cùng 1 giao dịch
+     * - ZaloPay có thể gửi IPN nhiều lần nếu không nhận được returncode = 1
+     * 
+     * @param Request $request POST data từ ZaloPay server (data, mac)
+     * @return \Illuminate\Http\JsonResponse JSON {returncode, returnmessage}
+     * @throws \Exception Khi có lỗi cập nhật database
      */
     public function zaloPayIpn(Request $request)
->>>>>>> b05ccc9876a8b428a1cb263d9332ed1a628483f1
     {
         $zaloPayService = new ZaloPayService();
         
