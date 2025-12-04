@@ -215,10 +215,14 @@
                         </div>
                         <div class="card-body">
                             @if($hocPhi->so_tien_con_lai > 0)
-                                <a href="{{ route('sinh-vien.hoc-phi.zalopay-payment', $hocPhi->id) }}" 
-                                   class="btn btn-primary w-100 mb-2 btn-lg">
-                                    <i class="bi bi-credit-card-2-front"></i> Thanh toán ZaloPay
-                                </a>
+                                <form action="{{ route('sinh-vien.hoc-phi.zalopay-initiate', $hocPhi->id) }}" method="POST" class="mb-2">
+                                    @csrf
+                                    <input type="hidden" name="so_tien_dong" value="{{ $hocPhi->so_tien_con_lai }}">
+                                    <input type="hidden" name="redirect_direct" value="1">
+                                    <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                        <i class="bi bi-credit-card-2-front"></i> Thanh toán ZaloPay
+                                    </button>
+                                </form>
                             @else
                                 <div class="alert alert-success mb-2">
                                     <i class="bi bi-check-circle-fill"></i> Đã hoàn thành thanh toán
@@ -232,6 +236,25 @@
                                class="btn btn-outline-info w-100 mb-2">
                                 <i class="bi bi-clock-history"></i> Lịch sử thanh toán
                             </a>
+                            
+                            @php
+                                // Tìm giao dịch ZaloPay đang chờ xác nhận
+                                $pendingZaloPay = $hocPhi->lichSuDongHocPhi()
+                                    ->where('phuong_thuc_thanh_toan', 'ZaloPay')
+                                    ->where('ghi_chu', 'like', '%Đang chờ%')
+                                    ->orderBy('created_at', 'desc')
+                                    ->first();
+                            @endphp
+                            
+                            @if($pendingZaloPay)
+                                <form action="{{ route('sinh-vien.hoc-phi.zalopay-check-status', $hocPhi->id) }}" method="POST" class="mb-2">
+                                    @csrf
+                                    <input type="hidden" name="app_trans_id" value="{{ $pendingZaloPay->ma_giao_dich }}">
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        <i class="bi bi-arrow-clockwise me-2"></i>Kiểm tra lại thanh toán ZaloPay
+                                    </button>
+                                </form>
+                            @endif
                             <a href="{{ route('sinh-vien.hoc-phi.huong-dan') }}" 
                                class="btn btn-outline-success w-100 mb-2">
                                 <i class="bi bi-question-circle"></i> Hướng dẫn thanh toán
@@ -271,4 +294,57 @@
             background-color: rgba(102, 126, 234, 0.05);
         }
     </style>
+
+    @push('scripts')
+    <script>
+        // Tự động kiểm tra trạng thái thanh toán ZaloPay sau khi thanh toán thành công
+        @php
+            $hasPendingPayment = session('zalopay_app_trans_id') || (isset($pendingZaloPay) && $pendingZaloPay);
+            $appTransIdValue = session('zalopay_app_trans_id') ?: (isset($pendingZaloPay) ? $pendingZaloPay->ma_giao_dich : '');
+        @endphp
+        @if($hasPendingPayment)
+            (function() {
+                const appTransId = '{{ $appTransIdValue }}';
+                const hocPhiId = {{ $hocPhi->id }};
+                let checkCount = 0;
+                const maxChecks = 10;
+                
+                function checkPaymentStatus() {
+                    if (checkCount >= maxChecks) {
+                        console.log('Đã kiểm tra tối đa số lần, dừng lại');
+                        return;
+                    }
+                    
+                    checkCount++;
+                    console.log('Đang kiểm tra trạng thái thanh toán lần ' + checkCount + '...');
+                    
+                    const formData = new FormData();
+                    formData.append('app_trans_id', appTransId);
+                    const csrfToken = document.querySelector('meta[name="csrf-token"]');
+                    if (csrfToken) {
+                        formData.append('_token', csrfToken.getAttribute('content'));
+                    }
+                    
+                    fetch('/sinh-vien/hoc-phi/' + hocPhiId + '/zalopay-check-status', {
+                        method: 'POST',
+                        body: formData
+                    })
+                    .then(function(response) {
+                        if (response.redirected) {
+                            window.location.href = response.url;
+                        } else {
+                            setTimeout(checkPaymentStatus, 30000);
+                        }
+                    })
+                    .catch(function(error) {
+                        console.error('Lỗi khi kiểm tra trạng thái:', error);
+                        setTimeout(checkPaymentStatus, 30000);
+                    });
+                }
+                
+                setTimeout(checkPaymentStatus, 10000);
+            })();
+        @endif
+    </script>
+    @endpush
 @endsection

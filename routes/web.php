@@ -586,6 +586,7 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         // ZaloPay Payment routes
         Route::get('/{id}/zalopay-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showZaloPayPayment'])->name('zalopay-payment');
         Route::post('/{id}/zalopay-initiate', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'initiateZaloPayPayment'])->name('zalopay-initiate');
+        Route::post('/{id}/zalopay-check-status', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'checkZaloPayStatus'])->name('zalopay-check-status');
     });
     
     // ZaloPay Payment Callback (public routes - no auth required for IPN)
@@ -593,6 +594,94 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/zalopay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'zaloPayCallback'])->name('zalopay.callback');
         Route::post('/zalopay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'zaloPayIpn'])->name('zalopay.ipn');
     });
+    
+    // ZaloPay Redirect Handler - Xử lý redirect từ bất kỳ URL nào có tham số ZaloPay
+    // Route này sẽ catch các redirect từ ZaloPay khi callback URL bị cấu hình sai
+    Route::get('/zalopay-redirect', function (\Illuminate\Http\Request $request) {
+        $appTransId = $request->get('apptransid');
+        $returncode = $request->get('returncode');
+        $returnmessage = $request->get('returnmessage');
+        $zpTransId = $request->get('zptransid');
+        
+        // Log để debug
+        \Illuminate\Support\Facades\Log::info('ZaloPay Redirect Handler:', [
+            'apptransid' => $appTransId,
+            'returncode' => $returncode,
+            'returnmessage' => $returnmessage,
+            'zptransid' => $zpTransId,
+            'all_params' => $request->all(),
+            'referer' => $request->header('referer')
+        ]);
+        
+        // Nếu không có apptransid, thử tìm từ session
+        if (!$appTransId) {
+            $appTransId = session('zalopay_app_trans_id');
+        }
+        
+        // Tìm hoc_phi_id từ apptransid
+        $hocPhiId = null;
+        if ($appTransId) {
+            $lichSu = \App\Models\LichSuDongHocPhi::where('ma_giao_dich', $appTransId)->first();
+            if ($lichSu) {
+                $hocPhiId = $lichSu->hoc_phi_hoc_ky_id;
+                
+                // Xử lý hủy giao dịch
+                if ($returncode && $returncode != 1) {
+                    // Xóa record pending nếu có
+                    if (str_contains($lichSu->ghi_chu ?? '', 'Đang chờ')) {
+                        $lichSu->delete();
+                    }
+                }
+            }
+        } elseif (!$hocPhiId) {
+            // Nếu không có apptransid, thử tìm từ session
+            $hocPhiId = session('zalopay_hoc_phi_id');
+            
+            // Nếu có returncode=1 và có hoc_phi_id, tìm giao dịch pending gần nhất
+            if ($returncode == 1 && $hocPhiId) {
+                $lichSu = \App\Models\LichSuDongHocPhi::where('hoc_phi_hoc_ky_id', $hocPhiId)
+                    ->where('phuong_thuc_thanh_toan', 'ZaloPay')
+                    ->where('ghi_chu', 'like', '%Đang chờ%')
+                    ->orderBy('created_at', 'desc')
+                    ->first();
+                
+                if ($lichSu) {
+                    $appTransId = $lichSu->ma_giao_dich;
+                }
+            }
+        }
+        
+        // Nếu có returncode=1 (thành công), redirect về callback handler để xử lý đầy đủ
+        if ($returncode == 1) {
+            // Redirect về callback handler với tất cả tham số
+            $callbackUrl = '/payment/zalopay/callback?' . http_build_query($request->all());
+            return redirect($callbackUrl);
+        }
+        
+        // Tạo thông báo cho các trường hợp khác
+        $message = 'Giao dịch đã bị hủy hoặc thất bại.';
+        $messageType = 'error';
+        
+        if ($returncode == -6012) {
+            $message = 'Giao dịch đã bị hủy bởi người dùng.';
+        } elseif ($returncode == -6013) {
+            $message = 'Giao dịch đã hết hạn. Vui lòng tạo đơn hàng mới.';
+        } elseif ($returnmessage) {
+            $message = urldecode($returnmessage);
+        }
+        
+        // Redirect về trang học phí
+        if ($hocPhiId) {
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $hocPhiId)
+                ->with($messageType, $message);
+        }
+        
+        // Nếu không tìm thấy, redirect về danh sách học phí
+        return redirect()
+            ->route('sinh-vien.hoc-phi.index')
+            ->with('error', $message . ' Vui lòng kiểm tra lại.');
+    })->name('zalopay.redirect-handler');
 
     // PHASE 9.5: Xuất dữ liệu (Export Data)
     Route::middleware('sinhvien.check')->prefix('xuat-du-lieu')->name('xuat-du-lieu.')->group(function () {
