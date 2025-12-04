@@ -8,6 +8,7 @@ use App\Models\ChiTietHocPhiMon;
 use App\Models\LichSuDongHocPhi;
 use App\Services\HocPhiService;
 use App\Services\ZaloPayService;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -860,6 +861,49 @@ class HocPhiController extends Controller
 
                     DB::commit();
 
+                    // ✅ Gửi thông báo cho sinh viên về thanh toán thành công
+                    try {
+                        $notificationService = new NotificationService();
+                        $sinhVien = $hocPhi->sinhVien;
+                        
+                        $soTienFormatted = number_format($lichSu->so_tien_dong, 0, ',', '.');
+                        $conLaiFormatted = number_format($hocPhi->so_tien_con_lai, 0, ',', '.');
+                        
+                        $noiDung = "Thanh toán học phí thành công!\n\n";
+                        $noiDung .= "📋 Thông tin giao dịch:\n";
+                        $noiDung .= "- Học kỳ: {$hocPhi->hocKy->ten_hoc_ky} ({$hocPhi->hocKy->nam_hoc})\n";
+                        $noiDung .= "- Số tiền đã thanh toán: {$soTienFormatted}đ\n";
+                        $noiDung .= "- Phương thức: ZaloPay\n";
+                        $noiDung .= "- Mã giao dịch: {$appTransId}\n";
+                        $noiDung .= "- Thời gian: " . now()->format('d/m/Y H:i') . "\n\n";
+                        $noiDung .= "💰 Tình trạng học phí:\n";
+                        $noiDung .= "- Số tiền còn lại: {$conLaiFormatted}đ\n";
+                        
+                        if ($hocPhi->so_tien_con_lai == 0) {
+                            $noiDung .= "\n✅ Bạn đã hoàn thành thanh toán học phí cho học kỳ này!";
+                        }
+                        
+                        $notificationService->createAutoNotification(
+                            loaiThongBao: 'hoc_phi',
+                            tieuDe: '✅ Thanh toán học phí thành công - ' . $hocPhi->hocKy->ten_hoc_ky,
+                            noiDung: $noiDung,
+                            nguoiNhanIds: [$sinhVien->user_id],
+                            options: [
+                                'muc_do_quan_trong' => 'quan_trong',
+                                'gui_web_notification' => true,
+                            ]
+                        );
+                        
+                        Log::info('ZaloPay - Sent payment success notification', [
+                            'sinh_vien_id' => $sinhVien->id,
+                            'hoc_phi_id' => $hocPhi->id,
+                            'so_tien' => $lichSu->so_tien_dong
+                        ]);
+                    } catch (\Exception $e) {
+                        // Không throw error nếu gửi thông báo thất bại, chỉ log
+                        Log::error('ZaloPay - Failed to send payment notification: ' . $e->getMessage());
+                    }
+
                     // Clear ZaloPay session after successful payment
                     session()->forget(['zalopay_app_trans_id', 'zalopay_hoc_phi_id', 'zalopay_orderurl', 'zalopay_zptranstoken']);
 
@@ -1171,6 +1215,50 @@ class HocPhiController extends Controller
 
                 DB::commit();
 
+                // ✅ Gửi thông báo cho sinh viên về thanh toán thành công
+                try {
+                    $notificationService = new NotificationService();
+                    $sinhVien = $hocPhi->sinhVien;
+                    
+                    $soTienFormatted = number_format($lichSu->so_tien_dong, 0, ',', '.');
+                    $conLaiFormatted = number_format($hocPhi->so_tien_con_lai, 0, ',', '.');
+                    
+                    $noiDung = "Thanh toán học phí thành công!\n\n";
+                    $noiDung .= "📋 Thông tin giao dịch:\n";
+                    $noiDung .= "- Học kỳ: {$hocPhi->hocKy->ten_hoc_ky} ({$hocPhi->hocKy->nam_hoc})\n";
+                    $noiDung .= "- Số tiền đã thanh toán: {$soTienFormatted}đ\n";
+                    $noiDung .= "- Phương thức: ZaloPay\n";
+                    $noiDung .= "- Mã giao dịch: {$appTransId}\n";
+                    if (!empty($zpTransId)) {
+                        $noiDung .= "- Mã ZaloPay: {$zpTransId}\n";
+                    }
+                    $noiDung .= "- Thời gian: " . now()->format('d/m/Y H:i') . "\n\n";
+                    $noiDung .= "💰 Tình trạng học phí:\n";
+                    $noiDung .= "- Số tiền còn lại: {$conLaiFormatted}đ\n";
+                    
+                    if ($hocPhi->so_tien_con_lai == 0) {
+                        $noiDung .= "\n✅ Bạn đã hoàn thành thanh toán học phí cho học kỳ này!";
+                    }
+                    
+                    $notificationService->createAutoNotification(
+                        loaiThongBao: 'hoc_phi',
+                        tieuDe: '✅ Thanh toán học phí thành công - ' . $hocPhi->hocKy->ten_hoc_ky,
+                        noiDung: $noiDung,
+                        nguoiNhanIds: [$sinhVien->user_id],
+                        options: [
+                            'muc_do_quan_trong' => 'quan_trong',
+                            'gui_web_notification' => true,
+                        ]
+                    );
+                    
+                    Log::info('ZaloPay IPN - Sent payment success notification', [
+                        'sinh_vien_id' => $sinhVien->id,
+                        'hoc_phi_id' => $hocPhi->id
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('ZaloPay IPN - Failed to send notification: ' . $e->getMessage());
+                }
+
                 Log::info('ZaloPay IPN - Payment processed successfully:', [
                     'apptransid' => $appTransId,
                     'zptransid' => $zpTransId,
@@ -1276,6 +1364,42 @@ class HocPhiController extends Controller
                         }
 
                         DB::commit();
+
+                        // ✅ Gửi thông báo cho sinh viên về thanh toán thành công
+                        try {
+                            $notificationService = new NotificationService();
+                            $sinhVien = $hocPhi->sinhVien;
+                            
+                            $soTienFormatted = number_format($lichSu->so_tien_dong, 0, ',', '.');
+                            $conLaiFormatted = number_format($hocPhi->so_tien_con_lai, 0, ',', '.');
+                            
+                            $noiDung = "Thanh toán học phí thành công!\n\n";
+                            $noiDung .= "📋 Thông tin giao dịch:\n";
+                            $noiDung .= "- Học kỳ: {$hocPhi->hocKy->ten_hoc_ky} ({$hocPhi->hocKy->nam_hoc})\n";
+                            $noiDung .= "- Số tiền đã thanh toán: {$soTienFormatted}đ\n";
+                            $noiDung .= "- Phương thức: ZaloPay\n";
+                            $noiDung .= "- Mã giao dịch: {$appTransId}\n";
+                            $noiDung .= "- Thời gian: " . now()->format('d/m/Y H:i') . "\n\n";
+                            $noiDung .= "💰 Tình trạng học phí:\n";
+                            $noiDung .= "- Số tiền còn lại: {$conLaiFormatted}đ\n";
+                            
+                            if ($hocPhi->so_tien_con_lai == 0) {
+                                $noiDung .= "\n✅ Bạn đã hoàn thành thanh toán học phí cho học kỳ này!";
+                            }
+                            
+                            $notificationService->createAutoNotification(
+                                loaiThongBao: 'hoc_phi',
+                                tieuDe: '✅ Thanh toán học phí thành công - ' . $hocPhi->hocKy->ten_hoc_ky,
+                                noiDung: $noiDung,
+                                nguoiNhanIds: [$sinhVien->user_id],
+                                options: [
+                                    'muc_do_quan_trong' => 'quan_trong',
+                                    'gui_web_notification' => true,
+                                ]
+                            );
+                        } catch (\Exception $e) {
+                            Log::error('ZaloPay Check Status - Failed to send notification: ' . $e->getMessage());
+                        }
 
                         return redirect()
                             ->route('sinh-vien.hoc-phi.show', $id)
