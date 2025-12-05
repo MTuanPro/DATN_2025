@@ -177,39 +177,70 @@ class LichHocCoDinhController extends Controller
             }
 
             // Kiểm tra xung đột cho TẤT CẢ các buổi học trước khi tạo
-            // Kiểm tra với LichHocChiTiet vì đây là lịch học theo ngày cụ thể
+            // Kiểm tra xem sinh viên trong lớp có bị trùng ca học vào ngày đó không
             $conflicts = [];
-            foreach ($ngayHocList as $index => $ngayHoc) {
-                $ngayHocDate = $ngayHoc['ngay']->format('Y-m-d');
-                
-                // Kiểm tra xung đột phòng học (kiểm tra với các lịch chi tiết đã tồn tại)
-                $conflictPhong = \App\Models\LichHocChiTiet::where('phong_hoc_id', $validated['phong_hoc_id'])
-                    ->where('ngay_hoc', $ngayHocDate)
-                    ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
-                        $q->where(function ($q2) use ($tietBatDau, $tietKetThuc) {
-                            $q2->where('tiet_ket_thuc', '>=', $tietBatDau)
-                               ->where('tiet_bat_dau', '<=', $tietKetThuc);
-                        });
-                    })
-                    ->exists();
-                
-                if ($conflictPhong) {
-                    $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Phòng học đã bị trùng lịch";
-                }
+            
+            // Lấy danh sách sinh viên đã được xếp vào lớp học phần này
+            $sinhVienIds = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc'])
+                ->pluck('sinh_vien_id')
+                ->toArray();
 
-                // Kiểm tra xung đột giảng viên (kiểm tra với các lịch chi tiết đã tồn tại)
-                $conflictGiangVien = \App\Models\LichHocChiTiet::where('giang_vien_id', $validated['giang_vien_id'])
-                    ->where('ngay_hoc', $ngayHocDate)
-                    ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
-                        $q->where(function ($q2) use ($tietBatDau, $tietKetThuc) {
-                            $q2->where('tiet_ket_thuc', '>=', $tietBatDau)
-                               ->where('tiet_bat_dau', '<=', $tietKetThuc);
-                        });
-                    })
-                    ->exists();
+            // Nếu lớp chưa có sinh viên, không cần kiểm tra
+            if (empty($sinhVienIds)) {
+                \Log::info('Lớp học phần chưa có sinh viên, bỏ qua kiểm tra trùng lịch');
+            } else {
+                // Lấy thông tin sinh viên để hiển thị tên khi có lỗi
+                $sinhViens = \App\Models\DaoTao\SinhVien::whereIn('id', $sinhVienIds)->get()->keyBy('id');
                 
-                if ($conflictGiangVien) {
-                    $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Giảng viên đã có lịch dạy";
+                foreach ($ngayHocList as $index => $ngayHoc) {
+                    $ngayHocDate = $ngayHoc['ngay']->format('Y-m-d');
+                    
+                    // Kiểm tra xem phòng học này đã có lớp học nào sử dụng ca học này vào ngày này chưa
+                    $conflictPhongCa = \App\Models\LichHocChiTiet::where('phong_hoc_id', $validated['phong_hoc_id'])
+                        ->where('ngay_hoc', $ngayHocDate)
+                        ->where('ca_hoc_id', $validated['ca_hoc_id']) // Cùng ca học
+                        ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
+                        ->where('trang_thai', '!=', 'huy') // Không tính các buổi đã hủy
+                        ->exists();
+                    
+                    if ($conflictPhongCa) {
+                        $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Phòng học này đã có lớp học khác sử dụng ca học này";
+                    }
+                    
+                    // Kiểm tra xem có sinh viên nào trong lớp bị trùng ca học vào ngày này không
+                    // Với mỗi sinh viên, kiểm tra xem họ có lịch học chi tiết nào (từ lớp học phần khác) trùng ca học không
+                    foreach ($sinhVienIds as $sinhVienId) {
+                        $conflictLich = \App\Models\LichHocChiTiet::where('ngay_hoc', $ngayHocDate)
+                            ->where('ca_hoc_id', $validated['ca_hoc_id']) // Cùng ca học
+                            ->whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienId) {
+                                $q->where('sinh_vien_id', $sinhVienId)
+                                  ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc']);
+                            })
+                            ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
+                            ->where('trang_thai', '!=', 'huy') // Không tính các buổi đã hủy
+                            ->with('lopHocPhan.monHoc')
+                            ->first();
+                        
+                        if ($conflictLich) {
+                            $tenSinhVien = $sinhViens->get($sinhVienId)->ho_ten ?? 'Sinh viên';
+                            $monHocTrung = $conflictLich->lopHocPhan->monHoc;
+                            $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Sinh viên {$tenSinhVien} đã có lịch học môn {$monHocTrung->ten_mon} vào ca học này";
+                            break; // Chỉ cần báo 1 sinh viên bị trùng cho mỗi buổi
+                        }
+                    }
+
+                    // Kiểm tra xung đột giảng viên (kiểm tra với các lịch chi tiết đã tồn tại)
+                    $conflictGiangVien = \App\Models\LichHocChiTiet::where('giang_vien_id', $validated['giang_vien_id'])
+                        ->where('ngay_hoc', $ngayHocDate)
+                        ->where('ca_hoc_id', $validated['ca_hoc_id']) // Cùng ca học
+                        ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
+                        ->where('trang_thai', '!=', 'huy') // Không tính các buổi đã hủy
+                        ->exists();
+                    
+                    if ($conflictGiangVien) {
+                        $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Giảng viên đã có lịch dạy vào ca học này";
+                    }
                 }
             }
             

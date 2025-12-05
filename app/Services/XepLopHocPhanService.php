@@ -216,7 +216,10 @@ class XepLopHocPhanService
                 $lichHoc[] = [
                     'thu' => $lich->getAttribute('thu_trong_tuan'),
                     'tiet_bat_dau' => $lich->getAttribute('tiet_bat_dau'),
-                    'tiet_ket_thuc' => $lich->getAttribute('tiet_ket_thuc')
+                    'tiet_ket_thuc' => $lich->getAttribute('tiet_ket_thuc'),
+                    'ca_hoc_id' => $lich->getAttribute('ca_hoc_id'),
+                    'gio_bat_dau' => $lich->getAttribute('gio_bat_dau'),
+                    'gio_ket_thuc' => $lich->getAttribute('gio_ket_thuc')
                 ];
             }
         }
@@ -226,6 +229,7 @@ class XepLopHocPhanService
 
     /**
      * Kiểm tra trùng lịch giữa lịch hiện tại và lớp mới
+     * Kiểm tra: cùng thứ VÀ (cùng ca học HOẶC trùng thời gian)
      */
     protected function kiemTraTrungLich(array $lichHienTai, int $lopHocPhanId): bool
     {
@@ -233,14 +237,41 @@ class XepLopHocPhanService
 
         foreach ($lichHienTai as $lich1) {
             foreach ($lichMoi as $lich2) {
-                if ($lich1['thu'] == $lich2->getAttribute('thu_trong_tuan')) {
+                // Phải cùng thứ trong tuần
+                if ($lich1['thu'] != $lich2->getAttribute('thu_trong_tuan')) {
+                    continue;
+                }
+
+                // Kiểm tra trùng ca học (nếu có ca_hoc_id)
+                if (!empty($lich1['ca_hoc_id']) && !empty($lich2->getAttribute('ca_hoc_id'))) {
+                    if ($lich1['ca_hoc_id'] == $lich2->getAttribute('ca_hoc_id')) {
+                        return true; // Trùng ca học
+                    }
+                }
+
+                // Kiểm tra trùng thời gian (gio_bat_dau, gio_ket_thuc)
+                // Nếu có thông tin giờ, kiểm tra trùng thời gian
+                if (!empty($lich1['gio_bat_dau']) && !empty($lich1['gio_ket_thuc']) 
+                    && !empty($lich2->getAttribute('gio_bat_dau')) && !empty($lich2->getAttribute('gio_ket_thuc'))) {
+                    if ($this->kiemTraTrungThoiGian(
+                        $lich1['gio_bat_dau'],
+                        $lich1['gio_ket_thuc'],
+                        $lich2->getAttribute('gio_bat_dau'),
+                        $lich2->getAttribute('gio_ket_thuc')
+                    )) {
+                        return true; // Trùng thời gian
+                    }
+                }
+
+                // Fallback: Kiểm tra trùng tiết học (nếu không có thông tin ca học hoặc giờ)
+                if (empty($lich1['ca_hoc_id']) && empty($lich1['gio_bat_dau'])) {
                     if ($this->kiemTraTrungTiet(
                         $lich1['tiet_bat_dau'],
                         $lich1['tiet_ket_thuc'],
                         $lich2->getAttribute('tiet_bat_dau'),
                         $lich2->getAttribute('tiet_ket_thuc')
                     )) {
-                        return true;
+                        return true; // Trùng tiết học
                     }
                 }
             }
@@ -255,6 +286,70 @@ class XepLopHocPhanService
     protected function kiemTraTrungTiet(int $start1, int $end1, int $start2, int $end2): bool
     {
         return !($end1 < $start2 || $start1 > $end2);
+    }
+
+    /**
+     * Kiểm tra trùng thời gian (giờ bắt đầu và kết thúc)
+     * Hai khoảng thời gian trùng nhau nếu có giao nhau
+     * 
+     * @param mixed $gioBatDau1 Giờ bắt đầu 1 (time string, Carbon, hoặc DateTime)
+     * @param mixed $gioKetThuc1 Giờ kết thúc 1
+     * @param mixed $gioBatDau2 Giờ bắt đầu 2
+     * @param mixed $gioKetThuc2 Giờ kết thúc 2
+     * @return bool
+     */
+    protected function kiemTraTrungThoiGian($gioBatDau1, $gioKetThuc1, $gioBatDau2, $gioKetThuc2): bool
+    {
+        try {
+            // Chuyển đổi sang Carbon để so sánh
+            $start1 = $this->convertToCarbon($gioBatDau1);
+            $end1 = $this->convertToCarbon($gioKetThuc1);
+            $start2 = $this->convertToCarbon($gioBatDau2);
+            $end2 = $this->convertToCarbon($gioKetThuc2);
+
+            // So sánh trực tiếp Carbon instances (chỉ so sánh giờ:phút:giây)
+            // Trùng nếu: end1 >= start2 AND start1 <= end2
+            // Tức là: KHÔNG phải (end1 < start2 || start1 > end2)
+            // So sánh time của cùng một ngày để đảm bảo chính xác
+            $today = Carbon::today();
+            $start1Time = Carbon::createFromTimeString($start1->format('H:i:s'));
+            $end1Time = Carbon::createFromTimeString($end1->format('H:i:s'));
+            $start2Time = Carbon::createFromTimeString($start2->format('H:i:s'));
+            $end2Time = Carbon::createFromTimeString($end2->format('H:i:s'));
+
+            return !($end1Time->lt($start2Time) || $start1Time->gt($end2Time));
+        } catch (\Exception $e) {
+            Log::warning("Lỗi khi kiểm tra trùng thời gian: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    /**
+     * Chuyển đổi giá trị sang Carbon instance
+     * 
+     * @param mixed $value Giá trị cần chuyển đổi
+     * @return Carbon
+     */
+    protected function convertToCarbon($value): Carbon
+    {
+        if ($value instanceof Carbon) {
+            return $value;
+        }
+
+        if ($value instanceof \DateTime) {
+            return Carbon::instance($value);
+        }
+
+        // Nếu là string, thử parse
+        if (is_string($value)) {
+            // Nếu là time string (H:i hoặc H:i:s), thêm ngày hiện tại
+            if (preg_match('/^\d{1,2}:\d{2}(:\d{2})?$/', $value)) {
+                return Carbon::createFromTimeString($value);
+            }
+            return Carbon::parse($value);
+        }
+
+        throw new \InvalidArgumentException("Không thể chuyển đổi giá trị sang Carbon: " . gettype($value));
     }
 
     /**

@@ -160,10 +160,10 @@
                                             @endswitch
                                         </td>
                                         <td>
-                                            @if ($dk->lopHocPhanSinhVien)
-                                                <code>{{ $dk->lopHocPhanSinhVien->lopHocPhan->ma_lop_hoc_phan }}</code>
+                                            @if ($dk->lopHocPhanSinhVien && $dk->lopHocPhanSinhVien->lopHocPhan)
+                                                <code>{{ $dk->lopHocPhanSinhVien->lopHocPhan->ma_lop_hp }}</code>
                                             @else
-                                                <span class="text-muted">Chưa xếp</span>
+                                                <span class="text-muted">-</span>
                                             @endif
                                         </td>
                                         <td>
