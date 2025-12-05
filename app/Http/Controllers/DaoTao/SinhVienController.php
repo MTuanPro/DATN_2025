@@ -11,6 +11,10 @@ use App\Models\DanhMuc\TrangThaiHocTap;
 use App\Models\GiangVien;
 use App\Models\User;
 use App\Models\VaiTro;
+use App\Models\LopHocPhanSinhVien;
+use App\Models\KetQuaHocTap;
+use App\Models\BangDiem;
+use App\Services\DiemService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Hash;
@@ -22,6 +26,13 @@ use App\Traits\ImportHelper;
 class SinhVienController extends Controller
 {
     use ImportHelper;
+
+    protected $diemService;
+
+    public function __construct(DiemService $diemService)
+    {
+        $this->diemService = $diemService;
+    }
     /**
      * Display a listing of the resource.
      */
@@ -198,7 +209,67 @@ class SinhVienController extends Controller
             'trangThaiHocTap'
         ])->findOrFail($id);
 
-        return view('daotao.sinh-vien.show', compact('sinhVien'));
+        // Lấy tất cả lớp học phần đã đăng ký (có điểm)
+        $lopHocPhanSinhViens = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
+            ->whereHas('lopHocPhan', function ($q) {
+                $q->where('trang_thai_lop', 'da_duyet_diem');
+            })
+            ->with([
+                'lopHocPhan.monHoc',
+                'lopHocPhan.hocKy',
+                'lopHocPhan.giangVien',
+                'ketQuaHocTap'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // Nhóm theo học kỳ
+        $monHocsTheoHocKy = $lopHocPhanSinhViens->groupBy(function ($item) {
+            return $item->lopHocPhan->hocKy ? $item->lopHocPhan->hocKy->id : 'khac';
+        });
+
+        // Tính toán thống kê
+        $gpaTichLuy = $this->diemService->tinhGPATichLuy($sinhVien->id);
+        $tongTinChiDat = $this->diemService->tinhTongTinChiDat($sinhVien->id);
+        
+        // Tính tổng tín chỉ đã học (bao gồm cả không đạt)
+        $tongTinChiHoc = $lopHocPhanSinhViens
+            ->unique(function ($item) {
+                return $item->lopHocPhan->mon_hoc_id;
+            })
+            ->sum(function ($item) {
+                return $item->lopHocPhan->monHoc->so_tin_chi ?? 0;
+            });
+
+        // Lấy bảng điểm theo học kỳ
+        $bangDiems = BangDiem::where('sinh_vien_id', $sinhVien->id)
+            ->with('hocKy')
+            ->orderBy('hoc_ky_id', 'desc')
+            ->get();
+
+        // Lấy các lớp đang học (chưa có điểm)
+        $lopDangHoc = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
+            ->whereHas('lopHocPhan', function ($q) {
+                $q->where('trang_thai_lop', '!=', 'da_duyet_diem');
+            })
+            ->with([
+                'lopHocPhan.monHoc',
+                'lopHocPhan.hocKy',
+                'lopHocPhan.giangVien'
+            ])
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return view('daotao.sinh-vien.show', compact(
+            'sinhVien',
+            'lopHocPhanSinhViens',
+            'monHocsTheoHocKy',
+            'gpaTichLuy',
+            'tongTinChiDat',
+            'tongTinChiHoc',
+            'bangDiems',
+            'lopDangHoc'
+        ));
     }
 
     /**
