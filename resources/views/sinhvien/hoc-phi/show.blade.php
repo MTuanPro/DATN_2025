@@ -215,14 +215,20 @@
                         </div>
                         <div class="card-body">
                             @if($hocPhi->so_tien_con_lai > 0)
-                                <form action="{{ route('sinh-vien.hoc-phi.zalopay-initiate', $hocPhi->id) }}" method="POST" class="mb-2">
-                                    @csrf
-                                    <input type="hidden" name="so_tien_dong" value="{{ $hocPhi->so_tien_con_lai }}">
-                                    <input type="hidden" name="redirect_direct" value="1">
-                                    <button type="submit" class="btn btn-primary w-100 btn-lg">
-                                        <i class="bi bi-credit-card-2-front"></i> Thanh toán ZaloPay
-                                    </button>
-                                </form>
+                                <div class="d-grid gap-2 mb-2">
+                                    <form action="{{ route('sinh-vien.hoc-phi.zalopay-initiate', $hocPhi->id) }}" method="POST">
+                                        @csrf
+                                        <input type="hidden" name="so_tien_dong" value="{{ $hocPhi->so_tien_con_lai }}">
+                                        <input type="hidden" name="redirect_direct" value="1">
+                                        <button type="submit" class="btn btn-primary w-100 btn-lg">
+                                            <i class="bi bi-credit-card-2-front"></i> Thanh toán ZaloPay
+                                        </button>
+                                    </form>
+                                    <a href="{{ route('sinh-vien.hoc-phi.payos-payment', $hocPhi->id) }}" 
+                                       class="btn btn-success w-100 btn-lg">
+                                        <i class="bi bi-wallet2"></i> Thanh toán PayOS
+                                    </a>
+                                </div>
                             @else
                                 <div class="alert alert-success mb-2">
                                     <i class="bi bi-check-circle-fill"></i> Đã hoàn thành thanh toán
@@ -244,6 +250,13 @@
                                     ->where('ghi_chu', 'like', '%Đang chờ%')
                                     ->orderBy('created_at', 'desc')
                                     ->first();
+                                
+                                // Tìm giao dịch PayOS đang chờ xác nhận
+                                $pendingPayOS = $hocPhi->lichSuDongHocPhi()
+                                    ->where('phuong_thuc_thanh_toan', 'PayOS')
+                                    ->where('ghi_chu', 'like', '%Đang chờ%')
+                                    ->orderBy('created_at', 'desc')
+                                    ->first();
                             @endphp
                             
                             @if($pendingZaloPay)
@@ -255,6 +268,17 @@
                                     </button>
                                 </form>
                             @endif
+                            
+                            @if($pendingPayOS)
+                                <form action="{{ route('sinh-vien.hoc-phi.payos-check-status', $hocPhi->id) }}" method="POST" class="mb-2">
+                                    @csrf
+                                    <input type="hidden" name="order_code" value="{{ $pendingPayOS->ma_giao_dich }}">
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        <i class="bi bi-arrow-clockwise me-2"></i>Kiểm tra lại thanh toán PayOS
+                                    </button>
+                                </form>
+                            @endif
+                            
                             <a href="{{ route('sinh-vien.hoc-phi.huong-dan') }}" 
                                class="btn btn-outline-success w-100 mb-2">
                                 <i class="bi bi-question-circle"></i> Hướng dẫn thanh toán

@@ -1428,4 +1428,628 @@ class HocPhiController extends Controller
                 ->with('error', 'Có lỗi xảy ra khi kiểm tra trạng thái: ' . $e->getMessage());
         }
     }
+
+    /**
+     * Show PayOS payment - Create payment link and redirect immediately (like demo)
+     */
+    /**
+     * PayOS Payment - Simple implementation like demo
+     */
+    public function showPayOSPayment(Request $request, $id)
+    {
+        // Debug: Log method call
+        Log::info('PayOS Payment - Method called', [
+            'id' => $id,
+            'user_id' => auth()->id(),
+            'url' => $request->fullUrl()
+        ]);
+
+        $user = auth()->user();
+        $sinhVien = $user->sinhVien;
+
+        if (!$sinhVien) {
+            Log::error('PayOS Payment - No sinh vien found');
+            return redirect()->route('sinh-vien.dashboard')
+                ->with('error', 'Không tìm thấy thông tin sinh viên!');
+        }
+
+        $hocPhi = HocPhiHocKy::with(['hocKy'])
+            ->where('sinh_vien_id', $sinhVien->id)
+            ->findOrFail($id);
+
+        // Check if there's remaining amount to pay
+        if ($hocPhi->so_tien_con_lai <= 0) {
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $id)
+                ->with('info', 'Bạn đã thanh toán đủ học phí cho học kỳ này.');
+        }
+
+        try {
+            // Check PayOS credentials
+            $clientId = env('PAYOS_CLIENT_ID');
+            $apiKey = env('PAYOS_API_KEY');
+            $checksumKey = env('PAYOS_CHECKSUM_KEY');
+            
+            if (!$clientId || !$apiKey || !$checksumKey) {
+                Log::error('PayOS - Missing credentials', [
+                    'has_client_id' => !empty($clientId),
+                    'has_api_key' => !empty($apiKey),
+                    'has_checksum_key' => !empty($checksumKey)
+                ]);
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('error', 'Cấu hình PayOS chưa đầy đủ. Vui lòng kiểm tra file .env');
+            }
+
+            // Initialize PayOS (like demo)
+            $payOS = new \PayOS\PayOS(
+                clientId: $clientId,
+                apiKey: $apiKey,
+                checksumKey: $checksumKey
+            );
+
+            // Generate orderCode (like demo: time() - returns timestamp, max 10 digits, < 25 chars)
+            // PayOS requires orderCode to be integer and unique
+            $orderCode = time();
+            $amount = (int) $hocPhi->so_tien_con_lai;
+            
+            // Description must be VERY short (PayOS requirement)
+            // Keep it minimal to avoid "Mã tối đa 25 ký tự" error
+            $description = "Hoc phi " . $sinhVien->ma_sinh_vien;
+            
+            // Remove special chars and ensure max length (max 50 chars to be safe)
+            $description = preg_replace('/[^\p{L}\p{N}\s]/u', '', $description);
+            if (strlen($description) > 50) {
+                $description = substr($description, 0, 50);
+            }
+            
+            // Create temporary payment record
+            DB::beginTransaction();
+            $lichSu = LichSuDongHocPhi::create([
+                'hoc_phi_hoc_ky_id' => $hocPhi->id,
+                'so_tien_dong' => $amount,
+                'ngay_dong' => now(),
+                'phuong_thuc_thanh_toan' => 'PayOS',
+                'ma_giao_dich' => (string) $orderCode,
+                'ghi_chu' => 'Đang chờ xác nhận từ PayOS',
+            ]);
+            DB::commit();
+
+            // Prepare payment data (theo format PayOS API) - Get domain from request
+            $YOUR_DOMAIN = $request->getSchemeAndHttpHost(); // Lấy domain từ request (http://127.0.0.1:8000 hoặc domain thật)
+            
+            // Sanitize buyer name (remove special chars, max 50 chars)
+            $buyerName = $sinhVien->ho_ten ?? null;
+            if ($buyerName) {
+                $buyerName = preg_replace('/[^\p{L}\p{N}\s]/u', '', $buyerName); // Remove special chars
+                $buyerName = substr($buyerName, 0, 50); // Max 50 chars
+            }
+            
+            // Sanitize item name (remove special chars, max 100 chars)
+            $itemName = "Hoc phi HK" . $hocPhi->hocKy->id;
+            $itemName = preg_replace('/[^\p{L}\p{N}\s]/u', '', $itemName);
+            $itemName = substr($itemName, 0, 100);
+            
+            // Prepare data - MINIMAL required fields only (theo format PayOS API)
+            // Start with absolute minimum to avoid "Mã tối đa 25 ký tự" error
+            $data = [
+                "orderCode" => $orderCode,
+                "amount" => $amount,
+                "description" => $description,
+                "cancelUrl" => $YOUR_DOMAIN . "/payment/payos/cancel",
+                "returnUrl" => $YOUR_DOMAIN . "/payment/payos/callback"
+            ];
+            
+            // DO NOT add optional fields for now to avoid errors
+            // Only add if absolutely necessary after testing
+
+            Log::info('PayOS - Creating payment link', [
+                'orderCode' => $orderCode,
+                'amount' => $amount,
+                'data' => $data
+            ]);
+
+            // Create payment link (like demo)
+            try {
+                $response = $payOS->paymentRequests->create($data);
+                
+                // Log full response for debugging
+                $responseDump = is_array($response) 
+                    ? $response 
+                    : (is_object($response) 
+                        ? json_decode(json_encode($response), true) 
+                        : (string)$response);
+                
+                Log::info('PayOS - Response received', [
+                    'response_type' => gettype($response),
+                    'is_array' => is_array($response),
+                    'is_object' => is_object($response),
+                    'response' => $responseDump,
+                    'response_keys' => is_array($responseDump) ? array_keys($responseDump) : 'N/A'
+                ]);
+            } catch (\Throwable $th) {
+                Log::error('PayOS - Create payment link exception', [
+                    'error' => $th->getMessage(),
+                    'file' => $th->getFile(),
+                    'line' => $th->getLine(),
+                    'trace' => $th->getTraceAsString()
+                ]);
+                
+                // Rollback if failed
+                DB::beginTransaction();
+                $lichSu->delete();
+                DB::commit();
+                
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('error', 'Lỗi khi tạo liên kết thanh toán PayOS: ' . $th->getMessage());
+            }
+
+            // Check response format - PayOS returns: {code: "00", desc: "success", data: {id: "...", checkoutUrl: "..."}}
+            $checkoutUrl = null;
+            
+            // Convert to array if object
+            $responseArray = is_array($response) ? $response : json_decode(json_encode($response), true);
+            
+            // Check response structure: {code, desc, data: {checkoutUrl or id}}
+            if (is_array($responseArray)) {
+                $data = $responseArray['data'] ?? [];
+                
+                // First, try to get checkoutUrl directly from data
+                $checkoutUrl = $data['checkoutUrl'] ?? $data['checkout_url'] ?? null;
+                
+                // If no checkoutUrl, try to construct from id: https://pay.payos.vn/web/{id}
+                if (!$checkoutUrl && isset($data['id'])) {
+                    $checkoutUrl = 'https://pay.payos.vn/web/' . $data['id'];
+                    Log::info('PayOS - Constructed checkoutUrl from id', [
+                        'id' => $data['id'],
+                        'checkoutUrl' => $checkoutUrl
+                    ]);
+                }
+                
+                // Fallback: try direct checkoutUrl in response (for backward compatibility)
+                if (!$checkoutUrl) {
+                    $checkoutUrl = $responseArray['checkoutUrl'] ?? $responseArray['checkout_url'] ?? null;
+                }
+                
+                // Log response structure for debugging
+                if (!$checkoutUrl) {
+                    Log::warning('PayOS - checkoutUrl not found and cannot construct from id', [
+                        'code' => $responseArray['code'] ?? 'N/A',
+                        'desc' => $responseArray['desc'] ?? 'N/A',
+                        'has_data' => isset($responseArray['data']),
+                        'data_keys' => is_array($data) ? array_keys($data) : 'N/A',
+                        'has_id' => isset($data['id']),
+                        'id' => $data['id'] ?? 'N/A'
+                    ]);
+                } else {
+                    Log::info('PayOS - checkoutUrl found/constructed', [
+                        'code' => $responseArray['code'] ?? 'N/A',
+                        'desc' => $responseArray['desc'] ?? 'N/A',
+                        'checkoutUrl' => substr($checkoutUrl, 0, 50) . '...'
+                    ]);
+                }
+            }
+
+            Log::info('PayOS - Checkout URL extracted', [
+                'checkoutUrl' => $checkoutUrl ? substr($checkoutUrl, 0, 50) . '...' : 'NULL',
+                'has_checkoutUrl' => !empty($checkoutUrl)
+            ]);
+
+            // Redirect to checkout URL (like demo: header("Location: " . $response['checkoutUrl']))
+            if ($checkoutUrl) {
+                // Extract paymentLinkId from checkoutUrl or response
+                $paymentLinkId = null;
+                if (preg_match('/\/web\/([a-f0-9]+)/i', $checkoutUrl, $matches)) {
+                    $paymentLinkId = $matches[1];
+                } else {
+                    $responseArray = is_array($response) ? $response : json_decode(json_encode($response), true);
+                    $data = $responseArray['data'] ?? [];
+                    $paymentLinkId = $data['id'] ?? $data['paymentLinkId'] ?? null;
+                }
+                
+                // Store paymentLinkId in database for later status checking
+                if ($paymentLinkId) {
+                    $lichSu->update([
+                        'ghi_chu' => 'Đang chờ xác nhận từ PayOS. PaymentLinkId: ' . $paymentLinkId
+                    ]);
+                }
+                
+                // Store in session for callback
+                session(['payos_order_code' => $orderCode]);
+                session(['payos_hoc_phi_id' => $hocPhi->id]);
+                if ($paymentLinkId) {
+                    session(['payos_payment_link_id' => $paymentLinkId]);
+                }
+                
+                Log::info('PayOS - Redirecting to checkout URL', [
+                    'orderCode' => $orderCode,
+                    'paymentLinkId' => $paymentLinkId,
+                    'checkoutUrl' => substr($checkoutUrl, 0, 50) . '...'
+                ]);
+                
+                // Redirect (like demo: header("HTTP/1.1 303 See Other"); header("Location: " . $response['checkoutUrl']);)
+                return redirect()->away($checkoutUrl);
+            } else {
+                // Rollback if failed
+                DB::beginTransaction();
+                $lichSu->delete();
+                DB::commit();
+                
+                Log::error('PayOS - No checkoutUrl in response', [
+                    'response' => is_array($response) ? $response : (is_object($response) ? json_decode(json_encode($response), true) : $response)
+                ]);
+                
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('error', 'Không thể tạo liên kết thanh toán PayOS. Vui lòng kiểm tra log để biết chi tiết.');
+            }
+
+        } catch (\Exception $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            Log::error('PayOS Payment Error: ' . $e->getMessage());
+            
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $id)
+                ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
+    }
+
+
+    /**
+     * PayOS payment callback (return URL)
+     */
+    public function payOSCallback(Request $request)
+    {
+        // Log that callback is called
+        Log::info('PayOS Callback - Method called', [
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'all_params' => $request->all()
+        ]);
+        
+        try {
+            $orderCode = $request->input('orderCode');
+            $status = $request->input('status');
+            $paymentLinkId = $request->input('paymentLinkId') ?? $request->input('id');
+
+            Log::info('PayOS Callback:', [
+                'orderCode' => $orderCode,
+                'status' => $status,
+                'paymentLinkId' => $paymentLinkId,
+                'all_params' => $request->all()
+            ]);
+
+            // Try to get orderCode from different sources
+            if (!$orderCode) {
+                $orderCode = $request->input('data.orderCode') ?? session('payos_order_code');
+            }
+
+            if (!$orderCode) {
+                Log::error('PayOS Callback - No orderCode found', [
+                    'all_params' => $request->all(),
+                    'session' => session()->all()
+                ]);
+                return redirect()->route('sinh-vien.hoc-phi.index')
+                    ->with('error', 'Thông tin thanh toán không hợp lệ.');
+            }
+
+            $lichSu = LichSuDongHocPhi::where('ma_giao_dich', (string) $orderCode)->first();
+
+            if (!$lichSu) {
+                Log::error('PayOS Callback - Transaction not found', [
+                    'orderCode' => $orderCode
+                ]);
+                return redirect()->route('sinh-vien.hoc-phi.index')
+                    ->with('error', 'Không tìm thấy giao dịch thanh toán.');
+            }
+
+            $hocPhi = $lichSu->hocPhiHocKy;
+
+            // Check payment status - if not provided, check from PayOS API
+            $paymentStatus = $status;
+            if (!$paymentStatus && $paymentLinkId) {
+                try {
+                    $payOS = new \PayOS\PayOS(
+                        clientId: env('PAYOS_CLIENT_ID'),
+                        apiKey: env('PAYOS_API_KEY'),
+                        checksumKey: env('PAYOS_CHECKSUM_KEY')
+                    );
+                    $paymentLink = $payOS->paymentRequests->get($paymentLinkId);
+                    $paymentStatus = $paymentLink->status ?? $paymentLink['status'] ?? null;
+                    Log::info('PayOS Callback - Status from API', [
+                        'paymentLinkId' => $paymentLinkId,
+                        'status' => $paymentStatus
+                    ]);
+                } catch (\Exception $e) {
+                    Log::error('PayOS Callback - Failed to get payment status', [
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Check payment status - PayOS returns "PAID" or check amountPaid
+            $isPaid = false;
+            if ($paymentStatus === 'PAID' || $paymentStatus === 'paid') {
+                $isPaid = true;
+            } elseif ($paymentLinkId) {
+                // Try to get payment info to check if paid
+                try {
+                    $payOS = new \PayOS\PayOS(
+                        clientId: env('PAYOS_CLIENT_ID'),
+                        apiKey: env('PAYOS_API_KEY'),
+                        checksumKey: env('PAYOS_CHECKSUM_KEY')
+                    );
+                    $paymentLink = $payOS->paymentRequests->get($paymentLinkId);
+                    $paymentData = is_array($paymentLink) ? $paymentLink : json_decode(json_encode($paymentLink), true);
+                    
+                    // Check if amountPaid >= amount
+                    $amountPaid = $paymentData['amountPaid'] ?? $paymentData['amount_paid'] ?? 0;
+                    $amount = $paymentData['amount'] ?? $lichSu->so_tien_dong;
+                    $statusFromData = $paymentData['status'] ?? null;
+                    
+                    if ($statusFromData === 'PAID' || ($amountPaid > 0 && $amountPaid >= $amount)) {
+                        $isPaid = true;
+                        Log::info('PayOS Callback - Payment confirmed from API', [
+                            'amountPaid' => $amountPaid,
+                            'amount' => $amount,
+                            'status' => $statusFromData
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('PayOS Callback - Failed to verify payment', [
+                        'error' => $e->getMessage()
+                    ]);
+                }
+            }
+
+            // Process payment if paid
+            if ($isPaid) {
+                // Payment successful - update database
+                $isPending = str_contains($lichSu->ghi_chu ?? '', 'Đang chờ');
+                
+                if ($isPending) {
+                    DB::beginTransaction();
+
+                    // Update payment record
+                    $lichSu->update([
+                        'ngay_dong' => now(),
+                        'ghi_chu' => 'Thanh toán thành công qua PayOS. Mã giao dịch: ' . $orderCode,
+                    ]);
+
+                    // Update HocPhiHocKy
+                    $hocPhi->refresh();
+                    $hocPhi->so_tien_da_dong += $lichSu->so_tien_dong;
+                    $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
+                    $hocPhi->ngay_dong_lan_cuoi = now();
+                    $hocPhi->save();
+
+                    // Update status
+                    $hocPhi->updateTrangThai();
+
+                    // Update chi tiết học phí môn thành đã thanh toán (nếu thanh toán đủ)
+                    if ($hocPhi->so_tien_con_lai == 0) {
+                        ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                            ->where('trang_thai', 'chua_thanh_toan')
+                            ->update(['trang_thai' => 'da_thanh_toan']);
+
+                        // KHI ĐÓNG ĐỦ HỌC PHÍ: Tự động thêm vào danh sách chờ xếp lớp
+                        $hocPhiService = new HocPhiService();
+                        $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
+                    }
+
+                    DB::commit();
+
+                    // Clear session
+                    session()->forget(['payos_payment_link', 'payos_order_code', 'payos_hoc_phi_id']);
+
+                    // Send notification
+                    try {
+                        $notificationService = new NotificationService();
+                        $notificationService->sendPaymentSuccessNotification($lichSu);
+                    } catch (\Exception $e) {
+                        Log::error('PayOS Callback - Failed to send notification: ' . $e->getMessage());
+                    }
+
+                    return redirect()
+                        ->route('sinh-vien.hoc-phi.show', $hocPhi->id)
+                        ->with('success', 'Thanh toán học phí thành công qua PayOS!');
+                } else {
+                    return redirect()
+                        ->route('sinh-vien.hoc-phi.show', $hocPhi->id)
+                        ->with('info', 'Giao dịch đã được xử lý trước đó.');
+                }
+            } else {
+                // Payment not yet confirmed - redirect to check status page
+                Log::info('PayOS Callback - Payment not yet confirmed', [
+                    'orderCode' => $orderCode,
+                    'status' => $paymentStatus
+                ]);
+                
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $hocPhi->id)
+                    ->with('warning', 'Thanh toán đang được xử lý. Vui lòng đợi vài phút hoặc kiểm tra lại sau.');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('PayOS Callback Error: ' . $e->getMessage());
+            return redirect()->route('sinh-vien.hoc-phi.index')
+                ->with('error', 'Có lỗi xảy ra khi xử lý thanh toán: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * PayOS payment cancel handler
+     */
+    public function payOSCancel(Request $request)
+    {
+        // Log that cancel is called
+        Log::info('PayOS Cancel - Method called', [
+            'url' => $request->fullUrl(),
+            'method' => $request->method(),
+            'all_params' => $request->all()
+        ]);
+        
+        $orderCode = $request->input('orderCode');
+        
+        Log::info('PayOS Cancel:', [
+            'orderCode' => $orderCode,
+            'all_params' => $request->all()
+        ]);
+
+        if ($orderCode) {
+            $lichSu = LichSuDongHocPhi::where('ma_giao_dich', (string) $orderCode)->first();
+            
+            if ($lichSu) {
+                $hocPhi = $lichSu->hocPhiHocKy;
+                
+                // Clear session
+                session()->forget(['payos_payment_link', 'payos_order_code', 'payos_hoc_phi_id']);
+                
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $hocPhi->id)
+                    ->with('info', 'Bạn đã hủy thanh toán. Vui lòng thử lại khi sẵn sàng.');
+            }
+        }
+
+        return redirect()->route('sinh-vien.hoc-phi.index')
+            ->with('info', 'Thanh toán đã được hủy.');
+    }
+
+    /**
+     * Check PayOS payment status manually
+     */
+    public function checkPayOSStatus(Request $request, $id)
+    {
+        try {
+            $orderCode = $request->input('order_code');
+            
+            if (!$orderCode) {
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('error', 'Vui lòng nhập mã giao dịch.');
+            }
+
+            $user = auth()->user();
+            $sinhVien = $user->sinhVien;
+            
+            $hocPhi = HocPhiHocKy::with(['hocKy'])
+                ->where('sinh_vien_id', $sinhVien->id)
+                ->findOrFail($id);
+
+            $lichSu = LichSuDongHocPhi::where('ma_giao_dich', (string) $orderCode)
+                ->where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                ->first();
+
+            if (!$lichSu) {
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('error', 'Không tìm thấy giao dịch với mã: ' . $orderCode);
+            }
+
+            // Check if already processed
+            $isPending = str_contains($lichSu->ghi_chu ?? '', 'Đang chờ');
+            
+            if (!$isPending) {
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('info', 'Giao dịch đã được xử lý trước đó.');
+            }
+
+            // Try to get paymentLinkId from ghi_chu
+            $paymentLinkId = null;
+            if (preg_match('/PaymentLinkId:\s*([a-f0-9]+)/i', $lichSu->ghi_chu ?? '', $matches)) {
+                $paymentLinkId = $matches[1];
+            }
+
+            // Try to get payment status from PayOS API
+            if ($paymentLinkId) {
+                try {
+                    $payOS = new \PayOS\PayOS(
+                        clientId: env('PAYOS_CLIENT_ID'),
+                        apiKey: env('PAYOS_API_KEY'),
+                        checksumKey: env('PAYOS_CHECKSUM_KEY')
+                    );
+                    
+                    $paymentLink = $payOS->paymentRequests->get($paymentLinkId);
+                    $paymentData = is_array($paymentLink) ? $paymentLink : json_decode(json_encode($paymentLink), true);
+                    
+                    $status = $paymentData['status'] ?? null;
+                    $amountPaid = $paymentData['amountPaid'] ?? $paymentData['amount_paid'] ?? 0;
+                    $amount = $paymentData['amount'] ?? $lichSu->so_tien_dong;
+                    
+                    Log::info('PayOS Check Status - Payment info', [
+                        'paymentLinkId' => $paymentLinkId,
+                        'status' => $status,
+                        'amountPaid' => $amountPaid,
+                        'amount' => $amount
+                    ]);
+
+                    // Check if paid
+                    if ($status === 'PAID' || ($amountPaid > 0 && $amountPaid >= $amount)) {
+                        // Payment successful - update database (same logic as callback)
+                        DB::beginTransaction();
+
+                        $lichSu->update([
+                            'ngay_dong' => now(),
+                            'ghi_chu' => 'Thanh toán thành công qua PayOS (đã kiểm tra lại). Mã giao dịch: ' . $orderCode,
+                        ]);
+
+                        $hocPhi->refresh();
+                        $hocPhi->so_tien_da_dong += $lichSu->so_tien_dong;
+                        $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
+                        $hocPhi->ngay_dong_lan_cuoi = now();
+                        $hocPhi->save();
+
+                        $hocPhi->updateTrangThai();
+
+                        if ($hocPhi->so_tien_con_lai == 0) {
+                            ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                                ->where('trang_thai', 'chua_thanh_toan')
+                                ->update(['trang_thai' => 'da_thanh_toan']);
+
+                            $hocPhiService = new HocPhiService();
+                            $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
+                        }
+
+                        DB::commit();
+
+                        session()->forget(['payos_payment_link', 'payos_order_code', 'payos_hoc_phi_id', 'payos_payment_link_id']);
+
+                        try {
+                            $notificationService = new NotificationService();
+                            $notificationService->sendPaymentSuccessNotification($lichSu);
+                        } catch (\Exception $e) {
+                            Log::error('PayOS Check Status - Failed to send notification: ' . $e->getMessage());
+                        }
+
+                        return redirect()
+                            ->route('sinh-vien.hoc-phi.show', $id)
+                            ->with('success', 'Đã cập nhật trạng thái thanh toán thành công!');
+                    } else {
+                        return redirect()
+                            ->route('sinh-vien.hoc-phi.show', $id)
+                            ->with('warning', 'Thanh toán chưa hoàn tất. Trạng thái: ' . ($status ?? 'PENDING'));
+                    }
+                } catch (\Exception $e) {
+                    Log::error('PayOS Check Status - API Error: ' . $e->getMessage());
+                    return redirect()
+                        ->route('sinh-vien.hoc-phi.show', $id)
+                        ->with('error', 'Không thể kiểm tra trạng thái: ' . $e->getMessage());
+                }
+            } else {
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('info', 'Đang kiểm tra trạng thái thanh toán. Nếu đã chuyển khoản thành công, vui lòng đợi vài phút để hệ thống tự động cập nhật.');
+            }
+
+        } catch (\Exception $e) {
+            Log::error('PayOS Check Status Error: ' . $e->getMessage());
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $id)
+                ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
+    }
 }

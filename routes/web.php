@@ -587,6 +587,49 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/{id}/zalopay-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showZaloPayPayment'])->name('zalopay-payment');
         Route::post('/{id}/zalopay-initiate', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'initiateZaloPayPayment'])->name('zalopay-initiate');
         Route::post('/{id}/zalopay-check-status', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'checkZaloPayStatus'])->name('zalopay-check-status');
+        
+        // PayOS Payment routes
+        Route::get('/{id}/payos-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showPayOSPayment'])->name('payos-payment');
+        Route::post('/{id}/payos-check-status', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'checkPayOSStatus'])->name('payos-check-status');
+    });
+
+    // PHASE 9.5: Xuất dữ liệu (Export Data)
+    Route::middleware('sinhvien.check')->prefix('xuat-du-lieu')->name('xuat-du-lieu.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'index'])->name('index');
+        Route::get('/bang-diem/excel', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatBangDiemExcel'])->name('bang-diem.excel');
+        Route::get('/bang-diem/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatBangDiemPdf'])->name('bang-diem.pdf');
+        Route::get('/tkb/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatTKBPdf'])->name('tkb.pdf');
+        Route::get('/giay-xac-nhan/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'giayXacNhanPdf'])->name('giay-xac-nhan.pdf');
+    });
+
+    // PHASE 10: Thông báo (chỉ xem)
+    Route::middleware('sinhvien.check')->prefix('thong-bao')->name('thong-bao.')->group(function () {
+        Route::get('/', [SinhVienThongBaoController::class, 'index'])->name('index');
+        Route::get('/{thongBao}', [SinhVienThongBaoController::class, 'show'])->name('show');
+        Route::post('/{thongBao}/mark-read', [SinhVienThongBaoController::class, 'markAsRead'])->name('mark-read');
+        Route::post('/mark-all-read', [SinhVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
+        Route::get('/unread/count', [SinhVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
+    });
+
+    // TRA CỨU
+    Route::middleware('sinhvien.check')->prefix('tra-cuu')->name('tra-cuu.')->group(function () {
+        Route::get('/hoc-phan', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traHocPhan'])->name('hoc-phan');
+        Route::get('/giang-vien', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traGiangVien'])->name('giang-vien');
+        Route::get('/phong-hoc', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traPhongHoc'])->name('phong-hoc');
+    });
+
+    // PHASE 12: AI Chatbot (Sinh viên)
+    // FIX: Thêm rate limiting để tránh spam (30 requests/minute)
+    Route::middleware(['sinhvien.check', 'throttle:30,1'])->prefix('chatbot')->name('chatbot.')->group(function () {
+        Route::get('/', [ChatbotController::class, 'index'])->name('index');
+        Route::post('/conversation/create', [ChatbotController::class, 'createConversation'])->name('conversation.create');
+        Route::post('/message/send', [ChatbotController::class, 'sendMessage'])->name('message.send');
+        Route::get('/conversation/{conversationId}/messages', [ChatbotController::class, 'getMessages'])->name('conversation.messages');
+        Route::get('/conversation/{conversationId}', [ChatbotController::class, 'loadConversation'])->name('conversation.show');
+        Route::delete('/conversation/{conversationId}', [ChatbotController::class, 'deleteConversation'])->name('conversation.delete');
+        Route::post('/feedback', [ChatbotController::class, 'submitFeedback'])->name('feedback.submit');
+        Route::get('/history', [ChatbotController::class, 'history'])->name('history');
+        Route::get('/suggested-questions', [ChatbotController::class, 'getSuggestedQuestions'])->name('suggested-questions');
     });
     
     // ZaloPay Payment Callback (public routes - no auth required for IPN)
@@ -594,6 +637,12 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/zalopay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'zaloPayCallback'])->name('zalopay.callback');
         Route::post('/zalopay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'zaloPayIpn'])->name('zalopay.ipn');
     });
+});
+
+// PayOS Payment Callback (public routes - no auth required - OUTSIDE middleware group)
+Route::prefix('payment')->name('payment.')->group(function () {
+    Route::get('/payos/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'payOSCallback'])->name('payos.callback');
+    Route::get('/payos/cancel', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'payOSCancel'])->name('payos.cancel');
     
     // ZaloPay Redirect Handler - Xử lý redirect từ bất kỳ URL nào có tham số ZaloPay
     // Route này sẽ catch các redirect từ ZaloPay khi callback URL bị cấu hình sai
@@ -682,43 +731,4 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
             ->route('sinh-vien.hoc-phi.index')
             ->with('error', $message . ' Vui lòng kiểm tra lại.');
     })->name('zalopay.redirect-handler');
-
-    // PHASE 9.5: Xuất dữ liệu (Export Data)
-    Route::middleware('sinhvien.check')->prefix('xuat-du-lieu')->name('xuat-du-lieu.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'index'])->name('index');
-        Route::get('/bang-diem/excel', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatBangDiemExcel'])->name('bang-diem.excel');
-        Route::get('/bang-diem/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatBangDiemPdf'])->name('bang-diem.pdf');
-        Route::get('/tkb/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'xuatTKBPdf'])->name('tkb.pdf');
-        Route::get('/giay-xac-nhan/pdf', [\App\Http\Controllers\SinhVien\XuatDuLieuController::class, 'giayXacNhanPdf'])->name('giay-xac-nhan.pdf');
-    });
-
-    // PHASE 10: Thông báo (chỉ xem)
-    Route::middleware('sinhvien.check')->prefix('thong-bao')->name('thong-bao.')->group(function () {
-        Route::get('/', [SinhVienThongBaoController::class, 'index'])->name('index');
-        Route::get('/{thongBao}', [SinhVienThongBaoController::class, 'show'])->name('show');
-        Route::post('/{thongBao}/mark-read', [SinhVienThongBaoController::class, 'markAsRead'])->name('mark-read');
-        Route::post('/mark-all-read', [SinhVienThongBaoController::class, 'markAllAsRead'])->name('mark-all-read');
-        Route::get('/unread/count', [SinhVienThongBaoController::class, 'getUnreadCount'])->name('unread-count');
-    });
-
-    // TRA CỨU
-    Route::middleware('sinhvien.check')->prefix('tra-cuu')->name('tra-cuu.')->group(function () {
-        Route::get('/hoc-phan', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traHocPhan'])->name('hoc-phan');
-        Route::get('/giang-vien', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traGiangVien'])->name('giang-vien');
-        Route::get('/phong-hoc', [\App\Http\Controllers\SinhVien\TraCuuController::class, 'traPhongHoc'])->name('phong-hoc');
-    });
-
-    // PHASE 12: AI Chatbot (Sinh viên)
-    // FIX: Thêm rate limiting để tránh spam (30 requests/minute)
-    Route::middleware(['sinhvien.check', 'throttle:30,1'])->prefix('chatbot')->name('chatbot.')->group(function () {
-        Route::get('/', [ChatbotController::class, 'index'])->name('index');
-        Route::post('/conversation/create', [ChatbotController::class, 'createConversation'])->name('conversation.create');
-        Route::post('/message/send', [ChatbotController::class, 'sendMessage'])->name('message.send');
-        Route::get('/conversation/{conversationId}/messages', [ChatbotController::class, 'getMessages'])->name('conversation.messages');
-        Route::get('/conversation/{conversationId}', [ChatbotController::class, 'loadConversation'])->name('conversation.show');
-        Route::delete('/conversation/{conversationId}', [ChatbotController::class, 'deleteConversation'])->name('conversation.delete');
-        Route::post('/feedback', [ChatbotController::class, 'submitFeedback'])->name('feedback.submit');
-        Route::get('/history', [ChatbotController::class, 'history'])->name('history');
-        Route::get('/suggested-questions', [ChatbotController::class, 'getSuggestedQuestions'])->name('suggested-questions');
-    });
 });
