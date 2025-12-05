@@ -125,7 +125,7 @@
                                         <th style="width: 50px;">STT</th>
                                         <th style="width: 120px;">Mã SV</th>
                                         <th>Họ và tên</th>
-                                        <th style="width: 200px;">Lớp hành chính</th>
+                                        <th style="width: 200px;">Lớp học phần</th>
                                         <th style="width: 350px;">Trạng thái</th>
                                         <th style="width: 250px;">Ghi chú</th>
                                     </tr>
@@ -140,7 +140,7 @@
                                             <td class="text-center">{{ $index + 1 }}</td>
                                             <td><strong>{{ $sv->sinhVien->ma_sinh_vien }}</strong></td>
                                             <td>{{ $sv->sinhVien->ho_ten }}</td>
-                                            <td>{{ $sv->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                                            <td>{{ $sv->lopHocPhan->ma_lop_hp ?? 'N/A' }}</td>
                                             <td>
                                                 <div class="btn-group w-100" role="group">
                                                     <input type="radio" class="btn-check" name="diem_danh[{{ $sv->id }}]" 

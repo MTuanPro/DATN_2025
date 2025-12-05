@@ -78,7 +78,7 @@
                                     <tr>
                                         <th>STT</th>
                                         <th>Ngày học</th>
-                                        <th>Tiết</th>
+                                        <th>Ca</th>
                                         <th>Lớp HP</th>
                                         <th>Môn học</th>
                                         <th>Phòng</th>
@@ -96,9 +96,34 @@
                                                 <small class="text-muted">{{ $buoiHoc->ngay_hoc->dayName }}</small>
                                             </td>
                                             <td>
-                                                <span class="badge bg-light text-dark">
-                                                    {{ $buoiHoc->tiet_bat_dau }}-{{ $buoiHoc->tiet_ket_thuc }}
-                                                </span>
+                                                @if($buoiHoc->caHoc)
+                                                    <span class="badge bg-info">
+                                                        {{ $buoiHoc->caHoc->ten_ca }}
+                                                    </span>
+                                                    @if($buoiHoc->caHoc->gio_bat_dau && $buoiHoc->caHoc->gio_ket_thuc)
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            {{ $buoiHoc->caHoc->getFormattedTimeRange() }}
+                                                        </small>
+                                                    @elseif($buoiHoc->gio_bat_dau && $buoiHoc->gio_ket_thuc)
+                                                        <br>
+                                                        <small class="text-muted">
+                                                            {{ \Carbon\Carbon::parse($buoiHoc->gio_bat_dau)->format('H:i') }} - {{ \Carbon\Carbon::parse($buoiHoc->gio_ket_thuc)->format('H:i') }}
+                                                        </small>
+                                                    @endif
+                                                @elseif($buoiHoc->gio_bat_dau && $buoiHoc->gio_ket_thuc)
+                                                    <span class="badge bg-secondary">
+                                                        Tiết {{ $buoiHoc->tiet_bat_dau }}-{{ $buoiHoc->tiet_ket_thuc }}
+                                                    </span>
+                                                    <br>
+                                                    <small class="text-muted">
+                                                        {{ \Carbon\Carbon::parse($buoiHoc->gio_bat_dau)->format('H:i') }} - {{ \Carbon\Carbon::parse($buoiHoc->gio_ket_thuc)->format('H:i') }}
+                                                    </small>
+                                                @else
+                                                    <span class="badge bg-light text-dark">
+                                                        Tiết {{ $buoiHoc->tiet_bat_dau }}-{{ $buoiHoc->tiet_ket_thuc }}
+                                                    </span>
+                                                @endif
                                             </td>
                                             <td>{{ $buoiHoc->lopHocPhan->ma_lop_hp }}</td>
                                             <td>

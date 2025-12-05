@@ -76,7 +76,7 @@ class AttendanceController extends Controller
             ->toArray();
 
         // Query buổi học
-        $query = LichHocChiTiet::with(['lopHocPhan.monHoc', 'phongHoc'])
+        $query = LichHocChiTiet::with(['lopHocPhan.monHoc', 'phongHoc', 'caHoc'])
             ->whereIn('lop_hoc_phan_id', $lopHocPhanIds)
             ->orderBy('ngay_hoc', 'desc');
 
@@ -216,7 +216,7 @@ class AttendanceController extends Controller
         }
 
         // Lấy danh sách sinh viên (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
-        $sinhViens = LopHocPhanSinhVien::with(['sinhVien.lopHanhChinh'])
+        $sinhViens = LopHocPhanSinhVien::with(['sinhVien', 'lopHocPhan'])
             ->where('lop_hoc_phan_id', $buoiHoc->lop_hoc_phan_id)
             ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->orderBy('id')
@@ -474,7 +474,7 @@ class AttendanceController extends Controller
 
         if ($lopHocPhanId) {
             // Lấy tất cả sinh viên trong lớp (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
-            $sinhViens = LopHocPhanSinhVien::with(['sinhVien.lopHanhChinh'])
+            $sinhViens = LopHocPhanSinhVien::with(['sinhVien'])
                 ->where('lop_hoc_phan_id', $lopHocPhanId)
                 ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                 ->get();
@@ -627,7 +627,7 @@ class AttendanceController extends Controller
         $lopHocPhan = \App\Models\LopHocPhan::with('monHoc')->findOrFail($lopHocPhanId);
 
         // Lấy dữ liệu báo cáo (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
-        $sinhViens = LopHocPhanSinhVien::with(['sinhVien.lopHanhChinh'])
+        $sinhViens = LopHocPhanSinhVien::with(['sinhVien'])
             ->where('lop_hoc_phan_id', $lopHocPhanId)
             ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->get();
@@ -716,7 +716,7 @@ class AttendanceController extends Controller
                     $index + 1,
                     $item['sinh_vien']->ma_sinh_vien,
                     $item['sinh_vien']->ho_ten,
-                    $item['sinh_vien']->lopHanhChinh->ten_lop ?? 'N/A',
+                    'N/A', // Lớp hành chính đã được xóa
                     $item['tong_buoi_hoc'],
                     $item['stats']->co_mat,
                     $item['stats']->vang,
@@ -840,7 +840,7 @@ class AttendanceController extends Controller
         $lopHocPhan = \App\Models\LopHocPhan::with('monHoc')->findOrFail($lopHocPhanId);
 
         // Lấy dữ liệu báo cáo (bao gồm cả da_xep_lop, dang_hoc, da_hoan_thanh)
-        $sinhViens = LopHocPhanSinhVien::with(['sinhVien.lopHanhChinh'])
+        $sinhViens = LopHocPhanSinhVien::with(['sinhVien'])
             ->where('lop_hoc_phan_id', $lopHocPhanId)
             ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
             ->get();
@@ -1249,40 +1249,13 @@ class AttendanceController extends Controller
 
     /**
      * Gửi báo cáo cho giảng viên chủ nhiệm
+     * Lưu ý: Chức năng này đã bị vô hiệu hóa do lớp hành chính đã được xóa khỏi hệ thống
      */
     private function sendReportToHomeRoomTeachers($danhSachCanhBao)
     {
-        // Nhóm sinh viên theo giảng viên chủ nhiệm
-        $nhomTheoGVCN = [];
-
-        foreach ($danhSachCanhBao as $item) {
-            $sinhVien = $item['sinh_vien'];
-            $lopHanhChinh = $sinhVien->lopHanhChinh;
-
-            if ($lopHanhChinh && $lopHanhChinh->giang_vien_chu_nhiem_id) {
-                $gvcnId = $lopHanhChinh->giang_vien_chu_nhiem_id;
-
-                if (!isset($nhomTheoGVCN[$gvcnId])) {
-                    $nhomTheoGVCN[$gvcnId] = [];
-                }
-
-                $nhomTheoGVCN[$gvcnId][] = $item;
-            }
-        }
-
-        // Gửi email cho từng giảng viên chủ nhiệm
-        foreach ($nhomTheoGVCN as $gvcnId => $danhSach) {
-            $giangVienChuNhiem = GiangVien::find($gvcnId);
-
-            if ($giangVienChuNhiem && $giangVienChuNhiem->email) {
-                try {
-                    Mail::to($giangVienChuNhiem->email)->send(
-                        new BaoCaoSinhVienYeuMail($giangVienChuNhiem, $danhSach)
-                    );
-                } catch (\Exception $e) {
-                    Log::error('Lỗi gửi email báo cáo GVCN: ' . $e->getMessage());
-                }
-            }
-        }
+        // Lớp hành chính đã được xóa khỏi hệ thống
+        // Không thể nhóm sinh viên theo giảng viên chủ nhiệm nữa
+        // Function này được giữ lại để tránh lỗi nếu có code khác gọi đến
+        return;
     }
 }
