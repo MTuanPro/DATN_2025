@@ -27,10 +27,10 @@
             <div class="card">
                 <div class="card-body">
                     <form method="GET" action="{{ route('dao-tao.duyet-diem.quan-ly-gui-diem') }}">
-                        <div class="row">
-                            <div class="col-md-4">
-                                <div class="form-group">
-                                    <label>Học kỳ</label>
+                        <div class="row g-3 align-items-end">
+                            <div class="col-md-3">
+                                <div class="form-group mb-0">
+                                    <label class="form-label">Học kỳ</label>
                                     <select name="hoc_ky_id" class="form-select" onchange="this.form.submit()">
                                         <option value="">-- Tất cả học kỳ --</option>
                                         @foreach ($hocKys as $hk)
@@ -41,22 +41,70 @@
                                     </select>
                                 </div>
                             </div>
-                            <div class="col-md-8 text-end">
-                                <button type="button" class="btn btn-success" onclick="moGuiDiemHangLoat(1)">
-                                    <i class="bi bi-unlock"></i> Mở gửi điểm lần 1 (hàng loạt)
-                                </button>
-                                <button type="button" class="btn btn-success" onclick="moGuiDiemHangLoat(2)">
-                                    <i class="bi bi-unlock"></i> Mở gửi điểm lần 2 (hàng loạt)
-                                </button>
-                                <button type="button" class="btn btn-danger" onclick="dongGuiDiemHangLoat(1)">
-                                    <i class="bi bi-lock"></i> Đóng gửi điểm lần 1 (hàng loạt)
-                                </button>
-                                <button type="button" class="btn btn-danger" onclick="dongGuiDiemHangLoat(2)">
-                                    <i class="bi bi-lock"></i> Đóng gửi điểm lần 2 (hàng loạt)
-                                </button>
+                            <div class="col-md-4">
+                                <div class="form-group mb-0">
+                                    <label class="form-label">Tìm kiếm</label>
+                                    <div class="input-group">
+                                        <input type="text" 
+                                            name="search" 
+                                            class="form-control" 
+                                            placeholder="Tên lớp HP hoặc mã lớp HP..."
+                                            value="{{ request('search') }}"
+                                            onkeypress="if(event.key === 'Enter') { this.form.submit(); }">
+                                        @if(request('search'))
+                                        <a href="{{ route('dao-tao.duyet-diem.quan-ly-gui-diem', ['hoc_ky_id' => $hocKyId]) }}" 
+                                           class="btn btn-outline-secondary" 
+                                           title="Xóa bộ lọc">
+                                            <i class="bi bi-x-lg"></i>
+                                        </a>
+                                        @endif
+                                        <button type="submit" class="btn btn-primary">
+                                            <i class="bi bi-search"></i>
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
                         </div>
                     </form>
+                </div>
+            </div>
+
+            {{-- Action Buttons --}}
+            <div class="card">
+                <div class="card-header">
+                    <h5 class="card-title mb-0">
+                        <i class="bi bi-gear"></i> Thao tác hàng loạt
+                    </h5>
+                </div>
+                <div class="card-body">
+                    <div class="row g-2">
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-success btn-lg" onclick="moGuiDiemHangLoat(1)">
+                                    <i class="bi bi-unlock-fill"></i> Mở gửi điểm lần 1 (giữa kỳ)
+                                </button>
+                                <button type="button" class="btn btn-danger btn-lg" onclick="dongGuiDiemHangLoat(1)">
+                                    <i class="bi bi-lock-fill"></i> Đóng gửi điểm lần 1 (giữa kỳ)
+                                </button>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="d-grid gap-2">
+                                <button type="button" class="btn btn-success btn-lg" onclick="moGuiDiemHangLoat(2)">
+                                    <i class="bi bi-unlock-fill"></i> Mở gửi điểm lần 2 (cuối kỳ)
+                                </button>
+                                <button type="button" class="btn btn-danger btn-lg" onclick="dongGuiDiemHangLoat(2)">
+                                    <i class="bi bi-lock-fill"></i> Đóng gửi điểm lần 2 (cuối kỳ)
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-3">
+                        <small class="text-muted">
+                            <i class="bi bi-info-circle"></i> 
+                            Vui lòng chọn các lớp học phần ở bảng bên dưới trước khi thực hiện thao tác hàng loạt.
+                        </small>
+                    </div>
                 </div>
             </div>
 

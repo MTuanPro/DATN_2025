@@ -429,11 +429,14 @@
             return null;
         }
 
-        // Tính điểm tạm thời (chia lại theo tỷ lệ đã có)
-        const diemTamThoi = (tongDiem / tongTyLe) * 100;
-
+        // Trả về điểm thực tế đã có (không scale lại)
+        // Ví dụ: nếu chỉ có 40% điểm (Chuyên cần 10% + Giữa kỳ 30% = 40%)
+        // - Chuyên cần: 10 điểm * 10% = 1.0
+        // - Giữa kỳ: 10 điểm * 30% = 3.0
+        // - Tổng điểm thực tế: 1.0 + 3.0 = 4.0
+        // - Hiển thị: 4.0 (điểm thực tế dựa trên phần trăm đã có)
         // Làm tròn 2 chữ số
-        return Math.round(diemTamThoi * 100) / 100;
+        return Math.round(tongDiem * 100) / 100;
     }
 
     // Lấy điểm TK từ server sau khi lưu

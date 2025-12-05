@@ -353,6 +353,7 @@ class DuyetDiemController extends Controller
     public function quanLyGuiDiem(Request $request)
     {
         $hocKyId = $request->get('hoc_ky_id');
+        $search = $request->get('search'); // Tìm kiếm theo tên lớp HP
         
         // Lấy danh sách học kỳ
         $hocKys = HocKy::orderBy('ngay_bat_dau', 'desc')->limit(5)->get();
@@ -371,9 +372,17 @@ class DuyetDiemController extends Controller
             }
         }
 
+        // Tìm kiếm theo tên lớp HP hoặc mã lớp HP
+        if ($search) {
+            $query->where(function($q) use ($search) {
+                $q->where('ten_lop_hp', 'like', '%' . $search . '%')
+                  ->orWhere('ma_lop_hp', 'like', '%' . $search . '%');
+            });
+        }
+
         $lopHocPhans = $query->orderBy('ma_lop_hp')->get();
 
-        return view('daotao.duyet-diem.quan-ly-gui-diem', compact('lopHocPhans', 'hocKys', 'hocKyId'));
+        return view('daotao.duyet-diem.quan-ly-gui-diem', compact('lopHocPhans', 'hocKys', 'hocKyId', 'search'));
     }
 
     /**

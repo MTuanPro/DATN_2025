@@ -33,6 +33,7 @@ class DiemService
 
         $tongDiem = 0;
         $daCoTatCaDiem = true;
+        $diemCuoiKy = null; // Lưu điểm cuối kỳ để kiểm tra
 
         // 2. Tính điểm từng đầu
         foreach ($cauHinhs as $cauHinh) {
@@ -51,6 +52,14 @@ class DiemService
             // Tính trung bình các cột
             $diemTrungBinh = $diems->avg('diem_so');
 
+            // Lưu điểm cuối kỳ nếu là đầu điểm cuối kỳ
+            // Kiểm tra tên đầu điểm có chứa "cuối kỳ" hoặc "cuoi ky" (không phân biệt hoa thường)
+            $tenDauDiem = mb_strtolower($cauHinh->ten_dau_diem);
+            if (str_contains($tenDauDiem, 'cuối kỳ') || str_contains($tenDauDiem, 'cuoi ky') || 
+                str_contains($tenDauDiem, 'cuối kì') || str_contains($tenDauDiem, 'cuoi ki')) {
+                $diemCuoiKy = $diemTrungBinh;
+            }
+
             // Nhân với tỷ lệ %
             $tongDiem += $diemTrungBinh * ($cauHinh->ty_le / 100);
         }
@@ -68,7 +77,13 @@ class DiemService
         $diemChu = $this->chuyenDoiDiemChu($diemHe10);
 
         // 6. Qua môn?
+        // Điều kiện: Điểm tổng kết >= 4.0 VÀ điểm cuối kỳ >= 5.0 (nếu có)
         $quaMon = $diemHe10 >= 4.0;
+        
+        // Nếu có điểm cuối kỳ và điểm cuối kỳ < 5 thì không đạt
+        if ($diemCuoiKy !== null && $diemCuoiKy < 5.0) {
+            $quaMon = false;
+        }
 
         // 7. Update hoặc tạo mới kết quả học tập
         KetQuaHocTap::updateOrCreate(
@@ -131,13 +146,14 @@ class DiemService
             return null;
         }
 
-        // 4. Tính điểm tạm thời (chia lại theo tỷ lệ đã có)
-        // Ví dụ: nếu chỉ có 60% điểm (Chuyên cần 10% + Thi Giữa Kỳ 30% + bài tập 10% = 50%)
-        // thì điểm tạm thời = tổng điểm / tổng tỷ lệ * 100
-        $diemTamThoi = ($tongDiem / $tongTyLe) * 100;
-
-        // 5. Làm tròn 2 chữ số
-        return round($diemTamThoi, 2);
+        // 4. Trả về điểm thực tế đã có (không scale lại)
+        // Ví dụ: nếu chỉ có 40% điểm (Chuyên cần 10% + Giữa kỳ 30% = 40%)
+        // - Chuyên cần: 10 điểm * 10% = 1.0
+        // - Giữa kỳ: 10 điểm * 30% = 3.0
+        // - Tổng điểm thực tế: 1.0 + 3.0 = 4.0
+        // - Hiển thị: 4.0 (điểm thực tế dựa trên phần trăm đã có)
+        // Làm tròn 2 chữ số
+        return round($tongDiem, 2);
     }
 
     /**
