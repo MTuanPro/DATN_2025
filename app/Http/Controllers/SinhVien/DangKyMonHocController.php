@@ -141,8 +141,13 @@ class DangKyMonHocController extends Controller
         // Nếu không có chuyên ngành hoặc CTK rỗng: lấy tất cả môn có lớp đang mở
         if ($sinhVien->chuyen_nganh_id) {
             // Có chuyên ngành: lấy theo chương trình khung
+            // Chỉ lấy môn học của kỳ hiện tại và các kỳ trước (sinh viên không thể đăng ký môn kỳ tương lai)
+            // Lưu ý: Kỳ 9-13 là kỳ trả nợ, chỉ cho phép đăng ký môn trả nợ/cải thiện
+            $kyHienTai = $sinhVien->ky_hien_tai ?? 1;
+            
             $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
                 ->whereIn('mon_hoc_id', $monIdCoLopMo) // Chỉ lấy môn có lớp đang mở
+                ->where('hoc_ky_goi_y', '<=', min($kyHienTai, 8)) // Chỉ lấy môn học của kỳ 1-8 (kỳ 9-13 chỉ để trả nợ)
                 ->with(['monHoc.khoa'])
                 ->orderBy('hoc_ky_goi_y', 'asc')
                 ->orderBy('thu_tu_hoc', 'asc')
@@ -202,8 +207,6 @@ class DangKyMonHocController extends Controller
             ->where('hoc_ky_id', $hocKy->id)
             ->get();
 
-        $monDaDangKy = $dangKyCollection->pluck('mon_hoc_id')->toArray();
-
         // Lấy các môn đã học (có kết quả)
         $monDaHoc = DB::table('lop_hoc_phan_sinh_vien')
             ->join('lop_hoc_phan', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
@@ -211,14 +214,32 @@ class DangKyMonHocController extends Controller
             ->pluck('lop_hoc_phan.mon_hoc_id')
             ->toArray();
 
-        // Lấy các môn đã qua
+        // Lấy các môn đã qua (qua_mon = true)
         $monDaQua = DB::table('ket_qua_hoc_tap')
             ->join('lop_hoc_phan_sinh_vien', 'ket_qua_hoc_tap.lop_hoc_phan_sinh_vien_id', '=', 'lop_hoc_phan_sinh_vien.id')
             ->join('lop_hoc_phan', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
             ->where('lop_hoc_phan_sinh_vien.sinh_vien_id', $sinhVien->id)
             ->where('ket_qua_hoc_tap.qua_mon', true)
-->pluck('lop_hoc_phan.mon_hoc_id')
+            ->pluck('lop_hoc_phan.mon_hoc_id')
             ->toArray();
+
+        // Lấy các môn đang trượt (qua_mon = false) - cần học lại
+        $monDangTruot = DB::table('ket_qua_hoc_tap')
+            ->join('lop_hoc_phan_sinh_vien', 'ket_qua_hoc_tap.lop_hoc_phan_sinh_vien_id', '=', 'lop_hoc_phan_sinh_vien.id')
+            ->join('lop_hoc_phan', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
+            ->where('lop_hoc_phan_sinh_vien.sinh_vien_id', $sinhVien->id)
+            ->where('ket_qua_hoc_tap.qua_mon', false)
+            ->pluck('lop_hoc_phan.mon_hoc_id')
+            ->toArray();
+
+        // Lấy các môn đã đăng ký trong học kỳ này
+        // LƯU Ý: Không loại bỏ môn trượt hoặc môn đã qua nếu chúng đã được đăng ký trong học kỳ hiện tại
+        // Vì khi sinh viên đăng ký học lại hoặc cải thiện điểm, môn đó phải hiển thị "Đã đăng ký"
+        $monDaDangKy = $dangKyCollection->pluck('mon_hoc_id')->toArray();
+        
+        // Chỉ loại bỏ môn trượt/đã qua nếu chúng KHÔNG có đăng ký trong học kỳ hiện tại
+        // (để hiển thị "Đăng ký học lại" hoặc "Đăng ký cải thiện điểm" thay vì "Đã đăng ký")
+        // Nhưng nếu đã đăng ký rồi thì giữ lại trong $monDaDangKy
 
         // Lấy danh sách lớp học phần đang mở
         $lopHocPhans = LopHocPhan::where('hoc_ky_id', $hocKy->id)
@@ -243,6 +264,7 @@ class DangKyMonHocController extends Controller
             'monDaDangKy',
             'monDaHoc',
             'monDaQua',
+            'monDangTruot',
             'lopHocPhans',
             'tongTinChiDaDangKy',
             'tinChiToiDa',

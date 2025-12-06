@@ -12,34 +12,22 @@ class HocKySeeder extends Seeder
 {
     public function run(): void
     {
-        // Lấy tất cả sinh viên đang học (trạng thái "Đang học" hoặc "Bảo lưu")
-        $trangThaiDangHoc = DB::table('trang_thai_hoc_tap')
-            ->whereIn('ten_trang_thai', ['Đang học', 'Bảo lưu'])
-            ->pluck('id');
-
-        if ($trangThaiDangHoc->isEmpty()) {
-            echo "⚠️  Không tìm thấy trạng thái học tập 'Đang học' hoặc 'Bảo lưu'\n";
-            return;
-        }
-
-        // Lấy tất cả sinh viên đang học
-        $sinhViens = SinhVien::whereIn('trang_thai_hoc_tap_id', $trangThaiDangHoc)
-            ->whereNotNull('khoa_hoc_id')
-            ->with('khoaHoc')
-            ->get();
-
-        if ($sinhViens->isEmpty()) {
-            echo "⚠️  Không có sinh viên nào đang học\n";
-            return;
-        }
-
-        // Lấy tất cả khóa học duy nhất từ các sinh viên đang học
-        $khoaHocIds = $sinhViens->pluck('khoa_hoc_id')->unique();
-        $khoaHocs = KhoaHoc::whereIn('id', $khoaHocIds)->get();
+        // Lấy tất cả khóa học (không cần phụ thuộc vào sinh viên)
+        $khoaHocs = KhoaHoc::all();
 
         if ($khoaHocs->isEmpty()) {
             echo "⚠️  Không tìm thấy khóa học nào\n";
             return;
+        }
+
+        // Lấy số sinh viên đang học (nếu có) để hiển thị thông tin
+        $trangThaiDangHoc = DB::table('trang_thai_hoc_tap')
+            ->whereIn('ten_trang_thai', ['Đang học', 'Bảo lưu'])
+            ->pluck('id');
+        
+        $soSinhVien = 0;
+        if (!$trangThaiDangHoc->isEmpty()) {
+            $soSinhVien = SinhVien::whereIn('trang_thai_hoc_tap_id', $trangThaiDangHoc)->count();
         }
 
         $hocKys = [];
@@ -72,7 +60,7 @@ class HocKySeeder extends Seeder
                     }
                 }
                 
-                $hocKys[] = [
+        $hocKys[] = [
                     'ten_hoc_ky' => $tenHocKy,
                     'nam_hoc' => $namHocString,
                     'ngay_bat_dau' => $ngayBatDau,
@@ -82,7 +70,7 @@ class HocKySeeder extends Seeder
                     'la_hoc_ky_hien_tai' => $laHocKyHienTai,
                     'dang_mo_dang_ky' => $laHocKyHienTai && Carbon::now()->between($ngayBatDauDangKy, $ngayKetThucDangKy),
                     'mo_ta' => "{$tenHocKy} năm học {$namHocString}",
-                ];
+        ];
 
                 // Học kỳ 2: Tháng 2 - Tháng 6
                 $tenHocKy = 'Học kỳ 2';
@@ -102,7 +90,7 @@ class HocKySeeder extends Seeder
                     }
                 }
                 
-                $hocKys[] = [
+        $hocKys[] = [
                     'ten_hoc_ky' => $tenHocKy,
                     'nam_hoc' => $namHocString,
                     'ngay_bat_dau' => $ngayBatDau,
@@ -165,7 +153,7 @@ class HocKySeeder extends Seeder
         }
 
         echo "✅ Đã tạo/cập nhật {$count} học kỳ\n";
-        echo "   📊 Số sinh viên đang học: " . $sinhViens->count() . "\n";
+        echo "   📊 Số sinh viên đang học: " . $soSinhVien . "\n";
         echo "   📚 Số khóa học: " . $khoaHocs->count() . "\n";
         
         $hocKyHienTai = DB::table('hoc_ky')->where('la_hoc_ky_hien_tai', true)->first();

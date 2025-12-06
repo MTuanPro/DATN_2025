@@ -63,13 +63,13 @@ class KetQuaHocTapController extends Controller
             $tongSV = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $lop->id)
                 ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                 ->count();
-            
+
             // Sinh viên đã có điểm (có ít nhất 1 điểm đã nhập)
             $svCoDiem = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $lop->id)
                 ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
                 ->whereHas('nhapDiems')
                 ->count();
-            
+
             $lop->so_sinh_vien = $tongSV;
             $lop->sv_da_nhap = $svCoDiem;
             $lop->ty_le_nhap = $tongSV > 0 ? round($svCoDiem / $tongSV * 100, 1) : 0;
@@ -114,15 +114,15 @@ class KetQuaHocTapController extends Controller
                 $danhSachDiem = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
                     ->with('cauHinh')
                     ->get();
-                
+
                 $lhpsv->danh_sach_diem = $danhSachDiem;
-                
+
                 // Lấy điểm tổng kết từ ket_qua_hoc_tap
                 $ketQua = $lhpsv->ketQuaHocTap;
                 $lhpsv->diem_tong_ket = $ketQua ? $ketQua->diem_he_10 : null;
                 $lhpsv->diem_chu = $ketQua ? $ketQua->diem_chu : null;
                 $lhpsv->xep_loai = $ketQua ? $ketQua->xep_loai : null;
-                
+
                 return $lhpsv;
             })
             ->sortBy('sinhVien.ma_sinh_vien');
@@ -234,9 +234,9 @@ class KetQuaHocTapController extends Controller
     {
         // TODO: Cài đặt package maatwebsite/excel
         // composer require maatwebsite/excel
-        
+
         return redirect()->back()->with('error', 'Chức năng xuất Excel đang được phát triển');
-        
+
         /*
         $giangVien = auth()->user()->giangVien;
 
@@ -388,8 +388,14 @@ class KetQuaHocTapController extends Controller
     private function thongKePhanBoDiem($danhSachDiem)
     {
         $phanBo = [
-            'A' => 0, 'B+' => 0, 'B' => 0, 'C+' => 0,
-            'C' => 0, 'D+' => 0, 'D' => 0, 'F' => 0,
+            'A' => 0,
+            'B+' => 0,
+            'B' => 0,
+            'C+' => 0,
+            'C' => 0,
+            'D+' => 0,
+            'D' => 0,
+            'F' => 0,
         ];
 
         $tongSV = 0;
@@ -445,5 +451,229 @@ class KetQuaHocTapController extends Controller
             ->count();
 
         return $daNhap > 0;
+    }
+
+    /**
+     * Xuất danh sách thi - Tự động thêm sinh viên đủ điều kiện vào lịch thi
+     * Điều kiện: Điểm danh >= 80% VÀ Điểm CC >= 2/4
+     */
+    public function xuatDanhSachThi($lopHocPhanId)
+    {
+        try {
+            \Log::info('Bắt đầu xuất danh sách thi', ['lop_hoc_phan_id' => $lopHocPhanId]);
+
+            $giangVien = auth()->user()->giangVien;
+
+            if (!$giangVien) {
+                \Log::error('Không tìm thấy giảng viên');
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy thông tin giảng viên'
+                ], 403);
+            }
+
+            // Lấy thông tin lớp học phần
+            $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy'])->find($lopHocPhanId);
+
+            if (!$lopHocPhan) {
+                \Log::error('Không tìm thấy lớp học phần', ['id' => $lopHocPhanId]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy lớp học phần'
+                ], 404);
+            }
+
+            \Log::info('Đang xử lý lớp học phần', [
+                'ma_lop' => $lopHocPhan->ma_lop_hp,
+                'mon_hoc' => $lopHocPhan->monHoc->ten_mon
+            ]);
+
+            // Lấy danh sách sinh viên
+            $sinhViens = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
+                ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
+                ->with(['sinhVien', 'ketQuaHocTap'])
+                ->get();
+
+            $cauHinhs = \App\Models\CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhanId)
+                ->orderBy('id')
+                ->get();
+
+            // Tìm cấu hình Chuyên cần
+            $cauHinhCC = $cauHinhs->firstWhere('ten_dau_diem', 'Chuyên cần');
+
+            $sinhVienDuDieuKien = [];
+
+            foreach ($sinhViens as $lhpsv) {
+                // 1. Kiểm tra tỷ lệ điểm danh >= 80%
+                // Đếm tổng số buổi đã có điểm danh (unique theo lich_hoc_chi_tiet_id) của TẤT CẢ sinh viên trong lớp
+                $tongBuoi = \App\Models\DiemDanh::whereHas('lopHocPhanSinhVien', function ($q) use ($lopHocPhanId) {
+                    $q->where('lop_hoc_phan_id', $lopHocPhanId);
+                })
+                    ->distinct('lich_hoc_chi_tiet_id')
+                    ->count('lich_hoc_chi_tiet_id');
+
+                // Đếm số buổi có mặt của sinh viên cụ thể
+                $buoiCoMat = \App\Models\DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
+                    ->where('trang_thai', 'co_mat')
+                    ->count();
+
+                // Tính tỷ lệ điểm danh
+                $tyLeDiemDanh = $tongBuoi > 0 ? round(($buoiCoMat / $tongBuoi) * 100, 1) : 0;
+                $duDieuKienDiemDanh = $tyLeDiemDanh >= 80;
+
+                \Log::info('Debug điểm danh sinh viên', [
+                    'sinh_vien_id' => $lhpsv->sinh_vien_id,
+                    'ma_sv' => $lhpsv->sinhVien->ma_sinh_vien ?? 'N/A',
+                    'tong_buoi' => $tongBuoi,
+                    'buoi_co_mat' => $buoiCoMat,
+                    'ty_le_diem_danh' => $tyLeDiemDanh,
+                    'du_dieu_kien_diem_danh' => $duDieuKienDiemDanh
+                ]);
+
+                // 2. Kiểm tra điểm CC >= 2/4
+                $diemCC = null;
+                $duDieuKienDiemCC = false;
+
+                if ($cauHinhCC) {
+                    $diemCCRecord = \App\Models\NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
+                        ->where('cau_hinh_id', $cauHinhCC->id)
+                        ->first();
+
+                    if ($diemCCRecord) {
+                        // Chuyển điểm hệ 10 sang hệ 4
+                        $diemCCHe10 = $diemCCRecord->diem_so;
+                        if ($diemCCHe10 >= 9.0) {
+                            $diemCC = 4.0;
+                        } elseif ($diemCCHe10 >= 8.5) {
+                            $diemCC = 3.5;
+                        } elseif ($diemCCHe10 >= 8.0) {
+                            $diemCC = 3.0;
+                        } elseif ($diemCCHe10 >= 7.0) {
+                            $diemCC = 2.5;
+                        } elseif ($diemCCHe10 >= 6.5) {
+                            $diemCC = 2.0;
+                        } elseif ($diemCCHe10 >= 5.5) {
+                            $diemCC = 1.5;
+                        } elseif ($diemCCHe10 >= 5.0) {
+                            $diemCC = 1.0;
+                        } else {
+                            $diemCC = 0;
+                        }
+
+                        $duDieuKienDiemCC = $diemCC >= 2.0;
+                    }
+                }
+
+                \Log::info('Debug điểm Chuyên cần', [
+                    'sinh_vien_id' => $lhpsv->sinh_vien_id,
+                    'ma_sv' => $lhpsv->sinhVien->ma_sinh_vien ?? 'N/A',
+                    'co_cau_hinh_cc' => $cauHinhCC ? 'Có' : 'Không',
+                    'diem_cc_he_4' => $diemCC,
+                    'du_dieu_kien_diem_cc' => $duDieuKienDiemCC
+                ]);
+
+                // 3. Kiểm tra đủ điều kiện: Điểm danh >= 80% VÀ Điểm CC >= 2/4
+                if ($duDieuKienDiemDanh && $duDieuKienDiemCC) {
+                    $sinhVienDuDieuKien[] = $lhpsv->sinh_vien_id;
+                    \Log::info('✅ Sinh viên ĐỦ điều kiện thi', [
+                        'sinh_vien_id' => $lhpsv->sinh_vien_id,
+                        'ma_sv' => $lhpsv->sinhVien->ma_sinh_vien ?? 'N/A'
+                    ]);
+                } else {
+                    \Log::warning('❌ Sinh viên KHÔNG đủ điều kiện thi', [
+                        'sinh_vien_id' => $lhpsv->sinh_vien_id,
+                        'ma_sv' => $lhpsv->sinhVien->ma_sinh_vien ?? 'N/A',
+                        'ly_do' => (!$duDieuKienDiemDanh ? 'Điểm danh < 80%' : '') .
+                            (!$duDieuKienDiemCC ? ($duDieuKienDiemDanh ? '' : ' và ') . 'Điểm CC < 2/4' : '')
+                    ]);
+                }
+            }
+
+            // Tìm lịch thi của lớp học phần
+            $lichThi = \App\Models\LichThi::where('lop_hoc_phan_id', $lopHocPhanId)
+                ->orderBy('ngay_thi')
+                ->first();
+
+            if (!$lichThi) {
+                \Log::warning('Chưa có lịch thi', ['lop_hoc_phan_id' => $lopHocPhanId]);
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Chưa có lịch thi cho lớp học phần này. Vui lòng liên hệ phòng đào tạo để tạo lịch thi.'
+                ], 404);
+            }
+
+            \Log::info('Tìm thấy lịch thi', [
+                'lich_thi_id' => $lichThi->id,
+                'so_sinh_vien_du_dieu_kien' => count($sinhVienDuDieuKien)
+            ]);
+
+            // Thêm sinh viên đủ điều kiện vào danh sách thi
+            DB::beginTransaction();
+
+            $soLuongThem = 0;
+            $soLuongDaTonTai = 0;
+
+            foreach ($sinhVienDuDieuKien as $sinhVienId) {
+                $daTonTai = \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)
+                    ->where('sinh_vien_id', $sinhVienId)
+                    ->exists();
+
+                if ($daTonTai) {
+                    $soLuongDaTonTai++;
+                    continue;
+                }
+
+                \App\Models\LichThiSinhVien::create([
+                    'lich_thi_id' => $lichThi->id,
+                    'sinh_vien_id' => $sinhVienId,
+                    'phong_thi_id' => $lichThi->phong_thi_id,
+                    'trang_thai' => 'du_thi'
+                ]);
+
+                $soLuongThem++;
+            }
+
+            // Cập nhật số sinh viên dự thi
+            $tongSinhVien = \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)->count();
+            $lichThi->update(['so_sinh_vien_du_thi' => $tongSinhVien]);
+
+            DB::commit();
+
+            \Log::info('Xuất danh sách thi thành công', [
+                'so_luong_them' => $soLuongThem,
+                'so_luong_da_ton_tai' => $soLuongDaTonTai,
+                'tong_sinh_vien' => $tongSinhVien
+            ]);
+
+            $message = "✓ Đã thêm <strong>{$soLuongThem} sinh viên</strong> đủ điều kiện vào danh sách thi.";
+            if ($soLuongDaTonTai > 0) {
+                $message .= "<br>→ {$soLuongDaTonTai} sinh viên đã có trong danh sách (giữ nguyên).";
+            }
+            $message .= "<br>→ Tổng cộng: <strong>{$tongSinhVien} sinh viên</strong> dự thi.";
+
+            // Trả về JSON cho AJAX
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'redirect_url' => route('giangvien.lich-thi.show', $lichThi->id),
+                'data' => [
+                    'so_luong_them' => $soLuongThem,
+                    'so_luong_da_ton_tai' => $soLuongDaTonTai,
+                    'tong_sinh_vien' => $tongSinhVien
+                ]
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            \Log::error('Lỗi khi xuất danh sách thi', [
+                'lop_hoc_phan_id' => $lopHocPhanId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
+            ], 500);
+        }
     }
 }

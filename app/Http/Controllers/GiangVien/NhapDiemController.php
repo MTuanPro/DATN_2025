@@ -128,7 +128,7 @@ class NhapDiemController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         // Kiểm tra quyền
-$duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
+        $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             ->where('giang_vien_id', $giangVien->id)
             ->first();
 
@@ -286,11 +286,11 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
         // CHỈ KIỂM TRA KHI ĐANG NHẬP ĐIỂM (không phải xóa/để trống)
         if (!$laDaoTao && $validated['diem_so'] !== null && $validated['diem_so'] !== '') {
             $tenDauDiem = mb_strtolower($cauHinh->ten_dau_diem ?? '');
-            $laDauDiemCuoiKy = str_contains($tenDauDiem, 'cuối kỳ') || 
-                              str_contains($tenDauDiem, 'cuoi ky') || 
-                              str_contains($tenDauDiem, 'cuối kì') || 
-                              str_contains($tenDauDiem, 'cuoi ki');
-            
+            $laDauDiemCuoiKy = str_contains($tenDauDiem, 'cuối kỳ') ||
+                str_contains($tenDauDiem, 'cuoi ky') ||
+                str_contains($tenDauDiem, 'cuối kì') ||
+                str_contains($tenDauDiem, 'cuoi ki');
+
             if ($laDauDiemCuoiKy && !$lopHocPhan->cho_phep_gui_diem_lan_2) {
                 return response()->json([
                     'success' => false,
@@ -308,7 +308,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
                     ->where('cau_hinh_id', $validated['cau_hinh_id'])
                     ->where('cot_diem', $validated['cot_diem'])
                     ->first();
-                
+
                 if ($diemCu) {
                     // Lưu lịch sử xóa điểm
                     LichSuSuaDiem::create([
@@ -486,7 +486,7 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
 
         if ($sinhVienCoDiem < $tongSinhVien) {
             $soThieu = $tongSinhVien - $sinhVienCoDiem;
-// Cho phép khóa nếu confirm
+            // Cho phép khóa nếu confirm
             if (!$request->has('confirm')) {
                 return response()->json([
                     'success' => false,
@@ -1069,6 +1069,218 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra khi import: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Xuất danh sách sinh viên đủ điều kiện thi
+     * 
+     * Điều kiện:
+     * - Trung bình các đầu điểm đã nhập (chưa tính điểm thi) > 5
+     * - Không vắng quá 20% số buổi đã điểm danh
+     */
+    public function xuatDanhSachThi($lopHocPhanId)
+    {
+        $giangVien = Auth::user()->giangVien;
+
+        // Kiểm tra quyền
+        $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->where('giang_vien_id', $giangVien->id)
+            ->first();
+
+        if (!$duocPhanCong) {
+            return redirect()->route('giangvien.nhap-diem.index')
+                ->with('error', 'Bạn không có quyền truy cập lớp này');
+        }
+
+        // Lấy thông tin lớp học phần
+        $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy'])->find($lopHocPhanId);
+
+        // Lấy cấu hình đầu điểm
+        $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->orderBy('id')
+            ->get();
+
+        // Lấy danh sách sinh viên
+        $sinhViens = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh'])
+            ->with(['sinhVien', 'ketQuaHocTap'])
+            ->orderBy('sinh_vien_id')
+            ->get();
+
+        // Lấy danh sách lịch thi của lớp học phần này
+        $lichThis = \App\Models\LichThi::where('lop_hoc_phan_id', $lopHocPhanId)
+            ->with(['phongThi', 'caHoc'])
+            ->orderBy('ngay_thi')
+            ->get();
+
+        $danhSachDuDieuKien = [];
+        $danhSachKhongDuDieuKien = [];
+
+        foreach ($sinhViens as $lhpsv) {
+            // 1. Tính điểm trung bình các đầu điểm đã nhập (không tính điểm thi cuối kỳ)
+            $diemDaNhap = \App\Models\NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)->get();
+
+            $tongDiem = 0;
+            $tongTyLe = 0;
+
+            foreach ($cauHinhs as $cauHinh) {
+                // Bỏ qua đầu điểm cuối kỳ/thi
+                if (
+                    stripos($cauHinh->ten_dau_diem, 'cuối kỳ') !== false ||
+                    stripos($cauHinh->ten_dau_diem, 'thi') !== false
+                ) {
+                    continue;
+                }
+
+                $diemCauHinh = $diemDaNhap->where('cau_hinh_id', $cauHinh->id);
+
+                if ($diemCauHinh->isEmpty()) {
+                    continue;
+                }
+
+                // Tính trung bình cộng các cột của đầu điểm này
+                $trungBinhCot = $diemCauHinh->avg('diem_so');
+
+                if ($trungBinhCot !== null) {
+                    $tongDiem += $trungBinhCot * $cauHinh->ty_le;
+                    $tongTyLe += $cauHinh->ty_le;
+                }
+            }
+
+            $diemTrungBinh = $tongTyLe > 0 ? $tongDiem / $tongTyLe : 0;
+
+            // 2. Kiểm tra tỷ lệ vắng
+            // Đếm tổng số buổi đã có điểm danh (unique theo lich_hoc_chi_tiet_id) của TẤT CẢ sinh viên trong lớp
+            $tongBuoiDiemDanh = \App\Models\DiemDanh::whereHas('lopHocPhanSinhVien', function ($q) use ($lopHocPhanId) {
+                $q->where('lop_hoc_phan_id', $lopHocPhanId);
+            })
+                ->distinct('lich_hoc_chi_tiet_id')
+                ->count('lich_hoc_chi_tiet_id');
+
+            $soBuoiVang = \App\Models\DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
+                ->where('trang_thai', 'vang')
+                ->count();
+
+            $tyLeVang = $tongBuoiDiemDanh > 0 ? ($soBuoiVang / $tongBuoiDiemDanh) * 100 : 0;
+
+            // 3. Xác định đủ điều kiện hay không
+            $duDieuKien = $diemTrungBinh >= 5 && $tyLeVang <= 20;
+
+            $thongTin = [
+                'lhpsv' => $lhpsv,
+                'diem_trung_binh' => round($diemTrungBinh, 2),
+                'so_buoi_vang' => $soBuoiVang,
+                'tong_buoi' => $tongBuoiDiemDanh,
+                'ty_le_vang' => round($tyLeVang, 2),
+                'du_dieu_kien' => $duDieuKien,
+                'ly_do' => []
+            ];
+
+            if ($diemTrungBinh < 5) {
+                $thongTin['ly_do'][] = 'Điểm TB < 5.0';
+            }
+            if ($tyLeVang > 20) {
+                $thongTin['ly_do'][] = 'Vắng > 20%';
+            }
+
+            if ($duDieuKien) {
+                $danhSachDuDieuKien[] = $thongTin;
+            } else {
+                $danhSachKhongDuDieuKien[] = $thongTin;
+            }
+        }
+
+        return view('giangvien.nhap-diem.xuat-danh-sach-thi', compact(
+            'lopHocPhan',
+            'cauHinhs',
+            'danhSachDuDieuKien',
+            'danhSachKhongDuDieuKien',
+            'lichThis'
+        ));
+    }
+
+    /**
+     * Thêm sinh viên đủ điều kiện vào danh sách thi
+     */
+    public function themVaoDanhSachThi(Request $request, $lopHocPhanId)
+    {
+        try {
+            $lichThiId = $request->input('lich_thi_id');
+            $sinhVienIds = $request->input('sinh_vien_ids', []);
+
+            if (empty($lichThiId)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng chọn lịch thi'
+                ], 400);
+            }
+
+            if (empty($sinhVienIds)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Vui lòng chọn sinh viên'
+                ], 400);
+            }
+
+            $lichThi = \App\Models\LichThi::find($lichThiId);
+            if (!$lichThi) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Không tìm thấy lịch thi'
+                ], 404);
+            }
+
+            DB::beginTransaction();
+
+            $soLuongThem = 0;
+            $soLuongDaTonTai = 0;
+
+            foreach ($sinhVienIds as $sinhVienId) {
+                // Kiểm tra sinh viên đã có trong danh sách thi chưa
+                $daTonTai = \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThiId)
+                    ->where('sinh_vien_id', $sinhVienId)
+                    ->exists();
+
+                if ($daTonTai) {
+                    $soLuongDaTonTai++;
+                    continue;
+                }
+
+                // Thêm sinh viên vào danh sách thi
+                \App\Models\LichThiSinhVien::create([
+                    'lich_thi_id' => $lichThiId,
+                    'sinh_vien_id' => $sinhVienId,
+                    'phong_thi_id' => $lichThi->phong_thi_id,
+                    'trang_thai' => 'du_thi'
+                ]);
+
+                $soLuongThem++;
+            }
+
+            // Cập nhật số sinh viên dự thi trong lịch thi
+            $tongSinhVien = \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThiId)->count();
+            $lichThi->update(['so_sinh_vien_du_thi' => $tongSinhVien]);
+
+            DB::commit();
+
+            $message = "Đã thêm {$soLuongThem} sinh viên vào danh sách thi.";
+            if ($soLuongDaTonTai > 0) {
+                $message .= " ({$soLuongDaTonTai} sinh viên đã có trong danh sách)";
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => $message,
+                'so_luong_them' => $soLuongThem,
+                'so_luong_da_ton_tai' => $soLuongDaTonTai
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
             ], 500);
         }
     }

@@ -194,11 +194,12 @@ class DangKyMonHocService
             $hocKyGoiY = $chuongTrinhKhung->hoc_ky_goi_y;
             
             // Kiểm tra môn kỳ tương lai (KHÔNG cho phép)
-            if ($hocKyGoiY > $kyHienTai) {
-                $errors[] = "Bạn chỉ được đăng ký môn học của kỳ {$kyHienTai}. Môn này thuộc kỳ {$hocKyGoiY}.";
+            // Lưu ý: Kỳ 9-13 là kỳ trả nợ, chỉ cho phép đăng ký môn trả nợ/cải thiện (môn thuộc kỳ 1-8)
+            if ($hocKyGoiY > min($kyHienTai, 8)) {
+                $errors[] = "Bạn chỉ được đăng ký môn học của kỳ " . min($kyHienTai, 8) . ". Môn này thuộc kỳ {$hocKyGoiY}.";
             }
-            // Môn kỳ trước: Cho phép nhưng cảnh báo
-            elseif ($hocKyGoiY < $kyHienTai) {
+            // Môn kỳ trước: Cho phép nhưng cảnh báo (bao gồm cả kỳ 9-13 để trả nợ)
+            elseif ($hocKyGoiY < $kyHienTai || ($kyHienTai > 8 && $hocKyGoiY <= 8)) {
                 // Kiểm tra xem sinh viên đã học môn này chưa
                 $ketQuaCu = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $monHocId) {
                     $q->where('sinh_vien_id', $sinhVienId)

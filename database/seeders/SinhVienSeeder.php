@@ -405,7 +405,7 @@ class SinhVienSeeder extends Seeder
 
             // Phân bổ kỳ học đều (1-8)
             $kyHienTai = (($count % 8) + 1);
-            
+
             // Tạo sinh viên
             $sinhVienId = DB::table('sinh_vien')->insertGetId([
                 'user_id' => $userId,
@@ -490,7 +490,7 @@ class SinhVienSeeder extends Seeder
             ->where('ma_sinh_vien', 'LIKE', 'SV25%')
             ->orderBy('ma_sinh_vien', 'desc')
             ->value('ma_sinh_vien');
-        
+
         if ($maxMaSinhVien) {
             // Lấy số từ mã sinh viên (ví dụ: SV25020 -> 25020)
             $studentNumber = intval(substr($maxMaSinhVien, 2)) + 1;
@@ -508,7 +508,7 @@ class SinhVienSeeder extends Seeder
         foreach ($chuyenNganhs as $index => $chuyenNganh) {
             // Số sinh viên cho chuyên ngành này (11 hoặc 12)
             $numStudents = $studentsPerChuyenNganh + ($index < $remainder ? 1 : 0);
-            
+
             // Lấy ngành
             $nganhId = $chuyenNganh->nganh_id;
 
@@ -518,40 +518,40 @@ class SinhVienSeeder extends Seeder
             while ($created < $numStudents) {
                 // Tạo mã sinh viên
                 $maSinhVien = 'SV' . $studentNumber;
-                
+
                 // Kiểm tra xem mã sinh viên đã tồn tại chưa
                 $existingSinhVien = DB::table('sinh_vien')->where('ma_sinh_vien', $maSinhVien)->first();
                 if ($existingSinhVien) {
                     $studentNumber++;
                     continue; // Bỏ qua nếu đã tồn tại
                 }
-                
+
                 // Tạo email
                 $email = 'sv' . $studentNumber . '@sis.edu.vn';
-                
+
                 // Kiểm tra email đã tồn tại chưa
                 $existingUser = DB::table('users')->where('email', $email)->first();
                 if ($existingUser) {
                     $studentNumber++;
                     continue; // Bỏ qua nếu email đã tồn tại
                 }
-                
+
 
                 // Tạo tên ngẫu nhiên
                 $hoTen = $ho[array_rand($ho)] . ' ' . $tenDem[array_rand($tenDem)] . ' ' . $ten[array_rand($ten)];
-                
+
                 // Tạo ngày sinh ngẫu nhiên (2004-2006)
                 $year = rand(2004, 2006);
                 $month = str_pad(rand(1, 12), 2, '0', STR_PAD_LEFT);
                 $day = str_pad(rand(1, 28), 2, '0', STR_PAD_LEFT);
                 $ngaySinh = "{$year}-{$month}-{$day}";
-                
+
                 // Giới tính ngẫu nhiên
                 $gioiTinh = rand(0, 1) == 0 ? 'nam' : 'nu';
-                
+
                 // Số điện thoại
                 $soDienThoai = '09' . str_pad(rand(0, 99999999), 8, '0', STR_PAD_LEFT);
-                
+
                 // CCCD (đảm bảo unique)
                 $canCuocCongDan = str_pad($year % 100, 2, '0', STR_PAD_LEFT) . $month . $day . str_pad($studentNumber, 6, '0', STR_PAD_LEFT);
 
@@ -577,7 +577,7 @@ class SinhVienSeeder extends Seeder
 
                 // Phân bổ kỳ học đều (1-8)
                 $kyHienTai = (($count % 8) + 1);
-                
+
                 // Tạo sinh viên
                 $sinhVienId = DB::table('sinh_vien')->insertGetId([
                     'user_id' => $userId,
@@ -613,7 +613,7 @@ class SinhVienSeeder extends Seeder
         echo "   🔑 Mật khẩu đăng nhập: password\n";
         echo "   📧 Email đăng nhập: sv[STT]@sis.edu.vn (ví dụ: sv25021@sis.edu.vn)\n";
         echo "   📊 Phân bổ theo chuyên ngành:\n";
-        
+
         // Hiển thị thống kê theo chuyên ngành
         foreach ($chuyenNganhs as $chuyenNganh) {
             $tenChuyenNganh = DB::table('chuyen_nganh')->where('id', $chuyenNganh->chuyen_nganh_id)->value('ten_chuyen_nganh');
@@ -652,48 +652,66 @@ class SinhVienSeeder extends Seeder
         $soMonNo = 0;
 
         // Duyệt qua các kỳ từ 1 đến kỳ hiện tại - 1
+        // Logic: Sinh viên kỳ x sẽ có dữ liệu học tập cho các kỳ từ 1 đến x-1
+        // Lưu ý: Dữ liệu phải được tạo trong HỌC KỲ QUÁ KHỨ (không được dùng học kỳ hiện tại)
+
+        // Lấy tất cả học kỳ quá khứ (chỉ lấy học kỳ đã bắt đầu), sắp xếp từ gần nhất đến xa nhất
+        $hocKyQuaKhu = HocKy::where('la_hoc_ky_hien_tai', false)
+            ->where('ngay_bat_dau', '<', now()) // CHỈ LẤY HỌC KỲ ĐÃ QUA, KHÔNG LẤY HỌC KỲ TƯƠNG LAI
+            ->orderBy('ngay_bat_dau', 'desc')
+            ->get();
+
+        if ($hocKyQuaKhu->isEmpty()) {
+            return; // Không có học kỳ quá khứ nào
+        }
+
         for ($ky = 1; $ky < $kyHienTai; $ky++) {
-            // Tính năm học cho kỳ này
-            $namHoc = (int)(($ky - 1) / 2) + 1;
-            $hocKyTrongNam = (($ky - 1) % 2) + 1;
-            $namHocString = ($namBatDau + $namHoc - 1) . '-' . ($namBatDau + $namHoc);
-            $tenHocKy = 'Học kỳ ' . $hocKyTrongNam;
+            // Chiến lược: Sử dụng học kỳ quá khứ gần nhất
+            // Sinh viên kỳ 2 cần dữ liệu kỳ 1 → dùng học kỳ thứ 0 (gần nhất) = Học kỳ 2 2024-2025
+            // Sinh viên kỳ 3 cần dữ liệu kỳ 1 → dùng học kỳ thứ 1 = Học kỳ 1 2024-2025
+            // Sinh viên kỳ 3 cần dữ liệu kỳ 2 → dùng học kỳ thứ 0 = Học kỳ 2 2024-2025
 
-            // Tìm hoặc tạo học kỳ
-            $hocKy = HocKy::where('ten_hoc_ky', $tenHocKy)
-                ->where('nam_hoc', $namHocString)
-                ->first();
+            // Tính index của học kỳ cần dùng (đếm ngược từ hiện tại)
+            // Kỳ 1 của sinh viên kỳ N nằm ở vị trí (N-2) kỳ trước hiện tại
+            // Kỳ 2 của sinh viên kỳ N nằm ở vị trí (N-3) kỳ trước hiện tại
+            $viTriLuiVe = $kyHienTai - $ky - 1; // Sinh viên kỳ 2, cần dữ liệu kỳ 1 → lùi 0 kỳ (học kỳ trước liền kề)
 
-            if (!$hocKy) {
-                // Tạo học kỳ nếu chưa có
-                $namHocBatDau = $namBatDau + $namHoc - 1;
-                if ($hocKyTrongNam == 1) {
-                    $ngayBatDau = Carbon::create($namHocBatDau, 9, 1);
-                    $ngayKetThuc = Carbon::create($namHocBatDau + 1, 1, 15);
-                } else {
-                    $ngayBatDau = Carbon::create($namHocBatDau + 1, 2, 1);
-                    $ngayKetThuc = Carbon::create($namHocBatDau + 1, 6, 15);
-                }
+            // Lấy học kỳ từ danh sách
+            if ($viTriLuiVe >= 0 && $viTriLuiVe < $hocKyQuaKhu->count()) {
+                $hocKy = $hocKyQuaKhu[$viTriLuiVe];
+            } else {
+                // Nếu không đủ học kỳ quá khứ, bỏ qua
+                continue;
+            }            // Lấy các môn học ở kỳ này (chỉ lấy môn bắt buộc)
+            $monHocsTrongKy = $chuongTrinhKhung->where('hoc_ky_goi_y', $ky)
+                ->where('bat_buoc', true); // CHỈ TẠO DỮ LIỆU CHO MÔN BẮT BUỘC
 
-                $hocKy = HocKy::create([
-                    'ten_hoc_ky' => $tenHocKy,
-                    'nam_hoc' => $namHocString,
-                    'ngay_bat_dau' => $ngayBatDau,
-                    'ngay_ket_thuc' => $ngayKetThuc,
-                    'ngay_bat_dau_dang_ky' => $ngayBatDau->copy()->subMonth(),
-                    'ngay_ket_thuc_dang_ky' => $ngayBatDau->copy()->addDays(30),
-                    'la_hoc_ky_hien_tai' => false,
-                    'dang_mo_dang_ky' => false,
-                    'mo_ta' => "{$tenHocKy} năm học {$namHocString}",
-                ]);
+            // Debug: Kiểm tra số môn học trong kỳ
+            if ($monHocsTrongKy->isEmpty()) {
+                // Nếu kỳ này không có môn học, bỏ qua kỳ này
+                // Điều này có thể xảy ra nếu chương trình khung chưa có môn cho kỳ này
+                continue;
             }
-
-            // Lấy các môn học ở kỳ này
-            $monHocsTrongKy = $chuongTrinhKhung->where('hoc_ky_goi_y', $ky);
 
             foreach ($monHocsTrongKy as $ctk) {
                 $monHoc = $ctk->monHoc;
                 if (!$monHoc) {
+                    continue;
+                }
+
+                // Kiểm tra xem sinh viên đã có kết quả học tập cho môn này chưa
+                // (kiểm tra qua KetQuaHocTap - nếu đã có kết quả thì môn đã được học)
+                // Vì môn này có hoc_ky_goi_y = $ky và sinh viên đang ở kỳ > $ky, nên môn phải đã được học
+                $daCoKetQua = DB::table('ket_qua_hoc_tap')
+                    ->join('lop_hoc_phan_sinh_vien', 'ket_qua_hoc_tap.lop_hoc_phan_sinh_vien_id', '=', 'lop_hoc_phan_sinh_vien.id')
+                    ->join('lop_hoc_phan', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
+                    ->where('lop_hoc_phan_sinh_vien.sinh_vien_id', $sinhVienId)
+                    ->where('lop_hoc_phan.mon_hoc_id', $monHoc->id)
+                    ->exists();
+
+                // Nếu đã có kết quả học tập, bỏ qua
+                // Lưu ý: Không bỏ qua nếu chưa có kết quả - cần tạo dữ liệu học tập
+                if ($daCoKetQua) {
                     continue;
                 }
 
@@ -706,7 +724,7 @@ class SinhVienSeeder extends Seeder
                     // Tạo lớp học phần nếu chưa có
                     $ngayBatDauHoc = Carbon::parse($hocKy->ngay_bat_dau);
                     $ngayKetThucHoc = Carbon::parse($hocKy->ngay_ket_thuc);
-                    
+
                     $lopHocPhan = LopHocPhan::create([
                         'mon_hoc_id' => $monHoc->id,
                         'hoc_ky_id' => $hocKy->id,
@@ -759,7 +777,7 @@ class SinhVienSeeder extends Seeder
                     $ngayBatDau = Carbon::parse($hocKy->ngay_bat_dau);
                     $ngayKetThuc = Carbon::parse($hocKy->ngay_ket_thuc);
                     $ngayDangKy = $ngayBatDau->copy()->addDays(rand(1, 7));
-                    
+
                     $dangKyTam = DangKyMonHocTam::create([
                         'sinh_vien_id' => $sinhVienId,
                         'mon_hoc_id' => $monHoc->id,
@@ -770,11 +788,12 @@ class SinhVienSeeder extends Seeder
                         'created_at' => $ngayDangKy,
                         'updated_at' => $ngayDangKy,
                     ]);
-                    
+
                     // Tạo kết quả học tập TRƯỚC để xác định trạng thái
                     // 70% môn đã qua, 30% môn đang nợ
+                    // Lưu ý: Luôn tạo điểm cho tất cả môn học, không bỏ qua
                     $quaMon = (rand(1, 100) <= 70);
-                    
+
                     // Tạo đăng ký lớp học phần (link với đăng ký tạm)
                     // Nếu môn không qua (failed), set status là 'hoc_lai'
                     $lopHocPhanSV = LopHocPhanSinhVien::create([
@@ -809,7 +828,7 @@ class SinhVienSeeder extends Seeder
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
-                        
+
                         CauHinhDauDiem::create([
                             'lop_hoc_phan_id' => $lopHocPhan->id,
                             'ten_dau_diem' => 'Giữa kỳ',
@@ -818,7 +837,7 @@ class SinhVienSeeder extends Seeder
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
-                        
+
                         CauHinhDauDiem::create([
                             'lop_hoc_phan_id' => $lopHocPhan->id,
                             'ten_dau_diem' => 'Cuối kỳ',
@@ -827,7 +846,7 @@ class SinhVienSeeder extends Seeder
                             'created_at' => now(),
                             'updated_at' => now(),
                         ]);
-                        
+
                         // Lấy lại cấu hình vừa tạo
                         $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhan->id)->get();
                     }
@@ -886,9 +905,9 @@ class SinhVienSeeder extends Seeder
                 // Tính điểm trung bình học kỳ và tín chỉ
                 $ketQuaTrongKy = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $hocKy) {
                     $q->where('sinh_vien_id', $sinhVienId)
-                      ->whereHas('lopHocPhan', function ($q2) use ($hocKy) {
-                          $q2->where('hoc_ky_id', $hocKy->id);
-                      });
+                        ->whereHas('lopHocPhan', function ($q2) use ($hocKy) {
+                            $q2->where('hoc_ky_id', $hocKy->id);
+                        });
                 })->get();
 
                 $tongDiem = 0;
@@ -900,7 +919,7 @@ class SinhVienSeeder extends Seeder
                     $lopHocPhanSV = $kq->lopHocPhanSinhVien;
                     $lopHocPhan = $lopHocPhanSV->lopHocPhan;
                     $monHoc = $lopHocPhan->monHoc;
-                    
+
                     $tinChi = $monHoc->so_tin_chi ?? 0;
                     $tongTinChiDangKy += $tinChi;
 
@@ -912,7 +931,7 @@ class SinhVienSeeder extends Seeder
                 }
 
                 $diemTBHK = $tongHeSo > 0 ? $tongDiem / $tongHeSo : 0;
-                
+
                 // Tính điểm TB hệ 4
                 $tongDiemHe4 = 0;
                 foreach ($ketQuaTrongKy as $kq) {
@@ -933,16 +952,16 @@ class SinhVienSeeder extends Seeder
 
                 $ketQuaTichLuy = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $hocKy) {
                     $q->where('sinh_vien_id', $sinhVienId)
-                      ->whereHas('lopHocPhan', function ($q2) use ($hocKy) {
-                          $q2->where('hoc_ky_id', '<=', $hocKy->id);
-                      });
+                        ->whereHas('lopHocPhan', function ($q2) use ($hocKy) {
+                            $q2->where('hoc_ky_id', '<=', $hocKy->id);
+                        });
                 })->get();
 
                 foreach ($ketQuaTichLuy as $kq) {
                     $lopHocPhanSV = $kq->lopHocPhanSinhVien;
                     $lopHocPhan = $lopHocPhanSV->lopHocPhan;
                     $monHoc = $lopHocPhan->monHoc;
-                    
+
                     $tinChi = $monHoc->so_tin_chi ?? 0;
 
                     if ($kq->qua_mon) {
@@ -1000,56 +1019,100 @@ class SinhVienSeeder extends Seeder
             ->get();
 
         $count = 0;
+        $countLoi = 0;
         foreach ($sinhViens as $sinhVien) {
             // Luôn cập nhật dữ liệu học tập cho sinh viên ở kỳ > 1
+            // Đảm bảo tạo dữ liệu cho tất cả các kỳ từ 1 đến kỳ hiện tại - 1
+            // Logic: Sinh viên kỳ x sẽ có dữ liệu học tập cho các kỳ từ 1 đến x-1
             if ($sinhVien->ky_hien_tai > 1) {
-                $this->taoDuLieuHocTapCacKyTruoc(
-                    $sinhVien->id,
-                    $sinhVien->chuyen_nganh_id,
-                    $sinhVien->khoa_hoc_id,
-                    $sinhVien->ky_hien_tai
-                );
-                $count++;
+                try {
+                    $this->taoDuLieuHocTapCacKyTruoc(
+                        $sinhVien->id,
+                        $sinhVien->chuyen_nganh_id,
+                        $sinhVien->khoa_hoc_id,
+                        $sinhVien->ky_hien_tai
+                    );
+                    $count++;
+                } catch (\Exception $e) {
+                    // Log lỗi nhưng tiếp tục với sinh viên khác
+                    $countLoi++;
+                    if ($countLoi <= 5) { // Chỉ hiển thị 5 lỗi đầu tiên để không spam
+                        echo "⚠️  Lỗi khi tạo dữ liệu học tập cho sinh viên {$sinhVien->ma_sinh_vien} (kỳ {$sinhVien->ky_hien_tai}): " . $e->getMessage() . "\n";
+                    }
+                }
             }
         }
 
+        if ($countLoi > 5) {
+            echo "⚠️  ... và {$countLoi} lỗi khác\n";
+        }
+
         echo "✅ Đã cập nhật dữ liệu học tập cho {$count} sinh viên\n";
-        
+
         // Tạo DangKyMonHocTam cho các sinh viên đã có LopHocPhanSinhVien nhưng chưa có DangKyMonHocTam
+        // (Bỏ qua môn trượt trong học kỳ hiện tại để sinh viên có thể đăng ký học lại)
         echo "📝 Đang tạo lịch sử đăng ký môn học...\n";
         $this->taoDangKyMonHocTamChoAllSinhVien();
     }
 
     /**
      * Tạo DangKyMonHocTam cho tất cả sinh viên đã có LopHocPhanSinhVien
+     * Bỏ qua môn trượt trong học kỳ hiện tại (để sinh viên có thể đăng ký học lại)
      */
     private function taoDangKyMonHocTamChoAllSinhVien(): void
     {
+        // Lấy học kỳ hiện tại
+        $hocKyHienTai = HocKy::where('la_hoc_ky_hien_tai', true)->first();
+        $hocKyHienTaiId = $hocKyHienTai ? $hocKyHienTai->id : null;
+
         $lopHocPhanSinhViens = LopHocPhanSinhVien::whereNull('dang_ky_tam_id')
             ->with(['lopHocPhan.monHoc', 'lopHocPhan.hocKy'])
             ->get();
 
         $count = 0;
-        foreach ($lopHocPhanSinhViens as $lhpsv) {
-            if ($lhpsv->lopHocPhan && $lhpsv->lopHocPhan->monHoc && $lhpsv->lopHocPhan->hocKy) {
-                $dangKyTam = DangKyMonHocTam::create([
-                    'sinh_vien_id' => $lhpsv->sinh_vien_id,
-                    'mon_hoc_id' => $lhpsv->lopHocPhan->mon_hoc_id,
-                    'hoc_ky_id' => $lhpsv->lopHocPhan->hoc_ky_id,
-                    'ngay_dang_ky' => $lhpsv->ngay_dang_ky ?? $lhpsv->created_at,
-                    'uu_tien' => rand(1, 10),
-                    'trang_thai' => 'da_xep_lop',
-                    'created_at' => $lhpsv->created_at,
-                    'updated_at' => $lhpsv->updated_at,
-                ]);
+        $countBoQua = 0;
 
-                $lhpsv->update(['dang_ky_tam_id' => $dangKyTam->id]);
-                $count++;
+        foreach ($lopHocPhanSinhViens as $lhpsv) {
+            if (!$lhpsv->lopHocPhan || !$lhpsv->lopHocPhan->monHoc || !$lhpsv->lopHocPhan->hocKy) {
+                continue;
             }
+
+            // Bỏ qua môn trượt trong học kỳ hiện tại
+            if ($hocKyHienTaiId && $lhpsv->lopHocPhan->hoc_ky_id == $hocKyHienTaiId) {
+                // Kiểm tra xem môn này có trượt không
+                $monTruot = DB::table('ket_qua_hoc_tap')
+                    ->join('lop_hoc_phan_sinh_vien', 'ket_qua_hoc_tap.lop_hoc_phan_sinh_vien_id', '=', 'lop_hoc_phan_sinh_vien.id')
+                    ->where('lop_hoc_phan_sinh_vien.sinh_vien_id', $lhpsv->sinh_vien_id)
+                    ->where('lop_hoc_phan_sinh_vien.lop_hoc_phan_id', $lhpsv->lop_hoc_phan_id)
+                    ->where('ket_qua_hoc_tap.qua_mon', false)
+                    ->exists();
+
+                if ($monTruot) {
+                    $countBoQua++;
+                    continue; // Bỏ qua môn trượt trong học kỳ hiện tại
+                }
+            }
+
+            $dangKyTam = DangKyMonHocTam::create([
+                'sinh_vien_id' => $lhpsv->sinh_vien_id,
+                'mon_hoc_id' => $lhpsv->lopHocPhan->mon_hoc_id,
+                'hoc_ky_id' => $lhpsv->lopHocPhan->hoc_ky_id,
+                'ngay_dang_ky' => $lhpsv->ngay_dang_ky ?? $lhpsv->created_at,
+                'uu_tien' => rand(1, 10),
+                'trang_thai' => 'da_xep_lop',
+                'created_at' => $lhpsv->created_at,
+                'updated_at' => $lhpsv->updated_at,
+            ]);
+
+            $lhpsv->update(['dang_ky_tam_id' => $dangKyTam->id]);
+            $count++;
         }
 
         echo "✅ Đã tạo {$count} bản ghi đăng ký môn học tạm\n";
-        
+        if ($countBoQua > 0) {
+            echo "   ⏭️  Đã bỏ qua {$countBoQua} môn trượt trong học kỳ hiện tại (để sinh viên có thể đăng ký học lại)\n";
+        }
+
         // Cập nhật so_luong_dang_ky và suc_chua cho tất cả lớp học phần
         echo "📊 Đang cập nhật số lượng đăng ký cho lớp học phần...\n";
         $this->capNhatSoLuongDangKy();
@@ -1062,25 +1125,26 @@ class SinhVienSeeder extends Seeder
     {
         $lopHocPhans = LopHocPhan::all();
         $count = 0;
-        
+
         foreach ($lopHocPhans as $lopHocPhan) {
             $soLuongDangKy = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)->count();
-            
+
             // Đảm bảo sức chứa đủ lớn (ít nhất bằng số lượng đăng ký, tối đa 100)
             // Nếu số lượng đăng ký > 100, giới hạn ở 100
             $sucChuaMoi = max(10, min(100, max($lopHocPhan->suc_chua, min($soLuongDangKy, 100))));
             $soLuongDangKyHienThi = min($soLuongDangKy, $sucChuaMoi);
-            
+
             $lopHocPhan->update([
                 'so_luong_dang_ky' => $soLuongDangKyHienThi,
                 'suc_chua' => $sucChuaMoi,
             ]);
-            
+
             $count++;
         }
-        
+
         echo "✅ Đã cập nhật {$count} lớp học phần\n";
     }
+
 
     /**
      * Tạo điểm chi tiết cho sinh viên
@@ -1090,31 +1154,31 @@ class SinhVienSeeder extends Seeder
         // Tính điểm cho từng đầu điểm dựa trên tỷ lệ và điểm tổng kết
         // Giả sử điểm được phân bổ đều theo tỷ lệ
         $tongTyLe = $cauHinhs->sum('ty_le');
-        
+
         foreach ($cauHinhs as $cauHinh) {
             // Tính điểm cho đầu điểm này (tỷ lệ phần trăm của điểm tổng kết)
             // Thêm một chút ngẫu nhiên để điểm không quá đều
             $tyLePhanTram = $cauHinh->ty_le / $tongTyLe;
             $diemDauDiem = $diemTongKet * $tyLePhanTram + (rand(-20, 20) / 100);
-            
+
             // Đảm bảo điểm trong khoảng 0-10
             $diemDauDiem = max(0, min(10, $diemDauDiem));
-            
+
             // Làm tròn đến 1 chữ số thập phân
             $diemDauDiem = round($diemDauDiem, 1);
-            
+
             // Tạo điểm cho từng cột (nếu có nhiều cột)
             for ($cot = 1; $cot <= $cauHinh->so_cot; $cot++) {
                 // Nếu có nhiều cột, chia điểm đều
                 $diemCot = $cauHinh->so_cot > 1 ? $diemDauDiem / $cauHinh->so_cot : $diemDauDiem;
                 $diemCot = round($diemCot, 1);
-                
+
                 // Kiểm tra xem đã có điểm chưa
                 $existingDiem = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSV->id)
                     ->where('cau_hinh_id', $cauHinh->id)
                     ->where('cot_diem', $cot)
                     ->first();
-                
+
                 if (!$existingDiem) {
                     NhapDiem::create([
                         'lop_hoc_phan_sinh_vien_id' => $lopHocPhanSV->id,
@@ -1129,5 +1193,138 @@ class SinhVienSeeder extends Seeder
         }
     }
 
-}
+    /**
+     * Tạo lịch học chi tiết và điểm danh cho lớp học phần
+     */
+    private function taoLichHocVaDiemDanh($lopHocPhan, $lopHocPhanSV, $ngayBatDau, $ngayKetThuc, $quaMon): void
+    {
+        // Lấy môn học để biết số tín chỉ
+        $monHoc = $lopHocPhan->monHoc;
+        if (!$monHoc) {
+            return;
+        }
 
+        // Tính số buổi học (1 tín chỉ = 15 tiết = khoảng 5 buổi học, mỗi buổi 3 tiết)
+        $soTinChi = $monHoc->so_tin_chi ?? 3;
+        $soBuoiHoc = $soTinChi * 5; // Ví dụ: 3 tín chỉ = 15 buổi học
+
+        // Lấy ca học ngẫu nhiên
+        $caHocs = DB::table('ca_hoc')->pluck('id')->toArray();
+        if (empty($caHocs)) {
+            return;
+        }
+
+        // Lấy phòng học ngẫu nhiên
+        $phongHocs = DB::table('phong_hoc')->pluck('id')->toArray();
+        if (empty($phongHocs)) {
+            // Không có phòng học, bỏ qua
+            return;
+        }
+
+        // Tạo lịch học (2 buổi/tuần)
+        $ngayHocHienTai = Carbon::parse($ngayBatDau);
+        $ngayKetThucCarbon = Carbon::parse($ngayKetThuc);
+
+        $buoiHocDaTao = 0;
+        $lichHocChiTiets = [];
+
+        while ($buoiHocDaTao < $soBuoiHoc && $ngayHocHienTai <= $ngayKetThucCarbon) {
+            // Chỉ tạo lịch học vào thứ 2, 4, 6 (hoặc 3, 5, 7)
+            $thu = $ngayHocHienTai->dayOfWeek; // 0 = CN, 1 = T2, ...
+
+            if (in_array($thu, [1, 3, 5])) { // Thứ 2, 4, 6
+                $caHocId = $caHocs[array_rand($caHocs)];
+                $phongHocId = $phongHocs[array_rand($phongHocs)];
+
+                // Lấy thông tin ca học
+                $caHoc = DB::table('ca_hoc')->where('id', $caHocId)->first();
+                $gioBatDau = $caHoc ? $caHoc->gio_bat_dau : '07:00:00';
+                $gioKetThuc = $caHoc ? $caHoc->gio_ket_thuc : '09:00:00';
+
+                // Tạo datetime đầy đủ
+                $gioBatDauFull = $ngayHocHienTai->copy()->setTimeFromTimeString($gioBatDau);
+                $gioKetThucFull = $ngayHocHienTai->copy()->setTimeFromTimeString($gioKetThuc);
+
+                // Lấy giảng viên phụ trách lớp học phần
+                $giangVienId = DB::table('lop_hoc_phan_giang_vien')
+                    ->where('lop_hoc_phan_id', $lopHocPhan->id)
+                    ->where('vai_tro', 'giang_vien_chinh')
+                    ->value('giang_vien_id');
+
+                // Nếu không có giảng viên, lấy ngẫu nhiên
+                if (!$giangVienId) {
+                    $giangVienId = DB::table('giang_vien')->inRandomOrder()->value('id');
+                }
+
+                // Kiểm tra xem lịch học đã tồn tại chưa (unique_phong_ngay_tiet)
+                $existingLich = DB::table('lich_hoc_chi_tiet')
+                    ->where('ngay_hoc', $ngayHocHienTai->format('Y-m-d'))
+                    ->where('tiet_bat_dau', 1)
+                    ->where('phong_hoc_id', $phongHocId)
+                    ->exists();
+
+                // Nếu trùng lịch, chuyển sang ngày khác hoặc phòng khác
+                if ($existingLich) {
+                    $ngayHocHienTai->addDay();
+                    continue;
+                }
+
+                // Tạo lịch học chi tiết
+                $lichHocChiTiet = DB::table('lich_hoc_chi_tiet')->insertGetId([
+                    'lop_hoc_phan_id' => $lopHocPhan->id,
+                    'ca_hoc_id' => $caHocId,
+                    'ngay_hoc' => $ngayHocHienTai->format('Y-m-d'),
+                    'tiet_bat_dau' => 1,
+                    'tiet_ket_thuc' => 3,
+                    'gio_bat_dau' => $gioBatDauFull,
+                    'gio_ket_thuc' => $gioKetThucFull,
+                    'phong_hoc_id' => $phongHocId,
+                    'giang_vien_id' => $giangVienId,
+                    'hinh_thuc' => 'offline',
+                    'trang_thai' => 'da_hoan_thanh',
+                    'created_at' => $ngayHocHienTai,
+                    'updated_at' => $ngayHocHienTai,
+                ]);
+
+                $lichHocChiTiets[] = $lichHocChiTiet;
+                $buoiHocDaTao++;
+            }
+
+            // Chuyển sang ngày tiếp theo
+            $ngayHocHienTai->addDay();
+        }
+
+        // Tạo điểm danh cho sinh viên
+        // Nếu qua môn: 80-95% có mặt
+        // Nếu không qua: 50-70% có mặt
+        $tyLeCoMat = $quaMon ? rand(80, 95) / 100 : rand(50, 70) / 100;
+
+        foreach ($lichHocChiTiets as $lichHocId) {
+            $coMat = (rand(1, 100) / 100) <= $tyLeCoMat;
+
+            // Enum: co_mat, vang, di_tre, nghi_phep
+            if ($coMat) {
+                $trangThai = rand(0, 100) < 10 ? 'di_tre' : 'co_mat'; // 10% đi trễ
+            } else {
+                $trangThai = rand(0, 100) < 20 ? 'nghi_phep' : 'vang'; // 20% nghỉ phép, 80% vắng
+            }
+
+            // Kiểm tra xem đã có điểm danh chưa
+            $existingDiemDanh = DB::table('diem_danh')
+                ->where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSV->id)
+                ->where('lich_hoc_chi_tiet_id', $lichHocId)
+                ->exists();
+
+            if (!$existingDiemDanh) {
+                DB::table('diem_danh')->insert([
+                    'lop_hoc_phan_sinh_vien_id' => $lopHocPhanSV->id,
+                    'lich_hoc_chi_tiet_id' => $lichHocId,
+                    'trang_thai' => $trangThai,
+                    'thoi_gian_diem_danh' => now(),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+            }
+        }
+    }
+}

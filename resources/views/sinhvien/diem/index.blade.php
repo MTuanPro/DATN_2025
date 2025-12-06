@@ -105,11 +105,11 @@
                             <div class="col-md-6">
                                 <div class="form-group">
                                     <label>Chọn học kỳ</label>
-                                    <select name="hoc_ky_id" class="form-select" onchange="this.form.submit()">
+                                    <select name="hoc_ky_goi_y" class="form-select" onchange="this.form.submit()">
                                         <option value="">-- Chọn học kỳ --</option>
-                                        @foreach ($hocKys as $hk)
-                                            <option value="{{ $hk->id }}" {{ $hocKyId == $hk->id ? 'selected' : '' }}>
-                                                {{ $hk->ten_hoc_ky }}
+                                        @foreach ($kyHocs as $ky)
+                                            <option value="{{ $ky }}" {{ $hocKyGoiY == $ky ? 'selected' : '' }}>
+                                                Học kỳ {{ $ky }}
                                             </option>
                                         @endforeach
                                     </select>
@@ -126,7 +126,7 @@
             </div>
 
             {{-- Tổng kết điểm danh --}}
-            @if ($hocKyId && count($monHocs) > 0)
+            @if ($hocKyGoiY && count($monHocs) > 0)
                 @php
                     $tongBuoiHocTatCa = 0;
                     $tongCoMat = 0;
@@ -162,7 +162,7 @@
                 <div class="card mb-4">
                     <div class="card-header">
                         <h5 class="card-title mb-0">
-                            <i class="bi bi-clipboard-check"></i> Tổng kết điểm danh học kỳ
+                            <i class="bi bi-clipboard-check"></i> Tổng kết điểm danh Học kỳ {{ $hocKyGoiY }}
                         </h5>
                     </div>
                     <div class="card-body">
@@ -394,7 +394,7 @@
                                                 // Lấy điểm CC (Chuyên cần) từ NhapDiem
                                                 $diemCC = null;
                                                 $cauHinhCC = \App\Models\CauHinhDauDiem::where('lop_hoc_phan_id', $item->lopHocPhan->id)
-                                                    ->where('loai_dau_diem', 'chuyen_can')
+                                                    ->where('ten_dau_diem', 'Chuyên cần')
                                                     ->first();
                                                 
                                                 if ($cauHinhCC) {

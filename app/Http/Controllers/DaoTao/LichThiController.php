@@ -42,17 +42,17 @@ class LichThiController extends Controller
     public function index(Request $request)
     {
         $query = LichThi::with([
-            'lopHocPhan.monHoc', 
+            'lopHocPhan.monHoc',
             'lopHocPhan.hocKy',
-            'phongThi', 
-            'giamThi1', 
+            'phongThi',
+            'giamThi1',
             'giamThi2',
             'hocKy'
         ]);
 
         // Lọc theo học kỳ (thông qua lop_hoc_phan)
         if ($request->filled('hoc_ky_id')) {
-            $query->whereHas('lopHocPhan', function($q) use ($request) {
+            $query->whereHas('lopHocPhan', function ($q) use ($request) {
                 $q->where('hoc_ky_id', $request->hoc_ky_id);
             });
         }
@@ -75,13 +75,13 @@ class LichThiController extends Controller
             $search = $request->search;
             $query->whereHas('lopHocPhan.monHoc', function ($q) use ($search) {
                 $q->where('ten_mon', 'like', "%{$search}%")
-                  ->orWhere('ma_mon', 'like', "%{$search}%");
+                    ->orWhere('ma_mon', 'like', "%{$search}%");
             });
         }
 
         $lichThis = $query->orderBy('ngay_thi', 'asc')
-                          ->orderBy('gio_bat_dau', 'asc')
-                          ->paginate(15);
+            ->orderBy('gio_bat_dau', 'asc')
+            ->paginate(15);
 
         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
 
@@ -147,19 +147,19 @@ class LichThiController extends Controller
             // 2. Kiểm tra ngày thi trong phạm vi học kỳ
             $hocKy = $lopHocPhan->hocKy;
             $ngayThi = \Carbon\Carbon::parse($request->ngay_thi);
-            
+
             if ($ngayThi->lt($hocKy->ngay_bat_dau) || $ngayThi->gt($hocKy->ngay_ket_thuc)) {
-                $errors[] = 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
-                           $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' . 
-                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
+                $errors[] = 'Ngày thi phải nằm trong phạm vi học kỳ (' .
+                    $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' .
+                    $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
             }
 
             // 2.1. Kiểm tra ngày thi phải sau ngày kết thúc học của lớp học phần
             $ngayKetThucHoc = \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc);
             if ($ngayThi->lte($ngayKetThucHoc)) {
-                $errors[] = 'Ngày thi phải sau ngày kết thúc học của lớp học phần (' . 
-                           $ngayKetThucHoc->format('d/m/Y') . '). Ngày thi hiện tại: ' . 
-                           $ngayThi->format('d/m/Y');
+                $errors[] = 'Ngày thi phải sau ngày kết thúc học của lớp học phần (' .
+                    $ngayKetThucHoc->format('d/m/Y') . '). Ngày thi hiện tại: ' .
+                    $ngayThi->format('d/m/Y');
             }
 
             // 3. Lấy thông tin ca học và tính giờ từ ca học
@@ -173,7 +173,7 @@ class LichThiController extends Controller
 
             // 4. Kiểm tra trùng lịch thi sinh viên (sinh viên không được thi 2 môn cùng lúc)
             $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id')->toArray();
-            
+
             if (!empty($sinhVienIds) && isset($gioBatDau) && isset($gioKetThuc)) {
                 $trungLichSinhVien = LichThi::kiemTraXungDotSinhVien(
                     $sinhVienIds,
@@ -191,7 +191,7 @@ class LichThiController extends Controller
             if ($request->phong_thi_id) {
                 $phongHoc = PhongHoc::find($request->phong_thi_id);
                 $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
-                
+
                 if ($soSinhVienDuThi > $phongHoc->suc_chua) {
                     $errors['phong_thi_id'] = 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!';
                 }
@@ -241,11 +241,11 @@ class LichThiController extends Controller
 
             // 5. Tự động phân sinh viên vào phòng thi
             $sinhViens = $lopHocPhan->lopHocPhanSinhViens()->with('sinhVien')->get();
-            
+
             if ($sinhViens->isNotEmpty()) {
                 $lichThiSinhVienData = [];
                 $soBaoDanhCounter = 1;
-                
+
                 foreach ($sinhViens as $lopHocPhanSinhVien) {
                     $lichThiSinhVienData[] = [
                         'lich_thi_id' => $lichThi->id,
@@ -258,10 +258,10 @@ class LichThiController extends Controller
                     ];
                     $soBaoDanhCounter++;
                 }
-                
+
                 // Insert hàng loạt để tối ưu performance
                 \App\Models\LichThiSinhVien::insert($lichThiSinhVienData);
-                
+
                 Log::info('Đã tự động phân ' . count($lichThiSinhVienData) . ' sinh viên vào lịch thi ID: ' . $lichThi->id);
             }
 
@@ -269,7 +269,6 @@ class LichThiController extends Controller
 
             return redirect()->route('dao-tao.lich-thi.index')
                 ->with('success', 'Thêm lịch thi thành công! Đã tự động phân ' . ($sinhViens->count() ?? 0) . ' sinh viên vào phòng thi.');
-
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             throw $e; // Để Laravel tự xử lý validation errors
@@ -303,20 +302,22 @@ class LichThiController extends Controller
     public function show(LichThi $lichThi)
     {
         $lichThi->load([
-            'lopHocPhan.monHoc', 
+            'lopHocPhan.monHoc',
             'lopHocPhan.hocKy',
             'hocKy',
-            'phongThi', 
-            'giamThi1', 
+            'phongThi',
+            'giamThi1',
             'giamThi2',
             'caHoc'
         ]);
 
         // Kiểm tra điều kiện dự thi cho từng sinh viên
-        $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
-            ->where('ngay_hoc', '<=', now()->toDateString())
-            ->where('trang_thai', '!=', 'huy')
-            ->count();
+        // Đếm tổng số buổi đã có điểm danh (unique theo lich_hoc_chi_tiet_id) của TẤT CẢ sinh viên trong lớp
+        $tongBuoi = DiemDanh::whereHas('lopHocPhanSinhVien', function ($q) use ($lichThi) {
+            $q->where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id);
+        })
+            ->distinct('lich_hoc_chi_tiet_id')
+            ->count('lich_hoc_chi_tiet_id');
 
         $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
             ->orderBy('id')
@@ -326,23 +327,15 @@ class LichThiController extends Controller
 
         foreach ($lichThi->lopHocPhan->lopHocPhanSinhViens as $lhpsv) {
             // 1. Kiểm tra chuyên cần (vắng quá 20% = có mặt < 80%)
-            $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
-                ->selectRaw('
-                    COUNT(*) as tong_buoi_diem_danh,
-                    SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
-                    SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang,
-                    SUM(CASE WHEN trang_thai = "nghi_phep" THEN 1 ELSE 0 END) as nghi_phep
-                ')
-                ->first();
+            // Đếm số buổi có mặt của sinh viên cụ thể
+            $buoiCoMat = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
+                ->where('trang_thai', 'co_mat')
+                ->count();
 
-            $coMat = $diemDanhStats ? ($diemDanhStats->co_mat ?? 0) : 0;
-            $vang = $diemDanhStats ? ($diemDanhStats->vang ?? 0) : 0;
-            $nghiPhep = $diemDanhStats ? ($diemDanhStats->nghi_phep ?? 0) : 0;
-            
-            $tyLeCoMat = $tongBuoiHoc > 0 
-                ? round(($coMat / $tongBuoiHoc) * 100, 1) 
+            $tyLeCoMat = $tongBuoi > 0
+                ? round(($buoiCoMat / $tongBuoi) * 100, 1)
                 : 0;
-            
+
             $khongDatChuyenCan = $tyLeCoMat < 80;
 
             // 2. Kiểm tra điểm trung bình các đầu điểm < 5
@@ -365,7 +358,7 @@ class LichThiController extends Controller
 
                     $coDiem = true;
                     $diemTrungBinhDauDiem = $diems->avg('diem_so');
-                    
+
                     if ($diemTrungBinhDauDiem !== null) {
                         $tongDiem += $diemTrungBinhDauDiem * ($cauHinh->ty_le / 100);
                         $tongTyLe += $cauHinh->ty_le;
@@ -378,7 +371,7 @@ class LichThiController extends Controller
                     } else {
                         $diemTrungBinh = round($tongDiem, 2);
                     }
-                    
+
                     $khongDatDiem = $diemTrungBinh < 5;
                 }
             }
@@ -398,7 +391,7 @@ class LichThiController extends Controller
         }
 
         // Sắp xếp: sinh viên không được đi thi lên đầu
-        usort($danhSachSinhVienDiThi, function($a, $b) {
+        usort($danhSachSinhVienDiThi, function ($a, $b) {
             if ($a['khong_duoc_di_thi'] && !$b['khong_duoc_di_thi']) {
                 return -1;
             }
@@ -407,8 +400,8 @@ class LichThiController extends Controller
             }
             return strcmp($a['lop_hoc_phan_sinh_vien']->sinhVien->ho_ten, $b['lop_hoc_phan_sinh_vien']->sinhVien->ho_ten);
         });
-        
-        return view('daotao.lich-thi.show', compact('lichThi', 'danhSachSinhVienDiThi', 'tongBuoiHoc'));
+
+        return view('daotao.lich-thi.show', compact('lichThi', 'danhSachSinhVienDiThi', 'tongBuoi'));
     }
 
     /**
@@ -482,19 +475,19 @@ class LichThiController extends Controller
             // 2. Kiểm tra ngày thi trong phạm vi học kỳ
             $hocKy = $lopHocPhan->hocKy;
             $ngayThi = \Carbon\Carbon::parse($request->ngay_thi);
-            
+
             if ($ngayThi->lt($hocKy->ngay_bat_dau) || $ngayThi->gt($hocKy->ngay_ket_thuc)) {
-                $errorMessages[] = 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
-                           $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' . 
-                           $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
+                $errorMessages[] = 'Ngày thi phải nằm trong phạm vi học kỳ (' .
+                    $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' .
+                    $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
             }
 
             // 2.1. Kiểm tra ngày thi phải sau ngày kết thúc học của lớp học phần
             $ngayKetThucHoc = \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc);
             if ($ngayThi->lte($ngayKetThucHoc)) {
-                $errorMessages[] = 'Ngày thi phải sau ngày kết thúc học của lớp học phần (' . 
-                           $ngayKetThucHoc->format('d/m/Y') . '). Ngày thi hiện tại: ' . 
-                           $ngayThi->format('d/m/Y');
+                $errorMessages[] = 'Ngày thi phải sau ngày kết thúc học của lớp học phần (' .
+                    $ngayKetThucHoc->format('d/m/Y') . '). Ngày thi hiện tại: ' .
+                    $ngayThi->format('d/m/Y');
             }
 
             // 3. Lấy thông tin ca học và tính giờ từ ca học
@@ -508,7 +501,7 @@ class LichThiController extends Controller
 
             // 4. Kiểm tra trùng lịch thi sinh viên
             $sinhVienIds = $lopHocPhan->lopHocPhanSinhViens->pluck('sinh_vien_id')->toArray();
-            
+
             if (!empty($sinhVienIds) && isset($gioBatDau) && isset($gioKetThuc)) {
                 $trungLichSinhVien = LichThi::kiemTraXungDotSinhVien(
                     $sinhVienIds,
@@ -540,10 +533,10 @@ class LichThiController extends Controller
 
                 // 6. Kiểm tra sức chứa phòng
                 $phongHoc = PhongHoc::find($request->phong_thi_id);
-                
+
                 if ($phongHoc) {
                     $soSinhVienDuThi = $request->so_sinh_vien_du_thi ?? $lopHocPhan->lopHocPhanSinhViens->count();
-                    
+
                     if ($soSinhVienDuThi > $phongHoc->suc_chua) {
                         $msg = 'Phòng thi chỉ chứa được ' . $phongHoc->suc_chua . ' sinh viên, không đủ cho ' . $soSinhVienDuThi . ' sinh viên dự thi!';
                         $errors['phong_thi_id'] = $msg;
@@ -557,7 +550,7 @@ class LichThiController extends Controller
 
             // 7. Kiểm tra trùng lịch giám thị
             $giamThiIds = array_filter([$request->giam_thi_1_id, $request->giam_thi_2_id]);
-            
+
             if (!empty($giamThiIds) && isset($gioBatDau) && isset($gioKetThuc)) {
                 $trungGiamThi = LichThi::kiemTraXungDotGiamThi(
                     $giamThiIds,
@@ -575,7 +568,7 @@ class LichThiController extends Controller
             // 7. Giới hạn số lịch thi theo loại (CHỈ CHECK KHI ĐỔI LOẠI THI HOẶC ĐỔI LỚP)
             $daDoiLoaiThi = $lichThi->loai_thi != $request->loai_thi;
             $daDoiLop = $lichThi->lop_hoc_phan_id != $request->lop_hoc_phan_id;
-            
+
             if ($daDoiLoaiThi || $daDoiLop) {
                 $soLichThiCungLoai = LichThi::where('id', '!=', $lichThi->id)
                     ->where('lop_hoc_phan_id', $request->lop_hoc_phan_id)
@@ -589,9 +582,8 @@ class LichThiController extends Controller
                 ];
 
                 if ($soLichThiCungLoai >= ($gioiHan[$request->loai_thi] ?? 1)) {
-                    $errorMessages[] = 'Lớp học phần đã đạt giới hạn số lần thi ' . 
-                               ($request->loai_thi == 'giua_ky' ? 'giữa kỳ' : 
-                               ($request->loai_thi == 'cuoi_ky' ? 'cuối kỳ' : 'thi lại')) . '!';
+                    $errorMessages[] = 'Lớp học phần đã đạt giới hạn số lần thi ' .
+                        ($request->loai_thi == 'giua_ky' ? 'giữa kỳ' : ($request->loai_thi == 'cuoi_ky' ? 'cuối kỳ' : 'thi lại')) . '!';
                 }
             }
 
@@ -652,14 +644,14 @@ class LichThiController extends Controller
             if ($lichThi->wasChanged('lop_hoc_phan_id')) {
                 // Xóa phân công cũ
                 \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)->delete();
-                
+
                 // Tạo phân công mới
                 $sinhViens = $lopHocPhan->lopHocPhanSinhViens()->with('sinhVien')->get();
-                
+
                 if ($sinhViens->isNotEmpty()) {
                     $lichThiSinhVienData = [];
                     $soBaoDanhCounter = 1;
-                    
+
                     foreach ($sinhViens as $lopHocPhanSinhVien) {
                         $lichThiSinhVienData[] = [
                             'lich_thi_id' => $lichThi->id,
@@ -672,7 +664,7 @@ class LichThiController extends Controller
                         ];
                         $soBaoDanhCounter++;
                     }
-                    
+
                     \App\Models\LichThiSinhVien::insert($lichThiSinhVienData);
                     Log::info('Đã cập nhật phân công ' . count($lichThiSinhVienData) . ' sinh viên cho lịch thi ID: ' . $lichThi->id);
                 }
@@ -681,7 +673,7 @@ class LichThiController extends Controller
             elseif ($lichThi->wasChanged('phong_thi_id')) {
                 \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)
                     ->update(['phong_thi_id' => $request->phong_thi_id]);
-                    
+
                 Log::info('Đã cập nhật phòng thi cho tất cả sinh viên của lịch thi ID: ' . $lichThi->id);
             }
 
@@ -689,7 +681,6 @@ class LichThiController extends Controller
 
             return redirect()->route('dao-tao.lich-thi.index')
                 ->with('success', 'Cập nhật lịch thi thành công!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
@@ -727,7 +718,6 @@ class LichThiController extends Controller
 
             return redirect()->route('dao-tao.lich-thi.index')
                 ->with('success', 'Xóa lịch thi thành công!');
-
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
@@ -755,7 +745,6 @@ class LichThiController extends Controller
 
             return redirect()->back()
                 ->with('success', 'Đã gửi thông báo lịch thi thành công!');
-
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
@@ -778,7 +767,7 @@ class LichThiController extends Controller
     {
         // TODO: Implement export Excel/PDF
         // Có thể sử dụng Laravel Excel hoặc DomPDF
-        
+
         return redirect()->back()
             ->with('info', 'Chức năng xuất file đang được phát triển!');
     }
@@ -803,7 +792,7 @@ class LichThiController extends Controller
         }
 
         $path = storage_path('app/public/' . $lichThi->de_thi_file);
-        
+
         if (!file_exists($path)) {
             return redirect()->back()
                 ->with('error', 'File không tồn tại!');
@@ -832,7 +821,7 @@ class LichThiController extends Controller
         }
 
         $path = storage_path('app/public/' . $lichThi->dap_an_file);
-        
+
         if (!file_exists($path)) {
             return redirect()->back()
                 ->with('error', 'File không tồn tại!');
@@ -885,7 +874,7 @@ class LichThiController extends Controller
         $phongBanIds = LichThi::where('ngay_thi', $lichThi->ngay_thi)
             ->where(function ($q) use ($lichThi) {
                 $q->where('gio_ket_thuc', '>=', $lichThi->gio_bat_dau)
-                  ->where('gio_bat_dau', '<=', $lichThi->gio_ket_thuc);
+                    ->where('gio_bat_dau', '<=', $lichThi->gio_ket_thuc);
             })
             ->whereNotNull('phong_thi_id')
             ->where('id', '!=', $lichThi->id) // Loại trừ chính lịch thi này
@@ -934,7 +923,7 @@ class LichThiController extends Controller
             $soSinhVienHienTai = \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)
                 ->where('phong_thi_id', $request->phong_thi_id)
                 ->count();
-            
+
             $soSinhVienChuyenDen = count($request->sinh_vien_ids);
             $tongSinhVienSauKhiChuyen = $soSinhVienHienTai + $soSinhVienChuyenDen;
 
@@ -942,8 +931,8 @@ class LichThiController extends Controller
                 DB::rollBack();
                 return redirect()->back()
                     ->with('error', 'Phòng ' . $phongThi->ten_phong . ' chỉ chứa được ' . $phongThi->suc_chua . ' sinh viên. ' .
-                           'Hiện đang có ' . $soSinhVienHienTai . ' sinh viên, ' .
-                           'không thể thêm ' . $soSinhVienChuyenDen . ' sinh viên nữa (tổng: ' . $tongSinhVienSauKhiChuyen . ').');
+                        'Hiện đang có ' . $soSinhVienHienTai . ' sinh viên, ' .
+                        'không thể thêm ' . $soSinhVienChuyenDen . ' sinh viên nữa (tổng: ' . $tongSinhVienSauKhiChuyen . ').');
             }
 
             // Cập nhật phòng cho các sinh viên được chọn
@@ -955,7 +944,6 @@ class LichThiController extends Controller
 
             return redirect()->route('dao-tao.lich-thi.phan-phong', $lichThi)
                 ->with('success', 'Đã chuyển ' . count($request->sinh_vien_ids) . ' sinh viên sang phòng ' . $phongThi->ten_phong . '!');
-
         } catch (\Exception $e) {
             DB::rollBack();
             return redirect()->back()
@@ -990,7 +978,7 @@ class LichThiController extends Controller
         $phongThiId = request('phong_thi_id');
         $sinhViens = $lichThi->lichThiSinhViens()
             ->with(['sinhVien', 'phongThi'])
-            ->when($phongThiId, function($q) use ($phongThiId) {
+            ->when($phongThiId, function ($q) use ($phongThiId) {
                 $q->where('phong_thi_id', $phongThiId);
             })
             ->orderBy('so_bao_danh')
@@ -1104,41 +1092,41 @@ class LichThiController extends Controller
         try {
             $file = $request->file('file');
             $extension = strtolower($file->getClientOriginalExtension());
-            
+
             $data = [];
-            
+
             // Đọc file Excel
             if (in_array($extension, ['xlsx', 'xls'])) {
                 if (!extension_loaded('zip')) {
                     DB::rollBack();
                     return back()->with('error', 'PHP extension "zip" chưa được cài đặt. Vui lòng bật extension zip trong php.ini hoặc sử dụng file CSV thay vì Excel.');
                 }
-                
+
                 try {
                     $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
                     $worksheet = $spreadsheet->getActiveSheet();
                     $data = $worksheet->toArray();
-                    
+
                     array_shift($data); // Bỏ header
                 } catch (\Exception $e) {
                     DB::rollBack();
                     return back()->with('error', 'Không thể đọc file Excel: ' . $e->getMessage());
                 }
-            } 
+            }
             // Đọc file CSV
             else {
                 $handle = fopen($file->getRealPath(), 'r');
-                
+
                 if ($handle === false) {
                     throw new \Exception('Không thể đọc file');
                 }
-                
+
                 fgetcsv($handle); // Bỏ header
-                
+
                 while (($row = fgetcsv($handle)) !== false) {
                     $data[] = $row;
                 }
-                
+
                 fclose($handle);
             }
 
@@ -1195,7 +1183,7 @@ class LichThiController extends Controller
                         $ngayThiCarbon = \Carbon\Carbon::parse($ngayThi);
                         $ngayBatDauHocKy = \Carbon\Carbon::parse($hocKy->ngay_bat_dau);
                         $ngayKetThucHocKy = \Carbon\Carbon::parse($hocKy->ngay_ket_thuc);
-                        
+
                         if ($ngayThiCarbon->lt($ngayBatDauHocKy) || $ngayThiCarbon->gt($ngayKetThucHocKy)) {
                             $errors[] = "Dòng {$rowNum}: Ngày thi phải nằm trong phạm vi học kỳ ({$ngayBatDauHocKy->format('d/m/Y')} - {$ngayKetThucHocKy->format('d/m/Y')})";
                             continue;
@@ -1355,10 +1343,10 @@ class LichThiController extends Controller
                     if ($sinhViens->isNotEmpty() && $phongThiId) {
                         $phongThi = PhongHoc::find($phongThiId);
                         $soBaoDanh = 1;
-                        
+
                         foreach ($sinhViens as $lopHocPhanSinhVien) {
                             $sinhVien = $lopHocPhanSinhVien->sinhVien;
-                            
+
                             LichThiSinhVien::create([
                                 'lich_thi_id' => $lichThi->id,
                                 'sinh_vien_id' => $sinhVien->id,

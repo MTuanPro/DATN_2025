@@ -138,8 +138,8 @@ class ChuyenKySinhVien extends Command
     {
         $kyHienTai = $sinhVien->ky_hien_tai;
 
-        // Kiểm tra đã đạt kỳ tối đa (8 kỳ)
-        if ($kyHienTai >= 8) {
+        // Kiểm tra đã đạt kỳ tối đa (13 kỳ: 8 kỳ chính + 5 kỳ trả nợ)
+        if ($kyHienTai >= 13) {
             return 'already_max';
         }
 

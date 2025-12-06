@@ -165,10 +165,30 @@
                                     @foreach ($chuongTrinhKhung as $ct)
                                         @php
                                             $monHoc = $ct->monHoc;
-                                            $daDangKy = in_array($monHoc->id, $monDaDangKy);
+                                            // Lấy học kỳ gợi ý từ CTK
+                                            $hocKyGoiY = null;
+                                            if (is_object($ct)) {
+                                                if (method_exists($ct, 'getAttribute')) {
+                                                    $hocKyGoiY = $ct->hoc_ky_goi_y;
+                                                } else {
+                                                    $hocKyGoiY = $ct->hoc_ky_goi_y ?? null;
+                                                }
+                                            } else {
+                                                $hocKyGoiY = $ct['hoc_ky_goi_y'] ?? null;
+                                            }
+                                            
+                                            $kyHienTai = $sinhVien->ky_hien_tai ?? 1;
+                                            
+                                            // Nếu môn học thuộc kỳ trước kỳ hiện tại của sinh viên,
+                                            // thì không thể ở trạng thái "Đã đăng ký" trong học kỳ hiện tại
+                                            // mà phải là "Đã qua môn" hoặc "Đang trượt"
+                                            $laMonKyTruoc = $hocKyGoiY && $hocKyGoiY < $kyHienTai;
+                                            
+                                            $daDangKy = in_array($monHoc->id, $monDaDangKy) && !$laMonKyTruoc;
                                             $daHoc = in_array($monHoc->id, $monDaHoc);
                                             $daQua = in_array($monHoc->id, $monDaQua);
-$lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
+                                            $dangTruot = in_array($monHoc->id, $monDangTruot ?? []);
+                                            $lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
                                         @endphp
                                         <tr>
                                             <td><code>{{ $monHoc->ma_mon }}</code></td>
@@ -180,21 +200,6 @@ $lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
                                             </td>
                                             <td>{{ $monHoc->so_tin_chi }}</td>
                                             <td>
-                                                @php
-                                                    // Lấy học kỳ gợi ý từ CTK hoặc object
-                                                    $hocKyGoiY = null;
-                                                    if (is_object($ct)) {
-                                                        // Nếu là model ChuongTrinhKhung
-                                                        if (method_exists($ct, 'getAttribute')) {
-                                                            $hocKyGoiY = $ct->hoc_ky_goi_y;
-                                                        } else {
-                                                            // Nếu là stdClass object
-                                                            $hocKyGoiY = $ct->hoc_ky_goi_y ?? null;
-                                                        }
-                                                    } else {
-                                                        $hocKyGoiY = $ct['hoc_ky_goi_y'] ?? null;
-                                                    }
-                                                @endphp
                                                 @if ($hocKyGoiY && $hocKyGoiY > 0)
                                                     <span class="badge bg-info text-white">Kỳ {{ $hocKyGoiY }}</span>
                                                 @else
@@ -209,18 +214,41 @@ $lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
                                                 @endif
                                             </td>
                                             <td>
-                                                @if ($daQua)
+                                                @if ($daDangKy)
+                                                    {{-- Ưu tiên hiển thị "Đã đăng ký" nếu đã đăng ký (kể cả học lại hoặc cải thiện điểm) --}}
+                                                    <span class="badge bg-info">Đã đăng ký</span>
+                                                @elseif($dangTruot)
+                                                    <span class="badge bg-danger">Đang trượt</span>
+                                                @elseif($daQua)
                                                     <span class="badge bg-success">Đã qua môn</span>
                                                 @elseif($daHoc)
                                                     <span class="badge bg-warning">Đang học</span>
-                                                @elseif($daDangKy)
-                                                    <span class="badge bg-info">Đã đăng ký</span>
+                                                @elseif($laMonKyTruoc)
+                                                    {{-- Môn thuộc kỳ trước nhưng chưa có kết quả học tập - có thể do dữ liệu chưa được tạo --}}
+                                                    <span class="badge bg-warning" title="Môn này thuộc kỳ {{ $hocKyGoiY }} nhưng chưa có dữ liệu học tập">Chưa có dữ liệu</span>
                                                 @else
                                                     <span class="badge bg-secondary">Chưa học</span>
                                                 @endif
                                             </td>
                                             <td>
-                                                @if (!$daQua && !$daDangKy && !$lopHPs->isEmpty())
+                                                @if ($dangTruot && !$daDangKy && !$lopHPs->isEmpty())
+                                                    {{-- Môn đang trượt - hiển thị nút "Đăng ký học lại" --}}
+                                                    <button type="button" class="btn btn-sm btn-warning btn-dang-ky-hoc-lai"
+                                                        data-mon-hoc-id="{{ $monHoc->id }}"
+                                                        data-ten-mon="{{ $monHoc->ten_mon }}"
+                                                        data-tin-chi="{{ $monHoc->so_tin_chi }}">
+                                                        <i class="bi bi-arrow-repeat"></i> Đăng ký học lại
+                                                    </button>
+                                                @elseif($daQua && !$daDangKy && !$lopHPs->isEmpty())
+                                                    {{-- Môn đã qua - hiển thị nút "Đăng ký học cải thiện điểm" --}}
+                                                    <button type="button" class="btn btn-sm btn-info btn-dang-ky-cai-thien"
+                                                        data-mon-hoc-id="{{ $monHoc->id }}"
+                                                        data-ten-mon="{{ $monHoc->ten_mon }}"
+                                                        data-tin-chi="{{ $monHoc->so_tin_chi }}">
+                                                        <i class="bi bi-graph-up-arrow"></i> Đăng ký học cải thiện điểm
+                                                    </button>
+                                                @elseif(!$daQua && !$dangTruot && !$daDangKy && !$lopHPs->isEmpty())
+                                                    {{-- Môn chưa học - hiển thị nút "Đăng ký" bình thường --}}
                                                     <button type="button" class="btn btn-sm btn-primary btn-dang-ky"
                                                         data-mon-hoc-id="{{ $monHoc->id }}"
                                                         data-ten-mon="{{ $monHoc->ten_mon }}"
@@ -229,7 +257,7 @@ $lopHPs = $lopHocPhans[$monHoc->id] ?? collect();
                                                     </button>
                                                 @elseif($daDangKy)
                                                     @php
-$dangKyId = $dangKyCollection->firstWhere(
+                                                        $dangKyId = $dangKyCollection->firstWhere(
                                                             'mon_hoc_id',
                                                             $monHoc->id,
                                                         )?->id;
@@ -238,13 +266,13 @@ $dangKyId = $dangKyCollection->firstWhere(
                                                         data-dang-ky-id="{{ $dangKyId }}">
                                                         <i class="bi bi-x-circle"></i> Hủy
                                                     </button>
-                                                @elseif($daQua)
+                                                @elseif($daQua && $lopHPs->isEmpty())
                                                     <small class="text-muted">Đã qua môn</small>
                                                 @elseif($lopHPs->isEmpty())
                                                     <small class="text-muted">Chưa mở lớp</small>
                                                 @else
                                                     @if(config('app.debug'))
-                                                        <small class="text-warning" title="daQua:{{$daQua?'Y':'N'}} daDK:{{$daDangKy?'Y':'N'}} lops:{{$lopHPs->count()}}">
+                                                        <small class="text-warning" title="daQua:{{$daQua?'Y':'N'}} dangTruot:{{$dangTruot?'Y':'N'}} daDK:{{$daDangKy?'Y':'N'}} lops:{{$lopHPs->count()}}">
                                                             Debug
                                                         </small>
                                                     @endif
@@ -296,11 +324,11 @@ $dangKyId = $dangKyCollection->firstWhere(
                     $('#modal-error').addClass('d-none').text('');
                 }
 
-                // Open modal when clicking Đăng ký
-                $('.btn-dang-ky').on('click', function() {
-                    selectedMonId = $(this).data('mon-hoc-id');
-                    const tenMon = $(this).data('ten-mon');
-selectedTinChi = parseInt($(this).data('tin-chi')) || 0;
+                // Hàm xử lý đăng ký chung
+                function handleDangKy(button, isHocLai = false, isCaiThien = false) {
+                    selectedMonId = $(button).data('mon-hoc-id');
+                    const tenMon = $(button).data('ten-mon');
+                    selectedTinChi = parseInt($(button).data('tin-chi')) || 0;
                     const tongTinChi = {{ $tongTinChiDaDangKy }};
                     const tinChiToiDa = {{ $tinChiToiDa }};
 
@@ -316,8 +344,33 @@ selectedTinChi = parseInt($(this).data('tin-chi')) || 0;
                     clearError();
                     $('#modal-mon-ten').text(tenMon);
                     $('#modal-mon-tc').text(selectedTinChi + ' TC');
+                    
+                    // Cập nhật tiêu đề modal
+                    if (isHocLai) {
+                        $('#dangKyModal .modal-title').text('Xác nhận đăng ký học lại');
+                    } else if (isCaiThien) {
+                        $('#dangKyModal .modal-title').text('Xác nhận đăng ký học cải thiện điểm');
+                    } else {
+                        $('#dangKyModal .modal-title').text('Xác nhận đăng ký môn học');
+                    }
+                    
                     const modal = new bootstrap.Modal(document.getElementById('dangKyModal'));
                     modal.show();
+                }
+
+                // Open modal when clicking Đăng ký (môn chưa học)
+                $('.btn-dang-ky').on('click', function() {
+                    handleDangKy(this, false, false);
+                });
+
+                // Open modal when clicking Đăng ký học lại
+                $('.btn-dang-ky-hoc-lai').on('click', function() {
+                    handleDangKy(this, true, false);
+                });
+
+                // Open modal when clicking Đăng ký học cải thiện điểm
+                $('.btn-dang-ky-cai-thien').on('click', function() {
+                    handleDangKy(this, false, true);
                 });
 
                 // Confirm from modal

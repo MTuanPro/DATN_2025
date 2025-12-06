@@ -253,7 +253,6 @@
                                     <th>Số báo danh</th>
                                     <th>MSSV</th>
                                     <th>Họ tên</th>
-                                    <th>Lớp hành chính</th>
                                     <th>Phòng thi</th>
                                     <th>Điều kiện</th>
                                     <th>Trạng thái</th>
@@ -270,7 +269,6 @@
                                     <td><strong class="text-primary">{{ $lichThiSV->so_bao_danh }}</strong></td>
                                     <td>{{ $lichThiSV->sinhVien->ma_sinh_vien }}</td>
                                     <td>{{ $lichThiSV->sinhVien->ho_ten }}</td>
-                                    <td>{{ $lichThiSV->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
                                     <td>{{ $lichThiSV->phongThi->ten_phong ?? 'Chưa xác định' }}</td>
                                     <td>
                                         @if($item['khong_duoc_di_thi'])
@@ -293,7 +291,9 @@
                                         @endif
                                     </td>
                                     <td>
-                                        @if($lichThiSV->trang_thai === 'du_thi')
+                                        @if($item['khong_duoc_di_thi'])
+                                            <span class="badge bg-danger">Không đủ điều kiện</span>
+                                        @elseif($lichThiSV->trang_thai === 'du_thi')
                                             <span class="badge bg-success">Dự thi</span>
                                         @elseif($lichThiSV->trang_thai === 'vang_co_phep')
                                             <span class="badge bg-warning text-dark">Vắng có phép</span>

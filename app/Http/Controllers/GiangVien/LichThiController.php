@@ -34,11 +34,11 @@ class LichThiController extends Controller
         $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
 
         $query = LichThi::with([
-            'lopHocPhan.monHoc', 
+            'lopHocPhan.monHoc',
             'lopHocPhan.hocKy',
-            'phongHoc', 
-            'giamThi1', 
-            'giamThi2', 
+            'phongHoc',
+            'giamThi1',
+            'giamThi2',
             'hocKy'
         ])
             ->whereIn('lop_hoc_phan_id', $lopHocPhanIds);
@@ -58,13 +58,13 @@ class LichThiController extends Controller
             $search = $request->search;
             $query->whereHas('lopHocPhan.monHoc', function ($q) use ($search) {
                 $q->where('ten_mon', 'like', "%{$search}%")
-                  ->orWhere('ma_mon', 'like', "%{$search}%");
+                    ->orWhere('ma_mon', 'like', "%{$search}%");
             });
         }
 
         $lichThis = $query->orderBy('ngay_thi', 'asc')
-                          ->orderBy('gio_bat_dau', 'asc')
-                          ->paginate(15);
+            ->orderBy('gio_bat_dau', 'asc')
+            ->paginate(15);
 
         return view('giangvien.lich-thi.index', compact('lichThis'));
     }
@@ -82,16 +82,16 @@ class LichThiController extends Controller
         }
 
         $query = LichThi::with([
-            'lopHocPhan.monHoc', 
+            'lopHocPhan.monHoc',
             'lopHocPhan.hocKy',
-            'phongHoc', 
-            'giamThi1', 
-            'giamThi2', 
+            'phongHoc',
+            'giamThi1',
+            'giamThi2',
             'hocKy'
         ])
-            ->where(function($q) use ($giangVien) {
+            ->where(function ($q) use ($giangVien) {
                 $q->where('giam_thi_1_id', $giangVien->id)
-                  ->orWhere('giam_thi_2_id', $giangVien->id);
+                    ->orWhere('giam_thi_2_id', $giangVien->id);
             });
 
         // Lọc theo tháng
@@ -109,8 +109,8 @@ class LichThiController extends Controller
         }
 
         $lichCoiThis = $query->orderBy('ngay_thi', 'asc')
-                             ->orderBy('gio_bat_dau', 'asc')
-                             ->paginate(15);
+            ->orderBy('gio_bat_dau', 'asc')
+            ->paginate(15);
 
         return view('giangvien.lich-thi.lich-coi-thi', compact('lichCoiThis'));
     }
@@ -130,8 +130,8 @@ class LichThiController extends Controller
         // Kiểm tra quyền xem (phải là GV phụ trách lớp hoặc giám thị)
         $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
 
-        $isGiamThi = ($lichThi->giam_thi_1_id == $giangVien->id || 
-                      $lichThi->giam_thi_2_id == $giangVien->id);
+        $isGiamThi = ($lichThi->giam_thi_1_id == $giangVien->id ||
+            $lichThi->giam_thi_2_id == $giangVien->id);
 
         if (!$lopHocPhanIds->contains($lichThi->lop_hoc_phan_id) && !$isGiamThi) {
             return redirect()->route('giangvien.lich-thi.index')
@@ -139,19 +139,21 @@ class LichThiController extends Controller
         }
 
         $lichThi->load([
-            'lopHocPhan.monHoc', 
+            'lopHocPhan.monHoc',
             'lopHocPhan.hocKy',
-            'phongThi', 
-            'giamThi1', 
-            'giamThi2', 
+            'phongThi',
+            'giamThi1',
+            'giamThi2',
             'hocKy',
             'lichThiSinhViens.phongThi'
         ]);
 
         // Kiểm tra điều kiện dự thi cho từng sinh viên
+        // Chỉ tính các buổi học đã được giảng viên này điểm danh (trang_thai = 'da_day' và giang_vien_id = giảng viên này)
         $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
             ->where('ngay_hoc', '<=', now()->toDateString())
-            ->where('trang_thai', '!=', 'huy')
+            ->where('trang_thai', 'da_day')
+            ->where('giang_vien_id', $giangVien->id)
             ->count();
 
         $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
@@ -171,7 +173,13 @@ class LichThiController extends Controller
             }
 
             // 1. Kiểm tra chuyên cần (vắng quá 20% = có mặt < 80%)
+            // Chỉ lấy điểm danh của các buổi học đã được giảng viên này điểm danh (trang_thai = 'da_day' và giang_vien_id = giảng viên này)
             $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVien->id)
+                ->whereHas('lichHocChiTiet', function ($query) use ($giangVien) {
+                    $query->where('ngay_hoc', '<=', now()->toDateString())
+                        ->where('trang_thai', 'da_day')
+                        ->where('giang_vien_id', $giangVien->id);
+                })
                 ->selectRaw('
                     COUNT(*) as tong_buoi_diem_danh,
                     SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
@@ -183,11 +191,11 @@ class LichThiController extends Controller
             $coMat = $diemDanhStats ? ($diemDanhStats->co_mat ?? 0) : 0;
             $vang = $diemDanhStats ? ($diemDanhStats->vang ?? 0) : 0;
             $nghiPhep = $diemDanhStats ? ($diemDanhStats->nghi_phep ?? 0) : 0;
-            
-            $tyLeCoMat = $tongBuoiHoc > 0 
-                ? round(($coMat / $tongBuoiHoc) * 100, 1) 
+
+            $tyLeCoMat = $tongBuoiHoc > 0
+                ? round(($coMat / $tongBuoiHoc) * 100, 1)
                 : 0;
-            
+
             $khongDatChuyenCan = $tyLeCoMat < 80;
 
             // 2. Kiểm tra điểm trung bình các đầu điểm < 5
@@ -210,7 +218,7 @@ class LichThiController extends Controller
 
                     $coDiem = true;
                     $diemTrungBinhDauDiem = $diems->avg('diem_so');
-                    
+
                     if ($diemTrungBinhDauDiem !== null) {
                         $tongDiem += $diemTrungBinhDauDiem * ($cauHinh->ty_le / 100);
                         $tongTyLe += $cauHinh->ty_le;
@@ -223,7 +231,7 @@ class LichThiController extends Controller
                     } else {
                         $diemTrungBinh = round($tongDiem, 2);
                     }
-                    
+
                     $khongDatDiem = $diemTrungBinh < 5;
                 }
             }
@@ -285,7 +293,6 @@ class LichThiController extends Controller
 
             return redirect()->back()
                 ->with('success', 'Upload đề thi thành công!');
-
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
@@ -332,7 +339,6 @@ class LichThiController extends Controller
 
             return redirect()->back()
                 ->with('success', 'Upload đáp án thành công!');
-
         } catch (\Exception $e) {
             return redirect()->back()
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
@@ -347,14 +353,16 @@ class LichThiController extends Controller
         $giangVien = Auth::user()->giangVien;
 
         // Kiểm tra quyền (phải là giám thị)
-        if ($lichThi->giam_thi_1_id != $giangVien->id && 
-            $lichThi->giam_thi_2_id != $giangVien->id) {
+        if (
+            $lichThi->giam_thi_1_id != $giangVien->id &&
+            $lichThi->giam_thi_2_id != $giangVien->id
+        ) {
             return redirect()->back()
                 ->with('error', 'Bạn không phải giám thị của ca thi này!');
         }
 
         // TODO: Implement xác nhận coi thi (có thể thêm trường trong DB)
-        
+
         return redirect()->back()
             ->with('success', 'Đã xác nhận coi thi!');
     }
@@ -370,7 +378,7 @@ class LichThiController extends Controller
         }
 
         $path = storage_path('app/public/' . $lichThi->de_thi_file);
-        
+
         if (!file_exists($path)) {
             return redirect()->back()
                 ->with('error', 'File không tồn tại!');
@@ -390,7 +398,7 @@ class LichThiController extends Controller
         }
 
         $path = storage_path('app/public/' . $lichThi->dap_an_file);
-        
+
         if (!file_exists($path)) {
             return redirect()->back()
                 ->with('error', 'File không tồn tại!');
@@ -415,7 +423,7 @@ class LichThiController extends Controller
         $lopHocPhanIds = $giangVien->lopHocPhans()->pluck('lop_hoc_phan.id')->unique();
 
         $query = LichThi::with([
-            'lopHocPhan.monHoc', 
+            'lopHocPhan.monHoc',
             'lopHocPhan.hocKy',
             'phongHoc',
             'caHoc'
@@ -429,7 +437,7 @@ class LichThiController extends Controller
 
         // Lọc theo học kỳ
         if ($request->filled('hoc_ky_id')) {
-            $query->whereHas('lopHocPhan', function($q) use ($request) {
+            $query->whereHas('lopHocPhan', function ($q) use ($request) {
                 $q->where('hoc_ky_id', $request->hoc_ky_id);
             });
         }
@@ -439,13 +447,13 @@ class LichThiController extends Controller
             $search = $request->search;
             $query->whereHas('lopHocPhan.monHoc', function ($q) use ($search) {
                 $q->where('ten_mon', 'like', "%{$search}%")
-                  ->orWhere('ma_mon', 'like', "%{$search}%");
+                    ->orWhere('ma_mon', 'like', "%{$search}%");
             });
         }
 
         $lichThis = $query->orderBy('ngay_thi', 'desc')
-                          ->orderBy('gio_bat_dau', 'asc')
-                          ->paginate(15);
+            ->orderBy('gio_bat_dau', 'asc')
+            ->paginate(15);
 
         $hocKys = \App\Models\HocKy::orderBy('nam_hoc', 'desc')
             ->orderBy('ten_hoc_ky', 'desc')
@@ -485,10 +493,11 @@ class LichThiController extends Controller
         $sinhVienIds = $sinhViens->pluck('id')->toArray();
         $tongSoSinhVien = count($sinhVienIds);
 
-        // Kiểm tra: Phải điểm danh hết tất cả các buổi học đã diễn ra
+        // Kiểm tra: Phải điểm danh hết tất cả các buổi học đã được giảng viên này điểm danh (trang_thai = 'da_day' và giang_vien_id = giảng viên này)
         $cacBuoiHocDaDienRa = LichHocChiTiet::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
             ->where('ngay_hoc', '<=', now()->toDateString())
-            ->where('trang_thai', '!=', 'huy')
+            ->where('trang_thai', 'da_day')
+            ->where('giang_vien_id', $giangVien->id)
             ->with('caHoc')
             ->get();
 
@@ -515,18 +524,15 @@ class LichThiController extends Controller
             $thongBaoLoi = "Không thể xuất danh sách thi. Vui lòng điểm danh hết tất cả các buổi học đã diễn ra.\n\n";
             $thongBaoLoi .= "Các buổi học chưa điểm danh đầy đủ:\n";
             foreach ($buoiHocChuaDiemDanhHet as $buoi) {
-                $thongBaoLoi .= "- Buổi học ngày " . Carbon::parse($buoi['buoi_hoc']->ngay_hoc)->format('d/m/Y') . 
-                               " (Ca " . ($buoi['buoi_hoc']->caHoc->ten_ca ?? 'N/A') . "): " .
-                               "Đã điểm danh {$buoi['so_sinh_vien_da_diem_danh']}/{$buoi['tong_so_sinh_vien']} sinh viên. " .
-                               "Còn thiếu {$buoi['con_thieu']} sinh viên.\n";
+                $thongBaoLoi .= "- Buổi học ngày " . Carbon::parse($buoi['buoi_hoc']->ngay_hoc)->format('d/m/Y') .
+                    " (Ca " . ($buoi['buoi_hoc']->caHoc->ten_ca ?? 'N/A') . "): " .
+                    "Đã điểm danh {$buoi['so_sinh_vien_da_diem_danh']}/{$buoi['tong_so_sinh_vien']} sinh viên. " .
+                    "Còn thiếu {$buoi['con_thieu']} sinh viên.\n";
             }
 
             return redirect()->route('giangvien.lich-thi.show', $lichThi->id)
                 ->with('error', $thongBaoLoi);
         }
-
-        // Đếm tổng số buổi học đã diễn ra
-        $tongBuoiHoc = $cacBuoiHocDaDienRa->count();
 
         // Lấy cấu hình đầu điểm
         $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
@@ -537,24 +543,23 @@ class LichThiController extends Controller
 
         foreach ($sinhViens as $sv) {
             // 1. Kiểm tra chuyên cần (vắng quá 20% = có mặt < 80%)
-            $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $sv->id)
-                ->selectRaw('
-                    COUNT(*) as tong_buoi_diem_danh,
-                    SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
-                    SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang,
-                    SUM(CASE WHEN trang_thai = "nghi_phep" THEN 1 ELSE 0 END) as nghi_phep
-                ')
-                ->first();
+            // Đếm tổng số buổi đã có điểm danh (unique theo lich_hoc_chi_tiet_id) của TẤT CẢ sinh viên trong lớp
+            $tongBuoi = DiemDanh::whereHas('lopHocPhanSinhVien', function ($q) use ($lichThi) {
+                $q->where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id);
+            })
+                ->distinct('lich_hoc_chi_tiet_id')
+                ->count('lich_hoc_chi_tiet_id');
 
-            $coMat = $diemDanhStats ? ($diemDanhStats->co_mat ?? 0) : 0;
-            $vang = $diemDanhStats ? ($diemDanhStats->vang ?? 0) : 0;
-            $nghiPhep = $diemDanhStats ? ($diemDanhStats->nghi_phep ?? 0) : 0;
-            
+            // Đếm số buổi có mặt của sinh viên cụ thể
+            $buoiCoMat = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $sv->id)
+                ->where('trang_thai', 'co_mat')
+                ->count();
+
             // Tính tỷ lệ có mặt
-            $tyLeCoMat = $tongBuoiHoc > 0 
-                ? round(($coMat / $tongBuoiHoc) * 100, 1) 
+            $tyLeCoMat = $tongBuoi > 0
+                ? round(($buoiCoMat / $tongBuoi) * 100, 1)
                 : 0;
-            
+
             // Vắng quá 20% = có mặt < 80%
             $khongDatChuyenCan = $tyLeCoMat < 80;
 
@@ -578,10 +583,10 @@ class LichThiController extends Controller
                     }
 
                     $coDiem = true;
-                    
+
                     // Tính điểm trung bình của đầu điểm
                     $diemTrungBinhDauDiem = $diems->avg('diem_so');
-                    
+
                     if ($diemTrungBinhDauDiem !== null) {
                         $tongDiem += $diemTrungBinhDauDiem * ($cauHinh->ty_le / 100);
                         $tongTyLe += $cauHinh->ty_le;
@@ -595,7 +600,7 @@ class LichThiController extends Controller
                     } else {
                         $diemTrungBinh = round($tongDiem, 2);
                     }
-                    
+
                     // Không đạt nếu điểm < 5
                     $khongDatDiem = $diemTrungBinh < 5;
                 }
@@ -607,10 +612,10 @@ class LichThiController extends Controller
             $danhSachSinhVien[] = [
                 'sinh_vien' => $sv->sinhVien,
                 'lop_hanh_chinh' => null, // TODO: Model LopHanhChinh chưa được tạo
-                'tong_buoi_hoc' => $tongBuoiHoc,
-                'co_mat' => $coMat,
-                'vang' => $vang,
-                'nghi_phep' => $nghiPhep,
+                'tong_buoi_hoc' => $tongBuoi,
+                'co_mat' => $buoiCoMat,
+                'vang' => 0,
+                'nghi_phep' => 0,
                 'ty_le_co_mat' => $tyLeCoMat,
                 'khong_dat_chuyen_can' => $khongDatChuyenCan,
                 'diem_trung_binh' => $diemTrungBinh,
@@ -621,12 +626,12 @@ class LichThiController extends Controller
         }
 
         // Lọc bỏ sinh viên bị cấm thi (chỉ lấy những sinh viên được đi thi)
-        $danhSachSinhVienDiThi = array_filter($danhSachSinhVien, function($sv) {
+        $danhSachSinhVienDiThi = array_filter($danhSachSinhVien, function ($sv) {
             return !$sv['khong_duoc_di_thi'];
         });
 
         // Sắp xếp theo tên
-        usort($danhSachSinhVienDiThi, function($a, $b) {
+        usort($danhSachSinhVienDiThi, function ($a, $b) {
             return strcmp($a['sinh_vien']->ho_ten, $b['sinh_vien']->ho_ten);
         });
 
@@ -634,7 +639,7 @@ class LichThiController extends Controller
             'lichThi',
             'danhSachSinhVien',
             'danhSachSinhVienDiThi',
-            'tongBuoiHoc'
+            'tongBuoi'
         ));
     }
 

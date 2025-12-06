@@ -179,7 +179,7 @@ class ScheduleController extends Controller
                 ->whereIn('id', $lopHocPhanIds)
                 ->get();
 
-            // Thống kê điểm danh cho mỗi buổi
+            // Thống kê điểm danh cho mỗi buổi và tự động cập nhật trạng thái
             foreach ($buoiHocList as $buoiHoc) {
                 $diemDanhStats = DiemDanh::where('lich_hoc_chi_tiet_id', $buoiHoc->id)
                     ->selectRaw('
@@ -191,6 +191,17 @@ class ScheduleController extends Controller
                     ')
                     ->first();
 
+                // Tự động cập nhật trạng thái: Nếu đã có điểm danh nhưng trạng thái vẫn là "Chưa dạy" hoặc "Đang dạy"
+                if ($diemDanhStats && $diemDanhStats->tong > 0) {
+                    if ($buoiHoc->trang_thai == 'chua_day' || $buoiHoc->trang_thai == 'dang_day') {
+                        // Cập nhật trạng thái trước khi gán thuộc tính động
+                        LichHocChiTiet::where('id', $buoiHoc->id)->update(['trang_thai' => 'da_day']);
+                        // Refresh để hiển thị đúng trạng thái mới
+                        $buoiHoc->refresh();
+                    }
+                }
+                
+                // Gán thuộc tính động sau khi đã cập nhật (nếu có)
                 $buoiHoc->diem_danh_stats = $diemDanhStats;
             }
         }

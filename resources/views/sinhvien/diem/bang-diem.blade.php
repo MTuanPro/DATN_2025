@@ -68,9 +68,8 @@
             </div>
 
             {{-- Bảng điểm theo học kỳ --}}
-            @foreach ($monHocs as $hocKyId => $dsMonHoc)
+            @foreach ($monHocs as $hocKyGoiY => $dsMonHoc)
                 @php
-                    $hocKy = $dsMonHoc->first()->lopHocPhan->hocKy;
                     $tongTinChi = 0;
                     $tongDiemHe4 = 0;
                     $soMonDat = 0;
@@ -79,7 +78,7 @@
                 <div class="card">
                     <div class="card-header bg-primary text-white">
                         <h5 class="mb-0">
-                            <i class="bi bi-calendar3"></i> {{ $hocKy->ten_hoc_ky }}
+                            <i class="bi bi-calendar3"></i> Học kỳ {{ $hocKyGoiY }}
                         </h5>
                     </div>
                     <div class="card-body">

@@ -10,26 +10,46 @@ use App\Models\HocKy;
 use App\Models\PhanCongGiangDay;
 use App\Models\CauHinhDauDiem;
 use App\Models\CauHinhDauDiemMacDinh;
+use App\Models\DaoTao\ChuongTrinhKhung;
+use App\Models\DaoTao\ChuyenNganh;
 use Carbon\Carbon;
 
 class LopHocPhanSeeder extends Seeder
 {
     /**
-     * Tạo lớp học phần cho học kỳ 1
+     * Tạo lớp học phần cho học kỳ 1 năm 2025-2026
+     * Tạo lớp cho tất cả môn học mà sinh viên kỳ 1-8 cần học (theo chương trình khung)
+     * Mỗi môn học có 2 lớp học phần để đủ cho sinh viên các ngành đăng ký
      * Phân công giảng viên phù hợp với môn học (từ bảng giang_vien_mon_hoc)
      * Không tạo lịch học
      */
     public function run(): void
     {
-        // Chỉ lấy học kỳ 1
-        $hocKy = HocKy::where('ten_hoc_ky', 'Học kỳ 1')->first();
+        // Tìm học kỳ hiện tại hoặc học kỳ gần nhất
+        $hocKy = HocKy::where('la_hoc_ky_hien_tai', true)->first();
+        
+        // Nếu không có học kỳ hiện tại, lấy học kỳ gần nhất (theo ngày bắt đầu)
+        if (!$hocKy) {
+            $hocKy = HocKy::orderBy('ngay_bat_dau', 'desc')->first();
+        }
+        
+        // Nếu vẫn không có, thử tìm học kỳ 1 năm 2025-2026 (fallback)
+        if (!$hocKy) {
+            $hocKy = HocKy::where('ten_hoc_ky', 'Học kỳ 1')
+                ->where('nam_hoc', '2025-2026')
+                ->first();
+        }
         
         if (!$hocKy) {
-            $this->command->error('Không tìm thấy học kỳ 1!');
+            $this->command->error('Không tìm thấy học kỳ nào để tạo lớp học phần!');
+            $this->command->info('💡 Vui lòng chạy HocKySeeder trước để tạo học kỳ.');
             return;
         }
+        
+        $this->command->info("📚 Tạo lớp học phần cho: {$hocKy->ten_hoc_ky} - {$hocKy->nam_hoc}");
+        $this->command->info("🎓 Tạo lớp cho môn học mà sinh viên kỳ 1-8 cần học");
 
-        // Xóa các lớp học phần cũ của học kỳ 1 (bao gồm cả soft deleted)
+        // Xóa các lớp học phần cũ của học kỳ này (bao gồm cả soft deleted)
         $soLopCu = LopHocPhan::withTrashed()->where('hoc_ky_id', $hocKy->id)->count();
         if ($soLopCu > 0) {
             // Xóa phân công giảng viên trước
@@ -38,16 +58,41 @@ class LopHocPhanSeeder extends Seeder
             
             // Force delete lớp học phần (bao gồm cả soft deleted)
             LopHocPhan::withTrashed()->where('hoc_ky_id', $hocKy->id)->forceDelete();
-            $this->command->info("🗑️  Đã xóa {$soLopCu} lớp học phần cũ của học kỳ 1");
+            $this->command->info("🗑️  Đã xóa {$soLopCu} lớp học phần cũ");
         }
 
-        // Lấy tất cả môn học
-        $monHocs = MonHoc::all();
+        // Lấy tất cả chuyên ngành
+        $chuyenNganhs = ChuyenNganh::all();
         
-        if ($monHocs->isEmpty()) {
-            $this->command->error('Không có môn học nào trong hệ thống!');
+        if ($chuyenNganhs->isEmpty()) {
+            $this->command->error('Không có chuyên ngành nào trong hệ thống!');
             return;
         }
+
+        // Tập hợp tất cả môn học mà sinh viên kỳ 1-8 cần học
+        $monHocIds = collect();
+        
+        foreach ($chuyenNganhs as $chuyenNganh) {
+            // Lấy chương trình khung của chuyên ngành (kỳ 1-8)
+            $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $chuyenNganh->id)
+                ->whereBetween('hoc_ky_goi_y', [1, 8]) // Lấy môn học của kỳ 1-8
+                ->pluck('mon_hoc_id');
+            
+            $monHocIds = $monHocIds->merge($chuongTrinhKhung);
+        }
+        
+        // Loại bỏ trùng lặp
+        $monHocIds = $monHocIds->unique();
+        
+        // Lấy thông tin môn học
+        $monHocs = MonHoc::whereIn('id', $monHocIds)->get();
+        
+        if ($monHocs->isEmpty()) {
+            $this->command->error('Không tìm thấy môn học nào cho sinh viên kỳ 1-8!');
+            return;
+        }
+        
+        $this->command->info("📖 Tìm thấy {$monHocs->count()} môn học cần tạo lớp (cho sinh viên kỳ 1-8)");
 
         $count = 0;
         $countKhongCoGiangVien = 0;
@@ -65,12 +110,25 @@ class LopHocPhanSeeder extends Seeder
                 continue;
             }
 
-            // Tạo 1-2 lớp cho mỗi môn học
-            $soLop = rand(1, 2);
+            // Tạo 2 lớp cho mỗi môn học để đủ cho sinh viên các ngành đăng ký
+            $soLop = 2;
+            
+            // Đảm bảo có đủ giảng viên cho 2 lớp
+            if (count($giangVienIds) < $soLop) {
+                $this->command->warn("⚠️  Môn {$monHoc->ma_mon} chỉ có " . count($giangVienIds) . " giảng viên, không đủ cho {$soLop} lớp");
+            }
+            
+            // Shuffle để phân bổ giảng viên ngẫu nhiên
+            shuffle($giangVienIds);
             
             for ($i = 1; $i <= $soLop; $i++) {
-                // Random chọn một giảng viên từ danh sách giảng viên có thể dạy môn này
-                $randomGiangVienId = $giangVienIds[array_rand($giangVienIds)];
+                // Chọn giảng viên khác nhau cho mỗi lớp (nếu có đủ)
+                if (count($giangVienIds) >= $i) {
+                    $giangVienId = $giangVienIds[$i - 1];
+                } else {
+                    // Nếu không đủ giảng viên, dùng lại giảng viên đầu tiên
+                    $giangVienId = $giangVienIds[0];
+                }
                 
                 // Tạo mã lớp theo format: [MaMonHoc].[SoLop]
                 $maLopHp = $monHoc->ma_mon . '.' . str_pad($i, 2, '0', STR_PAD_LEFT);
@@ -95,7 +153,7 @@ class LopHocPhanSeeder extends Seeder
                     'mon_hoc_id' => $monHoc->id,
                     'hoc_ky_id' => $hocKy->id,
                     'nhom_lop' => $i,
-                    'suc_chua' => rand(30, 60),
+                    'suc_chua' => 50, // Sức chứa cố định 50 sinh viên/lớp (2 lớp = 100 SV/môn)
                     'so_luong_dang_ky' => 0,
                     'so_luong_toi_thieu' => 10,
                     'hinh_thuc' => $monHoc->hinh_thuc_day ?? 'offline',
@@ -109,7 +167,7 @@ class LopHocPhanSeeder extends Seeder
                 // Phân công giảng viên chính (chỉ giảng viên có thể dạy môn này)
                 PhanCongGiangDay::create([
                     'lop_hoc_phan_id' => $lopHocPhan->id,
-                    'giang_vien_id' => $randomGiangVienId,
+                    'giang_vien_id' => $giangVienId,
                     'vai_tro' => 'giang_vien_chinh',
                     'ngay_phan_cong' => Carbon::now(),
                 ]);
@@ -122,6 +180,8 @@ class LopHocPhanSeeder extends Seeder
         }
 
         $this->command->info("✅ Đã tạo {$count} lớp học phần cho học kỳ: {$hocKy->ten_hoc_ky} - {$hocKy->nam_hoc}");
+        $this->command->info("📊 Tổng số môn học: {$monHocs->count()} môn");
+        $this->command->info("📊 Trung bình: " . round($count / $monHocs->count(), 2) . " lớp/môn");
         
         if ($countKhongCoGiangVien > 0) {
             $this->command->warn("⚠️  Có {$countKhongCoGiangVien} môn học không có giảng viên phù hợp (chưa được phân công trong bảng giang_vien_mon_hoc)");

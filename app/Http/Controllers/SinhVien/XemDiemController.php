@@ -81,36 +81,141 @@ class XemDiemController extends Controller
                 ->with('error', 'Không tìm thấy thông tin sinh viên');
         }
 
-        // Lấy học kỳ hiện tại hoặc học kỳ được chọn
-        $hocKyId = $request->get('hoc_ky_id');
+        // Lấy kỳ học được chọn (1-13) thay vì học kỳ thực tế
+        $hocKyGoiY = $request->get('hoc_ky_goi_y');
         
-        if (!$hocKyId) {
-            $hocKyHienTai = HocKy::where('la_hoc_ky_hien_tai', true)->first();
-            $hocKyId = $hocKyHienTai ? $hocKyHienTai->id : null;
+        // Lấy chương trình khung để xác định kỳ học gợi ý
+        $chuongTrinhKhung = [];
+        if ($sinhVien->chuyen_nganh_id) {
+            $chuongTrinhKhung = \App\Models\DaoTao\ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
+                ->pluck('hoc_ky_goi_y', 'mon_hoc_id')
+                ->toArray();
         }
 
-        // Lấy danh sách học kỳ đã học
-        $hocKys = HocKy::whereHas('lopHocPhans.lopHocPhanSinhVien', function ($q) use ($sinhVien) {
-            $q->where('sinh_vien_id', $sinhVien->id);
-        })
-        ->orderBy('ngay_bat_dau', 'desc')
-        ->get();
+        // Lấy tất cả môn học đã có điểm
+        $monHocsAll = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
+            ->whereHas('lopHocPhan', function ($q) {
+                $q->where('trang_thai_lop', 'da_duyet_diem');
+            })
+            ->with(['lopHocPhan.monHoc', 'lopHocPhan.hocKy'])
+            ->get();
 
-        // Lấy danh sách môn học đã có điểm trong học kỳ
+        // Lấy danh sách học kỳ thực tế đã học (sắp xếp theo thời gian)
+        $hocKyIds = $monHocsAll->pluck('lopHocPhan.hoc_ky_id')->filter()->unique();
+        
+        // Nếu sinh viên ở kỳ >= 2, đảm bảo có học kỳ kỳ 1
+        // Tìm học kỳ kỳ 1 dựa trên khóa học của sinh viên
+        $kyHienTai = $sinhVien->ky_hien_tai ?? 1;
+        if ($kyHienTai >= 2 && $sinhVien->khoa_hoc_id) {
+            $khoaHoc = \App\Models\DaoTao\KhoaHoc::find($sinhVien->khoa_hoc_id);
+            if ($khoaHoc) {
+                $namBatDau = $khoaHoc->nam_bat_dau;
+                $namHocString = $namBatDau . '-' . ($namBatDau + 1);
+                
+                // Tìm học kỳ 1 của năm học đầu tiên
+                $hocKyKy1 = HocKy::where('ten_hoc_ky', 'Học kỳ 1')
+                    ->where('nam_hoc', $namHocString)
+                    ->first();
+                
+                if ($hocKyKy1 && !$hocKyIds->contains($hocKyKy1->id)) {
+                    // Thêm học kỳ kỳ 1 vào danh sách nếu chưa có
+                    $hocKyIds->push($hocKyKy1->id);
+                }
+            }
+        }
+        
+        $hocKysThucTe = HocKy::whereIn('id', $hocKyIds)
+            ->orderBy('ngay_bat_dau', 'asc')
+            ->get();
+
+        // Tạo mapping: hoc_ky_id -> kỳ học hiển thị (1-13)
+        // Tương tự như trong bangDiem()
+        $hocKyMapping = [];
+        $daDungKy = [];
+        $monHocsByHocKy = $monHocsAll->groupBy('lopHocPhan.hoc_ky_id');
+        
+        foreach ($hocKysThucTe as $hocKy) {
+            $hocKyId = $hocKy->id;
+            $monHocsTrongKy = $monHocsByHocKy->get($hocKyId, collect());
+            
+            // Tìm kỳ học gợi ý từ CTK
+            $kyHocGoiY = null;
+            foreach ($monHocsTrongKy as $item) {
+                $monHocId = $item->lopHocPhan->mon_hoc_id;
+                if (isset($chuongTrinhKhung[$monHocId])) {
+                    $kyHocGoiY = $chuongTrinhKhung[$monHocId];
+                    break;
+                }
+            }
+            
+            if ($kyHocGoiY && $kyHocGoiY <= 8 && !in_array($kyHocGoiY, $daDungKy)) {
+                $hocKyMapping[$hocKyId] = $kyHocGoiY;
+                $daDungKy[] = $kyHocGoiY;
+            } else {
+                // Kỳ trả nợ (kỳ 9-13)
+                $kyHocHienThi = 9;
+                while ($kyHocHienThi <= 13 && in_array($kyHocHienThi, $hocKyMapping)) {
+                    $kyHocHienThi++;
+                }
+                $hocKyMapping[$hocKyId] = $kyHocHienThi <= 13 ? $kyHocHienThi : 13;
+            }
+        }
+
+        // Lấy danh sách kỳ học (1-13) mà sinh viên đã có môn học
+        $kyHocs = array_unique(array_values($hocKyMapping));
+        
+        // Nếu sinh viên ở kỳ >= 2, đảm bảo có kỳ 1 trong danh sách
+        $kyHienTai = $sinhVien->ky_hien_tai ?? 1;
+        if ($kyHienTai >= 2 && !in_array(1, $kyHocs)) {
+            $kyHocs[] = 1; // Thêm kỳ 1 vào danh sách
+        }
+        
+        sort($kyHocs);
+
+        // Lấy danh sách môn học đã có điểm trong kỳ học được chọn
         $monHocs = [];
         
-        if ($hocKyId) {
-            $monHocs = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
-                ->whereHas('lopHocPhan', function ($q) use ($hocKyId) {
-                    $q->where('hoc_ky_id', $hocKyId)
-                      ->where('trang_thai_lop', 'da_duyet_diem');
-                })
-                ->with([
-                    'lopHocPhan.monHoc',
-                    'lopHocPhan.hocKy',
-                    'ketQuaHocTap'
-                ])
-                ->get();
+        if ($hocKyGoiY) {
+            // Tìm các học kỳ thực tế tương ứng với kỳ học được chọn
+            $hocKyIds = [];
+            foreach ($hocKyMapping as $hkId => $kyHoc) {
+                if ($kyHoc == $hocKyGoiY) {
+                    $hocKyIds[] = $hkId;
+                }
+            }
+            
+            // Nếu chọn kỳ 1 và không tìm thấy học kỳ trong mapping (chưa có điểm),
+            // tìm học kỳ kỳ 1 dựa trên khóa học của sinh viên
+            if ($hocKyGoiY == 1 && empty($hocKyIds) && $sinhVien->khoa_hoc_id) {
+                $khoaHoc = \App\Models\DaoTao\KhoaHoc::find($sinhVien->khoa_hoc_id);
+                if ($khoaHoc) {
+                    $namBatDau = $khoaHoc->nam_bat_dau;
+                    $namHocString = $namBatDau . '-' . ($namBatDau + 1);
+                    
+                    // Tìm học kỳ 1 của năm học đầu tiên
+                    $hocKyKy1 = HocKy::where('ten_hoc_ky', 'Học kỳ 1')
+                        ->where('nam_hoc', $namHocString)
+                        ->first();
+                    
+                    if ($hocKyKy1) {
+                        $hocKyIds[] = $hocKyKy1->id;
+                    }
+                }
+            }
+            
+            if (!empty($hocKyIds)) {
+                $monHocs = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
+                    ->whereHas('lopHocPhan', function ($q) use ($hocKyIds) {
+                        $q->where('trang_thai_lop', 'da_duyet_diem')
+                          ->whereIn('hoc_ky_id', $hocKyIds);
+                    })
+                    ->with([
+                        'lopHocPhan.monHoc',
+                        'lopHocPhan.hocKy',
+                        'ketQuaHocTap'
+                    ])
+                    ->get();
+            }
 
             // Tính thống kê điểm danh cho từng môn học
             foreach ($monHocs as $monHoc) {
@@ -144,15 +249,28 @@ class XemDiemController extends Controller
             }
         }
 
-        // Tính GPA học kỳ và tích lũy (chỉ tính điểm đã duyệt)
-        $gpaHocKy = $hocKyId ? $this->diemService->tinhGPAHocKy($sinhVien->id, $hocKyId) : 0;
+        // Tính GPA học kỳ (tính từ các môn trong kỳ học được chọn)
+        $gpaHocKy = 0;
+        if ($hocKyGoiY && $monHocs->isNotEmpty()) {
+            $tongDiem = 0;
+            $tongHeSo = 0;
+            foreach ($monHocs as $item) {
+                if ($item->ketQuaHocTap && $item->ketQuaHocTap->qua_mon) {
+                    $tinChi = $item->lopHocPhan->monHoc->so_tin_chi ?? 0;
+                    $tongDiem += $item->ketQuaHocTap->diem_he_4 * $tinChi;
+                    $tongHeSo += $tinChi;
+                }
+            }
+            $gpaHocKy = $tongHeSo > 0 ? $tongDiem / $tongHeSo : 0;
+        }
+        
         $gpaTichLuy = $this->diemService->tinhGPATichLuy($sinhVien->id);
         $tongTinChiDat = $this->diemService->tinhTongTinChiDat($sinhVien->id);
 
         return view('sinhvien.diem.index', compact(
             'monHocs',
-            'hocKys',
-            'hocKyId',
+            'kyHocs',
+            'hocKyGoiY',
             'gpaHocKy',
             'gpaTichLuy',
             'tongTinChiDat'
@@ -329,7 +447,15 @@ class XemDiemController extends Controller
         // Load relationships
         $sinhVien->load(['user', 'nganh.khoa', 'chuyenNganh.nganh.khoa']);
 
-        // Lấy tất cả môn đã học (đã duyệt điểm)
+        // Lấy chương trình khung để xác định kỳ học gợi ý cho mỗi môn
+        $chuongTrinhKhung = [];
+        if ($sinhVien->chuyen_nganh_id) {
+            $chuongTrinhKhung = \App\Models\DaoTao\ChuongTrinhKhung::where('chuyen_nganh_id', $sinhVien->chuyen_nganh_id)
+                ->pluck('hoc_ky_goi_y', 'mon_hoc_id')
+                ->toArray();
+        }
+        
+        // Lấy tất cả môn đã học (đã duyệt điểm) - chỉ lấy môn đã đăng ký (có LopHocPhanSinhVien)
         $monHocs = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVien->id)
             ->whereHas('lopHocPhan', function ($q) {
                 $q->where('trang_thai_lop', 'da_duyet_diem');
@@ -339,8 +465,72 @@ class XemDiemController extends Controller
                 'lopHocPhan.hocKy',
                 'ketQuaHocTap'
             ])
-            ->get()
-            ->groupBy('lopHocPhan.hoc_ky_id');
+            ->get();
+        
+        // Debug: Kiểm tra môn học kỳ 1
+        $monHocKy1 = $monHocs->filter(function ($item) use ($chuongTrinhKhung) {
+            $monHocId = $item->lopHocPhan->mon_hoc_id ?? null;
+            return isset($chuongTrinhKhung[$monHocId]) && $chuongTrinhKhung[$monHocId] == 1;
+        });
+        
+        \Log::info('BangDiem - Debug', [
+            'sinh_vien_id' => $sinhVien->id,
+            'chuyen_nganh_id' => $sinhVien->chuyen_nganh_id,
+            'ctk_count' => count($chuongTrinhKhung),
+            'tong_mon_hoc' => $monHocs->count(),
+            'mon_hoc_ky_1_count' => $monHocKy1->count(),
+            'mon_hoc_ky_1_ids' => $monHocKy1->pluck('lopHocPhan.mon_hoc_id')->toArray(),
+            'ctk_ky_1_mon_ids' => array_keys(array_filter($chuongTrinhKhung, fn($ky) => $ky == 1)),
+        ]);
+
+        // Nhóm môn học trực tiếp theo hoc_ky_goi_y từ CTK (1-13)
+        // Điều này đảm bảo môn học kỳ 1 luôn hiển thị trong "Học kỳ 1", bất kể học ở học kỳ thực tế nào
+        $monHocsGrouped = [];
+        $kyHocTrongCTK = []; // Lưu các kỳ học có trong CTK (1-8)
+        $kyHocTraNo = 9; // Bắt đầu từ kỳ 9 cho môn trả nợ
+        
+        foreach ($monHocs as $item) {
+            $monHocId = $item->lopHocPhan->mon_hoc_id;
+            $kyHocHienThi = null;
+            
+            // Ưu tiên: Lấy hoc_ky_goi_y từ CTK
+            if (isset($chuongTrinhKhung[$monHocId])) {
+                $kyHocHienThi = $chuongTrinhKhung[$monHocId];
+                if ($kyHocHienThi <= 8) {
+                    $kyHocTrongCTK[] = $kyHocHienThi;
+                }
+            } else {
+                // Môn không có trong CTK (môn tự chọn hoặc trả nợ) -> gán vào kỳ trả nợ (9-13)
+                // Tìm kỳ trả nợ tiếp theo chưa dùng
+                while ($kyHocTraNo <= 13 && isset($monHocsGrouped[$kyHocTraNo])) {
+                    $kyHocTraNo++;
+                }
+                $kyHocHienThi = $kyHocTraNo <= 13 ? $kyHocTraNo : 13;
+                $kyHocTraNo++;
+            }
+            
+            // Nếu vẫn chưa có kỳ học hiển thị, mặc định là kỳ 1
+            if (!$kyHocHienThi) {
+                $kyHocHienThi = 1;
+            }
+            
+            if (!isset($monHocsGrouped[$kyHocHienThi])) {
+                $monHocsGrouped[$kyHocHienThi] = collect();
+            }
+            $monHocsGrouped[$kyHocHienThi]->push($item);
+        }
+
+        // Sắp xếp theo kỳ học (1-13) và chuyển thành collection
+        ksort($monHocsGrouped);
+        
+        // Debug: Log để kiểm tra
+        \Log::info('BangDiem - Sinh viên: ' . $sinhVien->id, [
+            'tong_mon_hoc' => $monHocs->count(),
+            'mon_hocs_grouped_keys' => array_keys($monHocsGrouped),
+            'chuong_trinh_khung_count' => count($chuongTrinhKhung),
+        ]);
+        
+        $monHocs = collect($monHocsGrouped);
 
         // Tính toán tổng hợp
         $gpaTichLuy = $this->diemService->tinhGPATichLuy($sinhVien->id);
