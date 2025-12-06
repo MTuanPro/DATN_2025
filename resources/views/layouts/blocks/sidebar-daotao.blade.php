@@ -157,9 +157,10 @@
 
                 {{-- 9. DUYỆT ĐIỂM --}}
                 @php
-                    $isDuyetDiem = Request::is('dao-tao/duyet-diem*');
+                    $isDuyetDiem = Request::is('dao-tao/duyet-diem*') || Request::is('dao-tao/lich-su-sua-diem*');
                     $isQuanLyGuiDiem = Request::is('dao-tao/duyet-diem/quan-ly-gui-diem*');
                     $isDuyetDiemIndex = Request::is('dao-tao/duyet-diem') && !$isQuanLyGuiDiem && !Request::is('dao-tao/duyet-diem/*/duyet');
+                    $isLichSuSuaDiem = Request::is('dao-tao/lich-su-sua-diem*');
                 @endphp
                 <li class="sidebar-item has-sub {{ $isDuyetDiem ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
@@ -172,6 +173,11 @@
                         </li>
                         <li class="submenu-item {{ $isQuanLyGuiDiem ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.duyet-diem.quan-ly-gui-diem') }}">Quản lý mở/đóng gửi điểm</a>
+                        </li>
+                        <li class="submenu-item {{ $isLichSuSuaDiem ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.lich-su-sua-diem.index') }}">
+                                <i class="bi bi-clock-history"></i> Lịch sử sửa điểm
+                            </a>
                         </li>
                     </ul>
                 </li>

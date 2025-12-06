@@ -36,6 +36,7 @@ use App\Http\Controllers\DaoTao\PhanCongGiangDayController;
 use App\Http\Controllers\DaoTao\CauHinhDauDiemController;
 use App\Http\Controllers\DaoTao\LichHocCoDinhController;
 use App\Http\Controllers\DaoTao\LichHocChiTietController;
+use App\Http\Controllers\DaoTao\LichSuSuaDiemController;
 use App\Http\Controllers\DaoTao\SinhVienController;
 use App\Http\Controllers\DaoTao\XepLopController;
 use App\Http\Controllers\SinhVien\DangKyMonHocController;
@@ -392,6 +393,12 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::get('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'payment'])->name('payment');
         Route::post('/{id}/payment', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'storePayment'])->name('storePayment');
         Route::get('/bien-lai/{lichSuId}', [\App\Http\Controllers\DaoTao\HocPhiController::class, 'viewBienLai'])->name('bien-lai');
+    });
+
+    // Lịch sử sửa điểm
+    Route::prefix('lich-su-sua-diem')->name('lich-su-sua-diem.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\DaoTao\LichSuSuaDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhanId}', [\App\Http\Controllers\DaoTao\LichSuSuaDiemController::class, 'show'])->name('show');
     });
 
     // Báo cáo đào tạo

@@ -299,6 +299,7 @@
                                     <th class="text-center">Điểm chữ</th>
                                     <th class="text-center">Kết quả</th>
                                     <th class="text-center">Điểm danh</th>
+                                    <th class="text-center">Điều kiện thi</th>
                                     <th>Thao tác</th>
                                 </tr>
                             </thead>
@@ -388,6 +389,60 @@
                                                 @endif
                                             </div>
                                         </td>
+                                        <td class="text-center">
+                                            @php
+                                                // Lấy điểm CC (Chuyên cần) từ NhapDiem
+                                                $diemCC = null;
+                                                $cauHinhCC = \App\Models\CauHinhDauDiem::where('lop_hoc_phan_id', $item->lopHocPhan->id)
+                                                    ->where('loai_dau_diem', 'chuyen_can')
+                                                    ->first();
+                                                
+                                                if ($cauHinhCC) {
+                                                    $diemCCRecord = \App\Models\NhapDiem::where('lop_hoc_phan_sinh_vien_id', $item->id)
+                                                        ->where('cau_hinh_id', $cauHinhCC->id)
+                                                        ->first();
+                                                    
+                                                    if ($diemCCRecord) {
+                                                        // Chuyển điểm hệ 10 sang hệ 4
+                                                        $diemCC = $diemCCRecord->diem_so;
+                                                        if ($diemCC >= 9.0) $diemCC = 4.0;
+                                                        elseif ($diemCC >= 8.5) $diemCC = 3.5;
+                                                        elseif ($diemCC >= 8.0) $diemCC = 3.0;
+                                                        elseif ($diemCC >= 7.0) $diemCC = 2.5;
+                                                        elseif ($diemCC >= 6.5) $diemCC = 2.0;
+                                                        elseif ($diemCC >= 5.5) $diemCC = 1.5;
+                                                        elseif ($diemCC >= 5.0) $diemCC = 1.0;
+                                                        else $diemCC = 0;
+                                                    }
+                                                }
+                                                
+                                                // Kiểm tra điều kiện: điểm danh >= 80% VÀ điểm CC >= 2/4
+                                                $duDieuKienDiemDanh = $tyLe >= 80;
+                                                $duDieuKienDiemCC = $diemCC !== null && $diemCC >= 2.0;
+                                                $duDieuKienThi = $duDieuKienDiemDanh && $duDieuKienDiemCC;
+                                            @endphp
+                                            @if ($tongBuoiDiemDanh > 0)
+                                                @if($duDieuKienThi)
+                                                    <span class="badge bg-success fs-6">
+                                                        <i class="bi bi-check-circle-fill"></i> Đủ điều kiện
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-danger fs-6">
+                                                        <i class="bi bi-x-circle-fill"></i> Không đủ điều kiện
+                                                    </span>
+                                                    <br><small class="text-danger mt-1 d-block">
+                                                        @if(!$duDieuKienDiemDanh)
+                                                            Điểm danh < 80%
+                                                        @endif
+                                                        @if(!$duDieuKienDiemCC)
+                                                            {{ !$duDieuKienDiemDanh ? '<br>' : '' }}Điểm CC < 2/4
+                                                        @endif
+                                                    </small>
+                                                @endif
+                                            @else
+                                                <span class="text-muted">-</span>
+                                            @endif
+                                        </td>
                                         <td>
                                             <a href="{{ route('sinh-vien.diem.show', $item->lopHocPhan->id) }}"
                                                 class="btn btn-sm btn-info">
@@ -397,7 +452,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="10" class="text-center text-muted py-4">
+                                        <td colspan="11" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox" style="font-size: 2rem;"></i>
                                             <p class="mt-2">Chưa có điểm môn học nào trong học kỳ này</p>
                                         </td>

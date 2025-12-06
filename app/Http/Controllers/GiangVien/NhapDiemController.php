@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\CauHinhDauDiem;
 use App\Models\GiangVien;
 use App\Models\KetQuaHocTap;
+use App\Models\LichSuSuaDiem;
 use App\Models\LopHocPhan;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\NhapDiem;
@@ -282,7 +283,8 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
 
         // Kiểm tra nếu là đầu điểm cuối kỳ - chỉ cho phép nhập khi đã mở gửi điểm lần 2
         // (Trừ khi là đào tạo - đào tạo có thể nhập bất cứ lúc nào)
-        if (!$laDaoTao) {
+        // CHỈ KIỂM TRA KHI ĐANG NHẬP ĐIỂM (không phải xóa/để trống)
+        if (!$laDaoTao && $validated['diem_so'] !== null && $validated['diem_so'] !== '') {
             $tenDauDiem = mb_strtolower($cauHinh->ten_dau_diem ?? '');
             $laDauDiemCuoiKy = str_contains($tenDauDiem, 'cuối kỳ') || 
                               str_contains($tenDauDiem, 'cuoi ky') || 
@@ -302,6 +304,26 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
 
             // Nếu diem_so là null hoặc rỗng, xóa điểm
             if ($validated['diem_so'] === null || $validated['diem_so'] === '') {
+                $diemCu = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $validated['lop_hoc_phan_sinh_vien_id'])
+                    ->where('cau_hinh_id', $validated['cau_hinh_id'])
+                    ->where('cot_diem', $validated['cot_diem'])
+                    ->first();
+                
+                if ($diemCu) {
+                    // Lưu lịch sử xóa điểm
+                    LichSuSuaDiem::create([
+                        'nhap_diem_id' => $diemCu->id,
+                        'lop_hoc_phan_sinh_vien_id' => $validated['lop_hoc_phan_sinh_vien_id'],
+                        'cau_hinh_id' => $validated['cau_hinh_id'],
+                        'cot_diem' => $validated['cot_diem'],
+                        'diem_cu' => $diemCu->diem_so,
+                        'diem_moi' => null,
+                        'nguoi_sua_id' => Auth::id(),
+                        'loai_thao_tac' => 'xoa',
+                        'ly_do' => $validated['ghi_chu'] ?? null,
+                    ]);
+                }
+
                 $deleted = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $validated['lop_hoc_phan_sinh_vien_id'])
                     ->where('cau_hinh_id', $validated['cau_hinh_id'])
                     ->where('cot_diem', $validated['cot_diem'])
@@ -320,6 +342,11 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             }
 
             // Insert hoặc Update điểm
+            $diemCu = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $validated['lop_hoc_phan_sinh_vien_id'])
+                ->where('cau_hinh_id', $validated['cau_hinh_id'])
+                ->where('cot_diem', $validated['cot_diem'])
+                ->first();
+
             $nhapDiem = NhapDiem::updateOrCreate(
                 [
                     'lop_hoc_phan_sinh_vien_id' => $validated['lop_hoc_phan_sinh_vien_id'],
@@ -331,6 +358,19 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
                     'ghi_chu' => $validated['ghi_chu'] ?? null,
                 ]
             );
+
+            // Lưu lịch sử sửa điểm
+            LichSuSuaDiem::create([
+                'nhap_diem_id' => $nhapDiem->id,
+                'lop_hoc_phan_sinh_vien_id' => $validated['lop_hoc_phan_sinh_vien_id'],
+                'cau_hinh_id' => $validated['cau_hinh_id'],
+                'cot_diem' => $validated['cot_diem'],
+                'diem_cu' => $diemCu ? $diemCu->diem_so : null,
+                'diem_moi' => $validated['diem_so'],
+                'nguoi_sua_id' => Auth::id(),
+                'loai_thao_tac' => $diemCu ? 'sua' : 'them',
+                'ly_do' => $validated['ghi_chu'] ?? null,
+            ]);
 
             // Tự động tính điểm tổng
             $this->diemService->tinhDiemTong($validated['lop_hoc_phan_sinh_vien_id']);

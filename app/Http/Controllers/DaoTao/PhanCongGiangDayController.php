@@ -138,4 +138,5 @@ class PhanCongGiangDayController extends Controller
         return redirect()->back()
             ->with('success', 'Xóa phân công thành công!')
             ->with('refresh', true);
+    }
 }
