@@ -771,7 +771,12 @@ class SinhVienSeeder extends Seeder
                         'updated_at' => $ngayDangKy,
                     ]);
                     
+                    // Tạo kết quả học tập TRƯỚC để xác định trạng thái
+                    // 70% môn đã qua, 30% môn đang nợ
+                    $quaMon = (rand(1, 100) <= 70);
+                    
                     // Tạo đăng ký lớp học phần (link với đăng ký tạm)
+                    // Nếu môn không qua (failed), set status là 'hoc_lai'
                     $lopHocPhanSV = LopHocPhanSinhVien::create([
                         'sinh_vien_id' => $sinhVienId,
                         'lop_hoc_phan_id' => $lopHocPhan->id,
@@ -779,7 +784,7 @@ class SinhVienSeeder extends Seeder
                         'ngay_dang_ky' => $ngayDangKy,
                         'ngay_xep_lop' => $ngayBatDau->copy()->addDays(rand(8, 14)),
                         'phuong_thuc_xep' => 'tu_dong',
-                        'trang_thai' => 'da_hoan_thanh',
+                        'trang_thai' => $quaMon ? 'da_hoan_thanh' : 'hoc_lai',
                         'created_at' => $ngayBatDau,
                         'updated_at' => $ngayKetThuc,
                     ]);
@@ -791,10 +796,6 @@ class SinhVienSeeder extends Seeder
                     ]);
 
                     $soMonDaTao++;
-
-                    // Tạo kết quả học tập
-                    // 70% môn đã qua, 30% môn đang nợ
-                    $quaMon = (rand(1, 100) <= 70);
 
                     // Tạo cấu hình đầu điểm cho lớp học phần (nếu chưa có)
                     $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhan->id)->get();

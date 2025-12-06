@@ -321,25 +321,25 @@ class ChuongTrinhKhungSeeder extends Seeder
         $thuTu = 1;
         foreach ($danhSachMon as $mon) {
             $monHoc = MonHoc::where('ma_mon', $mon['ma_mon'])->first();
-                if ($monHoc) {
-                    ChuongTrinhKhung::updateOrInsert(
-                        [
+            if ($monHoc) {
+                ChuongTrinhKhung::updateOrInsert(
+                    [
                         'chuyen_nganh_id' => $chuyenNganh->id,
-                            'mon_hoc_id' => $monHoc->id,
-                        ],
-                        [
+                        'mon_hoc_id' => $monHoc->id,
+                    ],
+                    [
                         'hoc_ky_goi_y' => $mon['hoc_ky'],
                         'loai_mon_hoc' => $mon['loai'],
                         'bat_buoc' => $mon['bat_buoc'],
                         'thu_tu_hoc' => $thuTu++,
                         'so_tin_chi_toi_thieu' => $mon['bat_buoc'] ? null : 3,
                         'ghi_chu' => $mon['bat_buoc'] ? null : 'Sinh viên chọn ít nhất 1 môn trong nhóm',
-                            'created_at' => now(),
-                            'updated_at' => now(),
-                        ]
-                    );
-                }
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]
+                );
             }
+        }
         $this->command->info('✅ Đã tạo chương trình khung cho: ' . $chuyenNganh->ten_chuyen_nganh);
     }
 }

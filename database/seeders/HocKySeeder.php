@@ -12,7 +12,7 @@ class HocKySeeder extends Seeder
 {
     public function run(): void
     {
-        {10153DB7-673F-469A-A68C-2142D1DC9800}.png        // Lấy tất cả sinh viên đang học (trạng thái "Đang học" hoặc "Bảo lưu")
+        // Lấy tất cả sinh viên đang học (trạng thái "Đang học" hoặc "Bảo lưu")
         $trangThaiDangHoc = DB::table('trang_thai_hoc_tap')
             ->whereIn('ten_trang_thai', ['Đang học', 'Bảo lưu'])
             ->pluck('id');
