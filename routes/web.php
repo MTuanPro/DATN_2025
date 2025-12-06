@@ -492,6 +492,12 @@ Route::middleware(['auth', 'role:giang_vien'])->prefix('giang-vien')->name('gian
         Route::post('/{lopHocPhan}/import-excel', [NhapDiemController::class, 'importExcel'])->name('import-excel');
     });
 
+    // Lịch sử nhập điểm
+    Route::prefix('lich-su-nhap-diem')->name('lich-su-nhap-diem.')->group(function () {
+        Route::get('/', [\App\Http\Controllers\GiangVien\LichSuNhapDiemController::class, 'index'])->name('index');
+        Route::get('/{lopHocPhan}', [\App\Http\Controllers\GiangVien\LichSuNhapDiemController::class, 'show'])->name('show');
+    });
+
     // PHASE 8: Xem kết quả học tập
     Route::prefix('ket-qua-hoc-tap')->name('ket-qua-hoc-tap.')->group(function () {
         Route::get('/', [\App\Http\Controllers\GiangVien\KetQuaHocTapController::class, 'index'])->name('index');

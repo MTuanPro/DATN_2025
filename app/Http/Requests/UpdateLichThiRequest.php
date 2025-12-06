@@ -3,6 +3,8 @@
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use App\Models\LopHocPhan;
+use Carbon\Carbon;
 
 class UpdateLichThiRequest extends FormRequest
 {
@@ -22,7 +24,25 @@ class UpdateLichThiRequest extends FormRequest
         return [
             'lop_hoc_phan_id' => 'required|exists:lop_hoc_phan,id',
             'loai_thi' => 'required|in:giua_ky,cuoi_ky,thi_lai',
-            'ngay_thi' => 'required|date',
+            'ngay_thi' => [
+                'required',
+                'date',
+                function ($attribute, $value, $fail) {
+                    $lopHocPhanId = $this->input('lop_hoc_phan_id');
+                    if (!$lopHocPhanId) return;
+                    
+                    $lopHocPhan = LopHocPhan::find($lopHocPhanId);
+                    if (!$lopHocPhan || !$lopHocPhan->ngay_ket_thuc) return;
+                    
+                    $ngayThi = Carbon::parse($value);
+                    $ngayKetThucHoc = Carbon::parse($lopHocPhan->ngay_ket_thuc);
+                    
+                    if ($ngayThi->lte($ngayKetThucHoc)) {
+                        $fail('Ngày thi phải sau ngày kết thúc học của lớp học phần (' . 
+                              $ngayKetThucHoc->format('d/m/Y') . ').');
+                    }
+                },
+            ],
             'ca_hoc_id' => 'required|exists:ca_hoc,id',
             'gio_bat_dau' => 'nullable|date_format:H:i',
             'gio_ket_thuc' => 'nullable|date_format:H:i',

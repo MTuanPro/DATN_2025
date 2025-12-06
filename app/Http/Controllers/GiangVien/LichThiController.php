@@ -14,6 +14,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\DB;
+use Carbon\Carbon;
 
 class LichThiController extends Controller
 {
@@ -481,11 +482,51 @@ class LichThiController extends Controller
             ->with(['sinhVien'])
             ->get();
 
-        // Đếm tổng số buổi học đã diễn ra
-        $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+        $sinhVienIds = $sinhViens->pluck('id')->toArray();
+        $tongSoSinhVien = count($sinhVienIds);
+
+        // Kiểm tra: Phải điểm danh hết tất cả các buổi học đã diễn ra
+        $cacBuoiHocDaDienRa = LichHocChiTiet::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
             ->where('ngay_hoc', '<=', now()->toDateString())
             ->where('trang_thai', '!=', 'huy')
-            ->count();
+            ->with('caHoc')
+            ->get();
+
+        $buoiHocChuaDiemDanhHet = [];
+        foreach ($cacBuoiHocDaDienRa as $buoiHoc) {
+            // Đếm số sinh viên đã được điểm danh trong buổi học này
+            $soSinhVienDaDiemDanh = DiemDanh::where('lich_hoc_chi_tiet_id', $buoiHoc->id)
+                ->whereIn('lop_hoc_phan_sinh_vien_id', $sinhVienIds)
+                ->count();
+
+            // Nếu số sinh viên đã điểm danh < tổng số sinh viên thì buổi học chưa điểm danh hết
+            if ($soSinhVienDaDiemDanh < $tongSoSinhVien) {
+                $buoiHocChuaDiemDanhHet[] = [
+                    'buoi_hoc' => $buoiHoc,
+                    'so_sinh_vien_da_diem_danh' => $soSinhVienDaDiemDanh,
+                    'tong_so_sinh_vien' => $tongSoSinhVien,
+                    'con_thieu' => $tongSoSinhVien - $soSinhVienDaDiemDanh
+                ];
+            }
+        }
+
+        // Nếu có buổi học chưa điểm danh hết, không cho phép xuất danh sách thi
+        if (!empty($buoiHocChuaDiemDanhHet)) {
+            $thongBaoLoi = "Không thể xuất danh sách thi. Vui lòng điểm danh hết tất cả các buổi học đã diễn ra.\n\n";
+            $thongBaoLoi .= "Các buổi học chưa điểm danh đầy đủ:\n";
+            foreach ($buoiHocChuaDiemDanhHet as $buoi) {
+                $thongBaoLoi .= "- Buổi học ngày " . Carbon::parse($buoi['buoi_hoc']->ngay_hoc)->format('d/m/Y') . 
+                               " (Ca " . ($buoi['buoi_hoc']->caHoc->ten_ca ?? 'N/A') . "): " .
+                               "Đã điểm danh {$buoi['so_sinh_vien_da_diem_danh']}/{$buoi['tong_so_sinh_vien']} sinh viên. " .
+                               "Còn thiếu {$buoi['con_thieu']} sinh viên.\n";
+            }
+
+            return redirect()->route('giangvien.lich-thi.show', $lichThi->id)
+                ->with('error', $thongBaoLoi);
+        }
+
+        // Đếm tổng số buổi học đã diễn ra
+        $tongBuoiHoc = $cacBuoiHocDaDienRa->count();
 
         // Lấy cấu hình đầu điểm
         $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)

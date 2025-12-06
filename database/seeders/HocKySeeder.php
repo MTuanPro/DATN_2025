@@ -4,43 +4,136 @@ namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\DaoTao\SinhVien;
+use App\Models\DaoTao\KhoaHoc;
 use Carbon\Carbon;
 
 class HocKySeeder extends Seeder
 {
     public function run(): void
     {
+        {10153DB7-673F-469A-A68C-2142D1DC9800}.png        // Lấy tất cả sinh viên đang học (trạng thái "Đang học" hoặc "Bảo lưu")
+        $trangThaiDangHoc = DB::table('trang_thai_hoc_tap')
+            ->whereIn('ten_trang_thai', ['Đang học', 'Bảo lưu'])
+            ->pluck('id');
+
+        if ($trangThaiDangHoc->isEmpty()) {
+            echo "⚠️  Không tìm thấy trạng thái học tập 'Đang học' hoặc 'Bảo lưu'\n";
+            return;
+        }
+
+        // Lấy tất cả sinh viên đang học
+        $sinhViens = SinhVien::whereIn('trang_thai_hoc_tap_id', $trangThaiDangHoc)
+            ->whereNotNull('khoa_hoc_id')
+            ->with('khoaHoc')
+            ->get();
+
+        if ($sinhViens->isEmpty()) {
+            echo "⚠️  Không có sinh viên nào đang học\n";
+            return;
+        }
+
+        // Lấy tất cả khóa học duy nhất từ các sinh viên đang học
+        $khoaHocIds = $sinhViens->pluck('khoa_hoc_id')->unique();
+        $khoaHocs = KhoaHoc::whereIn('id', $khoaHocIds)->get();
+
+        if ($khoaHocs->isEmpty()) {
+            echo "⚠️  Không tìm thấy khóa học nào\n";
+            return;
+        }
+
         $hocKys = [];
+        $namHienTai = Carbon::now()->year;
+        $hocKyHienTai = null;
 
-        // Chỉ tạo học kỳ cho năm học hiện tại: 2025-2026
-        $namHoc = '2025-2026';
+        // Tạo học kỳ cho từng khóa học
+        foreach ($khoaHocs as $khoaHoc) {
+            $namBatDau = $khoaHoc->nam_bat_dau;
+            $namKetThuc = $khoaHoc->nam_ket_thuc;
+            
+            // Tạo học kỳ cho tất cả các năm từ năm bắt đầu đến năm kết thúc + 1 năm tương lai
+            for ($nam = $namBatDau; $nam <= $namKetThuc + 1; $nam++) {
+                // Học kỳ 1: Tháng 9 - Tháng 1 năm sau
+                $namHocString = $nam . '-' . ($nam + 1);
+                $tenHocKy = 'Học kỳ 1';
+                
+                $ngayBatDau = Carbon::create($nam, 9, 1);
+                $ngayKetThuc = Carbon::create($nam + 1, 1, 15);
+                $ngayBatDauDangKy = $ngayBatDau->copy()->subMonth();
+                $ngayKetThucDangKy = $ngayBatDau->copy()->addDays(30);
+                
+                // Xác định học kỳ hiện tại (nếu chưa có)
+                $laHocKyHienTai = false;
+                if (!$hocKyHienTai) {
+                    $now = Carbon::now();
+                    if ($now->between($ngayBatDau, $ngayKetThuc)) {
+                        $laHocKyHienTai = true;
+                        $hocKyHienTai = true;
+                    }
+                }
+                
+                $hocKys[] = [
+                    'ten_hoc_ky' => $tenHocKy,
+                    'nam_hoc' => $namHocString,
+                    'ngay_bat_dau' => $ngayBatDau,
+                    'ngay_ket_thuc' => $ngayKetThuc,
+                    'ngay_bat_dau_dang_ky' => $ngayBatDauDangKy,
+                    'ngay_ket_thuc_dang_ky' => $ngayKetThucDangKy,
+                    'la_hoc_ky_hien_tai' => $laHocKyHienTai,
+                    'dang_mo_dang_ky' => $laHocKyHienTai && Carbon::now()->between($ngayBatDauDangKy, $ngayKetThucDangKy),
+                    'mo_ta' => "{$tenHocKy} năm học {$namHocString}",
+                ];
 
-        // Học kỳ 1 (Tháng 9/2025 - Tháng 1/2026) - ĐANG MỞ ĐĂNG KÝ
-        $hocKys[] = [
-            'ten_hoc_ky' => 'Học kỳ 1',
-            'nam_hoc' => $namHoc,
-            'ngay_bat_dau' => Carbon::create(2025, 9, 1),
-            'ngay_ket_thuc' => Carbon::create(2026, 1, 15),
-            'ngay_bat_dau_dang_ky' => Carbon::create(2025, 8, 15), // Đã qua
-            'ngay_ket_thuc_dang_ky' => Carbon::create(2025, 11, 30), // Còn thời gian
-            'la_hoc_ky_hien_tai' => true,
-            'mo_ta' => 'Học kỳ 1 năm học 2025-2026',
-        ];
+                // Học kỳ 2: Tháng 2 - Tháng 6
+                $tenHocKy = 'Học kỳ 2';
+                
+                $ngayBatDau = Carbon::create($nam + 1, 2, 1);
+                $ngayKetThuc = Carbon::create($nam + 1, 6, 15);
+                $ngayBatDauDangKy = Carbon::create($nam + 1, 1, 20);
+                $ngayKetThucDangKy = Carbon::create($nam + 1, 2, 10);
+                
+                // Xác định học kỳ hiện tại (nếu chưa có)
+                $laHocKyHienTai = false;
+                if (!$hocKyHienTai) {
+                    $now = Carbon::now();
+                    if ($now->between($ngayBatDau, $ngayKetThuc)) {
+                        $laHocKyHienTai = true;
+                        $hocKyHienTai = true;
+                    }
+                }
+                
+                $hocKys[] = [
+                    'ten_hoc_ky' => $tenHocKy,
+                    'nam_hoc' => $namHocString,
+                    'ngay_bat_dau' => $ngayBatDau,
+                    'ngay_ket_thuc' => $ngayKetThuc,
+                    'ngay_bat_dau_dang_ky' => $ngayBatDauDangKy,
+                    'ngay_ket_thuc_dang_ky' => $ngayKetThucDangKy,
+                    'la_hoc_ky_hien_tai' => $laHocKyHienTai,
+                    'dang_mo_dang_ky' => $laHocKyHienTai && Carbon::now()->between($ngayBatDauDangKy, $ngayKetThucDangKy),
+                    'mo_ta' => "{$tenHocKy} năm học {$namHocString}",
+                ];
+            }
+        }
 
-        // Học kỳ 2 (Tháng 2/2026 - Tháng 6/2026) - CHƯA MỞ
-        $hocKys[] = [
-            'ten_hoc_ky' => 'Học kỳ 2',
-            'nam_hoc' => $namHoc,
-            'ngay_bat_dau' => Carbon::create(2026, 2, 1),
-            'ngay_ket_thuc' => Carbon::create(2026, 6, 15),
-            'ngay_bat_dau_dang_ky' => Carbon::create(2026, 1, 20),
-            'ngay_ket_thuc_dang_ky' => Carbon::create(2026, 2, 10),
-            'la_hoc_ky_hien_tai' => false,
-            'mo_ta' => 'Học kỳ 2 năm học 2025-2026',
-        ];
+        // Loại bỏ các học kỳ trùng lặp (cùng tên học kỳ và năm học)
+        $hocKysMap = [];
+        foreach ($hocKys as $hk) {
+            $key = $hk['ten_hoc_ky'] . '|' . $hk['nam_hoc'];
+            if (!isset($hocKysMap[$key])) {
+                $hocKysMap[$key] = $hk;
+            } else {
+                // Nếu trùng, giữ lại học kỳ có la_hoc_ky_hien_tai = true
+                if ($hk['la_hoc_ky_hien_tai']) {
+                    $hocKysMap[$key] = $hk;
+                }
+            }
+        }
+        $hocKysUnique = array_values($hocKysMap);
 
         // Insert dữ liệu
-        foreach ($hocKys as $hk) {
+        $count = 0;
+        foreach ($hocKysUnique as $hk) {
             DB::table('hoc_ky')->updateOrInsert(
                 [
                     'ten_hoc_ky' => $hk['ten_hoc_ky'],
@@ -51,9 +144,33 @@ class HocKySeeder extends Seeder
                     'updated_at' => now(),
                 ])
             );
+            $count++;
         }
 
-        echo "✅ Đã tạo " . count($hocKys) . " học kỳ\n";
-        echo "   📌 Học kỳ 1 năm 2025-2026 đang mở đăng ký\n";
+        // Đảm bảo chỉ có 1 học kỳ hiện tại
+        $hocKyHienTaiCount = DB::table('hoc_ky')->where('la_hoc_ky_hien_tai', true)->count();
+        if ($hocKyHienTaiCount > 1) {
+            // Nếu có nhiều học kỳ hiện tại, chỉ giữ lại học kỳ gần nhất
+            $hocKyGanNhat = DB::table('hoc_ky')
+                ->where('la_hoc_ky_hien_tai', true)
+                ->orderBy('ngay_bat_dau', 'desc')
+                ->first();
+            
+            if ($hocKyGanNhat) {
+                DB::table('hoc_ky')
+                    ->where('la_hoc_ky_hien_tai', true)
+                    ->where('id', '!=', $hocKyGanNhat->id)
+                    ->update(['la_hoc_ky_hien_tai' => false]);
+            }
+        }
+
+        echo "✅ Đã tạo/cập nhật {$count} học kỳ\n";
+        echo "   📊 Số sinh viên đang học: " . $sinhViens->count() . "\n";
+        echo "   📚 Số khóa học: " . $khoaHocs->count() . "\n";
+        
+        $hocKyHienTai = DB::table('hoc_ky')->where('la_hoc_ky_hien_tai', true)->first();
+        if ($hocKyHienTai) {
+            echo "   📌 Học kỳ hiện tại: {$hocKyHienTai->ten_hoc_ky} - {$hocKyHienTai->nam_hoc}\n";
+        }
     }
 }

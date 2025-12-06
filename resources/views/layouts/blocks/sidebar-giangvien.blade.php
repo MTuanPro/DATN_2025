@@ -76,6 +76,21 @@
                     </ul>
                 </li>
 
+                <!-- 10. NHẬP ĐIỂM -->
+                <li class="sidebar-item has-sub {{ Request::is('giang-vien/nhap-diem*') || Request::is('giang-vien/lich-su-nhap-diem*') ? 'active' : '' }}">
+                    <a href="#" class='sidebar-link'>
+                        <i class="bi bi-pencil-square"></i>
+                        <span>Nhập điểm</span>
+                    </a>
+                    <ul class="submenu {{ Request::is('giang-vien/nhap-diem*') || Request::is('giang-vien/lich-su-nhap-diem*') ? 'active' : '' }}">
+                        <li class="submenu-item {{ Request::is('giang-vien/nhap-diem*') && !Request::is('giang-vien/lich-su-nhap-diem*') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.nhap-diem.index') }}">Danh sách lớp học phần</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('giang-vien/lich-su-nhap-diem*') ? 'active' : '' }}">
+                            <a href="{{ route('giangvien.lich-su-nhap-diem.index') }}">Lịch sử nhập điểm</a>
+                        </li>
+                    </ul>
+                </li>
 
                 <!-- PHASE 10: THÔNG BÁO -->
                 <li class="sidebar-item has-sub {{ Request::is('giang-vien/thong-bao*') || Request::is('giang-vien/yeu-cau-diem-danh-bu*') ? 'active' : '' }}">

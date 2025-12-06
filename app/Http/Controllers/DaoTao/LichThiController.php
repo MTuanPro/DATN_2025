@@ -154,6 +154,14 @@ class LichThiController extends Controller
                            $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
             }
 
+            // 2.1. Kiểm tra ngày thi phải sau ngày kết thúc học của lớp học phần
+            $ngayKetThucHoc = \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc);
+            if ($ngayThi->lte($ngayKetThucHoc)) {
+                $errors[] = 'Ngày thi phải sau ngày kết thúc học của lớp học phần (' . 
+                           $ngayKetThucHoc->format('d/m/Y') . '). Ngày thi hiện tại: ' . 
+                           $ngayThi->format('d/m/Y');
+            }
+
             // 3. Lấy thông tin ca học và tính giờ từ ca học
             if (!$request->ca_hoc_id) {
                 $errors[] = 'Vui lòng chọn ca thi';
@@ -479,6 +487,14 @@ class LichThiController extends Controller
                 $errorMessages[] = 'Ngày thi phải nằm trong phạm vi học kỳ (' . 
                            $hocKy->ngay_bat_dau->format('d/m/Y') . ' - ' . 
                            $hocKy->ngay_ket_thuc->format('d/m/Y') . ')';
+            }
+
+            // 2.1. Kiểm tra ngày thi phải sau ngày kết thúc học của lớp học phần
+            $ngayKetThucHoc = \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc);
+            if ($ngayThi->lte($ngayKetThucHoc)) {
+                $errorMessages[] = 'Ngày thi phải sau ngày kết thúc học của lớp học phần (' . 
+                           $ngayKetThucHoc->format('d/m/Y') . '). Ngày thi hiện tại: ' . 
+                           $ngayThi->format('d/m/Y');
             }
 
             // 3. Lấy thông tin ca học và tính giờ từ ca học
@@ -1184,6 +1200,14 @@ class LichThiController extends Controller
                             $errors[] = "Dòng {$rowNum}: Ngày thi phải nằm trong phạm vi học kỳ ({$ngayBatDauHocKy->format('d/m/Y')} - {$ngayKetThucHocKy->format('d/m/Y')})";
                             continue;
                         }
+                    }
+
+                    // Kiểm tra ngày thi phải sau ngày kết thúc học của lớp học phần
+                    $ngayKetThucHoc = \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc);
+                    $ngayThiCarbon = \Carbon\Carbon::parse($ngayThi);
+                    if ($ngayThiCarbon->lte($ngayKetThucHoc)) {
+                        $errors[] = "Dòng {$rowNum}: Ngày thi phải sau ngày kết thúc học của lớp học phần ({$ngayKetThucHoc->format('d/m/Y')}). Ngày thi hiện tại: {$ngayThiCarbon->format('d/m/Y')}";
+                        continue;
                     }
 
                     // Tìm ca học

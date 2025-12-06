@@ -42,7 +42,26 @@ class StoreLichThiRequest extends FormRequest
                 },
             ],
             'loai_thi' => 'required|in:giua_ky,cuoi_ky,thi_lai',
-            'ngay_thi' => 'required|date|after_or_equal:today',
+            'ngay_thi' => [
+                'required',
+                'date',
+                'after_or_equal:today',
+                function ($attribute, $value, $fail) {
+                    $lopHocPhanId = $this->input('lop_hoc_phan_id');
+                    if (!$lopHocPhanId) return;
+                    
+                    $lopHocPhan = LopHocPhan::find($lopHocPhanId);
+                    if (!$lopHocPhan || !$lopHocPhan->ngay_ket_thuc) return;
+                    
+                    $ngayThi = \Carbon\Carbon::parse($value);
+                    $ngayKetThucHoc = \Carbon\Carbon::parse($lopHocPhan->ngay_ket_thuc);
+                    
+                    if ($ngayThi->lte($ngayKetThucHoc)) {
+                        $fail('Ngày thi phải sau ngày kết thúc học của lớp học phần (' . 
+                              $ngayKetThucHoc->format('d/m/Y') . ').');
+                    }
+                },
+            ],
             'ca_hoc_id' => 'required|exists:ca_hoc,id',
             'gio_bat_dau' => 'nullable|date_format:H:i',
             'gio_ket_thuc' => 'nullable|date_format:H:i',

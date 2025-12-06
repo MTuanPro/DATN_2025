@@ -5,6 +5,19 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use App\Models\DaoTao\SinhVien;
+use App\Models\DaoTao\ChuongTrinhKhung;
+use App\Models\LopHocPhan;
+use App\Models\LopHocPhanSinhVien;
+use App\Models\KetQuaHocTap;
+use App\Models\HocKy;
+use App\Models\PhanCongGiangDay;
+use App\Models\BangDiem;
+use App\Models\GiangVien;
+use App\Models\CauHinhDauDiem;
+use App\Models\NhapDiem;
+use App\Models\DangKyMonHocTam;
+use Carbon\Carbon;
 
 class SinhVienSeeder extends Seeder
 {
@@ -390,8 +403,11 @@ class SinhVienSeeder extends Seeder
                 'updated_at' => now(),
             ]);
 
+            // Phân bổ kỳ học đều (1-8)
+            $kyHienTai = (($count % 8) + 1);
+            
             // Tạo sinh viên
-            DB::table('sinh_vien')->insert([
+            $sinhVienId = DB::table('sinh_vien')->insertGetId([
                 'user_id' => $userId,
                 'ma_sinh_vien' => $svData['ma_sinh_vien'],
                 'ho_ten' => $svData['ho_ten'],
@@ -403,11 +419,16 @@ class SinhVienSeeder extends Seeder
                 'khoa_hoc_id' => $svData['khoa_hoc_id'],
                 'nganh_id' => $svData['nganh_id'],
                 'chuyen_nganh_id' => $svData['chuyen_nganh_id'] ?? null,
-                'ky_hien_tai' => $svData['ky_hien_tai'],
+                'ky_hien_tai' => $kyHienTai,
                 'trang_thai_hoc_tap_id' => $svData['trang_thai_hoc_tap_id'],
                 'created_at' => now(),
                 'updated_at' => now(),
             ]);
+
+            // Nếu sinh viên ở kỳ > 1, tạo dữ liệu học tập cho các kỳ trước
+            if ($kyHienTai > 1 && $svData['chuyen_nganh_id']) {
+                $this->taoDuLieuHocTapCacKyTruoc($sinhVienId, $svData['chuyen_nganh_id'], $svData['khoa_hoc_id'], $kyHienTai);
+            }
 
             // Đếm theo khoa
             $nganh = DB::table('nganh')->where('id', $svData['nganh_id'])->first();
@@ -434,6 +455,12 @@ class SinhVienSeeder extends Seeder
         // THÊM 200 SINH VIÊN MỚI - CHIA ĐỀU CHO CÁC CHUYÊN NGÀNH
         // ========================================
         $this->create200Students($khoaHocK25, $trangThaiDangHoc, $vaiTroSinhVien);
+
+        // ========================================
+        // CẬP NHẬT DỮ LIỆU HỌC TẬP CHO TẤT CẢ SINH VIÊN
+        // ========================================
+        echo "\n📚 Đang cập nhật dữ liệu học tập cho tất cả sinh viên...\n";
+        $this->capNhatDuLieuHocTapChoAllSinhVien();
     }
 
     /**
@@ -548,8 +575,11 @@ class SinhVienSeeder extends Seeder
                     'updated_at' => now(),
                 ]);
 
+                // Phân bổ kỳ học đều (1-8)
+                $kyHienTai = (($count % 8) + 1);
+                
                 // Tạo sinh viên
-                DB::table('sinh_vien')->insert([
+                $sinhVienId = DB::table('sinh_vien')->insertGetId([
                     'user_id' => $userId,
                     'ma_sinh_vien' => $maSinhVien,
                     'ho_ten' => $hoTen,
@@ -561,11 +591,16 @@ class SinhVienSeeder extends Seeder
                     'khoa_hoc_id' => $khoaHocK25,
                     'nganh_id' => $nganhId,
                     'chuyen_nganh_id' => $chuyenNganh->chuyen_nganh_id,
-                    'ky_hien_tai' => 1,
+                    'ky_hien_tai' => $kyHienTai,
                     'trang_thai_hoc_tap_id' => $trangThaiDangHoc,
                     'created_at' => now(),
                     'updated_at' => now(),
                 ]);
+
+                // Nếu sinh viên ở kỳ > 1, tạo dữ liệu học tập cho các kỳ trước
+                if ($kyHienTai > 1) {
+                    $this->taoDuLieuHocTapCacKyTruoc($sinhVienId, $chuyenNganh->chuyen_nganh_id, $khoaHocK25, $kyHienTai);
+                }
 
                 $studentNumber++;
                 $count++;
@@ -584,6 +619,512 @@ class SinhVienSeeder extends Seeder
             $tenChuyenNganh = DB::table('chuyen_nganh')->where('id', $chuyenNganh->chuyen_nganh_id)->value('ten_chuyen_nganh');
             $soLuong = $countByChuyenNganh[$chuyenNganh->chuyen_nganh_id] ?? 0;
             echo "      • {$tenChuyenNganh}: {$soLuong} sinh viên\n";
+        }
+    }
+
+    /**
+     * Tạo dữ liệu học tập cho các kỳ trước của sinh viên
+     * Sinh viên ở kỳ N sẽ có dữ liệu học tập từ kỳ 1 đến kỳ N-1
+     * Một số môn đã qua, một số môn đang nợ (chưa qua)
+     */
+    private function taoDuLieuHocTapCacKyTruoc($sinhVienId, $chuyenNganhId, $khoaHocId, $kyHienTai): void
+    {
+        // Lấy chương trình khung của chuyên ngành
+        $chuongTrinhKhung = ChuongTrinhKhung::where('chuyen_nganh_id', $chuyenNganhId)
+            ->with('monHoc')
+            ->orderBy('hoc_ky_goi_y')
+            ->orderBy('thu_tu_hoc')
+            ->get();
+
+        if ($chuongTrinhKhung->isEmpty()) {
+            return; // Không có chương trình khung
+        }
+
+        // Lấy khóa học để tính năm học
+        $khoaHoc = DB::table('khoa_hoc')->where('id', $khoaHocId)->first();
+        if (!$khoaHoc) {
+            return;
+        }
+
+        $namBatDau = $khoaHoc->nam_bat_dau;
+        $soMonDaTao = 0;
+        $soMonDaQua = 0;
+        $soMonNo = 0;
+
+        // Duyệt qua các kỳ từ 1 đến kỳ hiện tại - 1
+        for ($ky = 1; $ky < $kyHienTai; $ky++) {
+            // Tính năm học cho kỳ này
+            $namHoc = (int)(($ky - 1) / 2) + 1;
+            $hocKyTrongNam = (($ky - 1) % 2) + 1;
+            $namHocString = ($namBatDau + $namHoc - 1) . '-' . ($namBatDau + $namHoc);
+            $tenHocKy = 'Học kỳ ' . $hocKyTrongNam;
+
+            // Tìm hoặc tạo học kỳ
+            $hocKy = HocKy::where('ten_hoc_ky', $tenHocKy)
+                ->where('nam_hoc', $namHocString)
+                ->first();
+
+            if (!$hocKy) {
+                // Tạo học kỳ nếu chưa có
+                $namHocBatDau = $namBatDau + $namHoc - 1;
+                if ($hocKyTrongNam == 1) {
+                    $ngayBatDau = Carbon::create($namHocBatDau, 9, 1);
+                    $ngayKetThuc = Carbon::create($namHocBatDau + 1, 1, 15);
+                } else {
+                    $ngayBatDau = Carbon::create($namHocBatDau + 1, 2, 1);
+                    $ngayKetThuc = Carbon::create($namHocBatDau + 1, 6, 15);
+                }
+
+                $hocKy = HocKy::create([
+                    'ten_hoc_ky' => $tenHocKy,
+                    'nam_hoc' => $namHocString,
+                    'ngay_bat_dau' => $ngayBatDau,
+                    'ngay_ket_thuc' => $ngayKetThuc,
+                    'ngay_bat_dau_dang_ky' => $ngayBatDau->copy()->subMonth(),
+                    'ngay_ket_thuc_dang_ky' => $ngayBatDau->copy()->addDays(30),
+                    'la_hoc_ky_hien_tai' => false,
+                    'dang_mo_dang_ky' => false,
+                    'mo_ta' => "{$tenHocKy} năm học {$namHocString}",
+                ]);
+            }
+
+            // Lấy các môn học ở kỳ này
+            $monHocsTrongKy = $chuongTrinhKhung->where('hoc_ky_goi_y', $ky);
+
+            foreach ($monHocsTrongKy as $ctk) {
+                $monHoc = $ctk->monHoc;
+                if (!$monHoc) {
+                    continue;
+                }
+
+                // Tìm hoặc tạo lớp học phần cho môn học này ở học kỳ này
+                $lopHocPhan = LopHocPhan::where('mon_hoc_id', $monHoc->id)
+                    ->where('hoc_ky_id', $hocKy->id)
+                    ->first();
+
+                if (!$lopHocPhan) {
+                    // Tạo lớp học phần nếu chưa có
+                    $ngayBatDauHoc = Carbon::parse($hocKy->ngay_bat_dau);
+                    $ngayKetThucHoc = Carbon::parse($hocKy->ngay_ket_thuc);
+                    
+                    $lopHocPhan = LopHocPhan::create([
+                        'mon_hoc_id' => $monHoc->id,
+                        'hoc_ky_id' => $hocKy->id,
+                        'ma_lop_hp' => $monHoc->ma_mon . '-' . $hocKy->nam_hoc . '-' . $hocKy->ten_hoc_ky,
+                        'ten_lop_hp' => $monHoc->ten_mon . ' - ' . $hocKy->ten_hoc_ky . ' ' . $hocKy->nam_hoc,
+                        'nhom_lop' => 1,
+                        'suc_chua' => 50,
+                        'so_luong_dang_ky' => 0,
+                        'so_luong_toi_thieu' => 10,
+                        'hinh_thuc' => 'offline',
+                        'ngay_bat_dau' => $ngayBatDauHoc,
+                        'ngay_ket_thuc' => $ngayKetThucHoc,
+                        'trang_thai_lop' => 'da_duyet_diem',
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+
+                    // Phân công giảng viên cho lớp học phần
+                    // Tìm giảng viên có thể dạy môn học này
+                    $giangVien = GiangVien::whereHas('monHocs', function ($query) use ($monHoc) {
+                        $query->where('mon_hoc.id', $monHoc->id);
+                    })->inRandomOrder()->first();
+
+                    if ($giangVien) {
+                        // Kiểm tra xem đã phân công chưa
+                        $existingPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhan->id)
+                            ->where('giang_vien_id', $giangVien->id)
+                            ->first();
+
+                        if (!$existingPhanCong) {
+                            PhanCongGiangDay::create([
+                                'lop_hoc_phan_id' => $lopHocPhan->id,
+                                'giang_vien_id' => $giangVien->id,
+                                'vai_tro' => 'giang_vien_chinh',
+                                'ngay_phan_cong' => $ngayBatDauHoc,
+                                'created_at' => now(),
+                                'updated_at' => now(),
+                            ]);
+                        }
+                    }
+                }
+
+                // Kiểm tra xem sinh viên đã đăng ký lớp này chưa
+                $lopHocPhanSV = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVienId)
+                    ->where('lop_hoc_phan_id', $lopHocPhan->id)
+                    ->first();
+
+                if (!$lopHocPhanSV) {
+                    // Tạo đăng ký môn học tạm (DangKyMonHocTam) trước
+                    $ngayBatDau = Carbon::parse($hocKy->ngay_bat_dau);
+                    $ngayKetThuc = Carbon::parse($hocKy->ngay_ket_thuc);
+                    $ngayDangKy = $ngayBatDau->copy()->addDays(rand(1, 7));
+                    
+                    $dangKyTam = DangKyMonHocTam::create([
+                        'sinh_vien_id' => $sinhVienId,
+                        'mon_hoc_id' => $monHoc->id,
+                        'hoc_ky_id' => $hocKy->id,
+                        'ngay_dang_ky' => $ngayDangKy,
+                        'uu_tien' => rand(1, 10),
+                        'trang_thai' => 'da_xep_lop',
+                        'created_at' => $ngayDangKy,
+                        'updated_at' => $ngayDangKy,
+                    ]);
+                    
+                    // Tạo đăng ký lớp học phần (link với đăng ký tạm)
+                    $lopHocPhanSV = LopHocPhanSinhVien::create([
+                        'sinh_vien_id' => $sinhVienId,
+                        'lop_hoc_phan_id' => $lopHocPhan->id,
+                        'dang_ky_tam_id' => $dangKyTam->id,
+                        'ngay_dang_ky' => $ngayDangKy,
+                        'ngay_xep_lop' => $ngayBatDau->copy()->addDays(rand(8, 14)),
+                        'phuong_thuc_xep' => 'tu_dong',
+                        'trang_thai' => 'da_hoan_thanh',
+                        'created_at' => $ngayBatDau,
+                        'updated_at' => $ngayKetThuc,
+                    ]);
+
+                    // Cập nhật số lượng đăng ký của lớp học phần (đảm bảo không vượt quá sức chứa)
+                    $soLuongDangKy = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)->count();
+                    $lopHocPhan->update([
+                        'so_luong_dang_ky' => min($soLuongDangKy, $lopHocPhan->suc_chua)
+                    ]);
+
+                    $soMonDaTao++;
+
+                    // Tạo kết quả học tập
+                    // 70% môn đã qua, 30% môn đang nợ
+                    $quaMon = (rand(1, 100) <= 70);
+
+                    // Tạo cấu hình đầu điểm cho lớp học phần (nếu chưa có)
+                    $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhan->id)->get();
+                    if ($cauHinhs->isEmpty()) {
+                        // Tạo cấu hình đầu điểm mặc định: Chuyên cần 10%, Giữa kỳ 30%, Cuối kỳ 60%
+                        CauHinhDauDiem::create([
+                            'lop_hoc_phan_id' => $lopHocPhan->id,
+                            'ten_dau_diem' => 'Chuyên cần',
+                            'ty_le' => 10,
+                            'so_cot' => 1,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        
+                        CauHinhDauDiem::create([
+                            'lop_hoc_phan_id' => $lopHocPhan->id,
+                            'ten_dau_diem' => 'Giữa kỳ',
+                            'ty_le' => 30,
+                            'so_cot' => 1,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        
+                        CauHinhDauDiem::create([
+                            'lop_hoc_phan_id' => $lopHocPhan->id,
+                            'ten_dau_diem' => 'Cuối kỳ',
+                            'ty_le' => 60,
+                            'so_cot' => 1,
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                        
+                        // Lấy lại cấu hình vừa tạo
+                        $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhan->id)->get();
+                    }
+
+                    if ($quaMon) {
+                        // Môn đã qua - có điểm
+                        $diemHe10 = rand(50, 100) / 10; // Điểm từ 5.0 đến 10.0
+                        $diemChu = KetQuaHocTap::tinhDiemChu($diemHe10);
+                        $diemHe4 = KetQuaHocTap::tinhDiemHe4($diemHe10);
+
+                        KetQuaHocTap::create([
+                            'lop_hoc_phan_sinh_vien_id' => $lopHocPhanSV->id,
+                            'diem_he_10' => $diemHe10,
+                            'diem_he_4' => $diemHe4,
+                            'diem_chu' => $diemChu,
+                            'qua_mon' => true,
+                            'created_at' => $ngayKetThuc,
+                            'updated_at' => $ngayKetThuc,
+                        ]);
+
+                        // Tạo điểm chi tiết cho các đầu điểm
+                        $this->taoDiemChiTiet($lopHocPhanSV, $cauHinhs, $diemHe10);
+
+                        $soMonDaQua++;
+                    } else {
+                        // Môn đang nợ - không có điểm hoặc điểm < 4.0
+                        $diemHe10 = rand(0, 39) / 10; // Điểm từ 0.0 đến 3.9
+                        $diemChu = KetQuaHocTap::tinhDiemChu($diemHe10);
+                        $diemHe4 = KetQuaHocTap::tinhDiemHe4($diemHe10);
+
+                        KetQuaHocTap::create([
+                            'lop_hoc_phan_sinh_vien_id' => $lopHocPhanSV->id,
+                            'diem_he_10' => $diemHe10,
+                            'diem_he_4' => $diemHe4,
+                            'diem_chu' => $diemChu,
+                            'qua_mon' => false,
+                            'ghi_chu' => 'Chưa đạt, cần học lại',
+                            'created_at' => $ngayKetThuc,
+                            'updated_at' => $ngayKetThuc,
+                        ]);
+
+                        // Tạo điểm chi tiết cho các đầu điểm (điểm thấp)
+                        $this->taoDiemChiTiet($lopHocPhanSV, $cauHinhs, $diemHe10);
+
+                        $soMonNo++;
+                    }
+                }
+            }
+
+            // Tạo bảng điểm cho học kỳ này (nếu chưa có)
+            $bangDiem = BangDiem::where('sinh_vien_id', $sinhVienId)
+                ->where('hoc_ky_id', $hocKy->id)
+                ->first();
+
+            if (!$bangDiem) {
+                // Tính điểm trung bình học kỳ và tín chỉ
+                $ketQuaTrongKy = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $hocKy) {
+                    $q->where('sinh_vien_id', $sinhVienId)
+                      ->whereHas('lopHocPhan', function ($q2) use ($hocKy) {
+                          $q2->where('hoc_ky_id', $hocKy->id);
+                      });
+                })->get();
+
+                $tongDiem = 0;
+                $tongHeSo = 0;
+                $tongTinChiDat = 0;
+                $tongTinChiDangKy = 0;
+
+                foreach ($ketQuaTrongKy as $kq) {
+                    $lopHocPhanSV = $kq->lopHocPhanSinhVien;
+                    $lopHocPhan = $lopHocPhanSV->lopHocPhan;
+                    $monHoc = $lopHocPhan->monHoc;
+                    
+                    $tinChi = $monHoc->so_tin_chi ?? 0;
+                    $tongTinChiDangKy += $tinChi;
+
+                    if ($kq->qua_mon) {
+                        $tongDiem += $kq->diem_he_10 * $tinChi;
+                        $tongHeSo += $tinChi;
+                        $tongTinChiDat += $tinChi;
+                    }
+                }
+
+                $diemTBHK = $tongHeSo > 0 ? $tongDiem / $tongHeSo : 0;
+                
+                // Tính điểm TB hệ 4
+                $tongDiemHe4 = 0;
+                foreach ($ketQuaTrongKy as $kq) {
+                    if ($kq->qua_mon) {
+                        $lopHocPhanSV = $kq->lopHocPhanSinhVien;
+                        $lopHocPhan = $lopHocPhanSV->lopHocPhan;
+                        $monHoc = $lopHocPhan->monHoc;
+                        $tinChi = $monHoc->so_tin_chi ?? 0;
+                        $tongDiemHe4 += $kq->diem_he_4 * $tinChi;
+                    }
+                }
+                $diemTBHe4 = $tongHeSo > 0 ? $tongDiemHe4 / $tongHeSo : 0;
+
+                // Tính điểm TB tích lũy (lấy từ các học kỳ trước)
+                $tongDiemTichLuy = 0;
+                $tongHeSoTichLuy = 0;
+                $tongTinChiDatTichLuy = 0;
+
+                $ketQuaTichLuy = KetQuaHocTap::whereHas('lopHocPhanSinhVien', function ($q) use ($sinhVienId, $hocKy) {
+                    $q->where('sinh_vien_id', $sinhVienId)
+                      ->whereHas('lopHocPhan', function ($q2) use ($hocKy) {
+                          $q2->where('hoc_ky_id', '<=', $hocKy->id);
+                      });
+                })->get();
+
+                foreach ($ketQuaTichLuy as $kq) {
+                    $lopHocPhanSV = $kq->lopHocPhanSinhVien;
+                    $lopHocPhan = $lopHocPhanSV->lopHocPhan;
+                    $monHoc = $lopHocPhan->monHoc;
+                    
+                    $tinChi = $monHoc->so_tin_chi ?? 0;
+
+                    if ($kq->qua_mon) {
+                        $tongDiemTichLuy += $kq->diem_he_10 * $tinChi;
+                        $tongHeSoTichLuy += $tinChi;
+                        $tongTinChiDatTichLuy += $tinChi;
+                    }
+                }
+
+                $diemTBTichLuy = $tongHeSoTichLuy > 0 ? $tongDiemTichLuy / $tongHeSoTichLuy : 0;
+
+                // Xác định xếp loại
+                $xepLoai = 'yeu';
+                if ($diemTBTichLuy >= 9.0) {
+                    $xepLoai = 'xuat_sac';
+                } elseif ($diemTBTichLuy >= 8.0) {
+                    $xepLoai = 'gioi';
+                } elseif ($diemTBTichLuy >= 7.0) {
+                    $xepLoai = 'kha';
+                } elseif ($diemTBTichLuy >= 5.0) {
+                    $xepLoai = 'trung_binh';
+                }
+
+                BangDiem::create([
+                    'sinh_vien_id' => $sinhVienId,
+                    'hoc_ky_id' => $hocKy->id,
+                    'tong_tin_chi_dang_ky' => $tongTinChiDangKy,
+                    'tong_tin_chi_dat' => $tongTinChiDat,
+                    'diem_trung_binh_he_10' => round($diemTBHK, 2),
+                    'diem_trung_binh_he_4' => round($diemTBHe4, 2),
+                    'diem_trung_binh_tich_luy' => round($diemTBTichLuy, 2),
+                    'xep_loai_hoc_tap' => $xepLoai,
+                    'da_cong_bo' => true,
+                    'ngay_cong_bo' => $hocKy->ngay_ket_thuc,
+                    'created_at' => $hocKy->ngay_ket_thuc,
+                    'updated_at' => $hocKy->ngay_ket_thuc,
+                ]);
+            }
+        }
+    }
+
+    /**
+     * Cập nhật dữ liệu học tập cho tất cả sinh viên đang học
+     */
+    private function capNhatDuLieuHocTapChoAllSinhVien(): void
+    {
+        // Lấy tất cả sinh viên đang học
+        $trangThaiDangHoc = DB::table('trang_thai_hoc_tap')
+            ->whereIn('ten_trang_thai', ['Đang học', 'Bảo lưu'])
+            ->pluck('id');
+
+        $sinhViens = SinhVien::whereIn('trang_thai_hoc_tap_id', $trangThaiDangHoc)
+            ->whereNotNull('chuyen_nganh_id')
+            ->whereNotNull('khoa_hoc_id')
+            ->get();
+
+        $count = 0;
+        foreach ($sinhViens as $sinhVien) {
+            // Luôn cập nhật dữ liệu học tập cho sinh viên ở kỳ > 1
+            if ($sinhVien->ky_hien_tai > 1) {
+                $this->taoDuLieuHocTapCacKyTruoc(
+                    $sinhVien->id,
+                    $sinhVien->chuyen_nganh_id,
+                    $sinhVien->khoa_hoc_id,
+                    $sinhVien->ky_hien_tai
+                );
+                $count++;
+            }
+        }
+
+        echo "✅ Đã cập nhật dữ liệu học tập cho {$count} sinh viên\n";
+        
+        // Tạo DangKyMonHocTam cho các sinh viên đã có LopHocPhanSinhVien nhưng chưa có DangKyMonHocTam
+        echo "📝 Đang tạo lịch sử đăng ký môn học...\n";
+        $this->taoDangKyMonHocTamChoAllSinhVien();
+    }
+
+    /**
+     * Tạo DangKyMonHocTam cho tất cả sinh viên đã có LopHocPhanSinhVien
+     */
+    private function taoDangKyMonHocTamChoAllSinhVien(): void
+    {
+        $lopHocPhanSinhViens = LopHocPhanSinhVien::whereNull('dang_ky_tam_id')
+            ->with(['lopHocPhan.monHoc', 'lopHocPhan.hocKy'])
+            ->get();
+
+        $count = 0;
+        foreach ($lopHocPhanSinhViens as $lhpsv) {
+            if ($lhpsv->lopHocPhan && $lhpsv->lopHocPhan->monHoc && $lhpsv->lopHocPhan->hocKy) {
+                $dangKyTam = DangKyMonHocTam::create([
+                    'sinh_vien_id' => $lhpsv->sinh_vien_id,
+                    'mon_hoc_id' => $lhpsv->lopHocPhan->mon_hoc_id,
+                    'hoc_ky_id' => $lhpsv->lopHocPhan->hoc_ky_id,
+                    'ngay_dang_ky' => $lhpsv->ngay_dang_ky ?? $lhpsv->created_at,
+                    'uu_tien' => rand(1, 10),
+                    'trang_thai' => 'da_xep_lop',
+                    'created_at' => $lhpsv->created_at,
+                    'updated_at' => $lhpsv->updated_at,
+                ]);
+
+                $lhpsv->update(['dang_ky_tam_id' => $dangKyTam->id]);
+                $count++;
+            }
+        }
+
+        echo "✅ Đã tạo {$count} bản ghi đăng ký môn học tạm\n";
+        
+        // Cập nhật so_luong_dang_ky và suc_chua cho tất cả lớp học phần
+        echo "📊 Đang cập nhật số lượng đăng ký cho lớp học phần...\n";
+        $this->capNhatSoLuongDangKy();
+    }
+
+    /**
+     * Cập nhật số lượng đăng ký và sức chứa cho tất cả lớp học phần
+     */
+    private function capNhatSoLuongDangKy(): void
+    {
+        $lopHocPhans = LopHocPhan::all();
+        $count = 0;
+        
+        foreach ($lopHocPhans as $lopHocPhan) {
+            $soLuongDangKy = LopHocPhanSinhVien::where('lop_hoc_phan_id', $lopHocPhan->id)->count();
+            
+            // Đảm bảo sức chứa đủ lớn (ít nhất bằng số lượng đăng ký, tối đa 100)
+            // Nếu số lượng đăng ký > 100, giới hạn ở 100
+            $sucChuaMoi = max(10, min(100, max($lopHocPhan->suc_chua, min($soLuongDangKy, 100))));
+            $soLuongDangKyHienThi = min($soLuongDangKy, $sucChuaMoi);
+            
+            $lopHocPhan->update([
+                'so_luong_dang_ky' => $soLuongDangKyHienThi,
+                'suc_chua' => $sucChuaMoi,
+            ]);
+            
+            $count++;
+        }
+        
+        echo "✅ Đã cập nhật {$count} lớp học phần\n";
+    }
+
+    /**
+     * Tạo điểm chi tiết cho sinh viên
+     */
+    private function taoDiemChiTiet($lopHocPhanSV, $cauHinhs, $diemTongKet): void
+    {
+        // Tính điểm cho từng đầu điểm dựa trên tỷ lệ và điểm tổng kết
+        // Giả sử điểm được phân bổ đều theo tỷ lệ
+        $tongTyLe = $cauHinhs->sum('ty_le');
+        
+        foreach ($cauHinhs as $cauHinh) {
+            // Tính điểm cho đầu điểm này (tỷ lệ phần trăm của điểm tổng kết)
+            // Thêm một chút ngẫu nhiên để điểm không quá đều
+            $tyLePhanTram = $cauHinh->ty_le / $tongTyLe;
+            $diemDauDiem = $diemTongKet * $tyLePhanTram + (rand(-20, 20) / 100);
+            
+            // Đảm bảo điểm trong khoảng 0-10
+            $diemDauDiem = max(0, min(10, $diemDauDiem));
+            
+            // Làm tròn đến 1 chữ số thập phân
+            $diemDauDiem = round($diemDauDiem, 1);
+            
+            // Tạo điểm cho từng cột (nếu có nhiều cột)
+            for ($cot = 1; $cot <= $cauHinh->so_cot; $cot++) {
+                // Nếu có nhiều cột, chia điểm đều
+                $diemCot = $cauHinh->so_cot > 1 ? $diemDauDiem / $cauHinh->so_cot : $diemDauDiem;
+                $diemCot = round($diemCot, 1);
+                
+                // Kiểm tra xem đã có điểm chưa
+                $existingDiem = NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSV->id)
+                    ->where('cau_hinh_id', $cauHinh->id)
+                    ->where('cot_diem', $cot)
+                    ->first();
+                
+                if (!$existingDiem) {
+                    NhapDiem::create([
+                        'lop_hoc_phan_sinh_vien_id' => $lopHocPhanSV->id,
+                        'cau_hinh_id' => $cauHinh->id,
+                        'cot_diem' => $cot,
+                        'diem_so' => $diemCot,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
+            }
         }
     }
 
