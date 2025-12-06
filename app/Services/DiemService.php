@@ -7,7 +7,12 @@ use App\Models\KetQuaHocTap;
 use App\Models\LopHocPhanSinhVien;
 use App\Models\NhapDiem;
 use App\Models\BangDiem;
+use App\Models\LichHocChiTiet;
+use App\Models\DiemDanh;
+use App\Models\CanhBaoHocVu;
+use App\Services\NotificationService;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class DiemService
 {
@@ -16,7 +21,7 @@ class DiemService
      */
     public function tinhDiemTong($lopHocPhanSinhVienId)
     {
-        $lhpsv = LopHocPhanSinhVien::with('lopHocPhan')->find($lopHocPhanSinhVienId);
+        $lhpsv = LopHocPhanSinhVien::with(['lopHocPhan.monHoc', 'lopHocPhan.hocKy', 'sinhVien'])->find($lopHocPhanSinhVienId);
 
         if (!$lhpsv) {
             return false;
@@ -76,25 +81,68 @@ class DiemService
         $diemHe4 = $this->chuyenDoiHe4($diemHe10);
         $diemChu = $this->chuyenDoiDiemChu($diemHe10);
 
-        // 6. Qua môn?
-        // Điều kiện: Điểm tổng kết >= 4.0 VÀ điểm cuối kỳ >= 5.0 (nếu có)
+        // 6. Kiểm tra điều kiện qua môn
+        // Điều kiện ban đầu: Điểm tổng kết >= 4.0 VÀ điểm cuối kỳ >= 5.0 (nếu có)
         $quaMon = $diemHe10 >= 4.0;
         
         // Nếu có điểm cuối kỳ và điểm cuối kỳ < 5 thì không đạt
         if ($diemCuoiKy !== null && $diemCuoiKy < 5.0) {
             $quaMon = false;
         }
+        
+        // Kiểm tra điểm chữ = F → trượt
+        if ($diemChu === 'F') {
+            $quaMon = false;
+        }
+        
+        // Kiểm tra tỷ lệ vắng > 20% → trượt
+        // Lấy tổng số buổi học từ lịch học chi tiết
+        $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lhpsv->lop_hoc_phan_id)
+            ->where('trang_thai', '!=', 'huy')
+            ->count();
+        
+        if ($tongBuoiHoc > 0) {
+            // Lấy số buổi vắng từ điểm danh
+            $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVienId)
+                ->selectRaw('
+                    SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang
+                ')
+                ->first();
+            
+            $soBuoiVang = $diemDanhStats ? ($diemDanhStats->vang ?? 0) : 0;
+            
+            // Tính tỷ lệ vắng
+            $tyLeVang = ($soBuoiVang / $tongBuoiHoc) * 100;
+            
+            // Nếu vắng > 20% → trượt (kể cả khi chưa điểm danh hết tất cả số buổi)
+            if ($tyLeVang > 20) {
+                $quaMon = false;
+            }
+        }
 
         // 7. Update hoặc tạo mới kết quả học tập
-        KetQuaHocTap::updateOrCreate(
-            ['lop_hoc_phan_sinh_vien_id' => $lopHocPhanSinhVienId],
-            [
-                'diem_he_10' => $diemHe10,
-                'diem_he_4' => $diemHe4,
-                'diem_chu' => $diemChu,
-                'qua_mon' => $quaMon,
-            ]
+        // Tìm hoặc tạo bản ghi
+        $ketQua = KetQuaHocTap::firstOrNew(
+            ['lop_hoc_phan_sinh_vien_id' => $lopHocPhanSinhVienId]
         );
+        
+        // Lưu giá trị qua_mon cũ để kiểm tra thay đổi
+        $quaMonCu = $ketQua->qua_mon ?? null;
+        
+        // Cập nhật tất cả các trường (luôn cập nhật qua_mon để đảm bảo logic mới được áp dụng)
+        $ketQua->diem_he_10 = $diemHe10;
+        $ketQua->diem_he_4 = $diemHe4;
+        $ketQua->diem_chu = $diemChu;
+        $ketQua->qua_mon = $quaMon; // Luôn cập nhật qua_mon với logic mới
+        
+        // Lưu mà không trigger events để tránh Observer ghi đè
+        $ketQua->saveQuietly();
+
+        // Nếu kết quả không đạt (qua_mon = false) và trước đó chưa có hoặc đã đạt
+        // thì tạo cảnh báo học vụ và gửi thông báo
+        if (!$quaMon && ($quaMonCu === null || $quaMonCu === true)) {
+            $this->taoCanhBaoVaThongBao($lhpsv, $diemHe10, $diemChu, $tyLeVang ?? null);
+        }
 
         return true;
     }
@@ -354,5 +402,123 @@ return 0;
     public function kiemTraDat($diemHe10)
     {
         return $diemHe10 >= 4.0;
+    }
+
+    /**
+     * Tạo cảnh báo học vụ và gửi thông báo khi kết quả không đạt
+     */
+    protected function taoCanhBaoVaThongBao($lopHocPhanSinhVien, $diemHe10, $diemChu, $tyLeVang = null)
+    {
+        try {
+            $sinhVien = $lopHocPhanSinhVien->sinhVien;
+            $lopHocPhan = $lopHocPhanSinhVien->lopHocPhan;
+            
+            if (!$sinhVien || !$lopHocPhan) {
+                return;
+            }
+
+            $hocKy = $lopHocPhan->hocKy;
+            if (!$hocKy) {
+                return;
+            }
+
+            // Xác định loại cảnh báo và lý do
+            $lyDo = [];
+            $loaiCanhBao = 'diem_thap';
+            
+            if ($diemChu === 'F') {
+                $lyDo[] = "Điểm chữ: F (Điểm hệ 10: {$diemHe10})";
+                $loaiCanhBao = 'diem_thap';
+            }
+            
+            if ($tyLeVang !== null && $tyLeVang > 20) {
+                $lyDo[] = "Vắng quá 20% số buổi học (Tỷ lệ vắng: " . number_format($tyLeVang, 1) . "%)";
+                if ($loaiCanhBao === 'diem_thap') {
+                    $loaiCanhBao = 'diem_thap'; // Giữ nguyên nếu cả điểm thấp và vắng nhiều
+                } else {
+                    $loaiCanhBao = 'vang_nhieu';
+                }
+            }
+
+            if (empty($lyDo)) {
+                $lyDo[] = "Kết quả học tập không đạt yêu cầu";
+            }
+
+            $lyDoString = implode('; ', $lyDo);
+
+            // Xác định mức độ cảnh báo
+            $mucDo = 'canh_cao';
+            if ($diemHe10 < 2.0 || ($tyLeVang !== null && $tyLeVang > 40)) {
+                $mucDo = 'dinh_chi';
+            }
+
+            // Kiểm tra xem đã có cảnh báo chưa xử lý cho môn này chưa
+            $canhBaoTonTai = CanhBaoHocVu::where('sinh_vien_id', $sinhVien->id)
+                ->where('hoc_ky_id', $hocKy->id)
+                ->where('loai_canh_bao', $loaiCanhBao)
+                ->where('trang_thai', 'chua_xu_ly')
+                ->where('ghi_chu', 'like', "%{$lopHocPhan->ma_lop_hp}%")
+                ->first();
+
+            if ($canhBaoTonTai) {
+                // Cập nhật cảnh báo hiện có
+                $canhBaoTonTai->update([
+                    'ly_do' => $lyDoString,
+                    'muc_do' => $mucDo,
+                    'ngay_canh_bao' => now(),
+                ]);
+                $canhBao = $canhBaoTonTai;
+            } else {
+                // Tạo cảnh báo mới
+                $canhBao = CanhBaoHocVu::create([
+                    'sinh_vien_id' => $sinhVien->id,
+                    'hoc_ky_id' => $hocKy->id,
+                    'loai_canh_bao' => $loaiCanhBao,
+                    'muc_do' => $mucDo,
+                    'ly_do' => $lyDoString,
+                    'ngay_canh_bao' => now(),
+                    'trang_thai' => 'chua_xu_ly',
+                    'ghi_chu' => "Tự động tạo từ hệ thống. Môn: {$lopHocPhan->monHoc->ten_mon} - Lớp: {$lopHocPhan->ma_lop_hp}",
+                ]);
+            }
+
+            // Gửi thông báo tự động cho sinh viên
+            if ($sinhVien->user_id) {
+                $notificationService = new NotificationService();
+                
+                $noiDung = "⚠️ Cảnh báo: Kết quả học tập không đạt!\n\n";
+                $noiDung .= "📚 Môn học: {$lopHocPhan->monHoc->ten_mon}\n";
+                $noiDung .= "📋 Lớp học phần: {$lopHocPhan->ma_lop_hp}\n";
+                $noiDung .= "📊 Điểm hệ 10: {$diemHe10}\n";
+                $noiDung .= "📝 Điểm chữ: {$diemChu}\n\n";
+                $noiDung .= "❌ Lý do không đạt:\n";
+                $noiDung .= "• " . implode("\n• ", $lyDo) . "\n\n";
+                $noiDung .= "💡 Hãy liên hệ với giảng viên hoặc phòng đào tạo để được hỗ trợ.";
+
+                $notificationService->createAutoNotification(
+                    loaiThongBao: 'canh_bao_hoc_vu',
+                    tieuDe: '⚠️ Cảnh báo: Kết quả học tập không đạt - ' . $lopHocPhan->monHoc->ten_mon,
+                    noiDung: $noiDung,
+                    nguoiNhanIds: [$sinhVien->user_id],
+                    options: [
+                        'muc_do_quan_trong' => 'quan_trong',
+                        'gui_web_notification' => true,
+                        'gui_email' => true,
+                    ]
+                );
+
+                Log::info('Đã tạo cảnh báo học vụ và gửi thông báo', [
+                    'sinh_vien_id' => $sinhVien->id,
+                    'lop_hoc_phan_id' => $lopHocPhan->id,
+                    'canh_bao_id' => $canhBao->id,
+                    'loai_canh_bao' => $loaiCanhBao,
+                ]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Lỗi khi tạo cảnh báo học vụ và gửi thông báo: ' . $e->getMessage(), [
+                'lop_hoc_phan_sinh_vien_id' => $lopHocPhanSinhVien->id ?? null,
+                'error' => $e->getTraceAsString()
+            ]);
+        }
     }
 }

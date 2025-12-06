@@ -13,14 +13,27 @@ class KetQuaHocTapObserver
     public function saving(KetQuaHocTap $ketQua): void
     {
         if ($ketQua->diem_he_10 !== null) {
-            // Tự động convert điểm hệ 4
-            $ketQua->diem_he_4 = $this->convertTo4Scale($ketQua->diem_he_10);
+            // Tự động convert điểm hệ 4 (chỉ nếu chưa được set)
+            if ($ketQua->diem_he_4 === null) {
+                $ketQua->diem_he_4 = $this->convertTo4Scale($ketQua->diem_he_10);
+            }
 
-            // Tự động convert điểm chữ
-            $ketQua->diem_chu = $this->convertToLetter($ketQua->diem_he_10);
+            // Tự động convert điểm chữ (chỉ nếu chưa được set)
+            if ($ketQua->diem_chu === null) {
+                $ketQua->diem_chu = $this->convertToLetter($ketQua->diem_he_10);
+            }
 
-            // Tự động check qua môn
-            $ketQua->qua_mon = $ketQua->diem_he_10 >= 4.0;
+            // Tự động check qua môn (chỉ nếu chưa được set từ DiemService)
+            // DiemService sẽ tính toán qua_mon dựa trên điểm F và tỷ lệ vắng
+            if ($ketQua->qua_mon === null) {
+                // Kiểm tra điểm chữ = F → trượt
+                $diemChu = $ketQua->diem_chu ?? $this->convertToLetter($ketQua->diem_he_10);
+                if ($diemChu === 'F') {
+                    $ketQua->qua_mon = false;
+                } else {
+                    $ketQua->qua_mon = $ketQua->diem_he_10 >= 4.0;
+                }
+            }
         }
     }
 

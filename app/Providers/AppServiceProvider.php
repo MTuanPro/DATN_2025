@@ -21,6 +21,8 @@ use App\Observers\CaHocObserver;
 use App\Observers\LichSuDongHocPhiObserver;
 use App\Models\LichHocCoDinh;
 use App\Models\CaHoc;
+use App\Models\DiemDanh;
+use App\Observers\DiemDanhObserver;
 use App\View\Composers\NotificationComposer;
 
 class AppServiceProvider extends ServiceProvider
@@ -57,6 +59,9 @@ class AppServiceProvider extends ServiceProvider
         
         // Register Observer for auto-sync LichHocCoDinh when CaHoc changes
         CaHoc::observe(CaHocObserver::class);
+        
+        // Register Observer for auto-recalculate results when attendance changes
+        DiemDanh::observe(DiemDanhObserver::class);
 
         // Register View Composer for notifications in header
         View::composer('layouts.blocks.header', NotificationComposer::class);

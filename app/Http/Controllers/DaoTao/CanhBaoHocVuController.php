@@ -127,7 +127,6 @@ class CanhBaoHocVuController extends Controller
     {
         $query = CanhBaoHocVu::with([
             'sinhVien.user',
-            'sinhVien.lopHanhChinh',
             'hocKy',
             'nguoiCanhBao'
         ]);
@@ -252,7 +251,7 @@ class CanhBaoHocVuController extends Controller
      */
     public function create()
     {
-        $sinhViens = SinhVien::with('user', 'lopHanhChinh')->get();
+        $sinhViens = SinhVien::with('user')->get();
         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
 
         return view('daotao.canh-bao-hoc-vu.create', compact('sinhViens', 'hocKys'));
@@ -504,7 +503,6 @@ class CanhBaoHocVuController extends Controller
     {
         $canhBaoHocVu->load([
             'sinhVien.user',
-            'sinhVien.lopHanhChinh',
             'sinhVien.ketQuaHocTaps',
             'hocKy',
             'nguoiTao',
@@ -601,7 +599,7 @@ class CanhBaoHocVuController extends Controller
      */
     public function edit(CanhBaoHocVu $canhBaoHocVu)
     {
-        $sinhViens = SinhVien::with('user', 'lopHanhChinh')->get();
+        $sinhViens = SinhVien::with('user')->get();
         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
 
         $canhBao = $canhBaoHocVu; // Alias for view
@@ -721,7 +719,7 @@ class CanhBaoHocVuController extends Controller
             'muc_do' => 'required|in:canh_cao,dinh_chi,buoc_thoi_hoc',
             'ly_do' => 'required|string|max:1000',
             'trang_thai' => 'required|in:chua_xu_ly,dang_xu_ly,da_xu_ly',
-            'ket_qua_xu_ly' => 'nullable|string|max:1000',
+            'ket_qua_xu_ly' => 'required_if:trang_thai,da_xu_ly|nullable|string|max:1000',
             'ghi_chu' => 'nullable|string|max:1000',
         ], [
             'loai_canh_bao.required' => 'Vui lòng chọn loại cảnh báo',
@@ -729,6 +727,8 @@ class CanhBaoHocVuController extends Controller
             'ly_do.required' => 'Vui lòng nhập lý do cảnh báo',
             'ly_do.max' => 'Lý do không được vượt quá 1000 ký tự',
             'trang_thai.required' => 'Vui lòng chọn trạng thái',
+            'ket_qua_xu_ly.required_if' => 'Vui lòng nhập kết quả xử lý khi đánh dấu "Đã xử lý"',
+            'ket_qua_xu_ly.max' => 'Kết quả xử lý không được vượt quá 1000 ký tự',
         ]);
 
         try {
@@ -776,7 +776,7 @@ class CanhBaoHocVuController extends Controller
 //      */
 //     public function edit(CanhBaoHocVu $canhBaoHocVu)
 //     {
-//         $sinhViens = SinhVien::with('user', 'lopHanhChinh')->get();
+//         $sinhViens = SinhVien::with('user')->get();
 //         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
 
 //         $canhBao = $canhBaoHocVu; // Alias for view
@@ -883,7 +883,24 @@ class CanhBaoHocVuController extends Controller
      * 9. Return với thống kê:
      *    - Tổng số cảnh báo tạo
      *    - Phân loại theo loại, mức độ
-     *\n     * Side effects:\n     * - Tạo nhiều records CanhBaoHocVu\n     * - Queue nhiều email jobs\n     * - Tạo notifications\n     * - Log activities\n     *\n     * Business rules:\n     * - Không tạo trùng cảnh báo (check exist)\n     * - Ưu tiên mức độ cao hơn nếu có nhiều vi phạm\n     * - Auto-escalate mức độ nếu đã có cảnh báo trước\n     *\n     * @param Request $request Chứa:\n     *   - hoc_ky_id (int|null): ID học kỳ cần check\n     * @return \\Illuminate\\Http\\RedirectResponse Với thống kê\n     * @throws \\Exception Nếu có lỗi DB/email\n     */\n    public function tuDongPhatHien(Request $request)
+     * 
+     * Side effects:
+     * - Tạo nhiều records CanhBaoHocVu
+     * - Queue nhiều email jobs
+     * - Tạo notifications
+     * - Log activities
+     * 
+     * Business rules:
+     * - Không tạo trùng cảnh báo (check exist)
+     * - Ưu tiên mức độ cao hơn nếu có nhiều vi phạm
+     * - Auto-escalate mức độ nếu đã có cảnh báo trước
+     * 
+     * @param Request $request Chứa:
+     *   - hoc_ky_id (int|null): ID học kỳ cần check
+     * @return \Illuminate\Http\RedirectResponse Với thống kê
+     * @throws \Exception Nếu có lỗi DB/email
+     */
+    public function tuDongPhatHien(Request $request)
     {
         try {
             DB::beginTransaction();

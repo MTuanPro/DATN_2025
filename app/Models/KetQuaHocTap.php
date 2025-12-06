@@ -108,6 +108,8 @@ class KetQuaHocTap extends Model
 
     /**
      * Boot method để tự động tính toán
+     * LƯU Ý: qua_mon sẽ được tính từ DiemService dựa trên điểm F và tỷ lệ vắng
+     * Chỉ tự động tính nếu qua_mon chưa được set
      */
     protected static function boot()
     {
@@ -115,9 +117,21 @@ class KetQuaHocTap extends Model
 
         static::saving(function ($ketQua) {
             if ($ketQua->diem_he_10 !== null) {
-                $ketQua->diem_he_4 = self::tinhDiemHe4($ketQua->diem_he_10);
-                $ketQua->diem_chu = self::tinhDiemChu($ketQua->diem_he_10);
-                $ketQua->qua_mon = self::kiemTraQuaMon($ketQua->diem_he_10);
+                // Tự động convert điểm hệ 4 (chỉ nếu chưa được set)
+                if ($ketQua->diem_he_4 === null) {
+                    $ketQua->diem_he_4 = self::tinhDiemHe4($ketQua->diem_he_10);
+                }
+                
+                // Tự động convert điểm chữ (chỉ nếu chưa được set)
+                if ($ketQua->diem_chu === null) {
+                    $ketQua->diem_chu = self::tinhDiemChu($ketQua->diem_he_10);
+                }
+                
+                // Chỉ tự động tính qua_mon nếu chưa được set từ DiemService
+                // DiemService sẽ tính toán qua_mon dựa trên điểm F và tỷ lệ vắng > 20%
+                if ($ketQua->qua_mon === null) {
+                    $ketQua->qua_mon = self::kiemTraQuaMon($ketQua->diem_he_10);
+                }
             }
         });
     }

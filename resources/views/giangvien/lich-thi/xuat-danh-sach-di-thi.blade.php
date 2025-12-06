@@ -89,7 +89,7 @@
         <div class="card">
             <div class="card-header d-flex justify-content-between align-items-center">
                 <h5 class="card-title mb-0">
-                    Danh sách sinh viên ({{ count($danhSachSinhVien) }} sinh viên)
+                    Danh sách sinh viên được đi thi ({{ count($danhSachSinhVienDiThi) }} sinh viên)
                 </h5>
                 <div>
                     <button onclick="window.print()" class="btn btn-sm btn-primary">
@@ -98,9 +98,12 @@
                 </div>
             </div>
             <div class="card-body">
-                @if(empty($danhSachSinhVien))
+                @if(empty($danhSachSinhVienDiThi))
                     <div class="alert alert-warning text-center">
-                        <i class="bi bi-exclamation-triangle"></i> Chưa có sinh viên nào trong lớp học phần.
+                        <i class="bi bi-exclamation-triangle"></i> Không có sinh viên nào đủ điều kiện đi thi.
+                        @if(count($danhSachSinhVien) > 0)
+                            <br><small>Tổng số sinh viên trong lớp: {{ count($danhSachSinhVien) }} ({{ count(array_filter($danhSachSinhVien, fn($sv) => $sv['khong_duoc_di_thi'])) }} sinh viên bị cấm thi)</small>
+                        @endif
                     </div>
                 @else
                     <div class="table-responsive">
@@ -114,12 +117,11 @@
                                     <th>Chuyên cần</th>
                                     <th>Điểm TB</th>
                                     <th>Điều kiện</th>
-                                    <th>Lý do</th>
                                 </tr>
                             </thead>
                             <tbody>
-                                @foreach($danhSachSinhVien as $index => $item)
-                                <tr class="{{ $item['khong_duoc_di_thi'] ? 'table-danger' : 'table-success' }}">
+                                @foreach($danhSachSinhVienDiThi as $index => $item)
+                                <tr class="table-success">
                                     <td>{{ $index + 1 }}</td>
                                     <td><strong>{{ $item['sinh_vien']->ma_sinh_vien }}</strong></td>
                                     <td>{{ $item['sinh_vien']->ho_ten }}</td>
@@ -131,41 +133,20 @@
                                                 (Có mặt: {{ $item['co_mat'] }}/{{ $item['tong_buoi_hoc'] }})
                                             </small>
                                         </div>
-                                        @if($item['khong_dat_chuyen_can'])
-                                            <span class="badge bg-danger">Không đạt</span>
-                                        @else
-                                            <span class="badge bg-success">Đạt</span>
-                                        @endif
+                                        <span class="badge bg-success">Đạt</span>
                                     </td>
                                     <td>
                                         @if($item['diem_trung_binh'] !== null)
                                             <strong>{{ number_format($item['diem_trung_binh'], 2) }}</strong>
-                                            @if($item['khong_dat_diem'])
-                                                <span class="badge bg-danger">Không đạt</span>
-                                            @else
-                                                <span class="badge bg-success">Đạt</span>
-                                            @endif
+                                            <span class="badge bg-success">Đạt</span>
                                         @else
                                             <span class="text-muted">Chưa có điểm</span>
                                         @endif
                                     </td>
                                     <td>
-                                        @if($item['khong_duoc_di_thi'])
-                                            <span class="badge bg-danger">
-                                                <i class="bi bi-x-circle"></i> KHÔNG ĐƯỢC ĐI THI
-                                            </span>
-                                        @else
-                                            <span class="badge bg-success">
-                                                <i class="bi bi-check-circle"></i> ĐƯỢC ĐI THI
-                                            </span>
-                                        @endif
-                                    </td>
-                                    <td>
-                                        @if($item['khong_duoc_di_thi'])
-                                            <small class="text-danger">{{ $item['ly_do'] }}</small>
-                                        @else
-                                            <small class="text-success">Đủ điều kiện</small>
-                                        @endif
+                                        <span class="badge bg-success">
+                                            <i class="bi bi-check-circle"></i> ĐƯỢC ĐI THI
+                                        </span>
                                     </td>
                                 </tr>
                                 @endforeach
@@ -175,27 +156,20 @@
 
                     <!-- Thống kê -->
                     <div class="row mt-4">
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="card bg-success text-white">
                                 <div class="card-body">
                                     <h5 class="card-title">Được đi thi</h5>
-                                    <h2 class="mb-0">{{ count(array_filter($danhSachSinhVien, fn($sv) => !$sv['khong_duoc_di_thi'])) }}</h2>
+                                    <h2 class="mb-0">{{ count($danhSachSinhVienDiThi) }}</h2>
                                 </div>
                             </div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-6">
                             <div class="card bg-danger text-white">
                                 <div class="card-body">
-                                    <h5 class="card-title">Không được đi thi</h5>
+                                    <h5 class="card-title">Bị cấm thi</h5>
                                     <h2 class="mb-0">{{ count(array_filter($danhSachSinhVien, fn($sv) => $sv['khong_duoc_di_thi'])) }}</h2>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="card bg-info text-white">
-                                <div class="card-body">
-                                    <h5 class="card-title">Tổng số</h5>
-                                    <h2 class="mb-0">{{ count($danhSachSinhVien) }}</h2>
+                                    <small>Tổng số sinh viên: {{ count($danhSachSinhVien) }}</small>
                                 </div>
                             </div>
                         </div>

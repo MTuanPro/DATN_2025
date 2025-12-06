@@ -25,13 +25,49 @@ class LichHocCoDinhController extends Controller
      */
     public function index(LopHocPhan $lopHocPhan)
     {
-        $lichHocs = LichHocCoDinh::with(['phongHoc', 'giangVien', 'caHoc'])
+        $lichHocs = LichHocCoDinh::with(['phongHoc', 'giangVien', 'caHoc', 'lichHocChiTiet'])
             ->where('lop_hoc_phan_id', $lopHocPhan->id)
             ->orderBy('thu_trong_tuan')
             ->orderBy('tiet_bat_dau')
             ->get();
 
+        // Tính ngày dạy đầu tiên cho mỗi lịch học cố định
+        $ngayBatDau = \Carbon\Carbon::parse($lopHocPhan->ngay_bat_dau);
+        foreach ($lichHocs as $lichHoc) {
+            // Tìm ngày dạy đầu tiên từ lịch học chi tiết (nếu có)
+            $lichHocChiTietDauTien = $lichHoc->lichHocChiTiet()
+                ->orderBy('ngay_hoc', 'asc')
+                ->first();
+            
+            if ($lichHocChiTietDauTien) {
+                $lichHoc->ngay_day_dau_tien = \Carbon\Carbon::parse($lichHocChiTietDauTien->ngay_hoc);
+            } else {
+                // Tính toán ngày dạy đầu tiên dựa trên ngày bắt đầu và thứ trong tuần
+                $ngayDayDauTien = $this->tinhNgayDayDauTien($ngayBatDau, $lichHoc->thu_trong_tuan);
+                $lichHoc->ngay_day_dau_tien = $ngayDayDauTien;
+            }
+        }
+
         return view('daotao.lich-hoc-co-dinh.index', compact('lopHocPhan', 'lichHocs'));
+    }
+
+    /**
+     * Tính ngày dạy đầu tiên dựa trên ngày bắt đầu và thứ trong tuần
+     */
+    private function tinhNgayDayDauTien($ngayBatDau, $thuTrongTuan)
+    {
+        // Chuyển đổi thứ trong tuần: 2=Thứ 2, 3=Thứ 3, ..., 8=Chủ nhật
+        // Carbon: 1=Monday, 2=Tuesday, ..., 7=Sunday, 0=Sunday
+        $carbonDayOfWeek = $thuTrongTuan == 8 ? 0 : $thuTrongTuan - 1;
+        
+        $currentDate = $ngayBatDau->copy();
+        
+        // Tìm ngày đầu tiên có thứ trùng với thứ được chọn
+        while ($currentDate->dayOfWeek != $carbonDayOfWeek) {
+            $currentDate->addDay();
+        }
+        
+        return $currentDate;
     }
 
     /**
@@ -230,16 +266,34 @@ class LichHocCoDinhController extends Controller
                         }
                     }
 
-                    // Kiểm tra xung đột giảng viên (kiểm tra với các lịch chi tiết đã tồn tại)
-                    $conflictGiangVien = \App\Models\LichHocChiTiet::where('giang_vien_id', $validated['giang_vien_id'])
+                    // Kiểm tra xung đột giảng viên với lịch học chi tiết đã tồn tại
+                    $conflictGiangVienChiTiet = \App\Models\LichHocChiTiet::where('giang_vien_id', $validated['giang_vien_id'])
                         ->where('ngay_hoc', $ngayHocDate)
                         ->where('ca_hoc_id', $validated['ca_hoc_id']) // Cùng ca học
                         ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
                         ->where('trang_thai', '!=', 'huy') // Không tính các buổi đã hủy
                         ->exists();
                     
-                    if ($conflictGiangVien) {
+                    if ($conflictGiangVienChiTiet) {
                         $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Giảng viên đã có lịch dạy vào ca học này";
+                    }
+                    
+                    // Kiểm tra xung đột giảng viên với lịch học cố định khác (cùng thứ, trùng ca)
+                    $thuTrongTuan = $ngayHoc['thu'];
+                    $conflictGiangVienCoDinh = \App\Models\LichHocCoDinh::where('giang_vien_id', $validated['giang_vien_id'])
+                        ->where('thu_trong_tuan', $thuTrongTuan)
+                        ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
+                        ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
+                            // Kiểm tra trùng tiết: trùng nếu end1 >= start2 AND start1 <= end2
+                            $q->where('tiet_ket_thuc', '>=', $tietBatDau)
+                              ->where('tiet_bat_dau', '<=', $tietKetThuc);
+                        })
+                        ->exists();
+                    
+                    if ($conflictGiangVienCoDinh) {
+                        $thuNames = [2 => 'Thứ 2', 3 => 'Thứ 3', 4 => 'Thứ 4', 5 => 'Thứ 5', 6 => 'Thứ 6', 7 => 'Thứ 7', 8 => 'Chủ nhật'];
+                        $tenThu = $thuNames[$thuTrongTuan] ?? '';
+                        $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Giảng viên đã có lịch học cố định vào {$tenThu} trùng ca học này";
                     }
                 }
             }
@@ -255,6 +309,36 @@ class LichHocCoDinhController extends Controller
                 return back()
                     ->withErrors(['general' => 'Phát hiện xung đột lịch:<br>- ' . implode('<br>- ', $conflicts)])
                     ->withInput();
+            }
+
+            // Kiểm tra xung đột giảng viên với lịch học cố định khác (trước khi tạo)
+            foreach ($thuList as $thu) {
+                $lichHocCoDinhTemp = new LichHocCoDinh([
+                    'giang_vien_id' => $validated['giang_vien_id'],
+                    'thu_trong_tuan' => $thu,
+                    'tiet_bat_dau' => $tietBatDau,
+                    'tiet_ket_thuc' => $tietKetThuc,
+                ]);
+                
+                // Kiểm tra xung đột với lịch học cố định khác (không phải lớp hiện tại)
+                $conflictCoDinh = LichHocCoDinh::where('giang_vien_id', $validated['giang_vien_id'])
+                    ->where('thu_trong_tuan', $thu)
+                    ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
+                    ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
+                        // Kiểm tra trùng tiết: trùng nếu end1 >= start2 AND start1 <= end2
+                        $q->where('tiet_ket_thuc', '>=', $tietBatDau)
+                          ->where('tiet_bat_dau', '<=', $tietKetThuc);
+                    })
+                    ->exists();
+                
+                if ($conflictCoDinh) {
+                    \DB::rollBack();
+                    $thuNames = [2 => 'Thứ 2', 3 => 'Thứ 3', 4 => 'Thứ 4', 5 => 'Thứ 5', 6 => 'Thứ 6', 7 => 'Thứ 7', 8 => 'Chủ nhật'];
+                    $tenThu = $thuNames[$thu] ?? '';
+                    return back()
+                        ->withErrors(['giang_vien_id' => "Giảng viên đã có lịch học cố định vào {$tenThu} trùng ca học này. Vui lòng chọn giảng viên hoặc ca học khác."])
+                        ->withInput();
+                }
             }
 
             // Tạo các LichHocCoDinh cho từng thứ trong tuần (nếu chưa tồn tại)

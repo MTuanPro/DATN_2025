@@ -144,7 +144,6 @@ class LichThiController extends Controller
             'giamThi1', 
             'giamThi2', 
             'hocKy',
-            'lichThiSinhViens.sinhVien.lopHanhChinh',
             'lichThiSinhViens.phongThi'
         ]);
 
@@ -170,7 +169,7 @@ class LichThiController extends Controller
                 continue;
             }
 
-            // 1. Kiểm tra chuyên cần (vắng quá 25% = có mặt < 75%)
+            // 1. Kiểm tra chuyên cần (vắng quá 20% = có mặt < 80%)
             $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVien->id)
                 ->selectRaw('
                     COUNT(*) as tong_buoi_diem_danh,
@@ -188,7 +187,7 @@ class LichThiController extends Controller
                 ? round(($coMat / $tongBuoiHoc) * 100, 1) 
                 : 0;
             
-            $khongDatChuyenCan = $tyLeCoMat < 75;
+            $khongDatChuyenCan = $tyLeCoMat < 80;
 
             // 2. Kiểm tra điểm trung bình các đầu điểm < 5
             $diemTrungBinh = null;
@@ -228,7 +227,7 @@ class LichThiController extends Controller
                 }
             }
 
-            // Không được đi thi nếu: vắng quá 25% HOẶC điểm < 5
+            // Không được đi thi nếu: vắng quá 20% HOẶC điểm < 5
             $khongDuocDiThi = $khongDatChuyenCan || $khongDatDiem;
 
             $danhSachSinhVienDiThi[] = [
@@ -496,7 +495,7 @@ class LichThiController extends Controller
         $danhSachSinhVien = [];
 
         foreach ($sinhViens as $sv) {
-            // 1. Kiểm tra chuyên cần (vắng quá 25% = có mặt < 75%)
+            // 1. Kiểm tra chuyên cần (vắng quá 20% = có mặt < 80%)
             $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $sv->id)
                 ->selectRaw('
                     COUNT(*) as tong_buoi_diem_danh,
@@ -515,8 +514,8 @@ class LichThiController extends Controller
                 ? round(($coMat / $tongBuoiHoc) * 100, 1) 
                 : 0;
             
-            // Vắng quá 25% = có mặt < 75%
-            $khongDatChuyenCan = $tyLeCoMat < 75;
+            // Vắng quá 20% = có mặt < 80%
+            $khongDatChuyenCan = $tyLeCoMat < 80;
 
             // 2. Kiểm tra điểm trung bình các đầu điểm < 5
             $diemTrungBinh = null;
@@ -561,12 +560,12 @@ class LichThiController extends Controller
                 }
             }
 
-            // Không được đi thi nếu: vắng quá 25% HOẶC điểm < 5
+            // Không được đi thi nếu: vắng quá 20% HOẶC điểm < 5
             $khongDuocDiThi = $khongDatChuyenCan || $khongDatDiem;
 
             $danhSachSinhVien[] = [
                 'sinh_vien' => $sv->sinhVien,
-                'lop_hanh_chinh' => $sv->sinhVien->lopHanhChinh,
+                'lop_hanh_chinh' => null, // TODO: Model LopHanhChinh chưa được tạo
                 'tong_buoi_hoc' => $tongBuoiHoc,
                 'co_mat' => $coMat,
                 'vang' => $vang,
@@ -580,20 +579,20 @@ class LichThiController extends Controller
             ];
         }
 
-        // Sắp xếp: sinh viên không được đi thi lên đầu
-        usort($danhSachSinhVien, function($a, $b) {
-            if ($a['khong_duoc_di_thi'] && !$b['khong_duoc_di_thi']) {
-                return -1;
-            }
-            if (!$a['khong_duoc_di_thi'] && $b['khong_duoc_di_thi']) {
-                return 1;
-            }
+        // Lọc bỏ sinh viên bị cấm thi (chỉ lấy những sinh viên được đi thi)
+        $danhSachSinhVienDiThi = array_filter($danhSachSinhVien, function($sv) {
+            return !$sv['khong_duoc_di_thi'];
+        });
+
+        // Sắp xếp theo tên
+        usort($danhSachSinhVienDiThi, function($a, $b) {
             return strcmp($a['sinh_vien']->ho_ten, $b['sinh_vien']->ho_ten);
         });
 
         return view('giangvien.lich-thi.xuat-danh-sach-di-thi', compact(
             'lichThi',
             'danhSachSinhVien',
+            'danhSachSinhVienDiThi',
             'tongBuoiHoc'
         ));
     }
@@ -606,7 +605,7 @@ class LichThiController extends Controller
         $lyDo = [];
 
         if ($khongDatChuyenCan) {
-            $lyDo[] = "Vắng quá 25% số buổi học (Tỷ lệ có mặt: {$tyLeCoMat}%)";
+            $lyDo[] = "Vắng quá 20% số buổi học (Tỷ lệ có mặt: {$tyLeCoMat}%)";
         }
 
         if ($khongDatDiem && $diemTrungBinh !== null) {

@@ -116,9 +116,9 @@ class XemDiemController extends Controller
             foreach ($monHocs as $monHoc) {
                 $lopHocPhanId = $monHoc->lopHocPhan->id;
                 
-                // Tổng số buổi học đã diễn ra
+                // Tổng số buổi học từ lịch học chi tiết (tất cả buổi, không phân biệt đã diễn ra hay chưa)
                 $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhanId)
-                    ->where('ngay_hoc', '<=', Carbon::now())
+                    ->where('trang_thai', '!=', 'huy') // Không tính các buổi đã hủy
                     ->count();
 
                 // Thống kê điểm danh

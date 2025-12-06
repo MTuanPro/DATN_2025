@@ -30,10 +30,16 @@
                 <div class="card-header">
                     <div class="d-flex justify-content-between align-items-center">
                         <h5 class="card-title mb-0">Danh sách lịch học cố định</h5>
-                        <a href="{{ route('dao-tao.lop-hoc-phan.lich-co-dinh.create', $lopHocPhan) }}"
-                            class="btn btn-primary">
-                            <i class="bi bi-plus-circle"></i> Thêm lịch học
-                        </a>
+                        <div class="btn-group" role="group">
+                            <a href="{{ route('dao-tao.lop-hoc-phan.lich-chi-tiet', $lopHocPhan) }}"
+                                class="btn btn-info text-white">
+                                <i class="bi bi-calendar3"></i> Xem toàn bộ lịch
+                            </a>
+                            <a href="{{ route('dao-tao.lop-hoc-phan.lich-co-dinh.create', $lopHocPhan) }}"
+                                class="btn btn-primary">
+                                <i class="bi bi-plus-circle"></i> Thêm lịch học
+                            </a>
+                        </div>
                     </div>
                 </div>
                 <div class="card-body">
@@ -60,10 +66,11 @@
                                     <tr>
                                         <th width="5%">#</th>
                                         <th width="10%">Thứ</th>
-                                        <th width="15%">Ca học</th>
-                                        <th width="15%">Giờ học</th>
-                                        <th width="15%">Phòng</th>
-                                        <th width="20%">Giảng viên</th>
+                                        <th width="12%">Ngày dạy</th>
+                                        <th width="12%">Ca học</th>
+                                        <th width="12%">Giờ học</th>
+                                        <th width="12%">Phòng</th>
+                                        <th width="17%">Giảng viên</th>
                                         <th width="10%">Hình thức</th>
                                         <th width="10%">Thao tác</th>
                                     </tr>
@@ -73,6 +80,14 @@
                                         <tr>
                                             <td>{{ $index + 1 }}</td>
                                             <td><strong>{{ $lichHoc->ten_thu }}</strong></td>
+                                            <td>
+                                                @if(isset($lichHoc->ngay_day_dau_tien))
+                                                    <i class="bi bi-calendar-event"></i>
+                                                    <strong>{{ $lichHoc->ngay_day_dau_tien->format('d/m/Y') }}</strong>
+                                                @else
+                                                    <span class="text-muted">-</span>
+                                                @endif
+                                            </td>
                                             <td>
                                                 @if($lichHoc->caHoc)
                                                     <span class="badge bg-primary">

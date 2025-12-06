@@ -136,16 +136,21 @@
                     $tongTyLe = 0;
                     $soMonCoDiemDanh = 0;
                     
+                    $tongBuoiDiemDanhTatCa = 0;
                     foreach ($monHocs as $mh) {
-                        if (isset($mh->tong_buoi_hoc) && $mh->tong_buoi_hoc > 0) {
-                            $tongBuoiHocTatCa += $mh->tong_buoi_hoc;
-                            $stats = $mh->diem_danh_stats;
-                            if ($stats) {
-                                $tongCoMat += $stats->co_mat ?? 0;
-                                $tongVang += $stats->vang ?? 0;
-                                $tongDiTre += $stats->di_tre ?? 0;
-                                $tongNghiPhep += $stats->nghi_phep ?? 0;
-                            }
+                        $tongBuoiHocMon = $mh->tong_buoi_hoc ?? 0;
+                        $tongBuoiHocTatCa += $tongBuoiHocMon;
+                        
+                        $stats = $mh->diem_danh_stats ?? null;
+                        if ($stats) {
+                            $tongCoMat += $stats->co_mat ?? 0;
+                            $tongVang += $stats->vang ?? 0;
+                            $tongDiTre += $stats->di_tre ?? 0;
+                            $tongNghiPhep += $stats->nghi_phep ?? 0;
+                            $tongBuoiDiemDanhTatCa += $stats->tong_buoi_diem_danh ?? 0;
+                        }
+                        
+                        if ($tongBuoiHocMon > 0) {
                             $tongTyLe += $mh->ty_le_co_mat ?? 0;
                             $soMonCoDiemDanh++;
                         }
@@ -163,47 +168,82 @@
                     <div class="card-body">
                         <div class="row">
                             <div class="col-md-3">
-                                <div class="text-center p-3 bg-light rounded">
-                                    <h6 class="text-muted mb-2">Tổng số buổi học</h6>
-                                    <h3 class="mb-0 text-primary">{{ $tongBuoiHocTatCa }}</h3>
+                                <div class="text-center p-4 bg-primary bg-opacity-10 rounded border border-primary">
+                                    <h6 class="text-muted mb-2">
+                                        <i class="bi bi-calendar-check"></i> Tổng số buổi học
+                                    </h6>
+                                    <h2 class="mb-0 text-primary fw-bold">{{ $tongBuoiHocTatCa }}</h2>
+                                    <p class="text-muted mb-0 mt-2 small">
+                                        Đã điểm danh: <strong>{{ $tongBuoiDiemDanhTatCa }}</strong> / {{ $tongBuoiHocTatCa }}
+                                    </p>
                                 </div>
                             </div>
                             <div class="col-md-9">
-                                <div class="row">
+                                <div class="row g-3">
                                     <div class="col-md-3">
-                                        <div class="text-center p-3 bg-success bg-opacity-10 rounded mb-2">
-                                            <h6 class="text-muted mb-1">Có mặt</h6>
-                                            <h4 class="mb-0 text-success">{{ $tongCoMat }}</h4>
+                                        <div class="text-center p-3 bg-success bg-opacity-10 rounded border border-success">
+                                            <h6 class="text-muted mb-1">
+                                                <i class="bi bi-check-circle"></i> Có mặt
+                                            </h6>
+                                            <h4 class="mb-0 text-success fw-bold">{{ $tongCoMat }}</h4>
+                                            @if($tongBuoiHocTatCa > 0)
+                                                <small class="text-muted">
+                                                    {{ round(($tongCoMat / $tongBuoiHocTatCa) * 100, 1) }}%
+                                                </small>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div class="text-center p-3 bg-danger bg-opacity-10 rounded mb-2">
-                                            <h6 class="text-muted mb-1">Vắng</h6>
-                                            <h4 class="mb-0 text-danger">{{ $tongVang }}</h4>
+                                        <div class="text-center p-3 bg-danger bg-opacity-10 rounded border border-danger">
+                                            <h6 class="text-muted mb-1">
+                                                <i class="bi bi-x-circle"></i> Vắng
+                                            </h6>
+                                            <h4 class="mb-0 text-danger fw-bold">{{ $tongVang }}</h4>
+                                            @if($tongBuoiHocTatCa > 0)
+                                                <small class="text-muted">
+                                                    {{ round(($tongVang / $tongBuoiHocTatCa) * 100, 1) }}%
+                                                </small>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div class="text-center p-3 bg-warning bg-opacity-10 rounded mb-2">
-                                            <h6 class="text-muted mb-1">Đi trễ</h6>
-                                            <h4 class="mb-0 text-warning">{{ $tongDiTre }}</h4>
+                                        <div class="text-center p-3 bg-warning bg-opacity-10 rounded border border-warning">
+                                            <h6 class="text-muted mb-1">
+                                                <i class="bi bi-clock-history"></i> Đi trễ
+                                            </h6>
+                                            <h4 class="mb-0 text-warning fw-bold">{{ $tongDiTre }}</h4>
+                                            @if($tongBuoiHocTatCa > 0)
+                                                <small class="text-muted">
+                                                    {{ round(($tongDiTre / $tongBuoiHocTatCa) * 100, 1) }}%
+                                                </small>
+                                            @endif
                                         </div>
                                     </div>
                                     <div class="col-md-3">
-                                        <div class="text-center p-3 bg-info bg-opacity-10 rounded mb-2">
-                                            <h6 class="text-muted mb-1">Nghỉ phép</h6>
-                                            <h4 class="mb-0 text-info">{{ $tongNghiPhep }}</h4>
+                                        <div class="text-center p-3 bg-info bg-opacity-10 rounded border border-info">
+                                            <h6 class="text-muted mb-1">
+                                                <i class="bi bi-umbrella"></i> Nghỉ phép
+                                            </h6>
+                                            <h4 class="mb-0 text-info fw-bold">{{ $tongNghiPhep }}</h4>
+                                            @if($tongBuoiHocTatCa > 0)
+                                                <small class="text-muted">
+                                                    {{ round(($tongNghiPhep / $tongBuoiHocTatCa) * 100, 1) }}%
+                                                </small>
+                                            @endif
                                         </div>
                                     </div>
                                 </div>
-                                <div class="mt-3">
+                                <div class="mt-4">
                                     <div class="d-flex justify-content-between align-items-center mb-2">
-                                        <span class="text-muted">Tỷ lệ có mặt trung bình:</span>
-                                        <span class="badge bg-{{ $tyLeCoMatTong >= 80 ? 'success' : ($tyLeCoMatTong >= 60 ? 'warning' : 'danger') }} fs-6">
+                                        <span class="fw-semibold">
+                                            <i class="bi bi-graph-up"></i> Tỷ lệ có mặt trung bình:
+                                        </span>
+                                        <span class="badge bg-{{ $tyLeCoMatTong >= 80 ? 'success' : ($tyLeCoMatTong >= 60 ? 'warning' : 'danger') }} fs-6 px-3 py-2">
                                             {{ $tyLeCoMatTong }}%
                                         </span>
                                     </div>
-                                    <div class="progress" style="height: 25px;">
-                                        <div class="progress-bar bg-{{ $tyLeCoMatTong >= 80 ? 'success' : ($tyLeCoMatTong >= 60 ? 'warning' : 'danger') }}" 
+                                    <div class="progress" style="height: 30px;">
+                                        <div class="progress-bar bg-{{ $tyLeCoMatTong >= 80 ? 'success' : ($tyLeCoMatTong >= 60 ? 'warning' : 'danger') }} d-flex align-items-center justify-content-center fw-bold" 
                                              role="progressbar" 
                                              style="width: {{ $tyLeCoMatTong }}%"
                                              aria-valuenow="{{ $tyLeCoMatTong }}" 
@@ -305,32 +345,48 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            @if (isset($item->tong_buoi_hoc) && $item->tong_buoi_hoc > 0)
-                                                @php
-                                                    $stats = $item->diem_danh_stats;
-                                                    $coMat = $stats ? ($stats->co_mat ?? 0) : 0;
-                                                    $vang = $stats ? ($stats->vang ?? 0) : 0;
-                                                    $diTre = $stats ? ($stats->di_tre ?? 0) : 0;
-                                                    $nghiPhep = $stats ? ($stats->nghi_phep ?? 0) : 0;
-                                                    $tyLe = $item->ty_le_co_mat ?? 0;
-                                                @endphp
-                                                <div class="small">
-                                                    <div class="mb-1">
-                                                        <span class="text-success">✓ {{ $coMat }}</span> /
-                                                        <span class="text-danger">✗ {{ $vang }}</span> /
-                                                        <span class="text-warning">⏱ {{ $diTre }}</span> /
-                                                        <span class="text-info">☂ {{ $nghiPhep }}</span>
-                                                    </div>
-                                                    <div>
-                                                        <span class="badge bg-{{ $tyLe >= 80 ? 'success' : ($tyLe >= 60 ? 'warning' : 'danger') }}">
-                                                            {{ $tyLe }}%
-                                                        </span>
-                                                        <small class="text-muted">/ {{ $item->tong_buoi_hoc }} buổi</small>
-                                                    </div>
+                                            @php
+                                                $tongBuoiHoc = $item->tong_buoi_hoc ?? 0;
+                                                $stats = $item->diem_danh_stats ?? null;
+                                                $coMat = $stats ? ($stats->co_mat ?? 0) : 0;
+                                                $vang = $stats ? ($stats->vang ?? 0) : 0;
+                                                $diTre = $stats ? ($stats->di_tre ?? 0) : 0;
+                                                $nghiPhep = $stats ? ($stats->nghi_phep ?? 0) : 0;
+                                                $tongBuoiDiemDanh = $stats ? ($stats->tong_buoi_diem_danh ?? 0) : 0;
+                                                $tyLe = $item->ty_le_co_mat ?? 0;
+                                            @endphp
+                                            
+                                            <div>
+                                                <div class="mb-2">
+                                                    <strong class="text-primary fs-6">
+                                                        {{ $tongBuoiDiemDanh }} / {{ $tongBuoiHoc }}
+                                                    </strong>
+                                                    <small class="text-muted d-block">buổi điểm danh / tổng buổi học</small>
                                                 </div>
-                                            @else
-                                                <span class="text-muted">-</span>
-                                            @endif
+                                                @if ($tongBuoiDiemDanh > 0)
+                                                    <div class="d-flex justify-content-center gap-2 mb-2 flex-wrap">
+                                                        <span class="badge bg-success">
+                                                            <i class="bi bi-check-circle"></i> {{ $coMat }}
+                                                        </span>
+                                                        <span class="badge bg-danger">
+                                                            <i class="bi bi-x-circle"></i> {{ $vang }}
+                                                        </span>
+                                                        <span class="badge bg-warning">
+                                                            <i class="bi bi-clock-history"></i> {{ $diTre }}
+                                                        </span>
+                                                        <span class="badge bg-info">
+                                                            <i class="bi bi-umbrella"></i> {{ $nghiPhep }}
+                                                        </span>
+                                                    </div>
+                                                    @if ($tongBuoiHoc > 0 && $tyLe > 0)
+                                                        <div>
+                                                            <span class="badge bg-{{ $tyLe >= 80 ? 'success' : ($tyLe >= 60 ? 'warning' : 'danger') }} fs-6">
+                                                                Tỷ lệ: {{ $tyLe }}%
+                                                            </span>
+                                                        </div>
+                                                    @endif
+                                                @endif
+                                            </div>
                                         </td>
                                         <td>
                                             <a href="{{ route('sinh-vien.diem.show', $item->lopHocPhan->id) }}"

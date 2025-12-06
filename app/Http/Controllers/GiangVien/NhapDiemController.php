@@ -280,6 +280,23 @@ $duocPhanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $lopHocPhanId)
             ], 400);
         }
 
+        // Kiểm tra nếu là đầu điểm cuối kỳ - chỉ cho phép nhập khi đã mở gửi điểm lần 2
+        // (Trừ khi là đào tạo - đào tạo có thể nhập bất cứ lúc nào)
+        if (!$laDaoTao) {
+            $tenDauDiem = mb_strtolower($cauHinh->ten_dau_diem ?? '');
+            $laDauDiemCuoiKy = str_contains($tenDauDiem, 'cuối kỳ') || 
+                              str_contains($tenDauDiem, 'cuoi ky') || 
+                              str_contains($tenDauDiem, 'cuối kì') || 
+                              str_contains($tenDauDiem, 'cuoi ki');
+            
+            if ($laDauDiemCuoiKy && !$lopHocPhan->cho_phep_gui_diem_lan_2) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Đào tạo chưa mở gửi điểm lần 2 (cuối kỳ). Bạn chỉ có thể nhập điểm cuối kỳ sau khi đào tạo mở gửi điểm lần 2.'
+                ], 403);
+            }
+        }
+
         try {
             DB::beginTransaction();
 

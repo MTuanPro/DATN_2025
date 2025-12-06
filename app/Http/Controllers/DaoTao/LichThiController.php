@@ -297,7 +297,6 @@ class LichThiController extends Controller
         $lichThi->load([
             'lopHocPhan.monHoc', 
             'lopHocPhan.hocKy',
-            'lopHocPhan.lopHocPhanSinhViens.sinhVien.lopHanhChinh', 
             'hocKy',
             'phongThi', 
             'giamThi1', 
@@ -318,7 +317,7 @@ class LichThiController extends Controller
         $danhSachSinhVienDiThi = [];
 
         foreach ($lichThi->lopHocPhan->lopHocPhanSinhViens as $lhpsv) {
-            // 1. Kiểm tra chuyên cần (vắng quá 25% = có mặt < 75%)
+            // 1. Kiểm tra chuyên cần (vắng quá 20% = có mặt < 80%)
             $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
                 ->selectRaw('
                     COUNT(*) as tong_buoi_diem_danh,
@@ -336,7 +335,7 @@ class LichThiController extends Controller
                 ? round(($coMat / $tongBuoiHoc) * 100, 1) 
                 : 0;
             
-            $khongDatChuyenCan = $tyLeCoMat < 75;
+            $khongDatChuyenCan = $tyLeCoMat < 80;
 
             // 2. Kiểm tra điểm trung bình các đầu điểm < 5
             $diemTrungBinh = null;
@@ -412,7 +411,7 @@ class LichThiController extends Controller
         $lyDo = [];
 
         if ($khongDatChuyenCan) {
-            $lyDo[] = "Vắng quá 25% số buổi học (Tỷ lệ có mặt: {$tyLeCoMat}%)";
+            $lyDo[] = "Vắng quá 20% số buổi học (Tỷ lệ có mặt: {$tyLeCoMat}%)";
         }
 
         if ($khongDatDiem && $diemTrungBinh !== null) {
@@ -967,7 +966,7 @@ class LichThiController extends Controller
             'lopHocPhan.monHoc',
             'lopHocPhan.hocKy',
             'phongThi',
-            'lichThiSinhViens.sinhVien.lopHanhChinh',
+            'lichThiSinhViens.sinhVien',
             'lichThiSinhViens.phongThi'
         ]);
 

@@ -92,7 +92,7 @@
                                     $user = auth()->user();
                                     $sinhVienData = $user->sinhVien ?? \App\Models\DaoTao\SinhVien::where('user_id', $user->id)->first();
                                     $soCanhBao = $sinhVienData ? \App\Models\CanhBaoHocVu::where('sinh_vien_id', $sinhVienData->id)
-                                        ->where('da_xu_ly', false)
+                                        ->where('da_xem', false)
                                         ->count() : 0;
                                 @endphp
                                 @if($soCanhBao > 0)

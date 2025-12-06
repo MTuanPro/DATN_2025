@@ -155,13 +155,23 @@
                             </div>
 
                             <!-- Kết quả xử lý (chỉ hiển thị nếu trạng thái là đang/đã xử lý) -->
-                            <div class="form-group" id="ketQuaXuLyGroup" style="{{ in_array(old('trang_thai', $canhBao->trang_thai), ['dang_xu_ly', 'da_xu_ly']) ? '' : 'display:none;' }}">
-                                <label for="ket_qua_xu_ly" class="form-label">Kết quả xử lý</label>
-                                <textarea name="ket_qua_xu_ly" id="ket_qua_xu_ly" rows="3" class="form-control @error('ket_qua_xu_ly') is-invalid @enderror">{{ old('ket_qua_xu_ly', $canhBao->ket_qua_xu_ly) }}</textarea>
+                            <div class="form-group" id="ketQuaXuLyGroup" style="{{ in_array(old('trang_thai', $canhBao->trang_thai), ['dang_xu_ly', 'da_xu_ly']) ? 'display:block;' : 'display:none;' }}">
+                                <label for="ket_qua_xu_ly" class="form-label">
+                                    Kết quả xử lý 
+                                    <span id="ketQuaXuLyRequired" style="{{ old('trang_thai', $canhBao->trang_thai) == 'da_xu_ly' ? '' : 'display:none;' }}" class="text-danger">*</span>
+                                </label>
+                                <textarea name="ket_qua_xu_ly" id="ket_qua_xu_ly" rows="4" 
+                                    class="form-control @error('ket_qua_xu_ly') is-invalid @enderror"
+                                    placeholder="Nhập kết quả xử lý chi tiết...">{{ old('ket_qua_xu_ly', $canhBao->ket_qua_xu_ly) }}</textarea>
                                 @error('ket_qua_xu_ly')
                                 <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
-                                <small class="form-text text-muted">Mô tả chi tiết các biện pháp xử lý và kết quả</small>
+                                <small class="form-text text-muted">
+                                    <i class="bi bi-info-circle"></i> Mô tả chi tiết các biện pháp xử lý và kết quả. 
+                                    <strong class="text-danger" id="ketQuaXuLyWarning" style="{{ old('trang_thai', $canhBao->trang_thai) == 'da_xu_ly' ? '' : 'display:none;' }}">
+                                        Bắt buộc khi trạng thái là "Đã xử lý"
+                                    </strong>
+                                </small>
                             </div>
 
                             <!-- Ngày cảnh báo -->
@@ -297,19 +307,42 @@ document.addEventListener('DOMContentLoaded', function() {
     const ketQuaXuLyTextarea = document.getElementById('ket_qua_xu_ly');
 
     // Toggle kết quả xử lý field based on trạng thái
+    const ketQuaXuLyRequired = document.getElementById('ketQuaXuLyRequired');
+    const ketQuaXuLyWarning = document.getElementById('ketQuaXuLyWarning');
+    
     trangThaiSelect.addEventListener('change', function() {
         if (this.value === 'dang_xu_ly' || this.value === 'da_xu_ly') {
             ketQuaXuLyGroup.style.display = 'block';
+            // Scroll to field để người dùng thấy rõ
+            setTimeout(() => {
+                ketQuaXuLyGroup.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+            }, 100);
+            
             if (this.value === 'da_xu_ly') {
                 ketQuaXuLyTextarea.required = true;
+                ketQuaXuLyTextarea.setAttribute('required', 'required');
+                if (ketQuaXuLyRequired) ketQuaXuLyRequired.style.display = 'inline';
+                if (ketQuaXuLyWarning) ketQuaXuLyWarning.style.display = 'inline';
+                // Highlight field
+                ketQuaXuLyTextarea.classList.add('border-warning');
             } else {
                 ketQuaXuLyTextarea.required = false;
+                ketQuaXuLyTextarea.removeAttribute('required');
+                if (ketQuaXuLyRequired) ketQuaXuLyRequired.style.display = 'none';
+                if (ketQuaXuLyWarning) ketQuaXuLyWarning.style.display = 'none';
+                ketQuaXuLyTextarea.classList.remove('border-warning');
             }
         } else {
             ketQuaXuLyGroup.style.display = 'none';
             ketQuaXuLyTextarea.required = false;
+            ketQuaXuLyTextarea.removeAttribute('required');
+            if (ketQuaXuLyRequired) ketQuaXuLyRequired.style.display = 'none';
+            if (ketQuaXuLyWarning) ketQuaXuLyWarning.style.display = 'none';
         }
     });
+    
+    // Trigger change event on page load để set initial state
+    trangThaiSelect.dispatchEvent(new Event('change'));
 
     // Form validation
     const form = document.getElementById('editCanhBaoForm');

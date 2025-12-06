@@ -265,7 +265,7 @@ class BaoCaoController extends Controller
         $nganhs = Nganh::all();
         $khoaHocs = KhoaHoc::orderBy('nam_bat_dau', 'desc')->get();
 
-        $query = SinhVien::with(['khoaHoc', 'chuyenNganh.nganh.khoa', 'trangThaiHocTap', 'lopHanhChinh']);
+        $query = SinhVien::with(['khoaHoc', 'chuyenNganh.nganh.khoa', 'trangThaiHocTap']);
 
         // Filters
         if ($request->filled('khoa_id')) {
@@ -281,11 +281,12 @@ class BaoCaoController extends Controller
         if ($request->filled('khoa_hoc_id')) {
             $query->where('khoa_hoc_id', $request->khoa_hoc_id);
         }
-        if ($request->filled('lop')) {
-            $query->whereHas('lopHanhChinh', function($q) use ($request) {
-                $q->where('ten_lop', 'like', '%' . $request->lop . '%');
-            });
-        }
+        // TODO: Model LopHanhChinh chưa được tạo, comment lại filter theo lớp
+        // if ($request->filled('lop')) {
+        //     $query->whereHas('lopHanhChinh', function($q) use ($request) {
+        //         $q->where('ten_lop', 'like', '%' . $request->lop . '%');
+        //     });
+        // }
 
         $sinhViens = $query->paginate(50);
 

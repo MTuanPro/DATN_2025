@@ -5,7 +5,6 @@ namespace App\Http\Controllers\GiangVien;
 use App\Http\Controllers\Controller;
 use App\Models\CanhBaoHocVu;
 use App\Models\GiangVien;
-use App\Models\DaoTao\LopHanhChinh;
 use App\Models\DaoTao\SinhVien;
 use App\Models\LopHocPhan;
 use Illuminate\Http\Request;
@@ -48,7 +47,7 @@ class CanhBaoHocVuController extends Controller
 
         // Filter theo loại
         if ($request->filled('loai')) {
-            $query->where('loai', $request->loai);
+            $query->where('loai_canh_bao', $request->loai);
         }
 
         // Search theo tên/mã sinh viên
@@ -102,7 +101,6 @@ class CanhBaoHocVuController extends Controller
         // Lấy cảnh báo
         $canhBao = CanhBaoHocVu::with([
             'sinhVien.user',
-            'sinhVien.lopHanhChinh',
             'sinhVien.ketQuaHocTaps',
             'sinhVien.diemDanh',
             'nguoiTao',
@@ -147,15 +145,16 @@ class CanhBaoHocVuController extends Controller
         }
 
         // 2. Sinh viên trong lớp hành chính giảng viên làm chủ nhiệm
-        $lopChuNhiem = LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)
-            ->first();
-
-        if ($lopChuNhiem) {
-            $svTrongLopChuNhiem = SinhVien::where('lop_hanh_chinh_id', $lopChuNhiem->id)
-                ->pluck('id')
-                ->toArray();
-            $sinhVienIds = array_merge($sinhVienIds, $svTrongLopChuNhiem);
-        }
+        // TODO: Model LopHanhChinh chưa được tạo, comment lại phần này
+        // $lopChuNhiem = LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)
+        //     ->first();
+        // 
+        // if ($lopChuNhiem) {
+        //     $svTrongLopChuNhiem = SinhVien::where('lop_hanh_chinh_id', $lopChuNhiem->id)
+        //         ->pluck('id')
+        //         ->toArray();
+        //     $sinhVienIds = array_merge($sinhVienIds, $svTrongLopChuNhiem);
+        // }
 
         // Loại bỏ trùng lặp
         return array_unique($sinhVienIds);

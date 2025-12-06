@@ -27,6 +27,7 @@ class CanhBaoHocVu extends Model
         'nguoi_xu_ly_id',
         'trang_thai',
         'ket_qua_xu_ly',
+        'da_xem',
     ];
 
     protected $casts = [

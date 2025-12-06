@@ -66,6 +66,11 @@ class CanhBaoHocVuController extends Controller
                 ->with('error', 'Bạn không có quyền xem cảnh báo này!');
         }
 
+        // Đánh dấu cảnh báo đã được xem
+        if (!$canhBaoHocVu->da_xem) {
+            $canhBaoHocVu->update(['da_xem' => true]);
+        }
+
         $canhBaoHocVu->load(['hocKy', 'nguoiTao', 'nguoiXuLy', 'sinhVien']);
         $canhBao = $canhBaoHocVu; // Alias for view
 
