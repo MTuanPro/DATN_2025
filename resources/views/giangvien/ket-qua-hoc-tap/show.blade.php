@@ -345,7 +345,13 @@
                                             @endif
                                         </td>
                                         <td class="text-center">
-                                            @if ($lhpsv->diem_tong_ket)
+                                            @if ($lhpsv->ketQuaHocTap)
+                                                @if ($lhpsv->ketQuaHocTap->qua_mon)
+                                                    <span class="badge bg-success">Qua môn</span>
+                                                @else
+                                                    <span class="badge bg-danger">Trượt</span>
+                                                @endif
+                                            @elseif ($lhpsv->diem_tong_ket)
                                                 @if ($lhpsv->diem_tong_ket >= 4)
                                                     <span class="badge bg-success">Qua môn</span>
                                                 @else

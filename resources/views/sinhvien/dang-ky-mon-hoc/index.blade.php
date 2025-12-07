@@ -184,7 +184,8 @@
                                             // mà phải là "Đã qua môn" hoặc "Đang trượt"
                                             $laMonKyTruoc = $hocKyGoiY && $hocKyGoiY < $kyHienTai;
                                             
-                                            $daDangKy = in_array($monHoc->id, $monDaDangKy) && !$laMonKyTruoc;
+                                            // Kiểm tra đã đăng ký trong học kỳ hiện tại
+                                            $daDangKy = in_array($monHoc->id, $monDaDangKy);
                                             $daHoc = in_array($monHoc->id, $monDaHoc);
                                             $daQua = in_array($monHoc->id, $monDaQua);
                                             $dangTruot = in_array($monHoc->id, $monDangTruot ?? []);
@@ -231,21 +232,16 @@
                                                 @endif
                                             </td>
                                             <td>
-                                                @if ($dangTruot && !$daDangKy && !$lopHPs->isEmpty())
+                                                @if ($daQua)
+                                                    {{-- Môn đã qua - không cho đăng ký nữa --}}
+                                                    <span class="text-success">Đã qua môn</span>
+                                                @elseif ($dangTruot && !$daDangKy && !$lopHPs->isEmpty())
                                                     {{-- Môn đang trượt - hiển thị nút "Đăng ký học lại" --}}
                                                     <button type="button" class="btn btn-sm btn-warning btn-dang-ky-hoc-lai"
                                                         data-mon-hoc-id="{{ $monHoc->id }}"
                                                         data-ten-mon="{{ $monHoc->ten_mon }}"
                                                         data-tin-chi="{{ $monHoc->so_tin_chi }}">
                                                         <i class="bi bi-arrow-repeat"></i> Đăng ký học lại
-                                                    </button>
-                                                @elseif($daQua && !$daDangKy && !$lopHPs->isEmpty())
-                                                    {{-- Môn đã qua - hiển thị nút "Đăng ký học cải thiện điểm" --}}
-                                                    <button type="button" class="btn btn-sm btn-info btn-dang-ky-cai-thien"
-                                                        data-mon-hoc-id="{{ $monHoc->id }}"
-                                                        data-ten-mon="{{ $monHoc->ten_mon }}"
-                                                        data-tin-chi="{{ $monHoc->so_tin_chi }}">
-                                                        <i class="bi bi-graph-up-arrow"></i> Đăng ký học cải thiện điểm
                                                     </button>
                                                 @elseif(!$daQua && !$dangTruot && !$daDangKy && !$lopHPs->isEmpty())
                                                     {{-- Môn chưa học - hiển thị nút "Đăng ký" bình thường --}}

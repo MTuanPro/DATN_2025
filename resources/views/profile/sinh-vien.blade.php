@@ -123,6 +123,54 @@
                                                         <input type="text" class="form-control" name="ho_ten"
                                                             value="{{ old('ho_ten', $sinhVien->ho_ten) }}" required>
                                                     </div>
+                                                    
+                                                    {{-- Thông tin học vụ --}}
+                                                    <div class="col-12 mb-3">
+                                                        <h6 class="text-primary">Thông Tin Học Vụ</h6>
+                                                        <hr>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Khóa Học</label>
+                                                        <input type="text" class="form-control"
+                                                            value="{{ $sinhVien->khoaHoc->ten_khoa_hoc ?? 'Chưa xác định' }} ({{ $sinhVien->khoaHoc->nam_bat_dau ?? '' }}-{{ $sinhVien->khoaHoc->nam_ket_thuc ?? '' }})" disabled>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Kỳ Học Hiện Tại</label>
+                                                        <input type="text" class="form-control"
+                                                            value="Kỳ {{ $sinhVien->ky_hien_tai }}" disabled>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Ngành Học</label>
+                                                        <input type="text" class="form-control"
+                                                            value="{{ $sinhVien->nganh->ten_nganh ?? 'Chưa xác định' }}" disabled>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Chuyên Ngành</label>
+                                                        <input type="text" class="form-control"
+                                                            value="{{ $sinhVien->chuyenNganh->ten_chuyen_nganh ?? 'Chưa xác định' }}" disabled>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Khoa</label>
+                                                        <input type="text" class="form-control"
+                                                            value="{{ $sinhVien->nganh->khoa->ten_khoa ?? 'Chưa xác định' }}" disabled>
+                                                    </div>
+                                                    
+                                                    <div class="col-md-6 mb-3">
+                                                        <label class="form-label">Trạng Thái Học Tập</label>
+                                                        <input type="text" class="form-control"
+                                                            value="{{ $sinhVien->trangThaiHocTap->ten_trang_thai ?? 'Chưa xác định' }}" disabled>
+                                                    </div>
+                                                    
+                                                    {{-- Thông tin liên hệ --}}
+                                                    <div class="col-12 mb-3">
+                                                        <h6 class="text-primary">Thông Tin Liên Hệ</h6>
+                                                        <hr>
+                                                    </div>
 
                                                     <div class="col-md-6 mb-3">
                                                         <label class="form-label">Email <span

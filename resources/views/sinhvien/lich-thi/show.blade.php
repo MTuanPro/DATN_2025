@@ -131,15 +131,20 @@
                             <tr>
                                 <th>Thời gian còn lại:</th>
                                 <td>
-                                    @if($lichThi->ngay_thi < now()->toDateString())
+                                    @php
+                                        $ngayThi = \Carbon\Carbon::parse($lichThi->ngay_thi);
+                                        $hienTai = now()->startOfDay();
+                                        $soNgayConLai = $hienTai->diffInDays($ngayThi, false);
+                                    @endphp
+                                    @if($soNgayConLai < 0)
                                         <span class="badge bg-success">Đã thi</span>
-                                    @elseif($lichThi->ngay_thi->isToday())
+                                    @elseif($soNgayConLai == 0)
                                         <span class="badge bg-warning fs-6">
                                             <i class="bi bi-exclamation-circle"></i> HÔM NAY
                                         </span>
                                     @else
                                         <span class="badge bg-info fs-6">
-                                            Còn {{ $lichThi->ngay_thi->diffInDays(now()) }} ngày
+                                            Còn {{ $soNgayConLai }} ngày
                                         </span>
                                     @endif
                                 </td>

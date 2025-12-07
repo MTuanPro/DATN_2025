@@ -108,6 +108,17 @@
             </div>
         </section>
 
+        <!-- Thông báo lỗi từ session -->
+        @if (session('error'))
+            <section class="section">
+                <div class="alert alert-danger alert-dismissible fade show" role="alert">
+                    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Lỗi</h5>
+                    <p class="mb-0">{{ session('error') }}</p>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            </section>
+        @endif
+
         <!-- Cấu hình đầu điểm -->
         @if (!$cauHinhs->isEmpty())
             <section class="section">
@@ -280,10 +291,25 @@
                                                     @php
                                                         $key = $cauHinh->id . '_' . $cot;
                                                         $value = $diemMap[$key] ?? '';
+                                                        // Kiểm tra xem đầu điểm này có phải là cuối kỳ không
+                                                        $laDiemCuoiKy = stripos($cauHinh->ten_dau_diem, 'cuối kỳ') !== false || 
+                                                                        stripos($cauHinh->ten_dau_diem, 'cuoi ky') !== false;
+                                                        // Disable input cuối kỳ nếu chưa cho phép gửi lần 2
+                                                        $disableCuoiKy = $laDiemCuoiKy && !$choPhepGuiLan2;
                                                     @endphp
                                                     <td class="text-center">
                                                         @if ($daKhoaDiem || $daKetThuc || (isset($daDuyetDiem) && $daDuyetDiem))
                                                             {{ $value !== '' ? number_format($value, 2) : '-' }}
+                                                        @elseif ($disableCuoiKy)
+                                                            <input type="number"
+                                                                class="form-control form-control-sm text-center diem-input"
+                                                                min="0" max="10" step="0.01"
+                                                                data-sv-id="{{ $lhpsv->id }}"
+                                                                data-cau-hinh-id="{{ $cauHinh->id }}"
+                                                                data-cot-diem="{{ $cot }}"
+                                                                value="{{ $value }}" placeholder="-"
+                                                                disabled
+                                                                title="Chỉ có thể nhập điểm cuối kỳ sau khi đào tạo mở gửi điểm lần 2">
                                                         @else
                                                             <input type="number"
                                                                 class="form-control form-control-sm text-center diem-input"
@@ -402,16 +428,18 @@
                 padding: 4px !important;
             }
         </style>
+        @php
+            $cauHinhData = $cauHinhs->map(function ($cauHinh) {
+                return [
+                    'id' => $cauHinh->id,
+                    'ty_le' => (float) $cauHinh->ty_le,
+                    'so_cot' => (int) $cauHinh->so_cot,
+                ];
+            })->values();
+        @endphp
         <script>
             // Cấu hình đầu điểm từ PHP
-            const cauHinhs = @json(
-                $cauHinhs->map(function ($cauHinh) {
-                        return [
-                            'id' => $cauHinh->id,
-                            'ty_le' => (float) $cauHinh->ty_le,
-                            'so_cot' => (int) $cauHinh->so_cot,
-                        ];
-                    })->values());
+            const cauHinhs = @json($cauHinhData);
 
             // Tính điểm TK tạm thời dựa trên điểm đã nhập
             function tinhDiemTKTamThoi(svId) {

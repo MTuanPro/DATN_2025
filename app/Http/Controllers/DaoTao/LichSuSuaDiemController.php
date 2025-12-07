@@ -65,6 +65,9 @@ class LichSuSuaDiemController extends Controller
             });
         }
 
+        // Chỉ lấy những bản ghi có điểm thay đổi (điểm cũ khác điểm mới)
+        $query->whereRaw('diem_cu != diem_moi');
+
         $lichSu = $query->orderBy('created_at', 'desc')->paginate(50);
 
         // Lấy danh sách học kỳ để filter
@@ -109,6 +112,9 @@ class LichSuSuaDiemController extends Controller
         if ($request->filled('loai_thao_tac')) {
             $query->where('loai_thao_tac', $request->loai_thao_tac);
         }
+
+        // Chỉ lấy những bản ghi có điểm thay đổi (điểm cũ khác điểm mới)
+        $query->whereRaw('diem_cu != diem_moi');
 
         $lichSu = $query->orderBy('created_at', 'desc')->paginate(30);
 

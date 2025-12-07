@@ -763,7 +763,15 @@
                                                         @endif
                                                     </td>
                                                     <td class="text-center">
-                                                        @if ($lhpsv->diem_tong_ket)
+                                                        @if ($lhpsv->ketQuaHocTap)
+                                                            @if ($lhpsv->ketQuaHocTap->qua_mon)
+                                                                <span class="badge bg-success"><i
+                                                                        class="bi bi-check-circle"></i> Qua môn</span>
+                                                            @else
+                                                                <span class="badge bg-danger"><i
+                                                                        class="bi bi-x-circle"></i> Trượt</span>
+                                                            @endif
+                                                        @elseif ($lhpsv->diem_tong_ket)
                                                             @if ($lhpsv->diem_tong_ket >= 4)
                                                                 <span class="badge bg-success"><i
                                                                         class="bi bi-check-circle"></i> Qua môn</span>

@@ -1097,6 +1097,20 @@ class NhapDiemController extends Controller
         // Lấy thông tin lớp học phần
         $lopHocPhan = LopHocPhan::with(['monHoc', 'hocKy'])->find($lopHocPhanId);
 
+        // Kiểm tra số buổi học và số buổi điểm danh
+        $tongSoBuoiHoc = \App\Models\LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhanId)->count();
+        $soBuoiDaDiemDanh = \App\Models\DiemDanh::whereHas('lopHocPhanSinhVien', function ($q) use ($lopHocPhanId) {
+            $q->where('lop_hoc_phan_id', $lopHocPhanId);
+        })
+            ->distinct('lich_hoc_chi_tiet_id')
+            ->count('lich_hoc_chi_tiet_id');
+
+        // Nếu chưa điểm danh đủ số buổi, không cho phép xuất danh sách thi
+        if ($soBuoiDaDiemDanh < $tongSoBuoiHoc) {
+            return redirect()->route('giangvien.nhap-diem.show', $lopHocPhanId)
+                ->with('error', "Chưa thể xuất danh sách thi. Lớp học cần điểm danh đủ {$tongSoBuoiHoc} buổi (hiện tại đã điểm danh {$soBuoiDaDiemDanh}/{$tongSoBuoiHoc} buổi).");
+        }
+
         // Lấy cấu hình đầu điểm
         $cauHinhs = CauHinhDauDiem::where('lop_hoc_phan_id', $lopHocPhanId)
             ->orderBy('id')
@@ -1152,18 +1166,22 @@ class NhapDiemController extends Controller
             $diemTrungBinh = $tongTyLe > 0 ? $tongDiem / $tongTyLe : 0;
 
             // 2. Kiểm tra tỷ lệ vắng
-            // Đếm tổng số buổi đã có điểm danh (unique theo lich_hoc_chi_tiet_id) của TẤT CẢ sinh viên trong lớp
-            $tongBuoiDiemDanh = \App\Models\DiemDanh::whereHas('lopHocPhanSinhVien', function ($q) use ($lopHocPhanId) {
-                $q->where('lop_hoc_phan_id', $lopHocPhanId);
-            })
-                ->distinct('lich_hoc_chi_tiet_id')
-                ->count('lich_hoc_chi_tiet_id');
+            // Lấy tổng số buổi học dự kiến của lớp
+            $tongSoBuoiHocDuKien = \App\Models\LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhanId)
+                ->count();
+            
+            // Đếm số buổi học đã diễn ra (để tính tỷ lệ vắng chính xác)
+            $soBuoiHocDaDienRa = \App\Models\LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhanId)
+                ->whereDate('ngay_hoc', '<=', now())
+                ->count();
 
             $soBuoiVang = \App\Models\DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
                 ->where('trang_thai', 'vang')
                 ->count();
 
-            $tyLeVang = $tongBuoiDiemDanh > 0 ? ($soBuoiVang / $tongBuoiDiemDanh) * 100 : 0;
+            // Tính tỷ lệ vắng dựa trên số buổi đã diễn ra, nếu chưa có buổi nào thì dựa trên tổng số buổi dự kiến
+            $soBuoiTinhTyLe = $soBuoiHocDaDienRa > 0 ? $soBuoiHocDaDienRa : $tongSoBuoiHocDuKien;
+            $tyLeVang = $soBuoiTinhTyLe > 0 ? ($soBuoiVang / $soBuoiTinhTyLe) * 100 : 0;
 
             // 3. Xác định đủ điều kiện hay không
             $duDieuKien = $diemTrungBinh >= 5 && $tyLeVang <= 20;
@@ -1172,7 +1190,7 @@ class NhapDiemController extends Controller
                 'lhpsv' => $lhpsv,
                 'diem_trung_binh' => round($diemTrungBinh, 2),
                 'so_buoi_vang' => $soBuoiVang,
-                'tong_buoi' => $tongBuoiDiemDanh,
+                'tong_buoi' => $tongSoBuoiHocDuKien,
                 'ty_le_vang' => round($tyLeVang, 2),
                 'du_dieu_kien' => $duDieuKien,
                 'ly_do' => []

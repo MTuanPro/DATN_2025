@@ -359,10 +359,10 @@
                                             
                                             <div>
                                                 <div class="mb-2">
-                                                    <strong class="text-primary fs-6">
-                                                        {{ $tongBuoiDiemDanh }} / {{ $tongBuoiHoc }}
+                                                    <strong class="text-success fs-6">
+                                                        {{ $coMat }} / {{ $tongBuoiHoc }}
                                                     </strong>
-                                                    <small class="text-muted d-block">buổi điểm danh / tổng buổi học</small>
+                                                    <small class="text-muted d-block">buổi có mặt / tổng buổi học</small>
                                                 </div>
                                                 @if ($tongBuoiDiemDanh > 0)
                                                     <div class="d-flex justify-content-center gap-2 mb-2 flex-wrap">
