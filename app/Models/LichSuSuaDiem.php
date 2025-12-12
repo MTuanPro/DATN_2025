@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class LichSuSuaDiem extends Model
 {
@@ -18,76 +19,32 @@ class LichSuSuaDiem extends Model
         'nguoi_sua_id',
         'loai_thao_tac',
         'ly_do',
-        'ghi_chu',
     ];
 
     protected $casts = [
-        'cot_diem' => 'integer',
-        'diem_cu' => 'float',
-        'diem_moi' => 'float',
+        'diem_cu' => 'decimal:2',
+        'diem_moi' => 'decimal:2',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    /**
-     * Relationship: Điểm đã nhập
-     */
-    public function nhapDiem()
+    public function nhapDiem(): BelongsTo
     {
         return $this->belongsTo(NhapDiem::class, 'nhap_diem_id');
     }
 
-    /**
-     * Relationship: Sinh viên trong lớp học phần
-     */
-    public function lopHocPhanSinhVien()
+    public function lopHocPhanSinhVien(): BelongsTo
     {
         return $this->belongsTo(LopHocPhanSinhVien::class, 'lop_hoc_phan_sinh_vien_id');
     }
 
-    /**
-     * Relationship: Cấu hình đầu điểm
-     */
-    public function cauHinh()
+    public function cauHinh(): BelongsTo
     {
         return $this->belongsTo(CauHinhDauDiem::class, 'cau_hinh_id');
     }
 
-    /**
-     * Relationship: Người sửa điểm (Giảng viên)
-     */
-    public function nguoiSua()
+    public function nguoiSua(): BelongsTo
     {
-        return $this->belongsTo(User::class, 'nguoi_sua_id');
-    }
-
-    /**
-     * Lấy sinh viên
-     */
-    public function sinhVien()
-    {
-        return $this->hasOneThrough(
-            SinhVien::class,
-            LopHocPhanSinhVien::class,
-            'id',
-            'id',
-            'lop_hoc_phan_sinh_vien_id',
-            'sinh_vien_id'
-        );
-    }
-
-    /**
-     * Lấy lớp học phần
-     */
-    public function lopHocPhan()
-    {
-        return $this->hasOneThrough(
-            LopHocPhan::class,
-            LopHocPhanSinhVien::class,
-            'id',
-            'id',
-            'lop_hoc_phan_sinh_vien_id',
-            'lop_hoc_phan_id'
-        );
+        return $this->belongsTo(GiangVien::class, 'nguoi_sua_id');
     }
 }

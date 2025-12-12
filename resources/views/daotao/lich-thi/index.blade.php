@@ -169,6 +169,9 @@
                                         <a href="{{ route('dao-tao.lich-thi.show', $lichThi) }}" class="btn btn-sm btn-info" title="Xem">
                                             <i class="bi bi-eye"></i>
                                         </a>
+                                        <a href="{{ route('dao-tao.lich-thi.export', ['lich_thi_id' => $lichThi->id]) }}" class="btn btn-sm btn-success" title="Xuất Excel">
+                                            <i class="bi bi-file-earmark-excel"></i>
+                                        </a>
                                         <a href="{{ route('dao-tao.lich-thi.edit', $lichThi) }}" class="btn btn-sm btn-warning" title="Sửa">
                                             <i class="bi bi-pencil"></i>
                                         </a>

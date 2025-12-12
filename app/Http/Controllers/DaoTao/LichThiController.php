@@ -765,11 +765,220 @@ class LichThiController extends Controller
      */
     public function export(Request $request)
     {
-        // TODO: Implement export Excel/PDF
-        // Có thể sử dụng Laravel Excel hoặc DomPDF
+        $request->validate([
+            'lich_thi_id' => 'required|exists:lich_thi,id'
+        ]);
 
-        return redirect()->back()
-            ->with('info', 'Chức năng xuất file đang được phát triển!');
+        $lichThi = LichThi::with([
+            'lopHocPhan.monHoc',
+            'lopHocPhan.hocKy',
+            'lopHocPhan.lopHocPhanSinhViens.sinhVien.user',
+            'phongThi',
+            'caHoc',
+            'giamThi1',
+            'giamThi2',
+        ])->findOrFail($request->lich_thi_id);
+
+        $monHoc = $lichThi->lopHocPhan->monHoc;
+        $hocKy = $lichThi->lopHocPhan->hocKy;
+
+        // Lấy TẤT CẢ sinh viên trong lớp học phần (bao gồm cả sinh viên đã rút)
+        $lopHocPhanSinhViens = \App\Models\LopHocPhanSinhVien::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->with(['sinhVien.user'])
+            ->get();
+
+        // Kiểm tra điều kiện dự thi cho từng sinh viên
+        $tongBuoi = \App\Models\DiemDanh::whereHas('lopHocPhanSinhVien', function ($q) use ($lichThi) {
+            $q->where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id);
+        })->distinct('lich_hoc_chi_tiet_id')->count('lich_hoc_chi_tiet_id');
+
+        $cauHinhs = \App\Models\CauHinhDauDiem::where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->orderBy('id')
+            ->get();
+
+        $danhSachSinhVien = [];
+        foreach ($lopHocPhanSinhViens as $lhpsv) {
+            // Kiểm tra chuyên cần
+            $buoiCoMat = \App\Models\DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
+                ->where('trang_thai', 'co_mat')
+                ->count();
+            
+            $tyLeCoMat = $tongBuoi > 0 ? round(($buoiCoMat / $tongBuoi) * 100, 1) : 100;
+            $khongDatChuyenCan = $tyLeCoMat < 80;
+
+            // Kiểm tra điểm
+            $diemTrungBinh = null;
+            $khongDatDiem = false;
+            
+            if ($cauHinhs->isNotEmpty()) {
+                $tongDiem = 0;
+                $tongTyLe = 0;
+                $coDiem = false;
+
+                foreach ($cauHinhs as $cauHinh) {
+                    $diems = \App\Models\NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
+                        ->where('cau_hinh_id', $cauHinh->id)
+                        ->get();
+
+                    if ($diems->isEmpty()) continue;
+
+                    $coDiem = true;
+                    $diemTrungBinhDauDiem = $diems->avg('diem_so');
+
+                    if ($diemTrungBinhDauDiem !== null) {
+                        $tongDiem += $diemTrungBinhDauDiem * ($cauHinh->ty_le / 100);
+                        $tongTyLe += $cauHinh->ty_le;
+                    }
+                }
+
+                if ($coDiem && $tongTyLe > 0) {
+                    $diemTrungBinh = $tongTyLe < 100 
+                        ? round(($tongDiem / $tongTyLe) * 100, 2) 
+                        : round($tongDiem, 2);
+                    $khongDatDiem = $diemTrungBinh < 5;
+                }
+            }
+
+            $khongDuocDiThi = $khongDatChuyenCan || $khongDatDiem;
+            
+            // Lấy thông tin phân phòng nếu có
+            $lichThiSv = \App\Models\LichThiSinhVien::where('lich_thi_id', $lichThi->id)
+                ->where('sinh_vien_id', $lhpsv->sinh_vien_id)
+                ->with('phongThi')
+                ->first();
+
+            $danhSachSinhVien[] = [
+                'lhpsv' => $lhpsv,
+                'lichThiSv' => $lichThiSv,
+                'khong_duoc_di_thi' => $khongDuocDiThi,
+                'ty_le_co_mat' => $tyLeCoMat,
+                'diem_trung_binh' => $diemTrungBinh,
+            ];
+        }
+
+        // Sắp xếp theo MSSV
+        usort($danhSachSinhVien, function($a, $b) {
+            return strcmp($a['lhpsv']->sinhVien->ma_sinh_vien, $b['lhpsv']->sinhVien->ma_sinh_vien);
+        });
+
+        // Tạo tên file
+        $tenMon = \Illuminate\Support\Str::slug($monHoc->ten_mon);
+        $ngayThi = \Carbon\Carbon::parse($lichThi->ngay_thi)->format('d-m-Y');
+        $filename = "danh-sach-du-dieu-kien-thi-{$tenMon}-{$ngayThi}.csv";
+
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
+        ];
+
+        $callback = function() use ($lichThi, $monHoc, $hocKy, $danhSachSinhVien) {
+            $file = fopen('php://output', 'w');
+            
+            // UTF-8 BOM for Excel
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+
+            // Xác định kỳ học
+            $kyHoc = 'BLOCK 1';
+            $namHoc = substr($hocKy->nam_hoc, 0, 4);
+            if (stripos($hocKy->ten_hoc_ky, '1') !== false || stripos($hocKy->ten_hoc_ky, 'I') !== false) {
+                $kyHoc = 'BLOCK 1 - KỲ FALL ' . $namHoc;
+            } elseif (stripos($hocKy->ten_hoc_ky, '2') !== false || stripos($hocKy->ten_hoc_ky, 'II') !== false) {
+                $kyHoc = 'BLOCK 2 - KỲ SPRING ' . $namHoc;
+            } elseif (stripos($hocKy->ten_hoc_ky, '3') !== false || stripos($hocKy->ten_hoc_ky, 'III') !== false) {
+                $kyHoc = 'BLOCK 3 - KỲ SUMMER ' . $namHoc;
+            }
+
+            // Header section
+            fputcsv($file, ['DANH SÁCH SINH VIÊN ĐI CẤM THI']);
+            fputcsv($file, [$kyHoc]);
+            fputcsv($file, ['Môn thi: ' . $monHoc->ten_mon . ' (' . $monHoc->ma_mon . ')']);
+            fputcsv($file, []); // Empty row
+
+            // Table header - giống ảnh mẫu
+            fputcsv($file, [
+                'TT',
+                'MSSV',
+                'Họ tên',
+                'Lớp',
+                'Ngày thi',
+                'Giờ thi',
+                'Phòng thi',
+                'Lần thi',
+                'Trạng thái',
+                'Ghi chú',
+                'Chữ ký'
+            ]);
+
+            // Data rows
+            $stt = 1;
+            foreach ($danhSachSinhVien as $item) {
+                $lhpsv = $item['lhpsv'];
+                $lichThiSv = $item['lichThiSv'];
+                $sv = $lhpsv->sinhVien;
+                
+                // Lấy tên lớp
+                $tenLop = $lichThi->lopHocPhan->ma_lop_hp ?? '';
+
+                // Format ngày thi và giờ thi
+                $ngayThi = \Carbon\Carbon::parse($lichThi->ngay_thi)->format('d-m-Y');
+                $gioThi = $lichThi->gio_bat_dau . ' đến ' . $lichThi->gio_ket_thuc;
+
+                // Lần thi
+                $lanThi = 'Bảo vệ';
+                if ($lichThi->loai_thi == 'giua_ky') {
+                    $lanThi = '1';
+                } elseif ($lichThi->loai_thi == 'cuoi_ky') {
+                    $lanThi = 'Bảo vệ';
+                } elseif ($lichThi->loai_thi == 'thi_lai') {
+                    $lanThi = '2';
+                }
+
+                // Phòng thi
+                $phongThi = $lichThiSv && $lichThiSv->phongThi 
+                    ? $lichThiSv->phongThi->ten_phong 
+                    : ($lichThi->phongThi ? $lichThi->phongThi->ten_phong : '');
+
+                // Trạng thái
+                $trangThai = '';
+                $ghiChu = '';
+                
+                if ($item['khong_duoc_di_thi']) {
+                    $trangThai = '1'; // Số 1 đánh dấu cấm thi
+                    
+                    $lyDo = [];
+                    if ($item['ty_le_co_mat'] < 80) {
+                        $lyDo[] = "Cấm thi do trượt điểm danh";
+                    }
+                    if ($item['diem_trung_binh'] !== null && $item['diem_trung_binh'] < 5) {
+                        if (empty($lyDo)) {
+                            $lyDo[] = "Cấm thi do trượt điểm danh";
+                        }
+                    }
+                    $ghiChu = implode(', ', $lyDo);
+                } else {
+                    $trangThai = ''; // Để trống nếu đủ điều kiện
+                    $ghiChu = '';
+                }
+
+                fputcsv($file, [
+                    $stt++,
+                    $sv->ma_sinh_vien ?? '',
+                    $sv->ho_ten ?? '',
+                    $tenLop,
+                    $ngayThi,
+                    $gioThi,
+                    $phongThi,
+                    $lanThi,
+                    $trangThai,
+                    $ghiChu,
+                    '' // Cột chữ ký để trống
+                ]);
+            }
+
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
     }
 
     /**

@@ -1166,22 +1166,17 @@ class NhapDiemController extends Controller
             $diemTrungBinh = $tongTyLe > 0 ? $tongDiem / $tongTyLe : 0;
 
             // 2. Kiểm tra tỷ lệ vắng
-            // Lấy tổng số buổi học dự kiến của lớp
-            $tongSoBuoiHocDuKien = \App\Models\LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhanId)
+            // Đếm tổng số buổi đã điểm danh cho sinh viên này
+            $tongSoBuoiDiemDanh = \App\Models\DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
                 ->count();
             
-            // Đếm số buổi học đã diễn ra (để tính tỷ lệ vắng chính xác)
-            $soBuoiHocDaDienRa = \App\Models\LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhanId)
-                ->whereDate('ngay_hoc', '<=', now())
-                ->count();
-
+            // Đếm số buổi vắng
             $soBuoiVang = \App\Models\DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)
                 ->where('trang_thai', 'vang')
                 ->count();
 
-            // Tính tỷ lệ vắng dựa trên số buổi đã diễn ra, nếu chưa có buổi nào thì dựa trên tổng số buổi dự kiến
-            $soBuoiTinhTyLe = $soBuoiHocDaDienRa > 0 ? $soBuoiHocDaDienRa : $tongSoBuoiHocDuKien;
-            $tyLeVang = $soBuoiTinhTyLe > 0 ? ($soBuoiVang / $soBuoiTinhTyLe) * 100 : 0;
+            // Tính tỷ lệ vắng = (số buổi vắng / tổng số buổi đã điểm danh) * 100
+            $tyLeVang = $tongSoBuoiDiemDanh > 0 ? ($soBuoiVang / $tongSoBuoiDiemDanh) * 100 : 0;
 
             // 3. Xác định đủ điều kiện hay không
             $duDieuKien = $diemTrungBinh >= 5 && $tyLeVang <= 20;
@@ -1190,7 +1185,7 @@ class NhapDiemController extends Controller
                 'lhpsv' => $lhpsv,
                 'diem_trung_binh' => round($diemTrungBinh, 2),
                 'so_buoi_vang' => $soBuoiVang,
-                'tong_buoi' => $tongSoBuoiHocDuKien,
+                'tong_buoi' => $tongSoBuoiDiemDanh,
                 'ty_le_vang' => round($tyLeVang, 2),
                 'du_dieu_kien' => $duDieuKien,
                 'ly_do' => []

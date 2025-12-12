@@ -80,8 +80,11 @@
         <!-- Điều kiện đi thi -->
         <section class="section">
             <div class="card">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0"><i class="bi bi-clipboard-check"></i> Điều kiện đủ để đi thi</h5>
+                <div class="card-header bg-info text-white d-flex justify-content-between align-items-center">
+                    <h5 class="mb-0 text-white"><i class="bi bi-clipboard-check"></i> Điều kiện đủ để đi thi</h5>
+                    <button onclick="exportExcel('tat-ca')" class="btn btn-light btn-sm">
+                        <i class="bi bi-file-earmark-excel"></i> Xuất tất cả (2 sheet)
+                    </button>
                 </div>
                 <div class="card-body">
                     <div class="alert alert-info mb-0">
@@ -396,6 +399,36 @@
 
             // Xuất Excel
             function exportExcel(type) {
+                if (type === 'tat-ca') {
+                    // Lấy thông tin lịch thi cuối kỳ
+                    const lichThiCuoiKy = @json($lichThis->where('loai_thi', 'cuoi_ky')->first());
+                    
+                    // Xuất cả 2 danh sách vào 1 file Excel với 2 sheet
+                    const wb = XLSX.utils.book_new();
+                    
+                    // Sheet 1: Đủ điều kiện
+                    const duDieuKien = @json($danhSachDuDieuKien);
+                    if (duDieuKien.length > 0) {
+                        const data1 = createExcelData(duDieuKien, lichThiCuoiKy, 'Đủ điều kiện');
+                        const ws1 = XLSX.utils.aoa_to_sheet(data1);
+                        XLSX.utils.book_append_sheet(wb, ws1, 'Đủ điều kiện');
+                    }
+                    
+                    // Sheet 2: Không đủ điều kiện
+                    const khongDuDieuKien = @json($danhSachKhongDuDieuKien);
+                    if (khongDuDieuKien.length > 0) {
+                        const data2 = createExcelData(khongDuDieuKien, lichThiCuoiKy, 'Không đủ điều kiện');
+                        const ws2 = XLSX.utils.aoa_to_sheet(data2);
+                        XLSX.utils.book_append_sheet(wb, ws2, 'Không đủ điều kiện');
+                    }
+                    
+                    // Xuất file
+                    const fileName = `Danh_sach_thi_{{ $lopHocPhan->ma_lop_hp }}_${new Date().getTime()}.xlsx`;
+                    XLSX.writeFile(wb, fileName);
+                    return;
+                }
+                
+                // Xuất từng loại riêng
                 const tableId = type === 'du-dieu-kien' ? 'table-du-dieu-kien' : 'table-khong-du-dieu-kien';
                 const table = document.getElementById(tableId);
 
@@ -415,6 +448,73 @@
                 // Xuất file
                 const fileName = `Danh_sach_${type}_{{ $lopHocPhan->ma_lop_hp }}_${new Date().getTime()}.xlsx`;
                 XLSX.writeFile(wb, fileName);
+            }
+
+            // Tạo dữ liệu Excel với đầy đủ cột
+            function createExcelData(danhSach, lichThi, loai) {
+                const data = [];
+                
+                // Header
+                const monHoc = @json($lopHocPhan->monHoc);
+                const hocKy = @json($lopHocPhan->hocKy);
+                
+                // Xác định kỳ
+                let kyHoc = 'BLOCK 1 - KỲ FALL ' + hocKy.nam_hoc.substring(0, 4);
+                if (hocKy.ten_hoc_ky.includes('2') || hocKy.ten_hoc_ky.includes('II')) {
+                    kyHoc = 'BLOCK 2 - KỲ SPRING ' + hocKy.nam_hoc.substring(0, 4);
+                } else if (hocKy.ten_hoc_ky.includes('3') || hocKy.ten_hoc_ky.includes('III')) {
+                    kyHoc = 'BLOCK 3 - KỲ SUMMER ' + hocKy.nam_hoc.substring(0, 4);
+                }
+                
+                data.push(['DANH SÁCH SINH VIÊN ĐI CẤM THI']);
+                data.push([kyHoc]);
+                data.push(['Môn thi: ' + monHoc.ten_mon + ' (' + monHoc.ma_mon + ')']);
+                data.push([]);
+                
+                // Table header
+                data.push(['TT', 'MSSV', 'Họ tên', 'Lớp', 'Ngày thi', 'Giờ thi', 'Phòng thi', 'Lần thi', 'Trạng thái', 'Ghi chú', 'Chữ ký']);
+                
+                // Data rows
+                danhSach.forEach((item, index) => {
+                    const sv = item.lhpsv.sinh_vien;
+                    const lop = '{{ $lopHocPhan->ma_lop_hp }}';
+                    
+                    let ngayThi = '';
+                    let gioThi = '';
+                    let phongThi = '';
+                    let lanThi = 'Bảo vệ';
+                    
+                    if (lichThi) {
+                        ngayThi = new Date(lichThi.ngay_thi).toLocaleDateString('vi-VN');
+                        gioThi = lichThi.gio_bat_dau + ' đến ' + lichThi.gio_ket_thuc;
+                        phongThi = lichThi.phong_thi ? lichThi.phong_thi.ten_phong : '';
+                        
+                        if (lichThi.loai_thi === 'giua_ky') {
+                            lanThi = '1';
+                        } else if (lichThi.loai_thi === 'thi_lai') {
+                            lanThi = '2';
+                        }
+                    }
+                    
+                    const trangThai = loai === 'Đủ điều kiện' ? '' : '1';
+                    const ghiChu = loai === 'Đủ điều kiện' ? '' : 'Cấm thi do trượt điểm danh';
+                    
+                    data.push([
+                        index + 1,
+                        sv.ma_sinh_vien,
+                        sv.ho_ten,
+                        lop,
+                        ngayThi,
+                        gioThi,
+                        phongThi,
+                        lanThi,
+                        trangThai,
+                        ghiChu,
+                        ''
+                    ]);
+                });
+                
+                return data;
             }
 
             // In danh sách
