@@ -7,7 +7,6 @@ use App\Models\ThongBao;
 use App\Models\NguoiNhanThongBao;
 use App\Models\User;
 use App\Models\DaoTao\SinhVien;
-use App\Models\DaoTao\LopHanhChinh;
 use App\Models\LopHocPhan;
 use App\Models\GiangVien;
 use App\Services\NotificationService;
@@ -72,7 +71,7 @@ class ThongBaoController extends Controller
     public function create()
     {
         // Lấy danh sách để chọn đối tượng cụ thể
-        $lopHanhChinhs = LopHanhChinh::orderBy('ma_lop')->get();
+        $lopHanhChinhs = collect(); // Lớp hành chính đã bị xóa khỏi hệ thống
         $lopHocPhans = LopHocPhan::with('monHoc')
             ->where('trang_thai_lop', 'mo_dang_ky')
             ->orderBy('ma_lop_hp')
@@ -187,7 +186,7 @@ class ThongBaoController extends Controller
             abort(403, 'Bạn không có quyền sửa thông báo này');
         }
         
-        $lopHanhChinhs = LopHanhChinh::orderBy('ma_lop')->get();
+        $lopHanhChinhs = collect(); // Lớp hành chính đã bị xóa khỏi hệ thống
         $lopHocPhans = LopHocPhan::with('monHoc')
             ->where('trang_thai_lop', 'mo_dang_ky')
             ->orderBy('ma_lop_hp')
