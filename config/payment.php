@@ -35,4 +35,27 @@ return [
         'webhook_url' => env('PAYOS_WEBHOOK_URL', env('APP_URL') . '/api/payment/payos/webhook'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Casso Configuration
+    |--------------------------------------------------------------------------
+    |
+    | Configuration for Casso payment gateway integration
+    | Casso là hệ thống nhận thông báo khi có tiền chuyển vào tài khoản ngân hàng
+    | Get your credentials from: https://developer.casso.vn/
+    |
+    */
+
+    'casso' => [
+        'api_key' => env('CASSO_API_KEY', ''),
+        // Webhook URL mà Casso sẽ gửi thông báo về
+        'webhook_url' => env('CASSO_WEBHOOK_URL', env('APP_URL') . '/payment/casso/webhook'),
+        // API endpoint
+        'api_endpoint' => env('CASSO_API_ENDPOINT', 'https://oauth.casso.vn/v2'),
+        // Tiền tố mã đơn hàng trong nội dung chuyển khoản (ví dụ: HP123)
+        'memo_prefix' => env('CASSO_MEMO_PREFIX', 'HP'),
+        // Số tiền chênh lệch tối đa được chấp nhận (VND)
+        'acceptable_difference' => env('CASSO_ACCEPTABLE_DIFFERENCE', 10000),
+    ],
+
 ];

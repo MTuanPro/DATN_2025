@@ -609,6 +609,10 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/{id}/zalopay-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showZaloPayPayment'])->name('zalopay-payment');
         Route::post('/{id}/zalopay-initiate', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'initiateZaloPayPayment'])->name('zalopay-initiate');
         Route::post('/{id}/zalopay-check-status', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'checkZaloPayStatus'])->name('zalopay-check-status');
+
+        // Casso Payment routes
+        Route::get('/{id}/casso-payment', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'showCassoPayment'])->name('casso-payment');
+        Route::post('/{id}/casso-check-status', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'checkCassoStatus'])->name('casso-check-status');
     });
 
     // PHASE 9.5: Xuất dữ liệu (Export Data)
@@ -659,6 +663,9 @@ Route::prefix('payment')->name('payment.')->group(function () {
     // ZaloPay Payment Callback (public routes - no auth required)
     Route::get('/zalopay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'zaloPayCallback'])->name('zalopay.callback');
     Route::post('/zalopay/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'zaloPayIpn'])->name('zalopay.ipn');
+
+    // Casso Webhook (public route - no auth required)
+    Route::post('/casso/webhook', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'cassoWebhook'])->name('casso.webhook');
 });
 
 // ZaloPay Redirect Handler (public route)
@@ -671,3 +678,55 @@ Route::get('/zalopay-redirect', function (\Illuminate\Http\Request $request) {
     // Redirect to callback with all parameters
     return redirect()->route('payment.zalopay.callback', $request->all());
 })->name('zalopay.redirect-handler');
+
+// Casso Test Route (for debugging - remove in production)
+Route::get('/test-casso/{hocPhiId}', function ($hocPhiId) {
+    try {
+        $cassoService = new \App\Services\CassoService();
+        $paymentMemo = $cassoService->generatePaymentMemo($hocPhiId);
+        
+        // Get transactions
+        $result = $cassoService->getTransactions([
+            'fromDate' => now()->subDays(30)->format('Y-m-d'),
+            'toDate' => now()->format('Y-m-d')
+        ]);
+        
+        // Parse transactions
+        $transactions = [];
+        if (isset($result['data'])) {
+            if (isset($result['data']['records']) && is_array($result['data']['records'])) {
+                $transactions = $result['data']['records'];
+            } elseif (is_array($result['data'])) {
+                $transactions = $result['data'];
+            }
+        }
+        
+        // Find matching transactions
+        $matching = [];
+        foreach ($transactions as $tx) {
+            $desc = $tx['description'] ?? '';
+            if (stripos($desc, $paymentMemo) !== false) {
+                $matching[] = [
+                    'id' => $tx['id'] ?? 'unknown',
+                    'description' => $desc,
+                    'amount' => $tx['amount'] ?? 0,
+                    'when' => $tx['when'] ?? 'unknown'
+                ];
+            }
+        }
+        
+        return response()->json([
+            'hoc_phi_id' => $hocPhiId,
+            'payment_memo' => $paymentMemo,
+            'total_transactions' => count($transactions),
+            'matching_transactions' => $matching,
+            'first_3_transactions' => array_slice($transactions, 0, 3),
+            'api_response' => $result
+        ], 200, [], JSON_PRETTY_PRINT | JSON_UNESCAPED_UNICODE);
+    } catch (\Exception $e) {
+        return response()->json([
+            'error' => $e->getMessage(),
+            'trace' => $e->getTraceAsString()
+        ], 500);
+    }
+})->name('test.casso');
