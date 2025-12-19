@@ -19,6 +19,7 @@ class VaiTroSeeder extends Seeder
                 'ten_vai_tro' => 'Quản trị viên',
                 'mo_ta' => 'Quản trị hệ thống, quản lý tài khoản, phân quyền',
                 'muc_do_uu_tien' => 1,
+                'actor' => 'admin', // Nhóm Admin
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -27,6 +28,7 @@ class VaiTroSeeder extends Seeder
                 'ten_vai_tro' => 'Trưởng phòng Đào tạo',
                 'mo_ta' => 'Quản lý toàn bộ hoạt động đào tạo, phê duyệt các quyết định quan trọng',
                 'muc_do_uu_tien' => 2,
+                'actor' => 'dao_tao', // Nhóm Phòng đào tạo
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -35,6 +37,7 @@ class VaiTroSeeder extends Seeder
                 'ten_vai_tro' => 'Nhân viên Đào tạo',
                 'mo_ta' => 'Thực hiện các nghiệp vụ đào tạo hàng ngày',
                 'muc_do_uu_tien' => 3,
+                'actor' => 'dao_tao', // Nhóm Phòng đào tạo
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -43,6 +46,7 @@ class VaiTroSeeder extends Seeder
                 'ten_vai_tro' => 'Giảng viên',
                 'mo_ta' => 'Giảng dạy, chấm điểm, quản lý lớp học',
                 'muc_do_uu_tien' => 4,
+                'actor' => 'giang_vien', // Nhóm Giảng viên
                 'created_at' => now(),
                 'updated_at' => now(),
             ],
@@ -51,6 +55,7 @@ class VaiTroSeeder extends Seeder
                 'ten_vai_tro' => 'Sinh viên',
                 'mo_ta' => 'Học tập, đăng ký học phần, xem kết quả học tập',
                 'muc_do_uu_tien' => 5,
+                'actor' => 'sinh_vien', // Nhóm Sinh viên
                 'created_at' => now(),
                 'updated_at' => now(),
             ],

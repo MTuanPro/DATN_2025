@@ -208,7 +208,7 @@
                                     <td>{{ $sv->chuyenNganh->nganh->khoa->ten_khoa ?? 'N/A' }}</td>
                                     <td>{{ $sv->chuyenNganh->nganh->ten_nganh ?? 'N/A' }}</td>
                                     <td>{{ $sv->khoaHoc->ten_khoa_hoc ?? 'N/A' }}</td>
-                                    <td>{{ $sv->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                                    <td>{{ 'N/A' }}</td>
                                     <td>
                                         @php
                                             $trangThai = $sv->trangThaiHocTap->ten_trang_thai ?? 'N/A';

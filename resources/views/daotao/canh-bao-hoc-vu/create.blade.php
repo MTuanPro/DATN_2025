@@ -66,7 +66,7 @@
                                     <option value="">-- Chọn sinh viên --</option>
                                     @foreach($sinhViens as $sv)
                                     <option value="{{ $sv->id }}" {{ old('sinh_vien_id') == $sv->id ? 'selected' : '' }}>
-                                        {{ $sv->ma_sinh_vien }} - {{ $sv->ho_ten }} ({{ $sv->lop_hanh_chinh }})
+                                        {{ $sv->ma_sinh_vien }} - {{ $sv->ho_ten }} ({{ 'N/A' }})
                                     </option>
                                     @endforeach
                                 </select>

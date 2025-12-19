@@ -105,7 +105,7 @@
             </tr>
             <tr>
                 <td><strong>Lớp:</strong></td>
-                <td>{{ $sinhVien->lopHanhChinh->ma_lop ?? 'N/A' }}</td>
+                <td>{{ 'N/A' }}</td>
                 <td><strong>Ngày in:</strong></td>
                 <td>{{ now()->format('d/m/Y H:i') }}</td>
             </tr>

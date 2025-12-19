@@ -39,17 +39,28 @@
                     <!-- Search Form -->
                     <form method="GET" action="{{ route('admin.quyen.index') }}" class="mb-3">
                         <div class="row">
-                            <div class="col-md-5">
+                            <div class="col-md-4">
                                 <input type="text" name="search" class="form-control"
                                     placeholder="Tìm kiếm theo mã, tên hoặc mô tả..." value="{{ request('search') }}">
                             </div>
-                            <div class="col-md-5">
+                            <div class="col-md-3">
                                 <select name="nhom_quyen_id" class="form-select">
                                     <option value="">-- Tất cả nhóm quyền --</option>
                                     @foreach ($nhomQuyens as $nhomQuyen)
                                         <option value="{{ $nhomQuyen->id }}"
                                             {{ request('nhom_quyen_id') == $nhomQuyen->id ? 'selected' : '' }}>
                                             {{ $nhomQuyen->ten_nhom }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                            </div>
+                            <div class="col-md-3">
+                                <select name="actor" class="form-select">
+                                    <option value="">-- Tất cả Actor --</option>
+                                    @foreach ($actors as $key => $label)
+                                        <option value="{{ $key }}"
+                                            {{ request('actor') == $key ? 'selected' : '' }}>
+                                            {{ $label }}
                                         </option>
                                     @endforeach
                                 </select>
@@ -83,6 +94,7 @@
                                     <th>Mã quyền</th>
                                     <th>Tên quyền</th>
                                     <th>Nhóm quyền</th>
+                                    <th>Áp dụng cho Actor</th>
                                     <th>Mô tả</th>
                                     <th>Thao tác</th>
                                 </tr>
@@ -97,10 +109,29 @@
                                                 {{ $quyen->nhomQuyen->ten_nhom }}
                                             </span>
                                         </td>
-                                        <td>{{ Str::limit($quyen->mo_ta, 40) }}</td>
+                                        <td>
+                                            @forelse($quyen->actors as $actorRecord)
+                                                @php
+                                                    $actorColors = [
+                                                        'admin' => 'danger',
+                                                        'dao_tao' => 'info',
+                                                        'giang_vien' => 'warning',
+                                                        'sinh_vien' => 'success',
+                                                    ];
+                                                    $color = $actorColors[$actorRecord->actor] ?? 'secondary';
+                                                @endphp
+                                                <span class="badge bg-{{ $color }}">
+                                                    {{ $actors[$actorRecord->actor] ?? $actorRecord->actor }}
+                                                </span>
+                                            @empty
+                                                <span class="badge bg-secondary">Chưa gán</span>
+                                            @endforelse
+                                        </td>
+                                        <td>{{ Str::limit($quyen->mo_ta, 30) }}</td>
                                         <td>
                                             <div class="btn-group" role="group">
-                                                <a href="{{ route('admin.quyen.edit', $quyen) }}" class="btn btn-sm btn-warning">
+                                                <a href="{{ route('admin.quyen.edit', $quyen) }}"
+                                                    class="btn btn-sm btn-warning">
                                                     <i class="bi bi-pencil"></i>
                                                 </a>
                                                 <form action="{{ route('admin.quyen.destroy', $quyen) }}" method="POST"
@@ -116,7 +147,7 @@
                                     </tr>
                                 @empty
                                     <tr>
-                                        <td colspan="5" class="text-center text-muted py-4">
+                                        <td colspan="6" class="text-center text-muted py-4">
                                             <i class="bi bi-inbox fs-1"></i>
                                             <p class="mt-2">Không có quyền nào</p>
                                         </td>
@@ -135,5 +166,3 @@
         </section>
     </div>
 @endsection
-
-

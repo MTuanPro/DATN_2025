@@ -136,8 +136,8 @@
                                         <option value="giang_vien"
                                             {{ request('doi_tuong') == 'giang_vien' ? 'selected' : '' }}>Giảng viên
                                         </option>
-                                        <option value="lop_hanh_chinh"
-                                            {{ request('doi_tuong') == 'lop_hanh_chinh' ? 'selected' : '' }}>Lớp hành chính
+                                        <option value="nganh"
+                                            {{ request('doi_tuong') == 'nganh' ? 'selected' : '' }}>Lớp hành chính
                                         </option>
                                         <option value="lop_hoc_phan"
                                             {{ request('doi_tuong') == 'lop_hoc_phan' ? 'selected' : '' }}>Lớp học phần
@@ -220,7 +220,7 @@
                                                     Sinh viên
                                                 @elseif($tb->doi_tuong == 'giang_vien')
                                                     Giảng viên
-                                                @elseif($tb->doi_tuong == 'lop_hanh_chinh')
+                                                @elseif($tb->doi_tuong == 'nganh')
                                                     Lớp HC
                                                 @else
                                                     Lớp HP

@@ -88,6 +88,49 @@
                                 </div>
 
                                 <div class="form-group mb-3">
+                                    <label class="form-label">
+                                        Áp dụng cho nhóm người dùng (Actor) <span class="text-danger">*</span>
+                                    </label>
+                                    <p class="text-muted small mb-2">
+                                        <i class="bi bi-info-circle"></i>
+                                        Chọn các nhóm người dùng có thể được gán quyền này.
+                                    </p>
+                                    <div class="card border">
+                                        <div class="card-body">
+                                            <div class="row">
+                                                @foreach ($actors as $key => $label)
+                                                    <div class="col-md-6">
+                                                        <div class="form-check mb-2">
+                                                            <input
+                                                                class="form-check-input @error('actors') is-invalid @enderror"
+                                                                type="checkbox" name="actors[]" value="{{ $key }}"
+                                                                id="actor_{{ $key }}"
+                                                                {{ in_array($key, old('actors', $quyen->actor_keys)) ? 'checked' : '' }}>
+                                                            <label class="form-check-label"
+                                                                for="actor_{{ $key }}">
+                                                                {{ $label }}
+                                                                @if ($key == 'admin')
+                                                                    <small class="text-muted">(Quản lý hệ thống)</small>
+                                                                @elseif ($key == 'dao_tao')
+                                                                    <small class="text-muted">(Nghiệp vụ đào tạo)</small>
+                                                                @elseif ($key == 'giang_vien')
+                                                                    <small class="text-muted">(Giảng dạy, điểm)</small>
+                                                                @elseif ($key == 'sinh_vien')
+                                                                    <small class="text-muted">(Xem thông tin)</small>
+                                                                @endif
+                                                            </label>
+                                                        </div>
+                                                    </div>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
+                                    @error('actors')
+                                        <div class="text-danger small mt-1">{{ $message }}</div>
+                                    @enderror
+                                </div>
+
+                                <div class="form-group mb-3">
                                     <label for="mo_ta" class="form-label">Mô tả</label>
                                     <textarea class="form-control @error('mo_ta') is-invalid @enderror" id="mo_ta" name="mo_ta" rows="4"
                                         placeholder="Mô tả về quyền này...">{{ old('mo_ta', $quyen->mo_ta) }}</textarea>
@@ -136,5 +179,3 @@
         </section>
     </div>
 @endsection
-
-

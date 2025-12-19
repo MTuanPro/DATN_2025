@@ -17,7 +17,7 @@ use App\Models\DaoTao\PhongHoc;
 use App\Models\DaoTao\Khoa;
 use App\Models\DaoTao\Nganh;
 use App\Models\DaoTao\KhoaHoc;
-use App\Models\DaoTao\LopHanhChinh;
+// use App\Models\DaoTao\nganh; // Đã xóa lớp hành chính
 use App\Models\HocKy;
 use Illuminate\Support\Facades\DB;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -189,7 +189,7 @@ class BaoCaoController extends Controller
      *      + khoaHoc
      *      + chuyenNganh.nganh.khoa (nested)
      *      + trangThaiHocTap
-     *      + lopHanhChinh
+     *      + nganh
      * 3. Áp dụng filters theo request:
      *    a. khoa_id:
      *       - whereHas chuyenNganh.nganh
@@ -200,7 +200,7 @@ class BaoCaoController extends Controller
      *    c. khoa_hoc_id:
      *       - Direct where khoa_hoc_id
      *    d. lop (tên lớp):
-     *       - whereHas lopHanhChinh
+     *       - whereHas nganh
      *       - LIKE search ten_lop
      * 4. Paginate: 50 sinh viên/page
      * 5. Tính thống kê tổng quan:
@@ -269,21 +269,21 @@ class BaoCaoController extends Controller
 
         // Filters
         if ($request->filled('khoa_id')) {
-            $query->whereHas('chuyenNganh.nganh', function($q) use ($request) {
+            $query->whereHas('chuyenNganh.nganh', function ($q) use ($request) {
                 $q->where('khoa_id', $request->khoa_id);
             });
         }
         if ($request->filled('nganh_id')) {
-            $query->whereHas('chuyenNganh', function($q) use ($request) {
+            $query->whereHas('chuyenNganh', function ($q) use ($request) {
                 $q->where('nganh_id', $request->nganh_id);
             });
         }
         if ($request->filled('khoa_hoc_id')) {
             $query->where('khoa_hoc_id', $request->khoa_hoc_id);
         }
-        // TODO: Model LopHanhChinh chưa được tạo, comment lại filter theo lớp
+        // TODO: Model nganh chưa được tạo, comment lại filter theo lớp
         // if ($request->filled('lop')) {
-        //     $query->whereHas('lopHanhChinh', function($q) use ($request) {
+        //     $query->whereHas('nganh', function($q) use ($request) {
         //         $q->where('ten_lop', 'like', '%' . $request->lop . '%');
         //     });
         // }
@@ -293,13 +293,13 @@ class BaoCaoController extends Controller
         // Thống kê tổng quan
         $statistics = [
             'total' => SinhVien::count(),
-            'hoc' => SinhVien::whereHas('trangThaiHocTap', function($q) {
+            'hoc' => SinhVien::whereHas('trangThaiHocTap', function ($q) {
                 $q->where('ten_trang_thai', 'Đang học');
             })->count(),
-            'bao_luu' => SinhVien::whereHas('trangThaiHocTap', function($q) {
+            'bao_luu' => SinhVien::whereHas('trangThaiHocTap', function ($q) {
                 $q->where('ten_trang_thai', 'Bảo lưu');
             })->count(),
-            'thoi_hoc' => SinhVien::whereHas('trangThaiHocTap', function($q) {
+            'thoi_hoc' => SinhVien::whereHas('trangThaiHocTap', function ($q) {
                 $q->where('ten_trang_thai', 'Thôi học');
             })->count(),
         ];
@@ -408,7 +408,7 @@ class BaoCaoController extends Controller
         $query = KetQuaHocTap::with(['lopHocPhanSinhVien.lopHocPhan.monHoc']);
 
         if ($request->filled('hoc_ky_id')) {
-            $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function($q) use ($request) {
+            $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function ($q) use ($request) {
                 $q->where('hoc_ky_id', $request->hoc_ky_id);
             });
         }
@@ -440,9 +440,9 @@ class BaoCaoController extends Controller
         // Detailed results by course
         $detailedResults = DB::table('lop_hoc_phan')
             ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
-            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+            ->leftJoin('lop_hoc_phan_giang_vien', function ($join) {
                 $join->on('lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
-                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+                    ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
             })
             ->leftJoin('giang_vien', 'lop_hoc_phan_giang_vien.giang_vien_id', '=', 'giang_vien.id')
             ->leftJoin('lop_hoc_phan_sinh_vien', 'lop_hoc_phan.id', '=', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id')
@@ -480,9 +480,9 @@ class BaoCaoController extends Controller
         // Attendance data by class
         $attendanceData = DB::table('lop_hoc_phan')
             ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
-            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+            ->leftJoin('lop_hoc_phan_giang_vien', function ($join) {
                 $join->on('lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
-                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+                    ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
             })
             ->leftJoin('giang_vien', 'lop_hoc_phan_giang_vien.giang_vien_id', '=', 'giang_vien.id')
             ->leftJoin('lop_hoc_phan_sinh_vien', 'lop_hoc_phan.id', '=', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id')
@@ -579,9 +579,9 @@ class BaoCaoController extends Controller
         // Registration by class
         $registrationByClass = DB::table('lop_hoc_phan')
             ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
-            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+            ->leftJoin('lop_hoc_phan_giang_vien', function ($join) {
                 $join->on('lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
-                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+                    ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
             })
             ->leftJoin('giang_vien', 'lop_hoc_phan_giang_vien.giang_vien_id', '=', 'giang_vien.id')
             ->leftJoin('lop_hoc_phan_sinh_vien', 'lop_hoc_phan.id', '=', 'lop_hoc_phan_sinh_vien.lop_hoc_phan_id')
@@ -621,9 +621,9 @@ class BaoCaoController extends Controller
         // Class assignments
         $classAssignments = DB::table('lop_hoc_phan')
             ->join('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
-            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+            ->leftJoin('lop_hoc_phan_giang_vien', function ($join) {
                 $join->on('lop_hoc_phan.id', '=', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id')
-                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+                    ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
             })
             ->leftJoin('giang_vien', 'lop_hoc_phan_giang_vien.giang_vien_id', '=', 'giang_vien.id')
             ->select(
@@ -650,9 +650,9 @@ class BaoCaoController extends Controller
         // Workload data
         $workloadData = DB::table('giang_vien')
             ->leftJoin('khoa', 'giang_vien.khoa_id', '=', 'khoa.id')
-            ->leftJoin('lop_hoc_phan_giang_vien', function($join) {
+            ->leftJoin('lop_hoc_phan_giang_vien', function ($join) {
                 $join->on('giang_vien.id', '=', 'lop_hoc_phan_giang_vien.giang_vien_id')
-                     ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
+                    ->where('lop_hoc_phan_giang_vien.vai_tro', '=', 'giang_vien_chinh');
             })
             ->leftJoin('lop_hoc_phan', 'lop_hoc_phan_giang_vien.lop_hoc_phan_id', '=', 'lop_hoc_phan.id')
             ->leftJoin('mon_hoc', 'lop_hoc_phan.mon_hoc_id', '=', 'mon_hoc.id')
@@ -755,7 +755,7 @@ class BaoCaoController extends Controller
     public function exportExcel(Request $request)
     {
         $loaiBaoCao = $request->input('loai', 'sinh-vien');
-        
+
         $spreadsheet = new Spreadsheet();
         $sheet = $spreadsheet->getActiveSheet();
 
@@ -805,19 +805,19 @@ class BaoCaoController extends Controller
                 $sheet->setCellValue('D' . $row, 'Khoa');
                 $sheet->setCellValue('E' . $row, 'Ngành');
                 $sheet->setCellValue('F' . $row, 'Trạng thái');
-                
+
                 $this->styleHeaderRow($sheet, $row, 'A', 'F');
                 $row++;
 
                 $query = SinhVien::with(['chuyenNganh.nganh.khoa', 'trangThaiHocTap']);
-                
+
                 if ($khoaId) {
-                    $query->whereHas('chuyenNganh.nganh', function($q) use ($khoaId) {
+                    $query->whereHas('chuyenNganh.nganh', function ($q) use ($khoaId) {
                         $q->where('khoa_id', $khoaId);
                     });
                 }
                 if ($nganhId) {
-                    $query->whereHas('chuyenNganh', function($q) use ($nganhId) {
+                    $query->whereHas('chuyenNganh', function ($q) use ($nganhId) {
                         $q->where('nganh_id', $nganhId);
                     });
                 }
@@ -843,14 +843,14 @@ class BaoCaoController extends Controller
                 $sheet->setCellValue('D' . $row, 'Môn học');
                 $sheet->setCellValue('E' . $row, 'Điểm TB');
                 $sheet->setCellValue('F' . $row, 'Kết quả');
-                
+
                 $this->styleHeaderRow($sheet, $row, 'A', 'F');
                 $row++;
 
                 $query = KetQuaHocTap::with(['lopHocPhanSinhVien.sinhVien', 'lopHocPhanSinhVien.lopHocPhan.monHoc']);
-                
+
                 if ($hocKyId) {
-                    $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function($q) use ($hocKyId) {
+                    $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function ($q) use ($hocKyId) {
                         $q->where('hoc_ky_id', $hocKyId);
                     });
                 }
@@ -876,14 +876,14 @@ class BaoCaoController extends Controller
                 $sheet->setCellValue('D' . $row, 'Lớp HP');
                 $sheet->setCellValue('E' . $row, 'Ngày học');
                 $sheet->setCellValue('F' . $row, 'Trạng thái');
-                
+
                 $this->styleHeaderRow($sheet, $row, 'A', 'F');
                 $row++;
 
                 $query = DiemDanh::with(['sinhVien', 'lichHocChiTiet.lopHocPhan']);
-                
+
                 if ($tuNgay && $denNgay) {
-                    $query->whereHas('lichHocChiTiet', function($q) use ($tuNgay, $denNgay) {
+                    $query->whereHas('lichHocChiTiet', function ($q) use ($tuNgay, $denNgay) {
                         $q->whereBetween('ngay_hoc', [$tuNgay, $denNgay]);
                     });
                 }
@@ -909,12 +909,12 @@ class BaoCaoController extends Controller
                 $sheet->setCellValue('D' . $row, 'Học kỳ');
                 $sheet->setCellValue('E' . $row, 'Tổng phí');
                 $sheet->setCellValue('F' . $row, 'Đã đóng');
-                
+
                 $this->styleHeaderRow($sheet, $row, 'A', 'F');
                 $row++;
 
                 $query = HocPhiHocKy::with(['sinhVien', 'hocKy']);
-                
+
                 if ($hocKyId) {
                     $query->where('hoc_ky_id', $hocKyId);
                 }
@@ -940,12 +940,12 @@ class BaoCaoController extends Controller
                 $sheet->setCellValue('D' . $row, 'Loại cảnh báo');
                 $sheet->setCellValue('E' . $row, 'Mức độ');
                 $sheet->setCellValue('F' . $row, 'Ngày cảnh báo');
-                
+
                 $this->styleHeaderRow($sheet, $row, 'A', 'F');
                 $row++;
 
                 $query = CanhBaoHocVu::with(['sinhVien', 'hocKy']);
-                
+
                 if ($hocKyId) {
                     $query->where('hoc_ky_id', $hocKyId);
                 }
@@ -985,11 +985,11 @@ class BaoCaoController extends Controller
         // Export
         $writer = new Xlsx($spreadsheet);
         $fileName = 'bao_cao_' . $loaiBaoCao . '_' . now()->format('YmdHis') . '.xlsx';
-        
+
         header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
         header('Content-Disposition: attachment;filename="' . $fileName . '"');
         header('Cache-Control: max-age=0');
-        
+
         $writer->save('php://output');
         exit;
     }
@@ -1028,14 +1028,14 @@ class BaoCaoController extends Controller
         switch ($loaiBaoCao) {
             case 'sinh-vien':
                 $query = SinhVien::with(['chuyenNganh.nganh.khoa', 'trangThaiHocTap']);
-                
+
                 if ($khoaId) {
-                    $query->whereHas('chuyenNganh.nganh', function($q) use ($khoaId) {
+                    $query->whereHas('chuyenNganh.nganh', function ($q) use ($khoaId) {
                         $q->where('khoa_id', $khoaId);
                     });
                 }
                 if ($nganhId) {
-                    $query->whereHas('chuyenNganh', function($q) use ($nganhId) {
+                    $query->whereHas('chuyenNganh', function ($q) use ($nganhId) {
                         $q->where('nganh_id', $nganhId);
                     });
                 }
@@ -1045,9 +1045,9 @@ class BaoCaoController extends Controller
 
             case 'ket-qua':
                 $query = KetQuaHocTap::with(['lopHocPhanSinhVien.sinhVien', 'lopHocPhanSinhVien.lopHocPhan.monHoc']);
-                
+
                 if ($hocKyId) {
-                    $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function($q) use ($hocKyId) {
+                    $query->whereHas('lopHocPhanSinhVien.lopHocPhan', function ($q) use ($hocKyId) {
                         $q->where('hoc_ky_id', $hocKyId);
                     });
                 }
@@ -1057,9 +1057,9 @@ class BaoCaoController extends Controller
 
             case 'diem-danh':
                 $query = DiemDanh::with(['sinhVien', 'lichHocChiTiet.lopHocPhan']);
-                
+
                 if ($tuNgay && $denNgay) {
-                    $query->whereHas('lichHocChiTiet', function($q) use ($tuNgay, $denNgay) {
+                    $query->whereHas('lichHocChiTiet', function ($q) use ($tuNgay, $denNgay) {
                         $q->whereBetween('ngay_hoc', [$tuNgay, $denNgay]);
                     });
                 }
@@ -1069,7 +1069,7 @@ class BaoCaoController extends Controller
 
             case 'hoc-phi':
                 $query = HocPhiHocKy::with(['sinhVien', 'hocKy']);
-                
+
                 if ($hocKyId) {
                     $query->where('hoc_ky_id', $hocKyId);
                 }
@@ -1079,7 +1079,7 @@ class BaoCaoController extends Controller
 
             case 'canh-bao':
                 $query = CanhBaoHocVu::with(['sinhVien', 'hocKy']);
-                
+
                 if ($hocKyId) {
                     $query->where('hoc_ky_id', $hocKyId);
                 }
@@ -1094,9 +1094,9 @@ class BaoCaoController extends Controller
 
         $pdf = Pdf::loadView('daotao.bao-cao.pdf', $data);
         $pdf->setPaper('a4', 'portrait');
-        
+
         $fileName = 'bao_cao_' . $loaiBaoCao . '_' . now()->format('YmdHis') . '.pdf';
-        
+
         return $pdf->download($fileName);
     }
 
@@ -1106,7 +1106,7 @@ class BaoCaoController extends Controller
     private function styleHeaderRow($sheet, $row, $startCol, $endCol)
     {
         $range = $startCol . $row . ':' . $endCol . $row;
-        
+
         $sheet->getStyle($range)->getFont()->setBold(true);
         $sheet->getStyle($range)->getFill()
             ->setFillType(Fill::FILL_SOLID)

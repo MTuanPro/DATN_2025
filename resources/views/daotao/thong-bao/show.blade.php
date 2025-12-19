@@ -211,7 +211,7 @@
                                         Sinh viên
                                     @elseif($thongBao->doi_tuong == 'giang_vien')
                                         Giảng viên
-                                    @elseif($thongBao->doi_tuong == 'lop_hanh_chinh')
+                                    @elseif($thongBao->doi_tuong == 'nganh')
                                         Lớp hành chính
                                     @elseif($thongBao->doi_tuong == 'lop_hoc_phan')
                                         Lớp học phần

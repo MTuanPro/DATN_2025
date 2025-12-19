@@ -13,6 +13,17 @@ class VaiTro extends Model
         'ten_vai_tro',
         'mo_ta',
         'muc_do_uu_tien',
+        'actor',
+    ];
+
+    /**
+     * Các actor hợp lệ trong hệ thống
+     */
+    public const ACTORS = [
+        'admin' => 'Quản trị viên',
+        'dao_tao' => 'Phòng đào tạo',
+        'giang_vien' => 'Giảng viên',
+        'sinh_vien' => 'Sinh viên',
     ];
 
     /**

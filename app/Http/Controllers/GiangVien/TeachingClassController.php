@@ -371,7 +371,7 @@ class TeachingClassController extends Controller
                 'ho_ten' => $sinhVien->ho_ten,
                 'email' => $sinhVien->email,
                 'so_dien_thoai' => $sinhVien->so_dien_thoai,
-                'lop_hanh_chinh' => 'N/A', // Lớp hành chính đã được xóa
+                'nganh' => 'N/A', // Lớp hành chính đã được xóa
                 'ngay_sinh' => $sinhVien->ngay_sinh ? \Carbon\Carbon::parse($sinhVien->ngay_sinh)->format('d/m/Y') : 'N/A',
                 'gioi_tinh' => $sinhVien->gioi_tinh,
             ],

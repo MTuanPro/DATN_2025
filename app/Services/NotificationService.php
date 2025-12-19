@@ -48,7 +48,7 @@ class NotificationService
                 // Luôn tạo bản ghi người nhận ngay lập tức để đảm bảo thông báo hiển thị
                 // Queue chỉ dùng cho các tác vụ phụ như gửi email
                 $this->createNguoiNhanRecords($thongBao->id, $nguoiNhanIds);
-                
+
                 Log::info('Đã tạo bản ghi người nhận', [
                     'thong_bao_id' => $thongBao->id,
                     'so_nguoi_nhan' => count($nguoiNhanIds)
@@ -151,7 +151,7 @@ class NotificationService
                     ->where('trang_thai', 'hoat_dong')
                     ->pluck('id')
                     ->toArray();
-                
+
                 Log::info('Lấy danh sách người nhận cho "all"', [
                     'so_nguoi_nhan' => count($nguoiNhanIds),
                     'nguoi_nhan_ids_sample' => array_slice($nguoiNhanIds, 0, 10)
@@ -192,16 +192,8 @@ class NotificationService
                     ->toArray();
                 break;
 
-            case 'lop_hanh_chinh':
-                if ($thongBao->doi_tuong_cu_the_id) {
-                    $nguoiNhanIds = SinhVien::where('lop_hanh_chinh_id', $thongBao->doi_tuong_cu_the_id)
-                        ->whereHas('user', function ($q) {
-                            $q->where('trang_thai', 'hoat_dong');
-                        })
-                        ->pluck('user_id')
-                        ->toArray();
-                }
-                break;
+            // case 'nganh': // Đã xóa lớp hành chính
+            //     break;
 
             case 'lop_hoc_phan':
                 if ($thongBao->doi_tuong_cu_the_id) {
@@ -466,7 +458,7 @@ class NotificationService
         $soTienFormatted = number_format($soTienHocPhi, 0, ',', '.') . ' đ';
 
         $tieuDe = "Yêu cầu đóng học phí - {$tenMonHoc}";
-        
+
         $noiDung = "Kính chào {$sinhVien->ho_ten},\n\n"
             . "Bạn đã đăng ký thành công môn học: {$tenMonHoc}\n\n"
             . "📋 THÔNG TIN HỌC PHÍ:\n"
@@ -509,7 +501,7 @@ class NotificationService
         try {
             // Lấy danh sách users
             $users = User::whereIn('id', $nguoiNhanIds)->get();
-            
+
             if ($users->isEmpty()) {
                 return;
             }
@@ -529,4 +521,3 @@ class NotificationService
         }
     }
 }
-

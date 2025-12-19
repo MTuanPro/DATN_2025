@@ -374,12 +374,43 @@ class SinhVienSeeder extends Seeder
             // Kiểm tra xem sinh viên đã tồn tại chưa
             $existingSinhVien = DB::table('sinh_vien')->where('ma_sinh_vien', $svData['ma_sinh_vien'])->first();
             if ($existingSinhVien) {
-                continue; // Bỏ qua nếu đã tồn tại
+                // Nếu sinh viên đã tồn tại, kiểm tra và gán vai trò nếu chưa có
+                $user = DB::table('users')->where('id', $existingSinhVien->user_id)->first();
+                if ($user) {
+                    $hasRole = DB::table('tai_khoan_vai_tro')
+                        ->where('tai_khoan_id', $user->id)
+                        ->where('vai_tro_id', $vaiTroSinhVien)
+                        ->exists();
+                    if (!$hasRole) {
+                        DB::table('tai_khoan_vai_tro')->insert([
+                            'tai_khoan_id' => $user->id,
+                            'vai_tro_id' => $vaiTroSinhVien,
+                            'ngay_gan' => now(),
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ]);
+                    }
+                }
+                continue; // Bỏ qua việc tạo mới
             }
 
             // Kiểm tra email đã tồn tại chưa
             $existingUser = DB::table('users')->where('email', $svData['email'])->first();
             if ($existingUser) {
+                // Nếu user đã tồn tại, kiểm tra và gán vai trò nếu chưa có
+                $hasRole = DB::table('tai_khoan_vai_tro')
+                    ->where('tai_khoan_id', $existingUser->id)
+                    ->where('vai_tro_id', $vaiTroSinhVien)
+                    ->exists();
+                if (!$hasRole) {
+                    DB::table('tai_khoan_vai_tro')->insert([
+                        'tai_khoan_id' => $existingUser->id,
+                        'vai_tro_id' => $vaiTroSinhVien,
+                        'ngay_gan' => now(),
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
                 continue; // Bỏ qua nếu email đã tồn tại
             }
 
