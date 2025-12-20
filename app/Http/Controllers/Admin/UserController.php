@@ -233,7 +233,7 @@ class UserController extends Controller
      * 5. Tự động tạo/xóa profile Admin dựa trên vai trò 'admin'
      * 6. Tự động tạo/xóa profile DaoTao dựa trên vai trò 'đào tạo'
      *
-     * @param Request $request Chứa name, email, trang_thai, vai_tro[]
+     * @param Request $request Chứa name, email, trang_thai, vai_tro
      * @param User $user Tài khoản cần cập nhật (route model binding)
      * @return \Illuminate\Http\RedirectResponse Redirect về index với thông báo
      * @throws \Exception Khi có lỗi trong quá trình cập nhật
@@ -244,8 +244,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'trang_thai' => ['required', 'in:hoat_dong,khoa,ngung_hoat_dong'],
-            'vai_tro' => ['nullable', 'array'],
-            'vai_tro.*' => ['exists:vai_tro,id'],
+            'vai_tro' => ['nullable', 'exists:vai_tro,id'],
         ], [
             'name.required' => 'Vui lòng nhập họ tên',
             'email.required' => 'Vui lòng nhập email',
@@ -295,11 +294,11 @@ class UserController extends Controller
 
             // Cập nhật vai trò
             if (isset($validated['vai_tro'])) {
-                $user->vaiTro()->sync($validated['vai_tro']);
+                $user->vaiTro()->sync([$validated['vai_tro']]);
 
                 // Tự động tạo Admin profile nếu gán vai trò admin
                 $adminRole = VaiTro::where('ma_vai_tro', 'admin')->first();
-                if ($adminRole && in_array($adminRole->id, $validated['vai_tro'])) {
+                if ($adminRole && $adminRole->id == $validated['vai_tro']) {
                     // Kiểm tra xem đã có profile chưa
                     $existingAdmin = Admin::where('user_id', $user->id)->first();
 
@@ -327,7 +326,7 @@ class UserController extends Controller
 
                 // Tự động tạo DaoTao profile nếu gán vai trò truong_phong_dt hoặc nhan_vien_dt
                 $daoTaoRoles = VaiTro::whereIn('ma_vai_tro', ['truong_phong_dt', 'nhan_vien_dt'])->pluck('id')->toArray();
-                if (!empty(array_intersect($daoTaoRoles, $validated['vai_tro']))) {
+                if (in_array($validated['vai_tro'], $daoTaoRoles)) {
                     // Kiểm tra xem đã có profile chưa
                     $existingDaoTao = DaoTao::where('user_id', $user->id)->first();
 

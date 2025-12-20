@@ -73,13 +73,8 @@
 
                 <!-- AI CHATBOT (moved lower) -->
 
-                <!-- 5. NHẬT KÝ HOẠT ĐỘNG -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-journal-text"></i>
-                        <span>Nhật ký hoạt động</span>
-                    </a>
-                </li>
+            
+           
 
                 <!-- 6. BÁO CÁO & THỐNG KÊ -->
                 <li class="sidebar-item has-sub {{ Request::is('admin/reports*') ? 'active' : '' }}">

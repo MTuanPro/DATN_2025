@@ -13,7 +13,9 @@ class AiChatbotKnowledgeBaseSeeder extends Seeder
     public function run(): void
     {
         // Xóa dữ liệu cũ nếu chạy lại
+        \DB::statement('SET FOREIGN_KEY_CHECKS=0;');
         AiChatbotKnowledgeBase::truncate();
+        \DB::statement('SET FOREIGN_KEY_CHECKS=1;');
 
         $knowledgeData = [
             // =====================================================

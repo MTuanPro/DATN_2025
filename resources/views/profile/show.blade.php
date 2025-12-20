@@ -1,4 +1,4 @@
-@extends('layouts.layout-daotao')
+@extends('layouts.layout-admin')
 
 @section('title', 'Hồ Sơ Người Dùng')
 

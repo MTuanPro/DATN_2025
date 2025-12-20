@@ -442,55 +442,152 @@ class LopHocPhanController extends Controller
      */
     public function downloadTemplate()
     {
+        // Lấy dữ liệu mẫu từ database
+        $monHocs = MonHoc::orderBy('ten_mon')->take(5)->get(['ma_mon', 'ten_mon']);
+        $hocKys = HocKy::orderBy('created_at', 'desc')->take(3)->get(['ten_hoc_ky']);
+        
+        $spreadsheet = new \PhpOffice\PhpSpreadsheet\Spreadsheet();
+        $sheet = $spreadsheet->getActiveSheet();
+        
+        // Thiết lập tiêu đề
+        $sheet->setTitle('Danh sách lớp học phần');
+        
+        // Header row với style
         $headers = [
-            'Content-Type' => 'text/csv; charset=utf-8',
-            'Content-Disposition' => 'attachment; filename="lop_hoc_phan_template.csv"',
+            'Mã lớp học phần *',
+            'Tên lớp học phần *',
+            'Môn học *',
+            'Học kỳ *',
+            'Nhóm lớp',
+            'Sức chứa',
+            'SL tối thiểu',
+            'Hình thức',
+            'Link online',
+            'Ngày bắt đầu',
+            'Ngày kết thúc',
+            'Trạng thái',
+            'Ghi chú',
         ];
-
-        $columns = [
-            'ma_lop_hp',
-            'ten_lop_hp',
-            'mon_hoc',
-            'hoc_ky',
-            'nhom_lop',
-            'suc_chua',
-            'so_luong_toi_thieu',
-            'hinh_thuc',
-            'link_online',
-            'ngay_bat_dau',
-            'ngay_ket_thuc',
-            'trang_thai_lop',
-            'ghi_chu',
+        
+        $sheet->fromArray($headers, null, 'A1');
+        
+        // Style cho header
+        $headerStyle = [
+            'font' => [
+                'bold' => true,
+                'color' => ['rgb' => 'FFFFFF'],
+                'size' => 12,
+            ],
+            'fill' => [
+                'fillType' => \PhpOffice\PhpSpreadsheet\Style\Fill::FILL_SOLID,
+                'startColor' => ['rgb' => '4472C4'],
+            ],
+            'alignment' => [
+                'horizontal' => \PhpOffice\PhpSpreadsheet\Style\Alignment::HORIZONTAL_CENTER,
+                'vertical' => \PhpOffice\PhpSpreadsheet\Style\Alignment::VERTICAL_CENTER,
+            ],
         ];
-
-        $callback = function () use ($columns) {
-            $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF) . chr(0xBB) . chr(0xBF)); // UTF-8 BOM
-
-            // Header
-            fputcsv($file, $columns);
-
-            // Sample data
-            fputcsv($file, [
-                'CNTT101.01',
-                'Lập trình web - Nhóm 1',
-                'Lập trình web',
-                'Học kỳ 1 - Năm học 2024-2025',
-                '1',
-                '50',
-                '10',
-                'offline',
-                '',
-                '2024-09-01',
-                '2024-12-31',
-                'mo_dang_ky',
-                'Lớp học phần mẫu',
-            ]);
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
+        $sheet->getStyle('A1:M1')->applyFromArray($headerStyle);
+        
+        // Thêm dữ liệu mẫu
+        $rowIndex = 2;
+        if ($monHocs->count() > 0 && $hocKys->count() > 0) {
+            $sampleData = [
+                [
+                    'CNTT101.01',
+                    $monHocs->first()->ten_mon . ' - Nhóm 1',
+                    $monHocs->first()->ten_mon,
+                    $hocKys->first()->ten_hoc_ky,
+                    1,
+                    50,
+                    10,
+                    'offline',
+                    '',
+                    date('Y-m-d'),
+                    date('Y-m-d', strtotime('+3 months')),
+                    'mo_dang_ky',
+                    'Lớp học phần mẫu',
+                ],
+            ];
+            
+            $sheet->fromArray($sampleData, null, 'A' . $rowIndex);
+        }
+        
+        // Thêm sheet hướng dẫn
+        $guideSheet = $spreadsheet->createSheet();
+        $guideSheet->setTitle('Hướng dẫn');
+        
+        $guide = [
+            ['HƯỚNG DẪN IMPORT LỚP HỌC PHẦN'],
+            [''],
+            ['1. CÁC TRƯỜNG BẮT BUỘC (đánh dấu *)'],
+            ['   - Mã lớp học phần: Mã duy nhất của lớp (VD: CNTT101.01)'],
+            ['   - Tên lớp học phần: Tên đầy đủ của lớp'],
+            ['   - Môn học: Tên hoặc mã môn học (PHẢI TỒN TẠI trong hệ thống)'],
+            ['   - Học kỳ: Tên học kỳ (VD: Học kỳ 1 - Năm học 2024-2025)'],
+            [''],
+            ['2. CÁC TRƯỜNG TÙY CHỌN'],
+            ['   - Nhóm lớp: Số nguyên (mặc định: 1)'],
+            ['   - Sức chứa: Số sinh viên tối đa (mặc định: 50)'],
+            ['   - SL tối thiểu: Số sinh viên tối thiểu (mặc định: 10)'],
+            ['   - Hình thức: offline, online, hoặc hybrid (mặc định: offline)'],
+            ['   - Link online: Bắt buộc nếu hình thức là online hoặc hybrid'],
+            ['   - Ngày bắt đầu: Định dạng YYYY-MM-DD (VD: 2024-09-01)'],
+            ['   - Ngày kết thúc: Định dạng YYYY-MM-DD (VD: 2024-12-31)'],
+            ['   - Trạng thái: mo_dang_ky, dang_hoc, ket_thuc, huy (mặc định: mo_dang_ky)'],
+            [''],
+            ['3. DANH SÁCH MÔN HỌC CÓ SẴN'],
+        ];
+        
+        $guideSheet->fromArray($guide, null, 'A1');
+        
+        // Thêm danh sách môn học
+        $rowIdx = count($guide) + 1;
+        $guideSheet->setCellValue('A' . $rowIdx, 'Mã môn');
+        $guideSheet->setCellValue('B' . $rowIdx, 'Tên môn học');
+        $guideSheet->getStyle('A' . $rowIdx . ':B' . $rowIdx)->getFont()->setBold(true);
+        
+        $rowIdx++;
+        $allMonHocs = MonHoc::orderBy('ten_mon')->get(['ma_mon', 'ten_mon']);
+        foreach ($allMonHocs as $mh) {
+            $guideSheet->setCellValue('A' . $rowIdx, $mh->ma_mon);
+            $guideSheet->setCellValue('B' . $rowIdx, $mh->ten_mon);
+            $rowIdx++;
+        }
+        
+        // Thêm danh sách học kỳ
+        $rowIdx += 2;
+        $guideSheet->setCellValue('A' . $rowIdx, '4. DANH SÁCH HỌC KỲ CÓ SẴN');
+        $guideSheet->getStyle('A' . $rowIdx)->getFont()->setBold(true);
+        $rowIdx++;
+        
+        $allHocKys = HocKy::orderBy('created_at', 'desc')->get(['ten_hoc_ky']);
+        foreach ($allHocKys as $hk) {
+            $guideSheet->setCellValue('A' . $rowIdx, $hk->ten_hoc_ky);
+            $rowIdx++;
+        }
+        
+        // Style cho guide sheet
+        $guideSheet->getStyle('A1')->getFont()->setBold(true)->setSize(14);
+        $guideSheet->getColumnDimension('A')->setWidth(50);
+        $guideSheet->getColumnDimension('B')->setWidth(50);
+        
+        // Auto width cho sheet chính
+        $sheet = $spreadsheet->getSheet(0);
+        foreach (range('A', 'M') as $col) {
+            $sheet->getColumnDimension($col)->setAutoSize(true);
+        }
+        
+        // Tạo file Excel
+        $writer = new \PhpOffice\PhpSpreadsheet\Writer\Xlsx($spreadsheet);
+        $fileName = 'lop_hoc_phan_template_' . date('YmdHis') . '.xlsx';
+        
+        header('Content-Type: application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+        header('Content-Disposition: attachment;filename="' . $fileName . '"');
+        header('Cache-Control: max-age=0');
+        
+        $writer->save('php://output');
+        exit;
     }
 
     /**
@@ -534,7 +631,9 @@ class LopHocPhanController extends Controller
                 
                 try {
                     $spreadsheet = \PhpOffice\PhpSpreadsheet\IOFactory::load($file->getRealPath());
-                    $worksheet = $spreadsheet->getActiveSheet();
+                    
+                    // Luôn đọc sheet đầu tiên (sheet dữ liệu), không phải sheet đang active
+                    $worksheet = $spreadsheet->getSheet(0);
                     $data = $worksheet->toArray();
                     
                     // Bỏ qua header (dòng đầu tiên)
@@ -568,17 +667,19 @@ class LopHocPhanController extends Controller
             foreach ($data as $rowNum => $row) {
                 $rowNum += 2; // +2 vì bỏ header và index bắt đầu từ 0
 
-                // Kiểm tra dòng trống
-                if (empty($row[0])) {
+                // Parse data
+                $maLopHp = trim($row[0] ?? '');
+                $tenLopHp = trim($row[1] ?? '');
+                $tenMonHoc = trim($row[2] ?? '');
+                $tenHocKy = trim($row[3] ?? '');
+                
+                // Kiểm tra dòng trống hoặc không có dữ liệu quan trọng
+                // Bỏ qua nếu cả 4 trường bắt buộc đều trống
+                if (empty($maLopHp) && empty($tenLopHp) && empty($tenMonHoc) && empty($tenHocKy)) {
                     continue;
                 }
 
                 try {
-                    // Parse data
-                    $maLopHp = trim($row[0] ?? '');
-                    $tenLopHp = trim($row[1] ?? '');
-                    $tenMonHoc = trim($row[2] ?? '');
-                    $tenHocKy = trim($row[3] ?? '');
                     $nhomLop = !empty($row[4]) ? (int)trim($row[4]) : 1;
                     $sucChua = !empty($row[5]) ? (int)trim($row[5]) : 50;
                     $soLuongToiThieu = !empty($row[6]) ? (int)trim($row[6]) : 10;
@@ -591,19 +692,32 @@ class LopHocPhanController extends Controller
 
                     // Validate các trường bắt buộc
                     if (empty($maLopHp) || empty($tenLopHp) || empty($tenMonHoc) || empty($tenHocKy)) {
-                        $errors[] = "Dòng {$rowNum}: Thiếu thông tin bắt buộc (Mã lớp, Tên lớp, Môn học, Học kỳ)";
+                        $errors[] = "Dòng {$rowNum}: Thiếu thông tin bắt buộc (Mã lớp: '{$maLopHp}', Tên lớp: '{$tenLopHp}', Môn học: '{$tenMonHoc}', Học kỳ: '{$tenHocKy}')";
                         continue;
                     }
 
                     // Không cần kiểm tra trùng vì sẽ update nếu đã tồn tại
 
-                    // Tìm môn học theo tên hoặc mã
-                    $monHoc = MonHoc::where('ten_mon', $tenMonHoc)
-                        ->orWhere('ma_mon', $tenMonHoc)
-                        ->first();
+                    // Tìm môn học theo tên hoặc mã (loại bỏ khoảng trắng thừa và tìm kiếm linh hoạt)
+                    $tenMonHocClean = preg_replace('/\s+/', ' ', trim($tenMonHoc)); // Loại bỏ khoảng trắng thừa
+                    
+                    $monHoc = MonHoc::where(function($query) use ($tenMonHocClean) {
+                        $query->where('ten_mon', 'LIKE', $tenMonHocClean)
+                              ->orWhere('ma_mon', 'LIKE', $tenMonHocClean)
+                              // Tìm kiếm gần đúng (loại bỏ khoảng trắng)
+                              ->orWhereRaw('REPLACE(ten_mon, " ", "") LIKE ?', [str_replace(' ', '', $tenMonHocClean)])
+                              ->orWhereRaw('REPLACE(ma_mon, " ", "") LIKE ?', [str_replace(' ', '', $tenMonHocClean)]);
+                    })->first();
                     
                     if (!$monHoc) {
-                        $errors[] = "Dòng {$rowNum}: Không tìm thấy môn học với tên/mã: {$tenMonHoc}";
+                        // Thử tìm kiếm gần đúng hơn với LIKE
+                        $monHoc = MonHoc::where('ten_mon', 'LIKE', "%{$tenMonHocClean}%")
+                            ->orWhere('ma_mon', 'LIKE', "%{$tenMonHocClean}%")
+                            ->first();
+                    }
+                    
+                    if (!$monHoc) {
+                        $errors[] = "Dòng {$rowNum}: Không tìm thấy môn học với tên/mã: '{$tenMonHoc}'. Vui lòng kiểm tra lại tên môn học trong file Excel.";
                         continue;
                     }
 
@@ -718,10 +832,11 @@ class LopHocPhanController extends Controller
                         continue;
                     }
 
-                    // Kiểm tra nếu trạng thái là "Mở đăng ký" thì học kỳ phải đang mở đăng ký
+                    // Tự động điều chỉnh trạng thái lớp dựa vào trạng thái học kỳ khi import
+                    // Nếu học kỳ chưa mở đăng ký, tự động chuyển lớp sang trạng thái phù hợp
                     if ($trangThaiLop === 'mo_dang_ky' && !$hocKy->dang_mo_dang_ky) {
-                        $errors[] = "Dòng {$rowNum}: Không thể mở đăng ký lớp học phần này vì học kỳ chưa mở đăng ký";
-                        continue;
+                        // Tự động đặt về trạng thái ket_thuc thay vì báo lỗi
+                        $trangThaiLop = 'ket_thuc';
                     }
 
                     // Update hoặc tạo lớp học phần (dựa vào ma_lop_hp)

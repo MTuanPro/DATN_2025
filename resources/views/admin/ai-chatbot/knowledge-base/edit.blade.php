@@ -23,6 +23,32 @@
         </div>
 
         <section class="section">
+            @if(session('success'))
+                <div class="alert alert-success alert-dismissible fade show">
+                    <i class="bi bi-check-circle"></i> {{ session('success') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            @if(session('error'))
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <i class="bi bi-exclamation-triangle"></i> {{ session('error') }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
+            @if ($errors->any())
+                <div class="alert alert-danger alert-dismissible fade show">
+                    <h5 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Có lỗi xảy ra!</h5>
+                    <ul class="mb-0">
+                        @foreach ($errors->all() as $error)
+                            <li>{{ $error }}</li>
+                        @endforeach
+                    </ul>
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            @endif
+
             <div class="card">
                 <div class="card-header">
                     <h5 class="card-title">Thông tin Knowledge Base #{{ $knowledgeBase->id }}</h5>
@@ -133,10 +159,10 @@
                         </div>
 
                         <div class="mt-4">
-                            <button type="submit" class="btn btn-primary">
+                            <button type="submit" class="btn btn-primary btn-lg" id="btnUpdate">
                                 <i class="bi bi-save"></i> Cập nhật
                             </button>
-                            <a href="{{ route('admin.ai-chatbot.knowledge-base.index') }}" class="btn btn-secondary">
+                            <a href="{{ route('admin.ai-chatbot.knowledge-base.index') }}" class="btn btn-secondary btn-lg">
                                 <i class="bi bi-x-circle"></i> Hủy
                             </a>
                         </div>
@@ -146,3 +172,37 @@
         </section>
     </div>
 @endsection
+
+@push('scripts')
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.querySelector('form');
+    const btnUpdate = document.getElementById('btnUpdate');
+    
+    form.addEventListener('submit', function(e) {
+        // Disable button để tránh submit nhiều lần
+        btnUpdate.disabled = true;
+        btnUpdate.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Đang cập nhật...';
+        
+        // Kiểm tra validation
+        if (!form.checkValidity()) {
+            e.preventDefault();
+            e.stopPropagation();
+            btnUpdate.disabled = false;
+            btnUpdate.innerHTML = '<i class="bi bi-save"></i> Cập nhật';
+            form.classList.add('was-validated');
+            
+            // Hiển thị thông báo lỗi
+            alert('Vui lòng điền đầy đủ các trường bắt buộc!');
+            return false;
+        }
+    });
+    
+    // Debug: Log form data khi submit
+    form.addEventListener('submit', function(e) {
+        const formData = new FormData(form);
+        console.log('Form data:', Object.fromEntries(formData));
+    });
+});
+</script>
+@endpush
