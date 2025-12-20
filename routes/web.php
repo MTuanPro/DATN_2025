@@ -116,6 +116,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/users/{user}/verify-email', [AdminUserController::class, 'verifyEmail'])->name('users.verify-email');
     Route::get('/users/{user}/login-history', [AdminUserController::class, 'loginHistory'])->name('users.login-history');
     Route::post('/users/{user}/force-logout', [AdminUserController::class, 'forceLogout'])->name('users.force-logout');
+    
+    // User Import/Export
+    Route::get('/users/export/excel', [AdminUserController::class, 'export'])->name('users.export');
+    Route::post('/users/import/excel', [AdminUserController::class, 'import'])->name('users.import');
+    Route::get('/users/import/template', [AdminUserController::class, 'downloadTemplate'])->name('users.import.template');
 
     // Role Management (Member 2)
     Route::resource('vai-tro', VaiTroController::class);

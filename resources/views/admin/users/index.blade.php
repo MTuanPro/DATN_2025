@@ -24,14 +24,14 @@
         {{-- Alert Messages --}}
         @if (session('success'))
             <div class="alert alert-success alert-dismissible fade show" role="alert">
-                <i class="bi bi-check-circle"></i> {{ session('success') }}
+                <i class="bi bi-check-circle"></i> {!! session('success') !!}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
 
         @if (session('error'))
             <div class="alert alert-danger alert-dismissible fade show" role="alert">
-                <i class="bi bi-exclamation-circle"></i> {{ session('error') }}
+                <i class="bi bi-exclamation-circle"></i> {!! session('error') !!}
                 <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
             </div>
         @endif
@@ -39,11 +39,21 @@
         <section class="section">
             <div class="card">
                 <div class="card-header">
-                    <div class="row">
-                        <div class="col-md-6">
+                    <div class="row align-items-center">
+                        <div class="col-md-4">
                             <h5 class="card-title mb-0">Danh sách Tài khoản</h5>
                         </div>
-                        <div class="col-md-6 text-end">
+                        <div class="col-md-8 text-end">
+                            {{-- Import/Export Buttons --}}
+                            <div class="btn-group me-2" role="group">
+                                <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#importModal">
+                                    <i class="bi bi-file-earmark-arrow-up"></i> Import
+                                </button>
+                                <a href="{{ route('admin.users.export', request()->query()) }}" class="btn btn-info">
+                                    <i class="bi bi-file-earmark-arrow-down"></i> Export
+                                </a>
+                            </div>
+                            
                             <a href="{{ route('admin.users.create') }}" class="btn btn-primary">
                                 <i class="bi bi-plus-circle"></i> Tạo tài khoản mới
                             </a>
@@ -200,6 +210,52 @@
                 </div>
             </div>
         </section>
+    </div>
+
+    {{-- Import Modal --}}
+    <div class="modal fade" id="importModal" tabindex="-1" aria-labelledby="importModalLabel" aria-hidden="true">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="importModalLabel">
+                        <i class="bi bi-file-earmark-arrow-up"></i> Import Tài khoản từ Excel
+                    </h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <form action="{{ route('admin.users.import') }}" method="POST" enctype="multipart/form-data">
+                    @csrf
+                    <div class="modal-body">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            <strong>Hướng dẫn:</strong>
+                            <ul class="mb-0 mt-2">
+                                <li>Tải file mẫu để xem cấu trúc dữ liệu</li>
+                                <li>Điền thông tin user theo đúng format</li>
+                                <li>Upload file Excel (.xlsx hoặc .xls)</li>
+                            </ul>
+                        </div>
+
+                        <div class="mb-3">
+                            <a href="{{ route('admin.users.import.template') }}" class="btn btn-outline-primary w-100">
+                                <i class="bi bi-download"></i> Tải file mẫu Excel
+                            </a>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="importFile" class="form-label">Chọn file Excel</label>
+                            <input type="file" class="form-control" id="importFile" name="file" accept=".xlsx,.xls" required>
+                            <small class="text-muted">Chỉ chấp nhận file .xlsx hoặc .xls, tối đa 2MB</small>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Đóng</button>
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-upload"></i> Bắt đầu Import
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
     </div>
 
     @push('scripts')
