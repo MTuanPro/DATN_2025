@@ -170,7 +170,7 @@
                     <td>{{ $index + 1 }}</td>
                     <td>{{ $dk->sinhVien->ma_sinh_vien }}</td>
                     <td class="text-left">{{ $dk->sinhVien->ho_ten }}</td>
-                    <td>{{ $dk->sinhVien->lopHanhChinh->ten_lop ?? '-' }}</td>
+                    <td>{{ $dk->sinhVien->nganh->ten_nganh ?? 'N/A' ?? '-' }}</td>
                     @if ($cauHinh->chuyen_can_ty_le > 0)
                         <td>{{ $dk->diem->diem_chuyen_can ?? '-' }}</td>
                     @endif

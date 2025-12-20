@@ -30,7 +30,7 @@ class CanhBaoHocVuController extends Controller
      *    - CanhBaoHocVu base query
      *    - Eager load relationships:
      *      + sinhVien.user (thông tin sinh viên)
-     *      + sinhVien.lopHanhChinh (lớp của SV)
+     *      + sinhVien.nganh (lớp của SV)
      *      + hocKy (học kỳ phát sinh cảnh báo)
      *      + nguoiCanhBao (người tạo cảnh báo)
      * 2. Áp dụng filter theo loại cảnh báo (nếu có):
@@ -177,7 +177,7 @@ class CanhBaoHocVuController extends Controller
      *    - SinhVien query
      *    - Eager load:
      *      + user (để lấy email, username)
-     *      + lopHanhChinh (thông tin lớp)
+     *      + nganh (thông tin lớp)
      *    - Get all active students
      *    - Sắp xếp theo ma_sinh_vien
      * 2. Lấy danh sách học kỳ:
@@ -246,7 +246,7 @@ class CanhBaoHocVuController extends Controller
      * - Xử lý trường hợp ngoại lệ
      *
      * @return \Illuminate\View\View Form tạo cảnh báo với:
-     *   - sinhViens: Collection sinh viên (with user, lopHanhChinh)
+     *   - sinhViens: Collection sinh viên (with user, nganh)
      *   - hocKys: Collection học kỳ (sorted desc)
      */
     public function create()
@@ -421,7 +421,7 @@ class CanhBaoHocVuController extends Controller
      *    - 404 NotFound nếu không tồn tại
      * 2. Eager load tất cả relationships cần thiết:
      *    - sinhVien.user: Thông tin account sinh viên
-     *    - sinhVien.lopHanhChinh: Lớp, ngành, khóa
+     *    - sinhVien.nganh: Lớp, ngành, khóa
      *    - sinhVien.ketQuaHocTaps: Lịch sử kết quả học tập
      *    - hocKy: Học kỳ phát sinh cảnh báo
      *    - nguoiTao: User tạo cảnh báo (admin/daotao)
@@ -524,7 +524,7 @@ class CanhBaoHocVuController extends Controller
      *    - Laravel tự động find by ID
      *    - 404 nếu không tồn tại
      * 2. Lấy danh sách sinh viên cho dropdown:
-     *    - SinhVien::with('user', 'lopHanhChinh')
+     *    - SinhVien::with('user', )
      *    - Get all (chỉ hiển thị, không cho đổi)
      * 3. Lấy danh sách học kỳ cho dropdown:
      *    - HocKy query
@@ -760,7 +760,7 @@ class CanhBaoHocVuController extends Controller
 //     {
 //         $canhBaoHocVu->load([
 //             'sinhVien.user',
-//             'sinhVien.lopHanhChinh',
+//             'sinhVien.nganh',
 //             'sinhVien.ketQuaHocTaps',
 //             'hocKy',
 //             'nguoiTao',

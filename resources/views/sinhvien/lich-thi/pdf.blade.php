@@ -71,7 +71,7 @@
             <td width="150"><strong>Mã sinh viên:</strong></td>
             <td>{{ $sinhVien->ma_sinh_vien }}</td>
             <td width="150"><strong>Lớp:</strong></td>
-            <td>{{ $sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+            <td>{{ 'N/A' }}</td>
         </tr>
         <tr>
             <td><strong>Họ và tên:</strong></td>

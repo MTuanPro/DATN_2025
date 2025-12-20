@@ -226,7 +226,7 @@
                     <div class="card-body">
                         <p class="mb-1"><strong>{{ $canhBao->sinhVien->ho_ten }}</strong></p>
                         <p class="mb-1 text-muted">{{ $canhBao->sinhVien->ma_sinh_vien }}</p>
-                        <p class="mb-1">Lớp: {{ $canhBao->sinhVien->lop_hanh_chinh }}</p>
+                        <p class="mb-1">Lớp: {{ $canhBao->sinhVien->nganh }}</p>
                         <p class="mb-0">Email: {{ $canhBao->sinhVien->email }}</p>
                     </div>
                 </div>

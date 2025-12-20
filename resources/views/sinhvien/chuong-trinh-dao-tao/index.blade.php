@@ -44,12 +44,12 @@
                                 <div class="info-item">
                                     <i class="bi bi-people text-primary"></i>
                                     <strong>Lớp:</strong>
-                                    <span>{{ $sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</span>
+                                    <span>{{ 'N/A' }}</span>
                                 </div>
                                 <div class="info-item">
                                     <i class="bi bi-calendar-check text-primary"></i>
                                     <strong>Khóa học:</strong>
-                                    <span>{{ $sinhVien->lopHanhChinh->khoaHoc->ten_khoa_hoc ?? 'N/A' }}</span>
+                                    <span>{{ $sinhVien->nganh->ten_nganh ?? 'N/A'->ten_khoa_hoc ?? 'N/A' }}</span>
                                 </div>
                             </div>
                         </div>

@@ -15,6 +15,7 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'role' => \App\Http\Middleware\CheckRole::class,
             'permission' => \App\Http\Middleware\CheckPermission::class,
+            'dynamic.permission' => \App\Http\Middleware\DynamicPermission::class,
             'guest' => \App\Http\Middleware\RedirectIfAuthenticated::class,
             'sinhvien.check' => \App\Http\Middleware\EnsureSinhVienExists::class,
             'prevent.back' => \App\Http\Middleware\PreventBackHistory::class,

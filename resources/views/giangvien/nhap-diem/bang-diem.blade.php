@@ -35,13 +35,13 @@
                                     <td width="150"><strong>Mã sinh viên:</strong></td>
                                     <td>{{ $sinhVien->ma_sinh_vien ?? '-' }}</td>
                                     <td width="150"><strong>Lớp:</strong></td>
-                                    <td>{{ $sinhVien->lopHanhChinh->ten_lop ?? '-' }}</td>
+                                    <td>{{ '-' }}</td>
                                 </tr>
                                 <tr>
                                     <td><strong>Họ tên:</strong></td>
                                     <td>{{ $sinhVien->user->ho_ten ?? $sinhVien->ho_ten ?? '-' }}</td>
                                     <td><strong>Khoa:</strong></td>
-                                    <td>{{ $sinhVien->lopHanhChinh->khoa->ten_khoa ?? '-' }}</td>
+                                    <td>{{ $sinhVien->nganh->ten_nganh ?? 'N/A'->ten_khoa ?? '-' }}</td>
                                 </tr>
                             </table>
                         </div>

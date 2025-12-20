@@ -86,7 +86,7 @@ class CheckAttendanceWarning extends Command
             $this->info("  Tổng buổi học: {$tongBuoiHoc}");
             
             // Lấy danh sách sinh viên
-            $sinhViens = LopHocPhanSinhVien::with('sinhVien.lopHanhChinh')
+            $sinhViens = LopHocPhanSinhVien::with('sinhVien.nganh')
                 ->where('lop_hoc_phan_id', $lopHocPhan->id)
                 ->where('trang_thai', 'dang_hoc')
                 ->get();
@@ -199,10 +199,10 @@ class CheckAttendanceWarning extends Command
         
         foreach ($danhSachCanhBao as $item) {
             $sinhVien = $item['sinh_vien'];
-            $lopHanhChinh = $sinhVien->lopHanhChinh;
+            $nganh = $sinhVien->nganh;
             
-            if ($lopHanhChinh && $lopHanhChinh->giang_vien_chu_nhiem_id) {
-                $gvcnId = $lopHanhChinh->giang_vien_chu_nhiem_id;
+            if ($nganh && $nganh->giang_vien_chu_nhiem_id) {
+                $gvcnId = $nganh->giang_vien_chu_nhiem_id;
                 
                 if (!isset($nhomTheoGVCN[$gvcnId])) {
                     $nhomTheoGVCN[$gvcnId] = [];

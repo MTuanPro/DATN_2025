@@ -228,6 +228,10 @@
                                        class="btn btn-success w-100 btn-lg">
                                         <i class="bi bi-wallet2"></i> Thanh toán PayOS
                                     </a>
+                                    <a href="{{ route('sinh-vien.hoc-phi.casso-payment', $hocPhi->id) }}" 
+                                       class="btn btn-info w-100 btn-lg">
+                                        <i class="bi bi-bank"></i> Thanh toán chuyển khoản (Casso)
+                                    </a>
                                 </div>
                             @else
                                 <div class="alert alert-success mb-2">
@@ -257,6 +261,17 @@
                                     ->where('ghi_chu', 'like', '%Đang chờ%')
                                     ->orderBy('created_at', 'desc')
                                     ->first();
+                                
+                                // Tìm giao dịch Casso đang chờ xác nhận
+                                // Tìm cả giao dịch có "Đang chờ" hoặc chưa có ngay_dong
+                                $pendingCasso = $hocPhi->lichSuDongHocPhi()
+                                    ->where('phuong_thuc_thanh_toan', 'casso')
+                                    ->where(function($query) {
+                                        $query->where('ghi_chu', 'like', '%Đang chờ%')
+                                              ->orWhereNull('ngay_dong');
+                                    })
+                                    ->orderBy('created_at', 'desc')
+                                    ->first();
                             @endphp
                             
                             @if($pendingZaloPay)
@@ -275,6 +290,28 @@
                                     <input type="hidden" name="order_code" value="{{ $pendingPayOS->ma_giao_dich }}">
                                     <button type="submit" class="btn btn-warning w-100">
                                         <i class="bi bi-arrow-clockwise me-2"></i>Kiểm tra lại thanh toán PayOS
+                                    </button>
+                                </form>
+                            @endif
+                            
+                            @if($hocPhi->so_tien_con_lai > 0)
+                                {{-- Luôn hiển thị nút kiểm tra nếu còn tiền cần thanh toán --}}
+                                @php
+                                    // Tìm giao dịch Casso gần nhất để lấy mã (nếu có)
+                                    $recentCasso = $hocPhi->lichSuDongHocPhi()
+                                        ->where('phuong_thuc_thanh_toan', 'casso')
+                                        ->where('created_at', '>=', now()->subDays(30))
+                                        ->orderBy('created_at', 'desc')
+                                        ->first();
+                                    
+                                    // Nếu không có, tạo mã mặc định
+                                    $cassoMemo = $recentCasso ? $recentCasso->ma_giao_dich : 'HP' . $hocPhi->id;
+                                @endphp
+                                <form action="{{ route('sinh-vien.hoc-phi.casso-check-status', $hocPhi->id) }}" method="POST" class="mb-2">
+                                    @csrf
+                                    <input type="hidden" name="payment_memo" value="{{ $cassoMemo }}">
+                                    <button type="submit" class="btn btn-warning w-100">
+                                        <i class="bi bi-arrow-clockwise me-2"></i>Kiểm tra lại thanh toán Casso
                                     </button>
                                 </form>
                             @endif

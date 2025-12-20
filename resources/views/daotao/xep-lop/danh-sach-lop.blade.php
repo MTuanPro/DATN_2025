@@ -140,8 +140,8 @@
                                         <td><code>{{ $lhpsv->sinhVien->ma_sinh_vien }}</code></td>
                                         <td>{{ $lhpsv->sinhVien->ho_ten }}</td>
                                         <td>
-                                            @if ($lhpsv->sinhVien->lopHanhChinh)
-                                                {{ $lhpsv->sinhVien->lopHanhChinh->ma_lop }}
+                                            @if ($lhpsv->sinhVien->nganh)
+                                                {{ $lhpsv->sinhVien->nganh->ten_nganh ?? 'N/A' }}
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif

@@ -19,8 +19,8 @@ return new class extends Migration
             $table->string('loai_thong_bao')->comment('tin_tuc, thong_bao_chung, tin_gap, lich_hoc, lich_thi, hoc_phi, diem, dang_ky_mon');
             $table->string('muc_do_quan_trong')->default('binh_thuong')->comment('rat_quan_trong, quan_trong, binh_thuong');
             $table->boolean('ghim_dau_trang')->default(false)->comment('Ghim thông báo ở đầu');
-            $table->string('doi_tuong')->comment('sinh_vien, giang_vien, dao_tao, lop_hanh_chinh, lop_hoc_phan, khoa, nganh, all');
-            $table->unsignedBigInteger('doi_tuong_cu_the_id')->nullable()->comment('ID cụ thể: khoa_id, nganh_id, lop_hanh_chinh_id, lop_hoc_phan_id');
+            $table->string('doi_tuong')->comment('sinh_vien, giang_vien, dao_tao, lop_hoc_phan, khoa, nganh, all');
+            $table->unsignedBigInteger('doi_tuong_cu_the_id')->nullable()->comment('ID cụ thể: khoa_id, nganh_id, lop_hoc_phan_id');
             $table->foreignId('nguoi_gui_id')->nullable()->constrained('users')->onDelete('set null')->comment('NULL nếu là thông báo tự động');
             $table->string('anh_dai_dien')->nullable()->comment('Ảnh đại diện cho tin tức/thông báo');
             $table->string('file_dinh_kem')->nullable()->comment('File đính kèm (PDF, Word, Excel)');

@@ -166,26 +166,12 @@ Table sinh_vien {
   noi_cap_cccd varchar
   anh_dai_dien varchar
   khoa_hoc_id int [ref: > khoa_hoc.id, not null, note: 'Bắt buộc thuộc khóa học']
-  lop_hanh_chinh_id int [ref: > lop_hanh_chinh.id, not null, note: 'Bắt buộc có lớp hành chính']
   nganh_id int [ref: > nganh.id, not null, note: 'Bắt buộc có ngành học']
   chuyen_nganh_id int [ref: > chuyen_nganh.id, note: 'Chuyên ngành có thể chọn sau (năm 3)']
   ky_hien_tai int [default: 1, note: 'Kỳ hiện tại của sinh viên (1-8)']
   trang_thai_hoc_tap_id int [ref: > trang_thai_hoc_tap.id, not null, note: 'Bắt buộc có trạng thái']
   giang_vien_chu_nhiem_id int [ref: > giang_vien.id, note: 'Giảng viên chủ nhiệm lớp']
   user_id int [ref: > users.id, not null, unique, note: 'Mỗi SV có 1 tài khoản duy nhất']
-  created_at timestamp
-  updated_at timestamp
-  deleted_at timestamp [note: 'Soft delete']
-}
-
-Table lop_hanh_chinh {
-  id int [pk]
-  ma_lop varchar [not null, unique]
-  ten_lop varchar [not null]
-  khoa_hoc_id int [ref: > khoa_hoc.id]
-  nganh_id int [ref: > nganh.id]
-  giang_vien_chu_nhiem_id int [ref: > giang_vien.id]
-  si_so int [default: 0]
   created_at timestamp
   updated_at timestamp
   deleted_at timestamp [note: 'Soft delete']
@@ -910,8 +896,8 @@ Table thong_bao {
   loai_thong_bao varchar [not null, note: 'tin_tuc, thong_bao_chung, tin_gap, lich_hoc, lich_thi, hoc_phi, diem, dang_ky_mon']
   muc_do_quan_trong varchar [default: 'binh_thuong', note: 'rat_quan_trong, quan_trong, binh_thuong']
   ghim_dau_trang boolean [default: false, note: 'Ghim thông báo ở đầu']
-  doi_tuong varchar [not null, note: 'sinh_vien, giang_vien, dao_tao, lop_hanh_chinh, lop_hoc_phan, khoa, nganh, all']
-  doi_tuong_cu_the_id int [note: 'ID cụ thể: khoa_id, nganh_id, lop_hanh_chinh_id, lop_hoc_phan_id']
+  doi_tuong varchar [not null, note: 'sinh_vien, giang_vien, dao_tao, lop_hoc_phan, khoa, nganh, all']
+  doi_tuong_cu_the_id int [note: 'ID cụ thể: khoa_id, nganh_id, lop_hoc_phan_id']
   nguoi_gui_id int [ref: > users.id, note: 'NULL nếu là thông báo tự động']
   anh_dai_dien varchar [note: 'Ảnh đại diện cho tin tức/thông báo']
   file_dinh_kem varchar [note: 'File đính kèm (PDF, Word, Excel)']

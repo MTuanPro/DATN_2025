@@ -160,7 +160,7 @@
                                     <option value="giang_vien" {{ old('doi_tuong') == 'giang_vien' ? 'selected' : '' }}>
                                         👨‍🏫 Tất cả giảng viên
                                     </option>
-                                    <option value="lop_hanh_chinh" {{ old('doi_tuong') == 'lop_hanh_chinh' ? 'selected' : '' }}>
+                                    <option value="nganh" {{ old('doi_tuong') == 'nganh' ? 'selected' : '' }}>
                                         🏫 Lớp hành chính cụ thể
                                     </option>
                                     <option value="lop_hoc_phan" {{ old('doi_tuong') == 'lop_hoc_phan' ? 'selected' : '' }}>
@@ -254,7 +254,7 @@
 @push('scripts')
     <script>
         // Dynamic load lớp hành chính/học phần
-        const lopHanhChinhs = @json($lopHanhChinhs);
+        const nganhs = @json($nganhs);
         const lopHocPhans = @json($lopHocPhans);
 
         document.getElementById('doi_tuong').addEventListener('change', function() {
@@ -265,10 +265,10 @@
 
             select.innerHTML = '<option value="">-- Chọn --</option>';
 
-            if (value === 'lop_hanh_chinh') {
+            if (value === 'nganh') {
                 container.style.display = 'block';
                 label.textContent = 'Chọn lớp hành chính';
-                lopHanhChinhs.forEach(lop => {
+                nganhs.forEach(lop => {
                     select.innerHTML += `<option value="${lop.id}">${lop.ma_lop} - ${lop.ten_lop}</option>`;
                 });
             } else if (value === 'lop_hoc_phan') {

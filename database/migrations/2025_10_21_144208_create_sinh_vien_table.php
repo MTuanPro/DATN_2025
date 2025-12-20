@@ -28,7 +28,6 @@ return new class extends Migration
             $table->string('noi_cap_cccd')->nullable();
             $table->string('anh_dai_dien')->nullable();
             $table->foreignId('khoa_hoc_id')->constrained('khoa_hoc')->comment('Bắt buộc thuộc khóa học');
-            $table->foreignId('lop_hanh_chinh_id')->constrained('lop_hanh_chinh')->comment('Bắt buộc có lớp hành chính');
             $table->foreignId('nganh_id')->constrained('nganh')->comment('Bắt buộc có ngành học');
             $table->foreignId('chuyen_nganh_id')->nullable()->constrained('chuyen_nganh')->onDelete('set null')->comment('Chuyên ngành có thể chọn sau (năm 3)');
             $table->integer('ky_hien_tai')->default(1)->comment('Kỳ hiện tại của sinh viên (1-8)');

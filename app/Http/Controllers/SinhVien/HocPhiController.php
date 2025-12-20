@@ -9,6 +9,7 @@ use App\Models\LichSuDongHocPhi;
 use App\Services\HocPhiService;
 use App\Services\NotificationService;
 use App\Services\ZaloPayService;
+use App\Services\CassoService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -2118,6 +2119,792 @@ class HocPhiController extends Controller
             return redirect()
                 ->route('sinh-vien.hoc-phi.show', $id)
                 ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Show Casso payment information
+     * Hiển thị thông tin tài khoản ngân hàng và hướng dẫn chuyển khoản
+     */
+    public function showCassoPayment(Request $request, $id)
+    {
+        // Log để debug
+        Log::info('Casso Payment - Method called', [
+            'id' => $id,
+            'user_id' => auth()->id(),
+            'url' => $request->fullUrl()
+        ]);
+
+        $user = auth()->user();
+        $sinhVien = $user->sinhVien;
+
+        if (!$sinhVien) {
+            Log::error('Casso Payment - No sinh vien found');
+            return redirect()->route('sinh-vien.dashboard')
+                ->with('error', 'Không tìm thấy thông tin sinh viên!');
+        }
+
+        try {
+            $hocPhi = HocPhiHocKy::with(['hocKy'])
+                ->where('sinh_vien_id', $sinhVien->id)
+                ->findOrFail($id);
+
+            // Check if there's remaining amount to pay
+            if ($hocPhi->so_tien_con_lai <= 0) {
+                Log::info('Casso Payment - Already paid', ['hoc_phi_id' => $id]);
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('info', 'Bạn đã thanh toán đủ học phí cho học kỳ này.');
+            }
+
+            $cassoService = new CassoService();
+            
+            // Generate payment memo (mã đơn hàng) - không cần API
+            $paymentMemo = $cassoService->generatePaymentMemo($hocPhi->id);
+            
+            // Try to get bank accounts from Casso API (with timeout protection)
+            $bankAccounts = [];
+            $selectedBankAccount = null;
+            $apiError = null;
+            
+            // Only try to get bank accounts if API key is configured
+            if (!empty(env('CASSO_API_KEY'))) {
+                try {
+                    // Set a shorter timeout for API call (5 seconds max)
+                    $bankAccountsResult = $cassoService->getBankAccounts();
+                    
+                    if (!isset($bankAccountsResult['error']) || $bankAccountsResult['error'] == 0) {
+                        // Casso API có thể trả về data.bankAccs hoặc data trực tiếp
+                        $bankAccounts = [];
+                        if (isset($bankAccountsResult['data']['bankAccs']) && is_array($bankAccountsResult['data']['bankAccs'])) {
+                            $bankAccounts = $bankAccountsResult['data']['bankAccs'];
+                        } elseif (isset($bankAccountsResult['data']) && is_array($bankAccountsResult['data'])) {
+                            $bankAccounts = $bankAccountsResult['data'];
+                        } elseif (isset($bankAccountsResult['banks']) && is_array($bankAccountsResult['banks'])) {
+                            $bankAccounts = $bankAccountsResult['banks'];
+                        }
+                        
+                        $selectedBankAccount = !empty($bankAccounts) ? $bankAccounts[0] : null;
+                        
+                        Log::info('Casso - Successfully retrieved bank accounts', [
+                            'count' => count($bankAccounts)
+                        ]);
+                    } else {
+                        $apiError = $bankAccountsResult['message'] ?? $bankAccountsResult['error_message'] ?? 'Không thể lấy thông tin tài khoản từ API';
+                        
+                        // Thêm chi tiết lỗi nếu có
+                        if (isset($bankAccountsResult['details'])) {
+                            $apiError .= ' (Chi tiết: ' . json_encode($bankAccountsResult['details']) . ')';
+                        }
+                        
+                        Log::warning('Casso - Failed to get bank accounts from API', [
+                            'error' => $bankAccountsResult['error'] ?? 'unknown',
+                            'message' => $apiError,
+                            'full_response' => $bankAccountsResult
+                        ]);
+                    }
+                } catch (\Illuminate\Http\Client\ConnectionException $e) {
+                    // Timeout or connection error
+                    $apiError = 'Không thể kết nối đến Casso API. Vui lòng thử lại sau hoặc liên hệ quản trị viên.';
+                    Log::warning('Casso - Connection timeout/error', [
+                        'error' => $e->getMessage()
+                    ]);
+                } catch (\Exception $apiException) {
+                    // Other errors
+                    $apiError = 'Có lỗi xảy ra khi lấy thông tin tài khoản: ' . $apiException->getMessage();
+                    Log::warning('Casso - API call failed', [
+                        'error' => $apiException->getMessage()
+                    ]);
+                }
+            } else {
+                $apiError = 'API Key chưa được cấu hình. Vui lòng liên hệ quản trị viên.';
+                Log::warning('Casso - API Key not configured');
+            }
+
+            // Create pending payment record if not exists
+            $lichSu = null;
+            try {
+                // Tìm giao dịch có mã này, không phân biệt trạng thái
+                $lichSu = LichSuDongHocPhi::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                    ->where('ma_giao_dich', $paymentMemo)
+                    ->where('phuong_thuc_thanh_toan', 'casso')
+                    ->first();
+                
+                // Nếu không tìm thấy hoặc đã được xử lý, tạo mới
+                if (!$lichSu || $lichSu->ngay_dong) {
+                    $lichSu = null; // Reset để tạo mới
+                }
+
+                if (!$lichSu) {
+                    DB::beginTransaction();
+                    
+                    try {
+                        $lichSu = LichSuDongHocPhi::create([
+                            'hoc_phi_hoc_ky_id' => $hocPhi->id,
+                            'so_tien_dong' => $hocPhi->so_tien_con_lai,
+                            'phuong_thuc_thanh_toan' => 'casso',
+                            'ma_giao_dich' => $paymentMemo,
+                            'ghi_chu' => 'Đang chờ thanh toán qua chuyển khoản ngân hàng. Nội dung: ' . $paymentMemo,
+                        ]);
+
+                        DB::commit();
+                        Log::info('Casso Payment - Created payment record', [
+                            'ma_giao_dich' => $paymentMemo,
+                            'lich_su_id' => $lichSu->id
+                        ]);
+                    } catch (\Illuminate\Database\QueryException $dbException) {
+                        DB::rollBack();
+                        // Nếu bị lỗi unique constraint, thử tìm lại record
+                        if ($dbException->getCode() == 23000) { // SQLSTATE[23000]: Integrity constraint violation
+                            Log::warning('Casso Payment - Duplicate ma_giao_dich, trying to find existing record', [
+                                'ma_giao_dich' => $paymentMemo
+                            ]);
+                            $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $paymentMemo)->first();
+                        } else {
+                            throw $dbException;
+                        }
+                    }
+                }
+            } catch (\Exception $recordException) {
+                // Log nhưng không fail - vẫn hiển thị trang
+                Log::error('Casso Payment - Error creating payment record', [
+                    'error' => $recordException->getMessage(),
+                    'ma_giao_dich' => $paymentMemo
+                ]);
+                // Tiếp tục với $lichSu = null
+            }
+
+            // Tạo QR code cho chuyển khoản (VietQR format)
+            $qrCodeUrl = null;
+            $qrCodeData = null;
+            
+            if ($selectedBankAccount && $hocPhi->so_tien_con_lai > 0) {
+                // Lấy thông tin ngân hàng - thử nhiều cách để lấy bankCode
+                $bankCode = null;
+                if (isset($selectedBankAccount['bank']['codeName'])) {
+                    $bankCode = $selectedBankAccount['bank']['codeName'];
+                } elseif (isset($selectedBankAccount['bankCode'])) {
+                    $bankCode = $selectedBankAccount['bankCode'];
+                } elseif (isset($selectedBankAccount['bank']['bin'])) {
+                    // Nếu có BIN, có thể map sang codeName (ví dụ: 970422 = mbbank)
+                    $bin = $selectedBankAccount['bank']['bin'];
+                    $binToCode = [
+                        '970422' => 'mbbank',
+                        '970415' => 'tpbank',
+                        '970436' => 'vietinbank',
+                        '970405' => 'vietcombank',
+                        '970416' => 'acb',
+                        '970418' => 'bidv',
+                        '970419' => 'techcombank',
+                        '970403' => 'agribank',
+                        '970427' => 'vpb',
+                        '970428' => 'shb',
+                    ];
+                    $bankCode = $binToCode[$bin] ?? null;
+                }
+                
+                // Lấy số tài khoản
+                $accountNumber = $selectedBankAccount['bankSubAccId'] ?? $selectedBankAccount['accountNumber'] ?? null;
+                $accountName = $selectedBankAccount['bankAccountName'] ?? $selectedBankAccount['accountName'] ?? null;
+                
+                if ($bankCode && $accountNumber) {
+                    // Format VietQR: https://img.vietqr.io/image/{bankCode}-{accountNumber}-{amount}.jpg?addInfo={memo}
+                    $amount = (int) $hocPhi->so_tien_con_lai;
+                    $qrCodeUrl = "https://img.vietqr.io/image/{$bankCode}-{$accountNumber}-{$amount}.jpg?addInfo=" . urlencode($paymentMemo);
+                    
+                    $qrCodeData = [
+                        'bank_code' => $bankCode,
+                        'account_number' => $accountNumber,
+                        'account_name' => $accountName,
+                        'amount' => $amount,
+                        'memo' => $paymentMemo
+                    ];
+                    
+                    Log::info('Casso Payment - QR Code generated', [
+                        'bank_code' => $bankCode,
+                        'account_number' => $accountNumber,
+                        'amount' => $amount,
+                        'memo' => $paymentMemo,
+                        'qr_url' => $qrCodeUrl
+                    ]);
+                } else {
+                    Log::warning('Casso Payment - Cannot generate QR code', [
+                        'has_bank_code' => !empty($bankCode),
+                        'has_account_number' => !empty($accountNumber),
+                        'selected_bank_account_keys' => array_keys($selectedBankAccount ?? [])
+                    ]);
+                }
+            }
+
+            Log::info('Casso Payment - Rendering view', [
+                'hoc_phi_id' => $hocPhi->id,
+                'payment_memo' => $paymentMemo,
+                'has_bank_account' => !empty($selectedBankAccount),
+                'has_qr_code' => !empty($qrCodeUrl),
+                'api_error' => $apiError
+            ]);
+
+            return view('sinhvien.hoc-phi.casso-payment', compact(
+                'hocPhi',
+                'paymentMemo',
+                'bankAccounts',
+                'selectedBankAccount',
+                'lichSu',
+                'apiError',
+                'qrCodeUrl',
+                'qrCodeData'
+            ));
+
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            Log::error('Casso Payment - HocPhi not found', [
+                'id' => $id,
+                'error' => $e->getMessage()
+            ]);
+            return redirect()
+                ->route('sinh-vien.hoc-phi.index')
+                ->with('error', 'Không tìm thấy thông tin học phí.');
+        } catch (\Exception $e) {
+            Log::error('Casso Show Payment Error: ' . $e->getMessage(), [
+                'id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $id)
+                ->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Handle Casso webhook callback
+     * 
+     * Casso sẽ gửi POST request đến endpoint này khi có tiền chuyển vào tài khoản
+     * 
+     * @param Request $request
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function cassoWebhook(Request $request)
+    {
+        // Log incoming webhook
+        Log::info('Casso Webhook received:', [
+            'method' => $request->method(),
+            'headers' => $request->headers->all(),
+            'body' => $request->getContent()
+        ]);
+
+        try {
+            $cassoService = new CassoService();
+
+            // Verify webhook token
+            if (!$cassoService->verifyWebhook($request)) {
+                Log::warning('Casso Webhook - Invalid Secure-Token');
+                return response()->json([
+                    'error' => 1,
+                    'message' => 'Invalid Secure-Token'
+                ], 401);
+            }
+
+            // Get JSON body
+            $jsonBody = json_decode($request->getContent(), true);
+
+            if (!$jsonBody) {
+                Log::warning('Casso Webhook - Invalid JSON body');
+                return response()->json([
+                    'error' => 1,
+                    'message' => 'Invalid request body'
+                ], 400);
+            }
+
+            // Check for error from Casso
+            if (isset($jsonBody['error']) && $jsonBody['error'] != 0) {
+                Log::error('Casso Webhook - Error from Casso:', $jsonBody);
+                return response()->json([
+                    'error' => 1,
+                    'message' => 'Error from Casso: ' . ($jsonBody['message'] ?? 'Unknown error')
+                ], 400);
+            }
+
+            // Process each transaction
+            $transactions = $jsonBody['data'] ?? [];
+            $processedCount = 0;
+
+            foreach ($transactions as $transaction) {
+                try {
+                    $description = $transaction['description'] ?? '';
+                    $amount = (int) ($transaction['amount'] ?? 0);
+                    $bankSubAccId = $transaction['bank_sub_acc_id'] ?? '';
+
+                    // Parse order ID from description
+                    $orderId = $cassoService->parseOrderId($description);
+
+                    if (!$orderId) {
+                        Log::info('Casso Webhook - Cannot parse order ID from description', [
+                            'description' => $description
+                        ]);
+                        continue;
+                    }
+
+                    Log::info('Casso Webhook - Processing transaction:', [
+                        'order_id' => $orderId,
+                        'description' => $description,
+                        'amount' => $amount,
+                        'bank_sub_acc_id' => $bankSubAccId
+                    ]);
+
+                    // Find payment record by memo (ma_giao_dich)
+                    $paymentMemo = $cassoService->generatePaymentMemo($orderId);
+                    $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $paymentMemo)
+                        ->where('ghi_chu', 'like', '%Đang chờ%')
+                        ->first();
+
+                    if (!$lichSu) {
+                        Log::warning('Casso Webhook - Payment record not found', [
+                            'payment_memo' => $paymentMemo,
+                            'order_id' => $orderId
+                        ]);
+                        continue;
+                    }
+
+                    $hocPhi = $lichSu->hocPhiHocKy;
+                    $requiredAmount = (int) $lichSu->so_tien_dong;
+
+                    // Check payment amount
+                    $amountCheck = $cassoService->checkPaymentAmount($amount, $requiredAmount);
+                    
+                    // Only process if payment is acceptable (exact or over)
+                    if ($amountCheck['status'] === 'under') {
+                        Log::info('Casso Webhook - Payment insufficient', [
+                            'paid' => $amount,
+                            'required' => $requiredAmount,
+                            'difference' => $amountCheck['difference']
+                        ]);
+                        
+                        $lichSu->update([
+                            'ghi_chu' => 'Thanh toán thiếu. Đã nhận ' . number_format($amount) . ' VND, cần ' . number_format($requiredAmount) . ' VND. Nội dung: ' . $description
+                        ]);
+                        continue;
+                    }
+
+                    // Process payment (exact or over)
+                    DB::beginTransaction();
+
+                    // Xử lý số tiền thừa nếu có
+                    $soTienThua = 0;
+                    $ghiChuThua = '';
+                    
+                    if ($amountCheck['status'] === 'over') {
+                        $soTienThua = $amountCheck['difference'];
+                        $ghiChuThua = ' ⚠️ Lưu ý: Sinh viên đã nộp thừa ' . number_format($soTienThua) . ' VND. Số tiền thừa này sẽ được ghi nhận và có thể được hoàn lại hoặc chuyển sang học phí kỳ sau.';
+                        
+                        Log::warning('Casso Webhook - Overpayment detected', [
+                            'hoc_phi_id' => $hocPhi->id,
+                            'paid_amount' => $amount,
+                            'required_amount' => $requiredAmount,
+                            'excess_amount' => $soTienThua
+                        ]);
+                    }
+
+                    // Update payment record
+                    // Lưu số tiền thực tế đã nhận vào so_tien_dong
+                    $lichSu->so_tien_dong = $amount; // Lưu số tiền thực tế đã nhận
+                    $lichSu->ngay_dong = now();
+                    $ghiChu = 'Thanh toán thành công qua Casso. Đã nhận ' . number_format($amount) . ' VND' . 
+                             ($amountCheck['status'] === 'exact' ? '' : ' (cần: ' . number_format($requiredAmount) . ' VND)') .
+                             '. Nội dung: ' . $description . ' - STK: ' . $bankSubAccId . $ghiChuThua;
+                    $lichSu->ghi_chu = $ghiChu;
+                    $lichSu->save();
+
+                    // Update HocPhiHocKy
+                    // Chỉ cộng số tiền cần thiết (không cộng số tiền thừa)
+                    $hocPhi->refresh();
+                    $soTienCanCong = min($amount, $requiredAmount);
+                    $hocPhi->so_tien_da_dong += $soTienCanCong;
+                    $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
+                    $hocPhi->ngay_dong_lan_cuoi = now();
+                    $hocPhi->save();
+
+                    // Update status
+                    $hocPhi->updateTrangThai();
+
+                    // Update chi tiết học phí môn thành đã thanh toán (nếu thanh toán đủ)
+                    if ($hocPhi->so_tien_con_lai == 0) {
+                        ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                            ->where('trang_thai', 'chua_thanh_toan')
+                            ->update(['trang_thai' => 'da_thanh_toan']);
+
+                        // KHI ĐÓNG ĐỦ HỌC PHÍ: Tự động thêm vào danh sách chờ xếp lớp
+                        $hocPhiService = new HocPhiService();
+                        $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
+                    }
+
+                    DB::commit();
+                    $processedCount++;
+
+                    // Send notification
+                    try {
+                        $notificationService = new NotificationService();
+                        $notificationService->sendPaymentSuccessNotification(
+                            $hocPhi->sinhVien,
+                            $hocPhi,
+                            $lichSu,
+                            'Casso'
+                        );
+                    } catch (\Exception $e) {
+                        Log::error('Casso Webhook - Failed to send notification: ' . $e->getMessage());
+                    }
+
+                    Log::info('Casso Webhook - Payment processed successfully', [
+                        'order_id' => $orderId,
+                        'amount' => $amount,
+                        'status' => $amountCheck['status']
+                    ]);
+
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Casso Webhook - Error processing transaction: ' . $e->getMessage(), [
+                        'transaction' => $transaction
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'error' => 0,
+                'message' => 'Processed ' . $processedCount . ' transaction(s)',
+                'processed' => $processedCount
+            ], 200);
+
+        } catch (\Exception $e) {
+            Log::error('Casso Webhook Error: ' . $e->getMessage());
+            return response()->json([
+                'error' => 1,
+                'message' => 'Internal server error: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Check Casso payment status manually
+     * Kiểm tra thủ công thanh toán Casso bằng cách gọi API để lấy danh sách giao dịch
+     */
+    public function checkCassoStatus(Request $request, $id)
+    {
+        try {
+            $user = auth()->user();
+            $sinhVien = $user->sinhVien;
+
+            if (!$sinhVien) {
+                return redirect()->route('sinh-vien.dashboard')
+                    ->with('error', 'Không tìm thấy thông tin sinh viên!');
+            }
+
+            $hocPhi = HocPhiHocKy::with(['hocKy'])
+                ->where('sinh_vien_id', $sinhVien->id)
+                ->findOrFail($id);
+
+            // Check if there's remaining amount to pay
+            if ($hocPhi->so_tien_con_lai <= 0) {
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('info', 'Bạn đã thanh toán đủ học phí cho học kỳ này.');
+            }
+
+            Log::info('Casso Check Status - Starting', [
+                'hoc_phi_id' => $id,
+                'so_tien_con_lai' => $hocPhi->so_tien_con_lai
+            ]);
+
+            $cassoService = new CassoService();
+            
+            // Tạo payment memo để tìm
+            $paymentMemo = $cassoService->generatePaymentMemo($hocPhi->id);
+            
+            // Lấy mã giao dịch từ request hoặc dùng payment memo mặc định
+            $searchMemo = $request->input('payment_memo', $paymentMemo);
+            
+            Log::info('Casso Check Status - Starting search', [
+                'hoc_phi_id' => $hocPhi->id,
+                'payment_memo' => $searchMemo,
+                'memo_length' => strlen($searchMemo),
+                'so_tien_con_lai' => $hocPhi->so_tien_con_lai,
+                'memo_prefix' => config('payment.casso.memo_prefix', 'HP')
+            ]);
+
+            // Tìm giao dịch trong Casso - thử không cần số tiền trước (vì có thể số tiền đã thay đổi)
+            $transaction = $cassoService->findTransactionByMemo($searchMemo, null);
+            
+            Log::info('Casso Check Status - First search result', [
+                'found' => $transaction ? 'YES' : 'NO',
+                'transaction_id' => $transaction['id'] ?? 'N/A',
+                'amount' => $transaction['amount'] ?? 'N/A'
+            ]);
+            
+            // Nếu không tìm thấy, thử với số tiền hiện tại
+            if (!$transaction) {
+                Log::info('Casso Check Status - Not found without amount, trying with amount check', [
+                    'amount' => $hocPhi->so_tien_con_lai
+                ]);
+                $transaction = $cassoService->findTransactionByMemo($searchMemo, $hocPhi->so_tien_con_lai);
+                
+                Log::info('Casso Check Status - Second search result (with amount)', [
+                    'found' => $transaction ? 'YES' : 'NO',
+                    'transaction_id' => $transaction['id'] ?? 'N/A',
+                    'amount' => $transaction['amount'] ?? 'N/A'
+                ]);
+            } else {
+                Log::info('Casso Check Status - ✅ Transaction found on first try', [
+                    'transaction_id' => $transaction['id'] ?? 'unknown',
+                    'amount' => $transaction['amount'] ?? 0,
+                    'description' => substr($transaction['description'] ?? '', 0, 100)
+                ]);
+            }
+
+            if (!$transaction) {
+                // Log chi tiết để debug
+                Log::error('Casso Check Status - Transaction not found', [
+                    'payment_memo' => $searchMemo,
+                    'hoc_phi_id' => $hocPhi->id,
+                    'so_tien_con_lai' => $hocPhi->so_tien_con_lai,
+                    'api_key_configured' => !empty(env('CASSO_API_KEY'))
+                ]);
+                
+                // Thử lấy tất cả giao dịch để xem có gì
+                try {
+                    $allTransactions = $cassoService->getTransactions([
+                        'fromDate' => now()->subDays(7)->format('Y-m-d'),
+                        'toDate' => now()->format('Y-m-d')
+                    ]);
+                    
+                    // Lấy transactions từ đúng format (data.records hoặc data)
+                    $transactions = [];
+                    if (isset($allTransactions['data'])) {
+                        if (isset($allTransactions['data']['records']) && is_array($allTransactions['data']['records'])) {
+                            $transactions = $allTransactions['data']['records'];
+                        } elseif (is_array($allTransactions['data'])) {
+                            $transactions = $allTransactions['data'];
+                        }
+                    }
+                    
+                    if (!empty($transactions)) {
+                        $sampleDescriptions = array_slice(
+                            array_column($transactions, 'description'),
+                            0,
+                            5
+                        );
+                        
+                        Log::info('Casso Check Status - Sample descriptions from API', [
+                            'payment_memo_searching' => $searchMemo,
+                            'sample_descriptions' => $sampleDescriptions,
+                            'total_transactions' => count($transactions),
+                            'memo_in_descriptions' => array_map(function($desc) use ($searchMemo) {
+                                return stripos($desc, $searchMemo) !== false ? 'YES' : 'NO';
+                            }, $sampleDescriptions)
+                        ]);
+                    }
+                } catch (\Exception $e) {
+                    Log::error('Casso Check Status - Error getting all transactions: ' . $e->getMessage());
+                }
+                
+                Log::warning('Casso Check Status - ❌ Transaction not found', [
+                    'hoc_phi_id' => $hocPhi->id,
+                    'payment_memo' => $searchMemo,
+                    'so_tien_con_lai' => $hocPhi->so_tien_con_lai,
+                    'note' => 'Không tìm thấy transaction nào có chứa "' . $searchMemo . '" trong description. Vui lòng đảm bảo đã chuyển khoản với đúng nội dung.'
+                ]);
+                
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('warning', 'Chưa tìm thấy giao dịch thanh toán trong hệ thống Casso với nội dung "' . $searchMemo . '". Vui lòng kiểm tra lại nội dung chuyển khoản hoặc đợi vài phút. Lưu ý: Nội dung chuyển khoản phải chứa "' . $searchMemo . '" (ví dụ: ' . $searchMemo . ' hoặc ' . $searchMemo . '.CT).');
+            }
+
+            // Tìm hoặc tạo payment record
+            $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $searchMemo)
+                ->where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                ->first();
+
+            // Nếu không tìm thấy, tạo mới
+            if (!$lichSu) {
+                DB::beginTransaction();
+                try {
+                    // Tạo record mới - ngay_dong đã nullable
+                    $lichSu = LichSuDongHocPhi::create([
+                        'hoc_phi_hoc_ky_id' => $hocPhi->id,
+                        'so_tien_dong' => $hocPhi->so_tien_con_lai,
+                        'ngay_dong' => null, // Chưa thanh toán nên để null
+                        'phuong_thuc_thanh_toan' => 'casso',
+                        'ma_giao_dich' => $searchMemo,
+                        'ghi_chu' => 'Đang chờ thanh toán qua chuyển khoản ngân hàng. Nội dung: ' . $searchMemo,
+                    ]);
+                    DB::commit();
+                    Log::info('Casso Check Status - Created payment record', [
+                        'ma_giao_dich' => $searchMemo,
+                        'lich_su_id' => $lichSu->id
+                    ]);
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    Log::error('Casso Check Status - Error creating payment record', [
+                        'error' => $e->getMessage(),
+                        'ma_giao_dich' => $searchMemo
+                    ]);
+                    // Nếu bị duplicate, tìm lại
+                    $lichSu = LichSuDongHocPhi::where('ma_giao_dich', $searchMemo)
+                        ->where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                        ->first();
+                    if (!$lichSu) {
+                        throw $e;
+                    }
+                }
+            }
+
+            // Kiểm tra xem đã được xử lý chưa
+            $isPending = !$lichSu->ngay_dong || str_contains($lichSu->ghi_chu ?? '', 'Đang chờ');
+            
+            if (!$isPending) {
+                Log::info('Casso Check Status - Payment already processed', [
+                    'hoc_phi_id' => $hocPhi->id,
+                    'ma_giao_dich' => $searchMemo,
+                    'ngay_dong' => $lichSu->ngay_dong
+                ]);
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('info', 'Giao dịch đã được xử lý trước đó.');
+            }
+            
+            Log::info('Casso Check Status - Payment is pending, processing transaction', [
+                'hoc_phi_id' => $hocPhi->id,
+                'ma_giao_dich' => $searchMemo,
+                'transaction_id' => $transaction['id'] ?? 'unknown'
+            ]);
+
+            // Xử lý thanh toán (giống như webhook handler)
+            $amount = (int) ($transaction['amount'] ?? 0);
+            $description = $transaction['description'] ?? '';
+            // Casso API trả về bankSubAccId (camelCase)
+            $bankSubAccId = $transaction['bankSubAccId'] ?? $transaction['bank_sub_acc_id'] ?? '';
+            
+            Log::info('Casso Check Status - Processing transaction', [
+                'transaction_id' => $transaction['id'] ?? 'unknown',
+                'amount' => $amount,
+                'description' => substr($description, 0, 100),
+                'bankSubAccId' => $bankSubAccId
+            ]);
+            
+            // Sử dụng số tiền từ giao dịch thực tế, không phải từ lichSu (vì có thể đã thay đổi)
+            $requiredAmount = $hocPhi->so_tien_con_lai; // Số tiền còn lại hiện tại
+            
+            // Cập nhật so_tien_dong trong lichSu nếu cần
+            if ($lichSu->so_tien_dong != $requiredAmount) {
+                $lichSu->so_tien_dong = $requiredAmount;
+            }
+
+            $amountCheck = $cassoService->checkPaymentAmount($amount, $requiredAmount);
+
+            if ($amountCheck['status'] === 'under') {
+                return redirect()
+                    ->route('sinh-vien.hoc-phi.show', $id)
+                    ->with('warning', 'Số tiền thanh toán không đủ. Đã nhận: ' . number_format($amount) . 'đ, cần: ' . number_format($requiredAmount) . 'đ');
+            }
+
+            // Thanh toán hợp lệ - cập nhật database
+            DB::beginTransaction();
+
+            // Xử lý số tiền thừa nếu có
+            $soTienThua = 0;
+            $ghiChuThua = '';
+            
+            if ($amountCheck['status'] === 'over') {
+                $soTienThua = $amountCheck['difference'];
+                $ghiChuThua = ' ⚠️ Lưu ý: Bạn đã nộp thừa ' . number_format($soTienThua) . ' VND. Số tiền thừa này sẽ được ghi nhận và có thể được hoàn lại hoặc chuyển sang học phí kỳ sau. Vui lòng liên hệ phòng đào tạo để được hỗ trợ.';
+                
+                Log::warning('Casso Check Status - Overpayment detected', [
+                    'hoc_phi_id' => $hocPhi->id,
+                    'paid_amount' => $amount,
+                    'required_amount' => $requiredAmount,
+                    'excess_amount' => $soTienThua
+                ]);
+            }
+
+            // Update payment record
+            // Lưu số tiền thực tế đã nhận vào so_tien_dong (để theo dõi)
+            // Nhưng chỉ cộng số tiền cần thiết vào so_tien_da_dong
+            $lichSu->so_tien_dong = $amount; // Lưu số tiền thực tế đã nhận
+            $lichSu->ngay_dong = now();
+            $ghiChu = 'Thanh toán thành công qua Casso (kiểm tra thủ công). Đã nhận ' . number_format($amount) . ' VND' . 
+                     ($amountCheck['status'] === 'exact' ? '' : ' (cần: ' . number_format($requiredAmount) . ' VND)') .
+                     '. Nội dung: ' . $description . ' - STK: ' . $bankSubAccId . $ghiChuThua;
+            $lichSu->ghi_chu = $ghiChu;
+            $lichSu->save();
+
+            // Update HocPhiHocKy
+            $hocPhi->refresh();
+            // Chỉ cộng số tiền cần thiết (không cộng số tiền thừa)
+            $soTienCanCong = min($amount, $requiredAmount);
+            $hocPhi->so_tien_da_dong += $soTienCanCong;
+            $hocPhi->so_tien_con_lai = $hocPhi->tong_so_tien - $hocPhi->so_tien_da_dong;
+            $hocPhi->ngay_dong_lan_cuoi = now();
+            $hocPhi->save();
+
+            // Update status
+            $hocPhi->updateTrangThai();
+
+            // Update chi tiết học phí môn thành đã thanh toán (nếu thanh toán đủ)
+            if ($hocPhi->so_tien_con_lai == 0) {
+                ChiTietHocPhiMon::where('hoc_phi_hoc_ky_id', $hocPhi->id)
+                    ->where('trang_thai', 'chua_thanh_toan')
+                    ->update(['trang_thai' => 'da_thanh_toan']);
+
+                // KHI ĐÓNG ĐỦ HỌC PHÍ: Tự động thêm vào danh sách chờ xếp lớp
+                $hocPhiService = new HocPhiService();
+                $hocPhiService->themVaoDanhSachChoXepLop($hocPhi->sinh_vien_id, $hocPhi->hoc_ky_id);
+            }
+
+            DB::commit();
+
+            // Send notification (commented out - method doesn't exist yet)
+            // try {
+            //     $notificationService = new NotificationService();
+            //     $notificationService->sendPaymentSuccessNotification(
+            //         $hocPhi->sinhVien,
+            //         $hocPhi,
+            //         $lichSu,
+            //         'Casso'
+            //     );
+            // } catch (\Exception $e) {
+            //     Log::error('Casso Check Status - Failed to send notification: ' . $e->getMessage());
+            // }
+
+            Log::info('Casso Check Status - ✅ Payment processed successfully', [
+                'hoc_phi_id' => $hocPhi->id,
+                'payment_memo' => $paymentMemo,
+                'amount' => $amount,
+                'required_amount' => $requiredAmount,
+                'excess_amount' => $soTienThua,
+                'amount_status' => $amountCheck['status'],
+                'so_tien_da_dong' => $hocPhi->so_tien_da_dong,
+                'so_tien_con_lai' => $hocPhi->so_tien_con_lai,
+                'transaction_id' => $transaction['id'] ?? 'unknown'
+            ]);
+
+            $successMessage = 'Đã cập nhật trạng thái thanh toán thành công! Số tiền đã nhận: ' . number_format($amount) . 'đ';
+            if ($amountCheck['status'] === 'over') {
+                $successMessage .= '. ⚠️ Lưu ý: Bạn đã nộp thừa ' . number_format($soTienThua) . 'đ. Số tiền thừa sẽ được ghi nhận và có thể được hoàn lại hoặc chuyển sang học phí kỳ sau.';
+            }
+
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $id)
+                ->with('success', $successMessage);
+
+        } catch (\Exception $e) {
+            if (DB::transactionLevel() > 0) {
+                DB::rollBack();
+            }
+            
+            Log::error('Casso Check Status Error: ' . $e->getMessage(), [
+                'id' => $id,
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return redirect()
+                ->route('sinh-vien.hoc-phi.show', $id)
+                ->with('error', 'Có lỗi xảy ra khi kiểm tra trạng thái: ' . $e->getMessage());
         }
     }
 }

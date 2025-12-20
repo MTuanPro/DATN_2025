@@ -29,6 +29,10 @@ class LichSuDongHocPhi extends Model
         'ngay_dong' => 'datetime',
     ];
 
+    protected $dates = [
+        'ngay_dong',
+    ];
+
     /**
      * Relationship: LichSuDongHocPhi belongs to HocPhiHocKy
      */

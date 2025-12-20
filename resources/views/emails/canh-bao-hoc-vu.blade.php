@@ -193,7 +193,7 @@
                 </tr>
                 <tr>
                     <td>Lớp:</td>
-                    <td>{{ $canhBao->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                    <td>{{ $canhBao->sinhVien->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</td>
                 </tr>
                 <tr>
                     <td>Học kỳ:</td>
@@ -267,7 +267,7 @@
             </p>
             <ul style="font-size: 14px; color: #6c757d;">
                 <li><strong>Phòng Đào tạo:</strong> daotao@smis.edu.vn</li>
-                <li><strong>Giảng viên chủ nhiệm:</strong> {{ $canhBao->sinhVien->lopHanhChinh->giangVienChuNhiem->ho_ten ?? 'N/A' }}</li>
+                <li><strong>Giảng viên chủ nhiệm:</strong> {{ $canhBao->sinhVien->nganh->ten_nganh ?? 'N/A'->ho_ten ?? 'N/A' }}</li>
                 <li><strong>Hotline:</strong> 024.xxxx.xxxx</li>
             </ul>
         </div>

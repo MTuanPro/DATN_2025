@@ -71,13 +71,13 @@ class ThongBaoController extends Controller
     public function create()
     {
         // Lấy danh sách để chọn đối tượng cụ thể
-        $lopHanhChinhs = collect(); // Lớp hành chính đã bị xóa khỏi hệ thống
+        $nganhs = collect(); // Lớp hành chính đã bị xóa khỏi hệ thống
         $lopHocPhans = LopHocPhan::with('monHoc')
             ->where('trang_thai_lop', 'mo_dang_ky')
             ->orderBy('ma_lop_hp')
             ->get();
 
-        return view('daotao.thong-bao.create', compact('lopHanhChinhs', 'lopHocPhans'));
+        return view('daotao.thong-bao.create', compact('nganhs', 'lopHocPhans'));
     }
 
     /**
@@ -90,7 +90,7 @@ class ThongBaoController extends Controller
             'noi_dung' => 'required|string',
             'loai_thong_bao' => 'required|in:tin_tuc,thong_bao_chung,tin_gap,lich_hoc,lich_thi,hoc_phi,diem,dang_ky_mon',
             'muc_do_quan_trong' => 'required|in:rat_quan_trong,quan_trong,binh_thuong',
-            'doi_tuong' => 'required|in:all,sinh_vien,giang_vien,lop_hanh_chinh,lop_hoc_phan',
+            'doi_tuong' => 'required|in:all,sinh_vien,giang_vien,nganh,lop_hoc_phan',
             'doi_tuong_cu_the_id' => 'nullable|integer',
             'ghim_dau_trang' => 'boolean',
             'gui_email' => 'boolean',
@@ -186,13 +186,13 @@ class ThongBaoController extends Controller
             abort(403, 'Bạn không có quyền sửa thông báo này');
         }
         
-        $lopHanhChinhs = collect(); // Lớp hành chính đã bị xóa khỏi hệ thống
+        $nganhs = collect(); // Lớp hành chính đã bị xóa khỏi hệ thống
         $lopHocPhans = LopHocPhan::with('monHoc')
             ->where('trang_thai_lop', 'mo_dang_ky')
             ->orderBy('ma_lop_hp')
             ->get();
 
-        return view('daotao.thong-bao.edit', compact('thongBao', 'lopHanhChinhs', 'lopHocPhans'));
+        return view('daotao.thong-bao.edit', compact('thongBao', 'nganhs', 'lopHocPhans'));
     }
 
     /**
@@ -213,7 +213,7 @@ class ThongBaoController extends Controller
             'noi_dung' => 'required|string',
             'loai_thong_bao' => 'required|in:tin_tuc,thong_bao_chung,tin_gap,lich_hoc,lich_thi,hoc_phi,diem,dang_ky_mon',
             'muc_do_quan_trong' => 'required|in:rat_quan_trong,quan_trong,binh_thuong',
-            'doi_tuong' => 'required|in:all,sinh_vien,giang_vien,lop_hanh_chinh,lop_hoc_phan', // Không cho phép: admin, dao_tao
+            'doi_tuong' => 'required|in:all,sinh_vien,giang_vien,nganh,lop_hoc_phan', // Không cho phép: admin, dao_tao
             'doi_tuong_cu_the_id' => 'nullable|integer',
             'ghim_dau_trang' => 'boolean',
             'gui_email' => 'boolean',
@@ -314,9 +314,9 @@ class ThongBaoController extends Controller
                 $nguoiNhanIds = User::whereHas('giangVien')->where('trang_thai', 'hoat_dong')->pluck('id')->toArray();
                 break;
 
-            case 'lop_hanh_chinh':
+            case 'nganh': // �� thay nganh
                 if ($thongBao->doi_tuong_cu_the_id) {
-                    $nguoiNhanIds = SinhVien::where('lop_hanh_chinh_id', $thongBao->doi_tuong_cu_the_id)
+                    $nguoiNhanIds = SinhVien::where('nganh_id /* �� x�a nganh_id */', $thongBao->doi_tuong_cu_the_id)
                         ->whereHas('user', function ($q) {
                             $q->where('trang_thai', 'hoat_dong');
                         })

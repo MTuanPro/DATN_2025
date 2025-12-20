@@ -100,7 +100,7 @@
                                     </a>
                                 </div>
                             @endif
-<!-- sửa giao diện -->
+                            <!-- sửa giao diện -->
                             {{-- Thống kê người nhận --}}
                             <div class="mb-4">
                                 <h6>Thống kê người nhận:</h6>
@@ -212,8 +212,138 @@
                             </div>
                         </div>
                     </div>
+
+                    {{-- Danh sách người nhận (chỉ hiển thị cho Admin) --}}
+                    @if (in_array('admin', auth()->user()->vaiTro()->pluck('ma_vai_tro')->toArray()))
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card">
+                                    <div class="card-header">
+                                        <h5 class="card-title mb-0">
+                                            <i class="bi bi-people"></i> Danh sách người nhận
+                                            <span class="badge bg-primary">{{ $thongBao->nguoiNhan->count() }}</span>
+                                        </h5>
+                                    </div>
+                                    <div class="card-body">
+                                        {{-- Bộ lọc --}}
+                                        <div class="row mb-3">
+                                            <div class="col-md-3">
+                                                <select id="filterTrangThai" class="form-select form-select-sm">
+                                                    <option value="">-- Tất cả trạng thái --</option>
+                                                    <option value="da_doc">Đã đọc</option>
+                                                    <option value="chua_doc">Chưa đọc</option>
+                                                </select>
+                                            </div>
+                                            <div class="col-md-4">
+                                                <input type="text" id="searchNguoiNhan"
+                                                    class="form-control form-control-sm" placeholder="Tìm người nhận...">
+                                            </div>
+                                        </div>
+
+                                        {{-- Bảng danh sách --}}
+                                        <div class="table-responsive" style="max-height: 400px; overflow-y: auto;">
+                                            <table class="table table-hover table-sm" id="tableNguoiNhan">
+                                                <thead class="table-light sticky-top">
+                                                    <tr>
+                                                        <th style="width: 50px">STT</th>
+                                                        <th>Người nhận</th>
+                                                        <th>Email</th>
+                                                        <th style="width: 120px">Trạng thái</th>
+                                                        <th style="width: 150px">Thời gian đọc</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    @forelse ($thongBao->nguoiNhan as $index => $nguoiNhan)
+                                                        <tr class="nguoi-nhan-row"
+                                                            data-trang-thai="{{ $nguoiNhan->da_doc ? 'da_doc' : 'chua_doc' }}">
+                                                            <td>{{ $index + 1 }}</td>
+                                                            <td>
+                                                                <div class="d-flex align-items-center">
+                                                                    @if ($nguoiNhan->nguoiNhan && $nguoiNhan->nguoiNhan->avatar)
+                                                                        <img src="{{ asset('storage/' . $nguoiNhan->nguoiNhan->avatar) }}"
+                                                                            class="rounded-circle me-2" width="32"
+                                                                            height="32" alt="Avatar">
+                                                                    @else
+                                                                        <div class="avatar avatar-sm bg-secondary me-2">
+                                                                            <span
+                                                                                class="avatar-content">{{ substr($nguoiNhan->nguoiNhan->name ?? 'U', 0, 1) }}</span>
+                                                                        </div>
+                                                                    @endif
+                                                                    <span
+                                                                        class="nguoi-nhan-ten">{{ $nguoiNhan->nguoiNhan->name ?? 'N/A' }}</span>
+                                                                </div>
+                                                            </td>
+                                                            <td class="nguoi-nhan-email">
+                                                                {{ $nguoiNhan->nguoiNhan->email ?? 'N/A' }}</td>
+                                                            <td>
+                                                                @if ($nguoiNhan->da_doc)
+                                                                    <span class="badge bg-success">
+                                                                        <i class="bi bi-check-circle"></i> Đã đọc
+                                                                    </span>
+                                                                @else
+                                                                    <span class="badge bg-warning">
+                                                                        <i class="bi bi-clock"></i> Chưa đọc
+                                                                    </span>
+                                                                @endif
+                                                            </td>
+                                                            <td>
+                                                                @if ($nguoiNhan->da_doc && $nguoiNhan->thoi_gian_doc)
+                                                                    <small class="text-muted">
+                                                                        {{ \Carbon\Carbon::parse($nguoiNhan->thoi_gian_doc)->format('d/m/Y H:i') }}
+                                                                    </small>
+                                                                @else
+                                                                    <small class="text-muted">-</small>
+                                                                @endif
+                                                            </td>
+                                                        </tr>
+                                                    @empty
+                                                        <tr>
+                                                            <td colspan="5" class="text-center text-muted py-3">
+                                                                <i class="bi bi-inbox fs-3 d-block mb-2"></i>
+                                                                Chưa có người nhận
+                                                            </td>
+                                                        </tr>
+                                                    @endforelse
+                                                </tbody>
+                                            </table>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
                 </div>
             </div>
         </section>
     </div>
 @endsection
+
+@push('scripts')
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const filterTrangThai = document.getElementById('filterTrangThai');
+            const searchNguoiNhan = document.getElementById('searchNguoiNhan');
+            const rows = document.querySelectorAll('.nguoi-nhan-row');
+
+            function filterTable() {
+                const trangThaiFilter = filterTrangThai ? filterTrangThai.value : '';
+                const searchText = searchNguoiNhan ? searchNguoiNhan.value.toLowerCase() : '';
+
+                rows.forEach(row => {
+                    const trangThai = row.dataset.trangThai;
+                    const ten = row.querySelector('.nguoi-nhan-ten')?.textContent.toLowerCase() || '';
+                    const email = row.querySelector('.nguoi-nhan-email')?.textContent.toLowerCase() || '';
+
+                    const matchTrangThai = !trangThaiFilter || trangThai === trangThaiFilter;
+                    const matchSearch = !searchText || ten.includes(searchText) || email.includes(
+                        searchText);
+
+                    row.style.display = matchTrangThai && matchSearch ? '' : 'none';
+                });
+            }
+
+            if (filterTrangThai) filterTrangThai.addEventListener('change', filterTable);
+            if (searchNguoiNhan) searchNguoiNhan.addEventListener('input', filterTable);
+        });
+    </script>
+@endpush
