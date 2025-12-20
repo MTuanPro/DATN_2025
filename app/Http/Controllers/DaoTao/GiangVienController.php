@@ -11,6 +11,7 @@ use App\Models\DanhMuc\TrinhDo;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use App\Traits\ImportHelper;
 
@@ -27,7 +28,7 @@ class GiangVienController extends Controller
         // Tìm kiếm tương đối
         if ($request->filled('search')) {
             $search = trim($request->search);
-            
+
             $query->where(function ($q) use ($search) {
                 $q->where('ma_giang_vien', 'like', "%{$search}%")
                     ->orWhere('ho_ten', 'like', "%{$search}%")
@@ -35,7 +36,7 @@ class GiangVienController extends Controller
                     ->orWhere('so_dien_thoai', 'like', "%{$search}%")
                     ->orWhereHas('khoa', function ($query) use ($search) {
                         $query->where('ten_khoa', 'like', "%{$search}%")
-                              ->orWhere('ma_khoa', 'like', "%{$search}%");
+                            ->orWhere('ma_khoa', 'like', "%{$search}%");
                     })
                     ->orWhereHas('trinhDo', function ($query) use ($search) {
                         $query->where('ten_trinh_do', 'like', "%{$search}%");
@@ -316,20 +317,6 @@ class GiangVienController extends Controller
                 $lyDoKhongXoa[] = "Giảng viên đang là trưởng khoa '{$khoaTruongKhoa->ten_khoa}'. Vui lòng thay đổi trưởng khoa trước khi xóa.";
             }
 
-            // Kiểm tra giảng viên có đang chủ nhiệm lớp hành chính không
-            $lopHanhChinh = \App\Models\DaoTao\LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)->count();
-            if ($lopHanhChinh > 0) {
-                $canXoa = false;
-                $lyDoKhongXoa[] = "Giảng viên đang chủ nhiệm {$lopHanhChinh} lớp hành chính. Vui lòng thay đổi chủ nhiệm trước khi xóa.";
-            }
-
-            // Kiểm tra giảng viên có đang chủ nhiệm sinh viên không
-            $sinhVienChuNhiem = \App\Models\DaoTao\SinhVien::where('giang_vien_chu_nhiem_id', $giangVien->id)->count();
-            if ($sinhVienChuNhiem > 0) {
-                $canXoa = false;
-                $lyDoKhongXoa[] = "Giảng viên đang chủ nhiệm {$sinhVienChuNhiem} sinh viên. Vui lòng thay đổi chủ nhiệm trước khi xóa.";
-            }
-
             if (!$canXoa) {
                 DB::rollBack();
                 return back()->with('error', implode(' ', $lyDoKhongXoa));
@@ -365,8 +352,6 @@ class GiangVienController extends Controller
             }
 
             // Set null cho các trường liên quan
-            DB::table('lop_hanh_chinh')->where('giang_vien_chu_nhiem_id', $giangVien->id)->update(['giang_vien_chu_nhiem_id' => null]);
-            DB::table('sinh_vien')->where('giang_vien_chu_nhiem_id', $giangVien->id)->update(['giang_vien_chu_nhiem_id' => null]);
             DB::table('khoa')->where('truong_khoa_id', $giangVien->id)->update(['truong_khoa_id' => null]);
 
             // Xóa ảnh đại diện
@@ -730,20 +715,6 @@ class GiangVienController extends Controller
                         $lyDoKhongXoa[] = "Giảng viên đang là trưởng khoa '{$khoaTruongKhoa->ten_khoa}'";
                     }
 
-                    // Kiểm tra giảng viên có đang chủ nhiệm lớp hành chính không
-                    $lopHanhChinh = \App\Models\DaoTao\LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)->count();
-                    if ($lopHanhChinh > 0) {
-                        $canXoa = false;
-                        $lyDoKhongXoa[] = "Đang chủ nhiệm {$lopHanhChinh} lớp hành chính";
-                    }
-
-                    // Kiểm tra giảng viên có đang chủ nhiệm sinh viên không
-                    $sinhVienChuNhiem = \App\Models\DaoTao\SinhVien::where('giang_vien_chu_nhiem_id', $giangVien->id)->count();
-                    if ($sinhVienChuNhiem > 0) {
-                        $canXoa = false;
-                        $lyDoKhongXoa[] = "Đang chủ nhiệm {$sinhVienChuNhiem} sinh viên";
-                    }
-
                     if (!$canXoa) {
                         $skipped++;
                         $errors[] = "Giảng viên {$giangVien->ho_ten} (ID: {$id}): " . implode(', ', $lyDoKhongXoa);
@@ -768,8 +739,6 @@ class GiangVienController extends Controller
                     }
 
                     // Set null cho các trường liên quan
-                    DB::table('lop_hanh_chinh')->where('giang_vien_chu_nhiem_id', $giangVien->id)->update(['giang_vien_chu_nhiem_id' => null]);
-                    DB::table('sinh_vien')->where('giang_vien_chu_nhiem_id', $giangVien->id)->update(['giang_vien_chu_nhiem_id' => null]);
                     DB::table('khoa')->where('truong_khoa_id', $giangVien->id)->update(['truong_khoa_id' => null]);
 
                     // Xóa ảnh đại diện

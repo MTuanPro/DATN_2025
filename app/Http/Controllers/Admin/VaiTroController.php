@@ -35,7 +35,8 @@ class VaiTroController extends Controller
      */
     public function create()
     {
-        return view('admin.vai-tro.create');
+        $actors = VaiTro::ACTORS;
+        return view('admin.vai-tro.create', compact('actors'));
     }
 
     /**
@@ -48,6 +49,7 @@ class VaiTroController extends Controller
             'ten_vai_tro' => 'required|string|max:255|unique:vai_tro,ten_vai_tro',
             'mo_ta' => 'nullable|string',
             'muc_do_uu_tien' => 'required|integer|min:1|max:100',
+            'actor' => 'required|string|in:admin,dao_tao,giang_vien,sinh_vien',
         ], [
             'ma_vai_tro.required' => 'Mã vai trò không được để trống',
             'ma_vai_tro.unique' => 'Mã vai trò đã tồn tại',
@@ -60,6 +62,8 @@ class VaiTroController extends Controller
             'muc_do_uu_tien.integer' => 'Mức độ ưu tiên phải là số nguyên',
             'muc_do_uu_tien.min' => 'Mức độ ưu tiên tối thiểu là 1',
             'muc_do_uu_tien.max' => 'Mức độ ưu tiên tối đa là 100',
+            'actor.required' => 'Vui lòng chọn nhóm người dùng (Actor)',
+            'actor.in' => 'Nhóm người dùng không hợp lệ',
         ]);
 
         VaiTro::create($validated);
@@ -82,7 +86,8 @@ class VaiTroController extends Controller
     public function edit(VaiTro $vaiTro)
     {
         $vaiTro->loadCount('users');
-        return view('admin.vai-tro.edit', compact('vaiTro'));
+        $actors = VaiTro::ACTORS;
+        return view('admin.vai-tro.edit', compact('vaiTro', 'actors'));
     }
 
     /**
@@ -95,6 +100,7 @@ class VaiTroController extends Controller
             'ten_vai_tro' => 'required|string|max:255|unique:vai_tro,ten_vai_tro,' . $vaiTro->id,
             'mo_ta' => 'nullable|string',
             'muc_do_uu_tien' => 'required|integer|min:1|max:100',
+            'actor' => 'required|string|in:admin,dao_tao,giang_vien,sinh_vien',
         ], [
             'ma_vai_tro.required' => 'Mã vai trò không được để trống',
             'ma_vai_tro.unique' => 'Mã vai trò đã tồn tại',
@@ -107,6 +113,8 @@ class VaiTroController extends Controller
             'muc_do_uu_tien.integer' => 'Mức độ ưu tiên phải là số nguyên',
             'muc_do_uu_tien.min' => 'Mức độ ưu tiên tối thiểu là 1',
             'muc_do_uu_tien.max' => 'Mức độ ưu tiên tối đa là 100',
+            'actor.required' => 'Vui lòng chọn nhóm người dùng (Actor)',
+            'actor.in' => 'Nhóm người dùng không hợp lệ',
         ]);
 
         $vaiTro->update($validated);

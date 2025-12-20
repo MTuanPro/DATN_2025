@@ -210,7 +210,7 @@
                                 <td>
                                     <strong>{{ $cb->sinhVien->ma_sinh_vien }}</strong><br>
                                     <small>{{ $cb->sinhVien->ho_ten }}</small><br>
-                                    <small class="text-muted">{{ $cb->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</small>
+                                    <small class="text-muted">{{ $cb->sinhVien->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</small>
                                 </td>
                                 <td>{{ $cb->hocKy->ten_hoc_ky }}<br><small>{{ $cb->hocKy->nam_hoc }}</small></td>
                                 <td>

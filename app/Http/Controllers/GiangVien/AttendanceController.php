@@ -148,7 +148,7 @@ class AttendanceController extends Controller
      *    - Query PhanCongGiangDay với lop_hoc_phan_id và giang_vien_id
      *    - Abort 403 nếu không có quyền
      * 4. Lấy danh sách sinh viên trong lớp:
-     *    - Query LopHocPhanSinhVien với eager load sinhVien.lopHanhChinh
+     *    - Query LopHocPhanSinhVien với eager load sinhVien.nganh
      *    - Where lop_hoc_phan_id = buổi học's class
      *    - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
      *    - OrderBy ID để danh sách ổn định
@@ -448,7 +448,7 @@ class AttendanceController extends Controller
      *    a. Lấy danh sách sinh viên trong lớp:
      *       - Query LopHocPhanSinhVien
      *       - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
-     *       - Eager load sinhVien.lopHanhChinh
+     *       - Eager load sinhVien.nganh
      *    b. Tính tổng buổi học đã diễn ra:
      *       - Count LichHocChiTiet where ngay_hoc <= now()
      *    c. Với mỗi sinh viên, tính thống kê điểm danh:
@@ -588,7 +588,7 @@ class AttendanceController extends Controller
      * 5. Lấy danh sách sinh viên:
      *    - Query LopHocPhanSinhVien
      *    - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
-     *    - Eager load sinhVien.lopHanhChinh
+     *    - Eager load sinhVien.nganh
      * 6. Tính tổng buổi học đã diễn ra:
      *    - Count LichHocChiTiet where ngay_hoc <= now()
      * 7. Với mỗi sinh viên, tính thống kê điểm danh:
@@ -806,7 +806,7 @@ class AttendanceController extends Controller
      * 5. Lấy danh sách sinh viên trong lớp:
      *    - Query LopHocPhanSinhVien
      *    - WhereIn trang_thai: ['da_xep_lop', 'dang_hoc', 'da_hoan_thanh']
-     *    - Eager load sinhVien.lopHanhChinh
+     *    - Eager load sinhVien.nganh
      * 6. Tính tổng buổi học đã diễn ra:
      *    - Count LichHocChiTiet
      *    - Where ngay_hoc <= Carbon::now()

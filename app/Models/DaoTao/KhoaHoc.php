@@ -20,9 +20,4 @@ class KhoaHoc extends Model
         'trang_thai',
         'mo_ta',
     ];
-
-    public function lopHanhChinhs()
-    {
-        return $this->hasMany(LopHanhChinh::class, 'khoa_hoc_id');
-    }
 }

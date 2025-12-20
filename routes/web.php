@@ -116,6 +116,11 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
     Route::post('/users/{user}/verify-email', [AdminUserController::class, 'verifyEmail'])->name('users.verify-email');
     Route::get('/users/{user}/login-history', [AdminUserController::class, 'loginHistory'])->name('users.login-history');
     Route::post('/users/{user}/force-logout', [AdminUserController::class, 'forceLogout'])->name('users.force-logout');
+    
+    // User Import/Export
+    Route::get('/users/export/excel', [AdminUserController::class, 'export'])->name('users.export');
+    Route::post('/users/import/excel', [AdminUserController::class, 'import'])->name('users.import');
+    Route::get('/users/import/template', [AdminUserController::class, 'downloadTemplate'])->name('users.import.template');
 
     // Role Management (Member 2)
     Route::resource('vai-tro', VaiTroController::class);
@@ -208,7 +213,7 @@ Route::middleware(['auth', 'role:admin'])->prefix('admin')->name('admin.')->grou
 });
 
 // ========== Đào tạo Routes (Trưởng phòng & Nhân viên) ==========
-Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-tao')->name('dao-tao.')->group(function () {
+Route::middleware(['auth', 'role:dao_tao'])->prefix('dao-tao')->name('dao-tao.')->group(function () {
     Route::get('/dashboard', [DaoTaoDashboardController::class, 'index'])->name('dashboard');
 
     // Quản lý Ca học
@@ -216,16 +221,39 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::post('ca-hoc/{caHoc}/toggle-status', [\App\Http\Controllers\DaoTao\CaHocController::class, 'toggleStatus'])->name('ca-hoc.toggle-status');
 
     // PHASE 1: Danh mục
-    Route::resource('khoa', KhoaController::class);
-    Route::resource('nganh', NganhController::class);
+    // Quản lý Khoa - gắn quyền chi tiết
+    Route::get('khoa', [KhoaController::class, 'index'])->name('khoa.index')->middleware('permission:khoa.xem');
+    Route::get('khoa/create', [KhoaController::class, 'create'])->name('khoa.create')->middleware('permission:khoa.them');
+    Route::post('khoa', [KhoaController::class, 'store'])->name('khoa.store')->middleware('permission:khoa.them');
+    Route::get('khoa/{khoa}', [KhoaController::class, 'show'])->name('khoa.show')->middleware('permission:khoa.xem');
+    Route::get('khoa/{khoa}/edit', [KhoaController::class, 'edit'])->name('khoa.edit')->middleware('permission:khoa.sua');
+    Route::put('khoa/{khoa}', [KhoaController::class, 'update'])->name('khoa.update')->middleware('permission:khoa.sua');
+    Route::delete('khoa/{khoa}', [KhoaController::class, 'destroy'])->name('khoa.destroy')->middleware('permission:khoa.xoa');
+
+    // Quản lý Ngành - gắn quyền chi tiết
+    Route::get('nganh', [NganhController::class, 'index'])->name('nganh.index')->middleware('permission:nganh.xem');
+    Route::get('nganh/create', [NganhController::class, 'create'])->name('nganh.create')->middleware('permission:nganh.them');
+    Route::post('nganh', [NganhController::class, 'store'])->name('nganh.store')->middleware('permission:nganh.them');
+    Route::get('nganh/{nganh}', [NganhController::class, 'show'])->name('nganh.show')->middleware('permission:nganh.xem');
+    Route::get('nganh/{nganh}/edit', [NganhController::class, 'edit'])->name('nganh.edit')->middleware('permission:nganh.sua');
+    Route::put('nganh/{nganh}', [NganhController::class, 'update'])->name('nganh.update')->middleware('permission:nganh.sua');
+    Route::delete('nganh/{nganh}', [NganhController::class, 'destroy'])->name('nganh.destroy')->middleware('permission:nganh.xoa');
+
     Route::resource('chuyen-nganh', ChuyenNganhController::class);
     Route::resource('khoa-hoc', KhoaHocController::class);
     Route::resource('trinh-do', TrinhDoController::class);
     Route::resource('trang-thai-hoc-tap', TrangThaiHocTapController::class);
     Route::resource('phong-hoc', PhongHocController::class);
 
-    // Môn học và môn tiên quyết
-    Route::resource('mon-hoc', MonHocController::class);
+    // Môn học và môn tiên quyết - gắn quyền chi tiết
+    Route::get('mon-hoc', [MonHocController::class, 'index'])->name('mon-hoc.index')->middleware('permission:mon_hoc.xem');
+    Route::get('mon-hoc/create', [MonHocController::class, 'create'])->name('mon-hoc.create')->middleware('permission:mon_hoc.them');
+    Route::post('mon-hoc', [MonHocController::class, 'store'])->name('mon-hoc.store')->middleware('permission:mon_hoc.them');
+    Route::get('mon-hoc/{monHoc}', [MonHocController::class, 'show'])->name('mon-hoc.show')->middleware('permission:mon_hoc.xem');
+    Route::get('mon-hoc/{monHoc}/edit', [MonHocController::class, 'edit'])->name('mon-hoc.edit')->middleware('permission:mon_hoc.sua');
+    Route::put('mon-hoc/{monHoc}', [MonHocController::class, 'update'])->name('mon-hoc.update')->middleware('permission:mon_hoc.sua');
+    Route::delete('mon-hoc/{monHoc}', [MonHocController::class, 'destroy'])->name('mon-hoc.destroy')->middleware('permission:mon_hoc.xoa');
+
     Route::get('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'tienQuyet'])->name('mon-hoc.tien-quyet');
     Route::post('mon-hoc/{monHoc}/tien-quyet', [MonHocController::class, 'storeTienQuyet'])->name('mon-hoc.tien-quyet.store');
     Route::put('mon-hoc/{monHoc}/tien-quyet/{tienQuyet}', [MonHocTienQuyetController::class, 'update'])->name('mon-hoc.tien-quyet.update');
@@ -242,20 +270,33 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
     Route::post('hoc-ky/{hocKy}/mo-dang-ky', [HocKyController::class, 'moDangKy'])
         ->name('hoc-ky.mo-dang-ky');
 
-    Route::resource('giang-vien', DaoTaoGiangVienController::class);
-    Route::delete('giang-vien-destroy-multiple', [DaoTaoGiangVienController::class, 'destroyMultiple'])->name('giang-vien.destroy-multiple');
+    // Quản lý Giảng viên - gắn quyền chi tiết
+    Route::get('giang-vien', [DaoTaoGiangVienController::class, 'index'])->name('giang-vien.index')->middleware('permission:giang_vien.xem');
+    Route::get('giang-vien/create', [DaoTaoGiangVienController::class, 'create'])->name('giang-vien.create')->middleware('permission:giang_vien.them');
+    Route::post('giang-vien', [DaoTaoGiangVienController::class, 'store'])->name('giang-vien.store')->middleware('permission:giang_vien.them');
+    Route::get('giang-vien/{giang_vien}', [DaoTaoGiangVienController::class, 'show'])->name('giang-vien.show')->middleware('permission:giang_vien.xem');
+    Route::get('giang-vien/{giang_vien}/edit', [DaoTaoGiangVienController::class, 'edit'])->name('giang-vien.edit')->middleware('permission:giang_vien.sua');
+    Route::put('giang-vien/{giang_vien}', [DaoTaoGiangVienController::class, 'update'])->name('giang-vien.update')->middleware('permission:giang_vien.sua');
+    Route::delete('giang-vien/{giang_vien}', [DaoTaoGiangVienController::class, 'destroy'])->name('giang-vien.destroy')->middleware('permission:giang_vien.xoa');
+    Route::delete('giang-vien-destroy-multiple', [DaoTaoGiangVienController::class, 'destroyMultiple'])->name('giang-vien.destroy-multiple')->middleware('permission:giang_vien.xoa');
     Route::get('giang-vien-import', [DaoTaoGiangVienController::class, 'showImportForm'])
-        ->name('giang-vien.show-import-form');
+        ->name('giang-vien.show-import-form')->middleware('permission:giang_vien.them');
     Route::post('giang-vien-import', [DaoTaoGiangVienController::class, 'import'])
-        ->name('giang-vien.import');
+        ->name('giang-vien.import')->middleware('permission:giang_vien.them');
     Route::get('giang-vien-template', [DaoTaoGiangVienController::class, 'downloadTemplate'])
         ->name('giang-vien.download-template');
 
-    // PHASE 3: Sinh viên
-    Route::resource('sinh-vien', SinhVienController::class);
-    Route::delete('sinh-vien-destroy-multiple', [SinhVienController::class, 'destroyMultiple'])->name('sinh-vien.destroy-multiple');
-    Route::get('sinh-vien-import', [SinhVienController::class, 'showImportForm'])->name('sinh-vien.show-import-form');
-    Route::post('sinh-vien-import', [SinhVienController::class, 'import'])->name('sinh-vien.import');
+    // PHASE 3: Sinh viên - gắn quyền chi tiết
+    Route::get('sinh-vien', [SinhVienController::class, 'index'])->name('sinh-vien.index')->middleware('permission:sinh_vien.xem');
+    Route::get('sinh-vien/create', [SinhVienController::class, 'create'])->name('sinh-vien.create')->middleware('permission:sinh_vien.them');
+    Route::post('sinh-vien', [SinhVienController::class, 'store'])->name('sinh-vien.store')->middleware('permission:sinh_vien.them');
+    Route::get('sinh-vien/{sinh_vien}', [SinhVienController::class, 'show'])->name('sinh-vien.show')->middleware('permission:sinh_vien.xem');
+    Route::get('sinh-vien/{sinh_vien}/edit', [SinhVienController::class, 'edit'])->name('sinh-vien.edit')->middleware('permission:sinh_vien.sua');
+    Route::put('sinh-vien/{sinh_vien}', [SinhVienController::class, 'update'])->name('sinh-vien.update')->middleware('permission:sinh_vien.sua');
+    Route::delete('sinh-vien/{sinh_vien}', [SinhVienController::class, 'destroy'])->name('sinh-vien.destroy')->middleware('permission:sinh_vien.xoa');
+    Route::delete('sinh-vien-destroy-multiple', [SinhVienController::class, 'destroyMultiple'])->name('sinh-vien.destroy-multiple')->middleware('permission:sinh_vien.xoa');
+    Route::get('sinh-vien-import', [SinhVienController::class, 'showImportForm'])->name('sinh-vien.show-import-form')->middleware('permission:sinh_vien.them');
+    Route::post('sinh-vien-import', [SinhVienController::class, 'import'])->name('sinh-vien.import')->middleware('permission:sinh_vien.them');
     Route::get('sinh-vien-template', [SinhVienController::class, 'downloadTemplate'])->name('sinh-vien.download-template');
 
     // PHASE 4: Lớp học phần & Phân công
@@ -566,7 +607,9 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
 
     // PHASE 6: Lịch sử điểm danh
     Route::middleware('sinhvien.check')->prefix('diem-danh')->name('diem-danh.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'tongHopDiemDanh'])->name('index');
+        Route::get('/', [\App\Http\Controllers\SinhVien\DiemDanhController::class, 'index'])->name('index');
+        Route::post('/{lichHocChiTietId}', [\App\Http\Controllers\SinhVien\DiemDanhController::class, 'store'])->name('store');
+        Route::get('/lich-su', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'tongHopDiemDanh'])->name('lich-su');
         Route::post('/yeu-cau-diem-danh-bu', [\App\Http\Controllers\SinhVien\YeuCauDiemDanhBuController::class, 'store'])->name('yeu-cau-diem-danh-bu.store');
     });
 
@@ -690,13 +733,13 @@ Route::get('/test-casso/{hocPhiId}', function ($hocPhiId) {
     try {
         $cassoService = new \App\Services\CassoService();
         $paymentMemo = $cassoService->generatePaymentMemo($hocPhiId);
-        
+
         // Get transactions
         $result = $cassoService->getTransactions([
             'fromDate' => now()->subDays(30)->format('Y-m-d'),
             'toDate' => now()->format('Y-m-d')
         ]);
-        
+
         // Parse transactions
         $transactions = [];
         if (isset($result['data'])) {
@@ -706,7 +749,7 @@ Route::get('/test-casso/{hocPhiId}', function ($hocPhiId) {
                 $transactions = $result['data'];
             }
         }
-        
+
         // Find matching transactions
         $matching = [];
         foreach ($transactions as $tx) {
@@ -720,7 +763,7 @@ Route::get('/test-casso/{hocPhiId}', function ($hocPhiId) {
                 ];
             }
         }
-        
+
         return response()->json([
             'hoc_phi_id' => $hocPhiId,
             'payment_memo' => $paymentMemo,

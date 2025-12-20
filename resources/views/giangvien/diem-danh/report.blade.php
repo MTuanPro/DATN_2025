@@ -135,7 +135,7 @@
                                                 <td>{{ $index + 1 }}</td>
                                                 <td><strong>{{ $item['sinh_vien']->ma_sinh_vien }}</strong></td>
                                                 <td>{{ $item['sinh_vien']->ho_ten }}</td>
-                                                <td>{{ $item['sinh_vien']->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                                                <td>{{ $item['sinh_vien']->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</td>
                                                 <td class="text-center"><strong>{{ $item['tong_buoi_hoc'] }}</strong></td>
                                                 <td class="text-center text-success"><strong>{{ $item['stats']->co_mat ?? 0 }}</strong></td>
                                                 <td class="text-center text-danger">{{ $item['stats']->vang ?? 0 }}</td>

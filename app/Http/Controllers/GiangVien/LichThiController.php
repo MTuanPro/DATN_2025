@@ -611,7 +611,7 @@ class LichThiController extends Controller
 
             $danhSachSinhVien[] = [
                 'sinh_vien' => $sv->sinhVien,
-                'lop_hanh_chinh' => null, // TODO: Model LopHanhChinh chưa được tạo
+                'nganh' => null, // TODO: Model nganh chưa được tạo
                 'tong_buoi_hoc' => $tongBuoi,
                 'co_mat' => $buoiCoMat,
                 'vang' => 0,

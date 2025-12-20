@@ -66,7 +66,7 @@
                                 </tr>
                                 <tr>
                                     <th>Lớp</th>
-                                    <td>{{ $canhBao->sinhVien->lop_hanh_chinh }}</td>
+                                    <td>{{ $canhBao->sinhVien->nganh }}</td>
                                 </tr>
                                 <tr>
                                     <th>Học kỳ</th>

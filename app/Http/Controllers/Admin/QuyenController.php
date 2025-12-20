@@ -14,7 +14,7 @@ class QuyenController extends Controller
      */
     public function index(Request $request)
     {
-        $query = Quyen::with('nhomQuyen');
+        $query = Quyen::with(['nhomQuyen', 'actors']);
 
         // Tìm kiếm
         if ($request->filled('search')) {
@@ -31,10 +31,16 @@ class QuyenController extends Controller
             $query->where('nhom_quyen_id', $request->nhom_quyen_id);
         }
 
+        // Lọc theo actor
+        if ($request->filled('actor')) {
+            $query->forActor($request->actor);
+        }
+
         $quyens = $query->orderBy('ma_quyen')->paginate(10);
         $nhomQuyens = NhomQuyen::orderBy('ten_nhom')->get();
+        $actors = Quyen::ACTORS;
 
-        return view('admin.quyen.index', compact('quyens', 'nhomQuyens'));
+        return view('admin.quyen.index', compact('quyens', 'nhomQuyens', 'actors'));
     }
 
     /**
@@ -43,7 +49,8 @@ class QuyenController extends Controller
     public function create()
     {
         $nhomQuyens = NhomQuyen::orderBy('ten_nhom')->get();
-        return view('admin.quyen.create', compact('nhomQuyens'));
+        $actors = Quyen::ACTORS;
+        return view('admin.quyen.create', compact('nhomQuyens', 'actors'));
     }
 
     /**
@@ -56,6 +63,8 @@ class QuyenController extends Controller
             'ten_quyen' => 'required|string|max:255',
             'mo_ta' => 'nullable|string',
             'nhom_quyen_id' => 'required|exists:nhom_quyen,id',
+            'actors' => 'required|array|min:1',
+            'actors.*' => 'in:' . implode(',', array_keys(Quyen::ACTORS)),
         ], [
             'ma_quyen.required' => 'Mã quyền không được để trống',
             'ma_quyen.unique' => 'Mã quyền đã tồn tại',
@@ -65,9 +74,19 @@ class QuyenController extends Controller
             'ten_quyen.max' => 'Tên quyền không được quá 255 ký tự',
             'nhom_quyen_id.required' => 'Vui lòng chọn nhóm quyền',
             'nhom_quyen_id.exists' => 'Nhóm quyền không tồn tại',
+            'actors.required' => 'Vui lòng chọn ít nhất một nhóm người dùng (Actor)',
+            'actors.min' => 'Vui lòng chọn ít nhất một nhóm người dùng (Actor)',
         ]);
 
-        Quyen::create($validated);
+        $quyen = Quyen::create([
+            'ma_quyen' => $validated['ma_quyen'],
+            'ten_quyen' => $validated['ten_quyen'],
+            'mo_ta' => $validated['mo_ta'] ?? null,
+            'nhom_quyen_id' => $validated['nhom_quyen_id'],
+        ]);
+
+        // Sync actors
+        $quyen->syncActors($validated['actors']);
 
         return redirect()->route('admin.quyen.index')
             ->with('success', 'Thêm quyền thành công!');
@@ -78,8 +97,10 @@ class QuyenController extends Controller
      */
     public function edit(Quyen $quyen)
     {
+        $quyen->load('actors');
         $nhomQuyens = NhomQuyen::orderBy('ten_nhom')->get();
-        return view('admin.quyen.edit', compact('quyen', 'nhomQuyens'));
+        $actors = Quyen::ACTORS;
+        return view('admin.quyen.edit', compact('quyen', 'nhomQuyens', 'actors'));
     }
 
     /**
@@ -92,6 +113,8 @@ class QuyenController extends Controller
             'ten_quyen' => 'required|string|max:255',
             'mo_ta' => 'nullable|string',
             'nhom_quyen_id' => 'required|exists:nhom_quyen,id',
+            'actors' => 'required|array|min:1',
+            'actors.*' => 'in:' . implode(',', array_keys(Quyen::ACTORS)),
         ], [
             'ma_quyen.required' => 'Mã quyền không được để trống',
             'ma_quyen.unique' => 'Mã quyền đã tồn tại',
@@ -101,9 +124,19 @@ class QuyenController extends Controller
             'ten_quyen.max' => 'Tên quyền không được quá 255 ký tự',
             'nhom_quyen_id.required' => 'Vui lòng chọn nhóm quyền',
             'nhom_quyen_id.exists' => 'Nhóm quyền không tồn tại',
+            'actors.required' => 'Vui lòng chọn ít nhất một nhóm người dùng (Actor)',
+            'actors.min' => 'Vui lòng chọn ít nhất một nhóm người dùng (Actor)',
         ]);
 
-        $quyen->update($validated);
+        $quyen->update([
+            'ma_quyen' => $validated['ma_quyen'],
+            'ten_quyen' => $validated['ten_quyen'],
+            'mo_ta' => $validated['mo_ta'] ?? null,
+            'nhom_quyen_id' => $validated['nhom_quyen_id'],
+        ]);
+
+        // Sync actors
+        $quyen->syncActors($validated['actors']);
 
         return redirect()->route('admin.quyen.index')
             ->with('success', 'Cập nhật quyền thành công!');
@@ -126,4 +159,3 @@ class QuyenController extends Controller
             ->with('success', 'Xóa quyền thành công!');
     }
 }
-

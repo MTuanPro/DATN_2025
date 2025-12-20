@@ -161,7 +161,7 @@
                         <td>{{ $index + 1 }}</td>
                         <td><strong>{{ $item['sinh_vien']->ma_sinh_vien }}</strong></td>
                         <td class="text-left">{{ $item['sinh_vien']->ho_ten }}</td>
-                        <td>{{ $item['sinh_vien']->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                        <td>{{ $item['sinh_vien']->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</td>
                         <td><strong>{{ $item['tong_buoi_hoc'] }}</strong></td>
                         <td><strong>{{ $item['stats']->co_mat }}</strong></td>
                         <td>{{ $item['stats']->vang }}</td>

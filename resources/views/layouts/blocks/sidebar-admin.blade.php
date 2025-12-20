@@ -55,19 +55,15 @@
 
                 <!-- 3. THÔNG BÁO HỆ THỐNG -->
                 <li
-                    class="sidebar-item has-sub {{ Request::is('admin/thong-bao*', 'admin/nguoi-nhan-thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
+                    class="sidebar-item has-sub {{ Request::is('admin/thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
                     <a href="#" class='sidebar-link'>
                         <i class="bi bi-megaphone-fill"></i>
                         <span>Thông báo hệ thống</span>
                     </a>
-                    <ul
-                        class="submenu {{ Request::is('admin/thong-bao*', 'admin/nguoi-nhan-thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
+                    <ul class="submenu {{ Request::is('admin/thong-bao*', 'admin/mau-thong-bao*') ? 'active' : '' }}">
                         <li
                             class="submenu-item {{ Request::is('admin/thong-bao') || Request::is('admin/thong-bao/create') || Request::is('admin/thong-bao/*/edit') ? 'active' : '' }}">
                             <a href="{{ route('admin.thong-bao.index') }}">Quản lý Thông báo</a>
-                        </li>
-                        <li class="submenu-item {{ Request::is('admin/nguoi-nhan-thong-bao*') ? 'active' : '' }}">
-                            <a href="{{ route('admin.nguoi-nhan-thong-bao.index') }}">Người nhận</a>
                         </li>
                         <li class="submenu-item {{ Request::is('admin/mau-thong-bao*') ? 'active' : '' }}">
                             <a href="{{ route('admin.mau-thong-bao.index') }}">Mẫu thông báo tự động</a>
@@ -77,13 +73,8 @@
 
                 <!-- AI CHATBOT (moved lower) -->
 
-                <!-- 5. NHẬT KÝ HOẠT ĐỘNG -->
-                <li class="sidebar-item">
-                    <a href="#" class='sidebar-link'>
-                        <i class="bi bi-journal-text"></i>
-                        <span>Nhật ký hoạt động</span>
-                    </a>
-                </li>
+            
+           
 
                 <!-- 6. BÁO CÁO & THỐNG KÊ -->
                 <li class="sidebar-item has-sub {{ Request::is('admin/reports*') ? 'active' : '' }}">

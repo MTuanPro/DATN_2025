@@ -200,7 +200,7 @@
 
                             <div class="mb-2">
                                 <small class="text-muted">Lớp hành chính:</small>
-                                <div class="fw-bold">{{ $canhBao->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</div>
+                                <div class="fw-bold">{{ $canhBao->sinhVien->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</div>
                             </div>
 
                             <div class="mb-2">

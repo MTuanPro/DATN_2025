@@ -339,13 +339,13 @@
             </tr>
             <tr>
                 <td class="info-label">Lop:</td>
-                <td class="info-value">{{ $hocPhi->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                <td class="info-value">{{ $hocPhi->sinhVien->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</td>
                 <td class="info-label">Khoa hoc:</td>
-                <td class="info-value">{{ $hocPhi->sinhVien->lopHanhChinh->khoaHoc->ten_khoa_hoc ?? 'N/A' }}</td>
+                <td class="info-value">{{ $hocPhi->sinhVien->nganh->ten_nganh ?? 'N/A'->ten_khoa_hoc ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="info-label">Khoa:</td>
-                <td class="info-value" colspan="3">{{ $hocPhi->sinhVien->lopHanhChinh->nganh->khoa->ten_khoa ?? 'N/A' }}</td>
+                <td class="info-value" colspan="3">{{ $hocPhi->sinhVien->nganh->ten_nganh ?? 'N/A'->khoa->ten_khoa ?? 'N/A' }}</td>
             </tr>
             <tr>
                 <td class="info-label">Ly do thu tien:</td>

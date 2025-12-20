@@ -165,7 +165,7 @@
             </div>
             <div class="info-row">
                 <div class="info-label">Lớp hành chính:</div>
-                <div class="info-value">{{ $hocPhi->sinhVien->lopHanhChinh->ma_lop ?? 'N/A' }}</div>
+                <div class="info-value">{{ $hocPhi->sinhVien->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</div>
             </div>
             <div class="info-row">
                 <div class="info-label">Học kỳ:</div>

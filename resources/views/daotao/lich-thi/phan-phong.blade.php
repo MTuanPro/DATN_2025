@@ -185,7 +185,7 @@
                                         <td><strong>{{ $item->so_bao_danh }}</strong></td>
                                         <td>{{ $item->sinhVien->ma_sinh_vien }}</td>
                                         <td>{{ $item->sinhVien->ho_ten }}</td>
-                                        <td>{{ $item->sinhVien->lopHanhChinh->ten_lop ?? 'N/A' }}</td>
+                                        <td>{{ $item->sinhVien->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</td>
                                         <td>
                                             @if($item->trang_thai === 'du_thi')
                                                 <span class="badge bg-success">Dự thi</span>

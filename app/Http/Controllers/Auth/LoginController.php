@@ -101,29 +101,37 @@ class LoginController extends Controller
      */
     protected function redirectToDashboard($user)
     {
-        // Lấy vai trò của user
-        $roles = $user->vaiTro()->pluck('ma_vai_tro')->toArray();
+        // Lấy vai trò có ưu tiên cao nhất của user (theo muc_do_uu_tien)
+        $vaiTro = $user->vaiTro()->orderBy('muc_do_uu_tien', 'desc')->first();
 
-        // Ưu tiên theo thứ tự: admin -> dao_tao -> giang_vien -> sinh_vien
-        if (in_array('admin', $roles)) {
-            return redirect()->route('admin.dashboard');
+        if (!$vaiTro) {
+            // Nếu không có vai trò nào, logout
+            Auth::logout();
+            return redirect()->route('login')->with('error', 'Tài khoản của bạn chưa được gán vai trò');
         }
 
-        if (in_array('truong_phong_dt', $roles) || in_array('nhan_vien_dt', $roles)) {
-            return redirect()->route('dao-tao.dashboard');
-        }
+        // Redirect dựa trên actor của vai trò
+        return $this->redirectToActorDashboard($vaiTro->actor);
+    }
 
-        if (in_array('giang_vien', $roles)) {
-            return redirect()->route('giangvien.dashboard');
+    /**
+     * Redirect đến dashboard tương ứng với actor
+     */
+    protected function redirectToActorDashboard($actor)
+    {
+        switch ($actor) {
+            case 'admin':
+                return redirect()->route('admin.dashboard');
+            case 'dao_tao':
+                return redirect()->route('dao-tao.dashboard');
+            case 'giang_vien':
+                return redirect()->route('giangvien.dashboard');
+            case 'sinh_vien':
+                return redirect()->route('sinh-vien.dashboard');
+            default:
+                // Mặc định redirect về admin nếu actor không xác định
+                return redirect()->route('admin.dashboard');
         }
-
-        if (in_array('sinh_vien', $roles)) {
-            return redirect()->route('sinh-vien.dashboard');
-        }
-
-        // Nếu không có vai trò nào, logout
-        Auth::logout();
-        return redirect()->route('login')->with('error', 'Tài khoản của bạn chưa được gán vai trò');
     }
 
     /**

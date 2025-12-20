@@ -7,6 +7,7 @@ use App\Models\LichThi;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
+use App\Services\DieuKienThiService;
 
 class LichThiController extends Controller
 {
@@ -65,7 +66,25 @@ class LichThiController extends Controller
                           ->orderBy('gio_bat_dau', 'asc')
                           ->paginate(15);
 
-        return view('sinhvien.lich-thi.index', compact('lichThis'));
+        // Kiểm tra điều kiện được thi cho từng lịch thi
+        $dieuKienThiService = new DieuKienThiService();
+        $dieuKienThiData = [];
+        
+        foreach ($lichThis as $lichThi) {
+            $lopHocPhanSinhVien = $sinhVien->lopHocPhanSinhViens()
+                ->where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+                ->first();
+            
+            if ($lopHocPhanSinhVien) {
+                $kiemTra = $dieuKienThiService->kiemTraDieuKienThi(
+                    $lopHocPhanSinhVien->id,
+                    $lichThi->lop_hoc_phan_id
+                );
+                $dieuKienThiData[$lichThi->id] = $kiemTra;
+            }
+        }
+
+        return view('sinhvien.lich-thi.index', compact('lichThis', 'dieuKienThiData'));
     }
 
     /**
@@ -104,7 +123,21 @@ class LichThiController extends Controller
             }
         ]);
 
-        return view('sinhvien.lich-thi.show', compact('lichThi'));
+        // Kiểm tra điều kiện được thi
+        $dieuKienThiService = new DieuKienThiService();
+        $lopHocPhanSinhVien = $sinhVien->lopHocPhanSinhViens()
+            ->where('lop_hoc_phan_id', $lichThi->lop_hoc_phan_id)
+            ->first();
+        
+        $dieuKienThi = null;
+        if ($lopHocPhanSinhVien) {
+            $dieuKienThi = $dieuKienThiService->kiemTraDieuKienThi(
+                $lopHocPhanSinhVien->id,
+                $lichThi->lop_hoc_phan_id
+            );
+        }
+
+        return view('sinhvien.lich-thi.show', compact('lichThi', 'dieuKienThi'));
     }
 
     /**

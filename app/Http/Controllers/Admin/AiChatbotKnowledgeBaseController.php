@@ -191,7 +191,6 @@ class AiChatbotKnowledgeBaseController extends Controller
             'cau_tra_loi' => 'required|string',
             'tu_khoa' => 'nullable|string',
             'do_uu_tien' => 'nullable|integer|min:0|max:100',
-            'kich_hoat' => 'nullable|boolean',
         ]);
         
         $validated['nguoi_tao_id'] = Auth::id();
@@ -344,7 +343,6 @@ class AiChatbotKnowledgeBaseController extends Controller
             'cau_tra_loi' => 'required|string',
             'tu_khoa' => 'nullable|string',
             'do_uu_tien' => 'nullable|integer|min:0|max:100',
-            'kich_hoat' => 'nullable|boolean',
         ]);
         
         $validated['ngay_cap_nhat'] = now();

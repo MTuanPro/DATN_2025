@@ -8,6 +8,8 @@ use App\Models\VaiTro;
 use App\Models\Admin;
 use App\Models\DaoTao;
 use App\Mail\VerifyEmailMail;
+use App\Exports\UsersExport;
+use App\Imports\UsersImport;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
@@ -233,7 +235,7 @@ class UserController extends Controller
      * 5. Tự động tạo/xóa profile Admin dựa trên vai trò 'admin'
      * 6. Tự động tạo/xóa profile DaoTao dựa trên vai trò 'đào tạo'
      *
-     * @param Request $request Chứa name, email, trang_thai, vai_tro[]
+     * @param Request $request Chứa name, email, trang_thai, vai_tro
      * @param User $user Tài khoản cần cập nhật (route model binding)
      * @return \Illuminate\Http\RedirectResponse Redirect về index với thông báo
      * @throws \Exception Khi có lỗi trong quá trình cập nhật
@@ -244,8 +246,7 @@ class UserController extends Controller
             'name' => ['required', 'string', 'max:255'],
             'email' => ['required', 'string', 'email', 'max:255', 'unique:users,email,' . $user->id],
             'trang_thai' => ['required', 'in:hoat_dong,khoa,ngung_hoat_dong'],
-            'vai_tro' => ['nullable', 'array'],
-            'vai_tro.*' => ['exists:vai_tro,id'],
+            'vai_tro' => ['nullable', 'exists:vai_tro,id'],
         ], [
             'name.required' => 'Vui lòng nhập họ tên',
             'email.required' => 'Vui lòng nhập email',
@@ -295,11 +296,11 @@ class UserController extends Controller
 
             // Cập nhật vai trò
             if (isset($validated['vai_tro'])) {
-                $user->vaiTro()->sync($validated['vai_tro']);
+                $user->vaiTro()->sync([$validated['vai_tro']]);
 
                 // Tự động tạo Admin profile nếu gán vai trò admin
                 $adminRole = VaiTro::where('ma_vai_tro', 'admin')->first();
-                if ($adminRole && in_array($adminRole->id, $validated['vai_tro'])) {
+                if ($adminRole && $adminRole->id == $validated['vai_tro']) {
                     // Kiểm tra xem đã có profile chưa
                     $existingAdmin = Admin::where('user_id', $user->id)->first();
 
@@ -327,7 +328,7 @@ class UserController extends Controller
 
                 // Tự động tạo DaoTao profile nếu gán vai trò truong_phong_dt hoặc nhan_vien_dt
                 $daoTaoRoles = VaiTro::whereIn('ma_vai_tro', ['truong_phong_dt', 'nhan_vien_dt'])->pluck('id')->toArray();
-                if (!empty(array_intersect($daoTaoRoles, $validated['vai_tro']))) {
+                if (in_array($validated['vai_tro'], $daoTaoRoles)) {
                     // Kiểm tra xem đã có profile chưa
                     $existingDaoTao = DaoTao::where('user_id', $user->id)->first();
 
@@ -755,5 +756,103 @@ class UserController extends Controller
         DB::table('email_verification_tokens')->where('email', $request->email)->delete();
 
         return redirect()->route('login')->with('success', 'Email đã được xác thực thành công! Bạn có thể đăng nhập ngay.');
+    }
+
+    /**
+     * Export users to Excel
+     *
+     * Xuất danh sách users ra file Excel với các thông tin:
+     * - ID, Họ tên, Email, Vai trò, Trạng thái, Email đã xác thực, Ngày tạo, Ngày cập nhật
+     *
+     * @param Request $request Chứa các filter parameters (search, status, role)
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse Excel file download
+     */
+    public function export(Request $request)
+    {
+        $query = User::with('vaiTro');
+
+        // Áp dụng các filter giống như index
+        if ($request->filled('search')) {
+            $search = $request->search;
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                    ->orWhere('email', 'like', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('status')) {
+            $query->where('trang_thai', $request->status);
+        }
+
+        if ($request->filled('role')) {
+            $query->whereHas('vaiTro', function ($q) use ($request) {
+                $q->where('ma_vai_tro', $request->role);
+            });
+        }
+
+        $users = $query->orderBy('created_at', 'desc')->get();
+
+        $export = new UsersExport($users);
+        return $export->download('danh_sach_users_' . date('Y-m-d_His') . '.xlsx');
+    }
+
+    /**
+     * Import users from Excel
+     *
+     * Nhập danh sách users từ file Excel với validation:
+     * - Họ tên, Email (unique), Mật khẩu, Vai trò, Trạng thái
+     *
+     * @param Request $request Chứa file Excel
+     * @return \Illuminate\Http\RedirectResponse Redirect về index với kết quả import
+     */
+    public function import(Request $request)
+    {
+        $request->validate([
+            'file' => 'required|mimes:xlsx,xls|max:2048',
+        ], [
+            'file.required' => 'Vui lòng chọn file để import',
+            'file.mimes' => 'File phải có định dạng Excel (.xlsx, .xls)',
+            'file.max' => 'File không được vượt quá 2MB',
+        ]);
+
+        try {
+            $file = $request->file('file');
+            $filePath = $file->getRealPath();
+
+            $import = new UsersImport();
+            $result = $import->import($filePath);
+
+            if ($result['error'] > 0) {
+                $errorMessages = '<div class="mt-2" style="max-height: 300px; overflow-y: auto;">';
+                foreach ($result['errors'] as $error) {
+                    $errorMessages .= '<div class="mb-1">• ' . $error . '</div>';
+                }
+                $errorMessages .= '</div>';
+                
+                return back()->with('error', 
+                    "<strong>Import hoàn tất: {$result['success']} thành công, {$result['error']} lỗi.</strong><br><br>
+                    <strong>Chi tiết lỗi:</strong>{$errorMessages}"
+                );
+            }
+
+            return back()->with('success', "Import thành công {$result['success']} tài khoản!");
+
+        } catch (\Exception $e) {
+            return back()->with('error', 'Có lỗi xảy ra: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Download Excel template for import
+     *
+     * Tải file mẫu Excel với các cột:
+     * - Họ tên, Email, Mật khẩu, Vai trò, Trạng thái
+     * Kèm theo hướng dẫn và dữ liệu mẫu
+     *
+     * @return \Symfony\Component\HttpFoundation\StreamedResponse Excel template file
+     */
+    public function downloadTemplate()
+    {
+        return UsersImport::downloadTemplate();
     }
 }

@@ -90,6 +90,29 @@
                                     <small class="text-muted">Từ 1 (thấp nhất) đến 100 (cao nhất)</small>
                                 </div>
                             </div>
+
+                            <div class="col-md-6">
+                                <div class="form-group mb-3">
+                                    <label for="actor" class="form-label">
+                                        Nhóm người dùng (Actor) <span class="text-danger">*</span>
+                                    </label>
+                                    <select class="form-select @error('actor') is-invalid @enderror" id="actor"
+                                        name="actor">
+                                        <option value="">-- Chọn nhóm người dùng --</option>
+                                        @foreach ($actors as $key => $label)
+                                            <option value="{{ $key }}"
+                                                {{ old('actor') == $key ? 'selected' : '' }}>
+                                                {{ $label }}
+                                            </option>
+                                        @endforeach
+                                    </select>
+                                    @error('actor')
+                                        <div class="invalid-feedback">{{ $message }}</div>
+                                    @enderror
+                                    <small class="text-muted">Vai trò này sẽ được phép truy cập vào dashboard của nhóm được
+                                        chọn</small>
+                                </div>
+                            </div>
                         </div>
 
                         <div class="form-group">

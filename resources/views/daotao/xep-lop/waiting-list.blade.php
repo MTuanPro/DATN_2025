@@ -94,8 +94,8 @@
                                         <td><code>{{ $dk->sinhVien->ma_sinh_vien }}</code></td>
                                         <td>{{ $dk->sinhVien->ho_ten }}</td>
                                         <td>
-                                            @if ($dk->sinhVien->lopHanhChinh)
-                                                {{ $dk->sinhVien->lopHanhChinh->ma_lop }}
+                                            @if ($dk->sinhVien->nganh)
+                                                {{ $dk->sinhVien->nganh->ten_nganh ?? 'N/A' }}
                                             @else
                                                 <span class="text-muted">-</span>
                                             @endif

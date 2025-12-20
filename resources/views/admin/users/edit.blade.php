@@ -100,7 +100,7 @@
 
                                 {{-- Vai trò --}}
                                 <div class="form-group mb-4">
-                                    <label class="form-label">Vai trò</label>
+                                    <label class="form-label">Vai trò <span class="text-danger">*</span></label>
                                     <p class="text-muted small">
                                         <i class="bi bi-info-circle"></i>
                                         <strong>Lưu ý:</strong> Sinh viên và Giảng viên được tạo từ "Quản lý Sinh viên" và
@@ -111,9 +111,9 @@
                                             @foreach ($vaiTros as $vaiTro)
                                                 @if (!in_array($vaiTro->ma_vai_tro, ['sinh_vien', 'giang_vien']))
                                                     <div class="form-check mb-2">
-                                                        <input class="form-check-input" type="checkbox" name="vai_tro[]"
+                                                        <input class="form-check-input" type="radio" name="vai_tro"
                                                             value="{{ $vaiTro->id }}" id="role_{{ $vaiTro->id }}"
-                                                            {{ in_array($vaiTro->id, old('vai_tro', $userVaiTroIds)) ? 'checked' : '' }}>
+                                                            {{ old('vai_tro', isset($userVaiTroIds[0]) ? $userVaiTroIds[0] : null) == $vaiTro->id ? 'checked' : '' }} required>
                                                         <label class="form-check-label" for="role_{{ $vaiTro->id }}">
                                                             <strong>{{ $vaiTro->ten_vai_tro }}</strong>
                                                             @if ($vaiTro->mo_ta)

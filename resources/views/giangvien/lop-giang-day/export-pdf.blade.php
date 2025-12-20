@@ -159,7 +159,7 @@
                     <td class="center">{{ $index + 1 }}</td>
                     <td class="center">{{ $lhpsv->sinhVien->ma_sinh_vien }}</td>
                     <td>{{ $lhpsv->sinhVien->ho_ten }}</td>
-                    <td class="center">{{ $lhpsv->sinhVien->lopHanhChinh->ma_lop ?? 'N/A' }}</td>
+                    <td class="center">{{ $lhpsv->sinhVien->nganh->ten_nganh ?? 'N/A' ?? 'N/A' }}</td>
                     <td>{{ $lhpsv->sinhVien->email }}</td>
                     <td class="center">{{ $lhpsv->sinhVien->so_dien_thoai ?? '' }}</td>
                     <td class="center">

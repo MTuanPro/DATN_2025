@@ -145,12 +145,12 @@ class CanhBaoHocVuController extends Controller
         }
 
         // 2. Sinh viên trong lớp hành chính giảng viên làm chủ nhiệm
-        // TODO: Model LopHanhChinh chưa được tạo, comment lại phần này
-        // $lopChuNhiem = LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)
+        // TODO: Model nganh chưa được tạo, comment lại phần này
+        // $lopChuNhiem = nganh::where('giang_vien_chu_nhiem_id', $giangVien->id)
         //     ->first();
         // 
         // if ($lopChuNhiem) {
-        //     $svTrongLopChuNhiem = SinhVien::where('lop_hanh_chinh_id', $lopChuNhiem->id)
+        //     $svTrongLopChuNhiem = SinhVien::where('nganh_id /* �� x�a nganh_id */', $lopChuNhiem->id)
         //         ->pluck('id')
         //         ->toArray();
         //     $sinhVienIds = array_merge($sinhVienIds, $svTrongLopChuNhiem);

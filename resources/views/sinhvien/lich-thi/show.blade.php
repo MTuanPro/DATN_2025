@@ -22,8 +22,40 @@
     </div>
 
     <section class="section">
+        <!-- Cảnh báo nếu không đủ điều kiện thi -->
+        @if($dieuKienThi && !$dieuKienThi['du_dieu_kien'])
+        <div class="alert alert-danger alert-dismissible fade show" role="alert">
+            <h4 class="alert-heading"><i class="bi bi-exclamation-triangle-fill"></i> CẢNH BÁO: BẠN KHÔNG ĐỦ ĐIỀU KIỆN THI!</h4>
+            <p><strong>Bạn bị cấm thi môn này do:</strong></p>
+            <hr>
+            <p class="mb-0">
+                {{ $dieuKienThi['ly_do'] }}
+            </p>
+            @if($dieuKienThi['ty_le_co_mat'] !== null)
+            <p class="mb-0 mt-2">
+                <small>
+                    <i class="bi bi-info-circle"></i> Tỷ lệ điểm danh: <strong>{{ $dieuKienThi['ty_le_co_mat'] }}%</strong> 
+                    ({{ $dieuKienThi['buoi_co_mat'] }}/{{ $dieuKienThi['tong_buoi'] }} buổi)
+                </small>
+            </p>
+            @endif
+            @if($dieuKienThi['diem_trung_binh'] !== null)
+            <p class="mb-0">
+                <small>
+                    <i class="bi bi-info-circle"></i> Điểm trung bình: <strong>{{ $dieuKienThi['diem_trung_binh'] }}/10</strong>
+                </small>
+            </p>
+            @endif
+            <hr>
+            <p class="mb-0 text-danger">
+                <strong>Vui lòng liên hệ giảng viên bộ môn hoặc phòng Đào tạo để được hỗ trợ.</strong>
+            </p>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+        @endif
+
         <!-- Cảnh báo nếu thi hôm nay -->
-        @if($lichThi->ngay_thi->isToday())
+        @if($lichThi->ngay_thi->isToday() && (!$dieuKienThi || $dieuKienThi['du_dieu_kien']))
         <div class="alert alert-warning alert-dismissible fade show" role="alert">
             <h4 class="alert-heading"><i class="bi bi-exclamation-triangle"></i> Lưu ý quan trọng!</h4>
             <p><strong>Bạn có lịch thi HÔM NAY!</strong></p>
@@ -93,8 +125,12 @@
                                 <td>
                                     @php
                                         $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', $sinhVien->id ?? auth()->user()->sinhVien->id)->first();
+                                        $khongDuDieuKien = $dieuKienThi && !$dieuKienThi['du_dieu_kien'];
                                     @endphp
-                                    @if($thongTinThi && $thongTinThi->phongThi)
+                                    @if($khongDuDieuKien)
+                                        <span class="text-danger"><strong><i class="bi bi-x-circle-fill"></i> Không được thi</strong></span>
+                                        <br><small class="text-muted">Bạn bị cấm thi do không đủ điều kiện</small>
+                                    @elseif($thongTinThi && $thongTinThi->phongThi)
                                         <strong class="text-primary">{{ $thongTinThi->phongThi->ten_phong }}</strong>
                                         @if($thongTinThi->phongThi->vi_tri)
                                             <br><small class="text-muted"><i class="bi bi-geo-alt"></i> {{ $thongTinThi->phongThi->vi_tri }}</small>
@@ -107,7 +143,9 @@
                             <tr>
                                 <th>Số báo danh:</th>
                                 <td>
-                                    @if($thongTinThi)
+                                    @if($khongDuDieuKien)
+                                        <span class="text-danger">-</span>
+                                    @elseif($thongTinThi)
                                         <span class="badge bg-primary" style="font-size: 1.5em; padding: 10px 20px;">
                                             {{ $thongTinThi->so_bao_danh }}
                                         </span>

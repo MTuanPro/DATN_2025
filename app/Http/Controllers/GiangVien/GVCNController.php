@@ -4,7 +4,7 @@ namespace App\Http\Controllers\GiangVien;
 
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
-use App\Models\DaoTao\LopHanhChinh;
+use App\Models\DaoTao\nganh;
 use App\Models\DaoTao\SinhVien;
 use App\Models\GiangVien;
 use App\Models\BangDiem;
@@ -29,7 +29,7 @@ class GVCNController extends Controller
      *    - Auth::user()->giangVien relationship
      *    - Redirect về dashboard nếu không tìm thấy
      * 2. Query danh sách lớp chủ nhiệm:
-     *    - LopHanhChinh where giang_vien_chu_nhiem_id = giảng viên ID
+     *    - nganh where giang_vien_chu_nhiem_id = giảng viên ID
      *    - Eager load relationships:
      *      + khoaHoc: Khóa học của lớp
      *      + nganh: Ngành đào tạo
@@ -82,7 +82,7 @@ class GVCNController extends Controller
      * - Thống kê chỉ tính sinh viên thuộc lớp hành chính
      *
      * @return \Illuminate\View\View View danh sách lớp chủ nhiệm với data:
-     *   - lopChuNhiem: Collection các LopHanhChinh với computed stats
+     *   - lopChuNhiem: Collection các nganh với computed stats
      *   - giangVien: GiangVien instance hiện tại
      * @return \Illuminate\Http\RedirectResponse Nếu không tìm thấy giảng viên
      */
@@ -97,7 +97,7 @@ class GVCNController extends Controller
         }
 
         // Lấy danh sách lớp chủ nhiệm
-        $lopChuNhiem = LopHanhChinh::where('giang_vien_chu_nhiem_id', $giangVien->id)
+        $lopChuNhiem = nganh::where('giang_vien_chu_nhiem_id', $giangVien->id)
             ->with(['khoaHoc', 'nganh', 'sinhVien'])
             ->get();
 
@@ -126,7 +126,7 @@ class GVCNController extends Controller
      *    - Lấy giảng viên từ Auth::user()
      *    - Redirect nếu không tìm thấy
      * 2. Lấy thông tin lớp với kiểm tra quyền:
-     *    - FindOrFail LopHanhChinh by ID
+     *    - FindOrFail nganh by ID
      *    - Where giang_vien_chu_nhiem_id = current giảng viên
      *    - Eager load: khoaHoc, nganh, sinhVien.trangThaiHocTap, sinhVien.chuyenNganh
      * 3. Tính toán thống kê tổng hợp:
@@ -189,7 +189,7 @@ class GVCNController extends Controller
      *
      * @param int $id ID của lớp hành chính
      * @return \Illuminate\View\View View chi tiết lớp với:
-     *   - lop: LopHanhChinh instance với relationships
+     *   - lop: nganh instance với relationships
      *   - thongKe: Array thống kê tổng hợp
      *   - phanBoChuyenNganh: Collection phân bố chuyên ngành
      *   - giangVien: GiangVien instance
@@ -206,7 +206,7 @@ class GVCNController extends Controller
         }
 
         // Lấy thông tin lớp
-        $lop = LopHanhChinh::where('id', $id)
+        $lop = nganh::where('id', $id)
             ->where('giang_vien_chu_nhiem_id', $giangVien->id)
             ->with(['khoaHoc', 'nganh', 'sinhVien.trangThaiHocTap', 'sinhVien.chuyenNganh'])
             ->firstOrFail();
@@ -255,11 +255,11 @@ class GVCNController extends Controller
      * 1. Xác thực GVCN đang đăng nhập
      *    - Redirect nếu không tìm thấy giảng viên
      * 2. Kiểm tra quyền truy cập:
-     *    - FindOrFail LopHanhChinh by ID
+     *    - FindOrFail nganh by ID
      *    - Where giang_vien_chu_nhiem_id = current giảng viên
      *    - Eager load khoaHoc, nganh
      * 3. Build query sinh viên:
-     *    - Base: SinhVien where lop_hanh_chinh_id = $id
+     *    - Base: SinhVien where nganh_id = $id
      *    - Eager load: trangThaiHocTap, nganh, chuyenNganh, user
      * 4. Apply filters từ request:
      *    a. Tìm kiếm text (search):
@@ -331,7 +331,7 @@ class GVCNController extends Controller
      *   - chuyen_nganh_id (int): ID chuyên ngành
      * @param int $id ID lớp hành chính
      * @return \Illuminate\View\View View danh sách sinh viên với:
-     *   - lop: LopHanhChinh instance
+     *   - lop: nganh instance
      *   - sinhViens: Paginated collection sinh viên
      *   - giangVien: GiangVien instance
      *   - chuyenNganhs: Collection chuyên ngành cho filter
@@ -349,13 +349,13 @@ class GVCNController extends Controller
         }
 
         // Kiểm tra quyền truy cập
-        $lop = LopHanhChinh::where('id', $id)
+        $lop = nganh::where('id', $id)
             ->where('giang_vien_chu_nhiem_id', $giangVien->id)
             ->with(['khoaHoc', 'nganh'])
             ->firstOrFail();
 
         // Query sinh viên
-        $query = SinhVien::where('lop_hanh_chinh_id', $id)
+        $query = SinhVien::where('nganh_id', $id)
             ->with(['trangThaiHocTap', 'nganh', 'chuyenNganh', 'user']);
 
         // Tìm kiếm
@@ -415,7 +415,7 @@ class GVCNController extends Controller
      *    - FindOrFail lớp where giang_vien_chu_nhiem_id
      *    - Eager load khoaHoc, nganh
      * 2. Query danh sách sinh viên:
-     *    - SinhVien where lop_hanh_chinh_id
+     *    - SinhVien where nganh_id
      *    - Eager load: trangThaiHocTap, nganh, chuyenNganh
      *    - OrderBy ma_sinh_vien ASC
      * 3. Tạo Spreadsheet object (PhpSpreadsheet)
@@ -504,13 +504,13 @@ class GVCNController extends Controller
         }
 
         // Lấy thông tin lớp
-        $lop = LopHanhChinh::where('id', $id)
+        $lop = nganh::where('id', $id)
             ->where('giang_vien_chu_nhiem_id', $giangVien->id)
             ->with(['khoaHoc', 'nganh'])
             ->firstOrFail();
 
         // Lấy danh sách sinh viên
-        $sinhViens = SinhVien::where('lop_hanh_chinh_id', $id)
+        $sinhViens = SinhVien::where('nganh_id', $id)
             ->with(['trangThaiHocTap', 'nganh', 'chuyenNganh'])
             ->orderBy('ma_sinh_vien', 'asc')
             ->get();
@@ -602,11 +602,11 @@ class GVCNController extends Controller
      *    - FindOrFail lớp where giang_vien_chu_nhiem_id
      *    - Eager load khoaHoc, nganh
      * 2. Query danh sách sinh viên:
-     *    - SinhVien where lop_hanh_chinh_id = $id
+     *    - SinhVien where nganh_id = $id
      *    - Eager load: trangThaiHocTap, nganh, chuyenNganh
      *    - OrderBy ma_sinh_vien ASC
      * 3. Chuẩn bị data cho PDF:
-     *    - lop: LopHanhChinh object
+     *    - lop: nganh object
      *    - sinhViens: Collection sinh viên
      *    - giangVien: GVCN info
      *    - ngayXuat: Current date formatted
@@ -688,13 +688,13 @@ class GVCNController extends Controller
         }
 
         // Lấy thông tin lớp
-        $lop = LopHanhChinh::where('id', $id)
+        $lop = nganh::where('id', $id)
             ->where('giang_vien_chu_nhiem_id', $giangVien->id)
             ->with(['khoaHoc', 'nganh'])
             ->firstOrFail();
 
         // Lấy danh sách sinh viên
-        $sinhViens = SinhVien::where('lop_hanh_chinh_id', $id)
+        $sinhViens = SinhVien::where('nganh_id', $id)
             ->with(['trangThaiHocTap', 'nganh', 'chuyenNganh'])
             ->orderBy('ma_sinh_vien', 'asc')
             ->get();
@@ -730,7 +730,7 @@ class GVCNController extends Controller
      *    - xep_loai: Lọc theo xếp loại (Xuất sắc/Giỏi/Khá/...) (optional)
      * 3. Query kết quả học tập:
      *    - Join BangDiem với SinhVien
-     *    - Where lop_hanh_chinh_id = $id
+     *    - Where nganh_id = $id
      *    - Apply filters nếu có
      *    - Group by sinh_vien_id
      * 4. Tính toán cho từng sinh viên:
@@ -791,7 +791,7 @@ class GVCNController extends Controller
         }
 
         // Kiểm tra quyền truy cập
-        $lop = LopHanhChinh::where('id', $id)
+        $lop = nganh::where('id', $id)
             ->where('giang_vien_chu_nhiem_id', $giangVien->id)
             ->with(['khoaHoc', 'nganh'])
             ->firstOrFail();
@@ -806,7 +806,7 @@ class GVCNController extends Controller
 
         // Query bảng điểm
         $query = BangDiem::whereHas('sinhVien', function ($q) use ($id) {
-            $q->where('lop_hanh_chinh_id', $id);
+            $q->where('nganh_id', $id);
         })->with(['sinhVien', 'hocKy']);
 
         if ($hocKyId) {
@@ -879,7 +879,7 @@ class GVCNController extends Controller
      *    - muc_do: 'nhe'|'trung_binh'|'nang' (optional)
      * 3. Query cảnh báo học vụ:
      *    - CanhBaoHocVu join với SinhVien
-     *    - Where sinh_vien.lop_hanh_chinh_id = $id
+     *    - Where sinh_vien.nganh_id = $id
      *    - Apply filters
      *    - OrderBy created_at DESC (mới nhất trước)
      * 4. Phân loại cảnh báo:
@@ -940,7 +940,7 @@ class GVCNController extends Controller
         }
 
         // Kiểm tra quyền truy cập
-        $lop = LopHanhChinh::where('id', $id)
+        $lop = nganh::where('id', $id)
             ->where('giang_vien_chu_nhiem_id', $giangVien->id)
             ->with(['khoaHoc', 'nganh'])
             ->firstOrFail();
@@ -952,7 +952,7 @@ class GVCNController extends Controller
 
         // Query cảnh báo học vụ
         $query = CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
-            $q->where('lop_hanh_chinh_id', $id);
+            $q->where('nganh_id', $id);
         })->with(['sinhVien', 'hocKy', 'nguoiCanhBao']);
 
         // Lọc theo học kỳ
@@ -993,22 +993,22 @@ class GVCNController extends Controller
         // Thống kê
         $thongKe = [
             'tong_canh_bao' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
-                $q->where('lop_hanh_chinh_id', $id);
+                $q->where('nganh_id', $id);
             })->count(),
             'chua_xu_ly' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
-                $q->where('lop_hanh_chinh_id', $id);
+                $q->where('nganh_id', $id);
             })->chuaXuLy()->count(),
             'da_xu_ly' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
-                $q->where('lop_hanh_chinh_id', $id);
+                $q->where('nganh_id', $id);
             })->daXuLy()->count(),
             'canh_cao' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
-                $q->where('lop_hanh_chinh_id', $id);
+                $q->where('nganh_id', $id);
             })->mucDo('canh_cao')->count(),
             'dinh_chi' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
-                $q->where('lop_hanh_chinh_id', $id);
+                $q->where('nganh_id', $id);
             })->mucDo('dinh_chi')->count(),
             'buoc_thoi_hoc' => CanhBaoHocVu::whereHas('sinhVien', function ($q) use ($id) {
-                $q->where('lop_hanh_chinh_id', $id);
+                $q->where('nganh_id', $id);
             })->mucDo('buoc_thoi_hoc')->count(),
         ];
 

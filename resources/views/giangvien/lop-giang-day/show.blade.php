@@ -453,9 +453,9 @@
                                                         @endif
                                                     </td>
                                                     <td>
-                                                        @if ($lhpsv->sinhVien->lopHanhChinh)
+                                                        @if ($lhpsv->sinhVien->nganh)
                                                             <span
-                                                                class="badge bg-secondary">{{ $lhpsv->sinhVien->lopHanhChinh->ma_lop }}</span>
+                                                                class="badge bg-secondary">{{ $lhpsv->sinhVien->nganh->ten_nganh ?? 'N/A' }}</span>
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
@@ -939,7 +939,7 @@
                                 <table class="table table-borderless">
                                     <tr>
                                         <th style="width: 40%;" class="text-muted">Lớp hành chính:</th>
-                                        <td><span class="badge bg-secondary">${sv.lop_hanh_chinh}</span></td>
+                                        <td><span class="badge bg-secondary">${sv.nganh}</span></td>
                                     </tr>
                                     <tr>
                                         <th class="text-muted">Ngày sinh:</th>

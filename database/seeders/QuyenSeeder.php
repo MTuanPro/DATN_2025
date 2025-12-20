@@ -41,8 +41,12 @@ class QuyenSeeder extends Seeder
             ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'khoa.xoa', 'ten_quyen' => 'Xóa khoa', 'mo_ta' => null],
             ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'nganh.xem', 'ten_quyen' => 'Xem ngành', 'mo_ta' => null],
             ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'nganh.them', 'ten_quyen' => 'Thêm ngành', 'mo_ta' => null],
+            ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'nganh.sua', 'ten_quyen' => 'Sửa ngành', 'mo_ta' => null],
+            ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'nganh.xoa', 'ten_quyen' => 'Xóa ngành', 'mo_ta' => null],
             ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'mon_hoc.xem', 'ten_quyen' => 'Xem môn học', 'mo_ta' => null],
             ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'mon_hoc.them', 'ten_quyen' => 'Thêm môn học', 'mo_ta' => null],
+            ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'mon_hoc.sua', 'ten_quyen' => 'Sửa môn học', 'mo_ta' => null],
+            ['nhom_quyen_id' => $nhomQuyens['quan_ly_danh_muc']->id, 'ma_quyen' => 'mon_hoc.xoa', 'ten_quyen' => 'Xóa môn học', 'mo_ta' => null],
 
             // Quản lý điểm
             ['nhom_quyen_id' => $nhomQuyens['quan_ly_diem']->id, 'ma_quyen' => 'diem.nhap', 'ten_quyen' => 'Nhập điểm', 'mo_ta' => null],
