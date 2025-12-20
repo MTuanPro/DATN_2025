@@ -22,6 +22,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 use App\Traits\ImportHelper;
+use App\Services\DieuKienThiService;
 
 class LichThiController extends Controller
 {
@@ -239,36 +240,71 @@ class LichThiController extends Controller
 
             $lichThi = LichThi::create($data);
 
-            // 5. Tự động phân sinh viên vào phòng thi
+            // 5. Tự động phân sinh viên vào phòng thi (CHỈ những sinh viên ĐỦ ĐIỀU KIỆN)
             $sinhViens = $lopHocPhan->lopHocPhanSinhViens()->with('sinhVien')->get();
 
             if ($sinhViens->isNotEmpty()) {
+                // Sử dụng DieuKienThiService để kiểm tra điều kiện
+                $dieuKienThiService = new DieuKienThiService();
+                
                 $lichThiSinhVienData = [];
                 $soBaoDanhCounter = 1;
+                $sinhVienKhongDuDieuKien = [];
 
                 foreach ($sinhViens as $lopHocPhanSinhVien) {
-                    $lichThiSinhVienData[] = [
-                        'lich_thi_id' => $lichThi->id,
-                        'sinh_vien_id' => $lopHocPhanSinhVien->sinh_vien_id,
-                        'phong_thi_id' => $request->phong_thi_id, // Dùng phòng mặc định từ lịch thi
-                        'so_bao_danh' => str_pad($soBaoDanhCounter, 4, '0', STR_PAD_LEFT), // 0001, 0002, ...
-                        'trang_thai' => 'du_thi',
-                        'created_at' => now(),
-                        'updated_at' => now(),
-                    ];
-                    $soBaoDanhCounter++;
+                    // Kiểm tra điều kiện được thi
+                    $kiemTra = $dieuKienThiService->kiemTraDieuKienThi(
+                        $lopHocPhanSinhVien->id, 
+                        $lopHocPhan->id
+                    );
+
+                    // CHỈ thêm sinh viên ĐỦ điều kiện vào lịch thi
+                    if ($kiemTra['du_dieu_kien']) {
+                        $lichThiSinhVienData[] = [
+                            'lich_thi_id' => $lichThi->id,
+                            'sinh_vien_id' => $lopHocPhanSinhVien->sinh_vien_id,
+                            'phong_thi_id' => $request->phong_thi_id, // Dùng phòng mặc định từ lịch thi
+                            'so_bao_danh' => str_pad($soBaoDanhCounter, 4, '0', STR_PAD_LEFT), // 0001, 0002, ...
+                            'trang_thai' => 'du_thi',
+                            'created_at' => now(),
+                            'updated_at' => now(),
+                        ];
+                        $soBaoDanhCounter++;
+                    } else {
+                        // Ghi nhận sinh viên không đủ điều kiện
+                        $sinhVienKhongDuDieuKien[] = [
+                            'ma_sinh_vien' => $lopHocPhanSinhVien->sinhVien->ma_sinh_vien,
+                            'ho_ten' => $lopHocPhanSinhVien->sinhVien->ho_ten,
+                            'ly_do' => $kiemTra['ly_do']
+                        ];
+                    }
                 }
 
                 // Insert hàng loạt để tối ưu performance
-                \App\Models\LichThiSinhVien::insert($lichThiSinhVienData);
+                if (!empty($lichThiSinhVienData)) {
+                    \App\Models\LichThiSinhVien::insert($lichThiSinhVienData);
+                    Log::info('Đã tự động phân ' . count($lichThiSinhVienData) . ' sinh viên đủ điều kiện vào lịch thi ID: ' . $lichThi->id);
+                }
 
-                Log::info('Đã tự động phân ' . count($lichThiSinhVienData) . ' sinh viên vào lịch thi ID: ' . $lichThi->id);
+                // Log sinh viên không đủ điều kiện
+                if (!empty($sinhVienKhongDuDieuKien)) {
+                    Log::warning('Có ' . count($sinhVienKhongDuDieuKien) . ' sinh viên KHÔNG đủ điều kiện thi (lịch thi ID: ' . $lichThi->id . ')', [
+                        'sinh_vien_cam_thi' => $sinhVienKhongDuDieuKien
+                    ]);
+                }
             }
 
             DB::commit();
 
+            $thongBaoThanhCong = 'Thêm lịch thi thành công! Đã tự động phân ' . count($lichThiSinhVienData ?? []) . ' sinh viên đủ điều kiện vào phòng thi.';
+            
+            // Thêm cảnh báo nếu có sinh viên bị cấm thi
+            if (!empty($sinhVienKhongDuDieuKien)) {
+                $thongBaoThanhCong .= ' LƯU Ý: Có ' . count($sinhVienKhongDuDieuKien) . ' sinh viên KHÔNG đủ điều kiện thi (bị cấm thi).';
+            }
+
             return redirect()->route('dao-tao.lich-thi.index')
-                ->with('success', 'Thêm lịch thi thành công! Đã tự động phân ' . ($sinhViens->count() ?? 0) . ' sinh viên vào phòng thi.');
+                ->with('success', $thongBaoThanhCong);
         } catch (\Illuminate\Validation\ValidationException $e) {
             DB::rollBack();
             throw $e; // Để Laravel tự xử lý validation errors

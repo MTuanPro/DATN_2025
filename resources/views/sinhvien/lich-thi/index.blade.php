@@ -144,12 +144,31 @@
                         </thead>
                         <tbody>
                             @forelse($lichThis as $index => $lichThi)
-                            <tr class="{{ $lichThi->ngay_thi->isToday() ? 'table-warning' : '' }}">
+                            @php
+                                $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', $sinhVien->id ?? auth()->user()->sinhVien->id)->first();
+                                $dieuKienThi = $dieuKienThiData[$lichThi->id] ?? null;
+                                $khongDuDieuKien = $dieuKienThi && !$dieuKienThi['du_dieu_kien'];
+                                
+                                // Xác định class cho hàng
+                                $rowClass = '';
+                                if ($lichThi->ngay_thi->isToday()) {
+                                    $rowClass = 'table-warning';
+                                } elseif ($khongDuDieuKien) {
+                                    $rowClass = 'table-danger';
+                                }
+                            @endphp
+                            <tr class="{{ $rowClass }}">
                                 <td>{{ $lichThis->firstItem() + $index }}</td>
                                 <td>
                                     <strong>{{ $lichThi->lopHocPhan->monHoc->ten_mon }}</strong>
                                     <br><small class="text-muted">{{ $lichThi->lopHocPhan->monHoc->ma_mon }}</small>
                                     <br><small class="text-muted">Lớp: {{ $lichThi->lopHocPhan->ma_lop }}</small>
+                                    
+                                    @if($khongDuDieuKien)
+                                        <br><span class="badge bg-danger mt-1">
+                                            <i class="bi bi-exclamation-triangle-fill"></i> Không đủ điều kiện thi
+                                        </span>
+                                    @endif
                                 </td>
                                 <td>
                                     @if($lichThi->loai_thi == 'giua_ky')
@@ -170,10 +189,9 @@
                                     {{ $lichThi->gio_ket_thuc }}
                                 </td>
                                 <td>
-                                    @php
-                                        $thongTinThi = $lichThi->lichThiSinhViens->where('sinh_vien_id', $sinhVien->id ?? auth()->user()->sinhVien->id)->first();
-                                    @endphp
-                                    @if($thongTinThi && $thongTinThi->phongThi)
+                                    @if($khongDuDieuKien)
+                                        <span class="text-danger"><strong>Không được thi</strong></span>
+                                    @elseif($thongTinThi && $thongTinThi->phongThi)
                                         <strong>{{ $thongTinThi->phongThi->ten_phong }}</strong>
                                         @if($thongTinThi->phongThi->vi_tri)
                                             <br><small class="text-muted">{{ $thongTinThi->phongThi->vi_tri }}</small>
@@ -183,7 +201,9 @@
                                     @endif
                                 </td>
                                 <td>
-                                    @if($thongTinThi)
+                                    @if($khongDuDieuKien)
+                                        <span class="text-danger">-</span>
+                                    @elseif($thongTinThi)
                                         <span class="badge bg-primary" style="font-size: 1.1em;">
                                             {{ $thongTinThi->so_bao_danh }}
                                         </span>
