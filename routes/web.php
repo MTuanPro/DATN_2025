@@ -601,7 +601,9 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
 
     // PHASE 6: Lịch sử điểm danh
     Route::middleware('sinhvien.check')->prefix('diem-danh')->name('diem-danh.')->group(function () {
-        Route::get('/', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'tongHopDiemDanh'])->name('index');
+        Route::get('/', [\App\Http\Controllers\SinhVien\DiemDanhController::class, 'index'])->name('index');
+        Route::post('/{lichHocChiTietId}', [\App\Http\Controllers\SinhVien\DiemDanhController::class, 'store'])->name('store');
+        Route::get('/lich-su', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'tongHopDiemDanh'])->name('lich-su');
         Route::post('/yeu-cau-diem-danh-bu', [\App\Http\Controllers\SinhVien\YeuCauDiemDanhBuController::class, 'store'])->name('yeu-cau-diem-danh-bu.store');
     });
 
