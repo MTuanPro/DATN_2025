@@ -159,8 +159,8 @@ class AttendanceController extends Controller
      * 6. Kiểm tra xem có thể sửa điểm danh không:
      *    - Parse ngay_hoc sang Carbon (timezone Asia/Ho_Chi_Minh)
      *    - So sánh với ngày hiện tại
-     *    - Có thể sửa nếu: ngày học = hôm nay hoặc tương lai
-     *    - Không sửa được nếu buổi học đã qua (business rule)
+     *    - Có thể sửa nếu: ngày học = hôm nay (chính xác trong ngày)
+     *    - Không sửa được nếu buổi học đã qua hoặc chưa đến ngày (business rule)
      * 7. Return view với full data
      *
      * Thông tin hiển thị:
@@ -189,8 +189,8 @@ class AttendanceController extends Controller
      * - Validation client-side trước khi submit
      *
      * Business rules:
-     * - Chỉ cho phép điểm danh trong ngày hoặc trước ngày học
-     * - Không cho sửa điểm danh của các buổi đã qua
+     * - Chỉ cho phép điểm danh trong ngày học (ngày học = hôm nay)
+     * - Không cho sửa điểm danh của các buổi đã qua hoặc chưa đến ngày
      * - Sinh viên tạm dừng/đã rút không hiển thị trong danh sách
      *
      * @param Request $request HTTP request object
@@ -242,17 +242,37 @@ class AttendanceController extends Controller
             ->pluck('ghi_chu', 'lop_hoc_phan_sinh_vien_id')
             ->toArray();
 
-        // Kiểm tra xem có thể sửa điểm danh không (chỉ trong ngày, không cho sửa nếu đã qua ngày)
+        // Kiểm tra xem có thể sửa điểm danh không
         $ngayHoc = Carbon::parse($buoiHoc->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->startOfDay();
         $ngayHienTai = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
-        $coTheSua = $ngayHoc->isSameDay($ngayHienTai) || $ngayHoc->isFuture();
+        
+        // Kiểm tra cấu hình cho phép điểm danh tương lai
+        $choPhepTuongLai = \App\Models\CauHinhHeThong::choPhepDiemDanhTuongLai();
+        
+        // Logic: Nếu bật cho phép tương lai, cho phép điểm danh trong ngày hoặc tương lai
+        // Nếu tắt, chỉ cho phép điểm danh trong ngày học
+        if ($choPhepTuongLai) {
+            $coTheSua = $ngayHoc->isSameDay($ngayHienTai) || $ngayHoc->isFuture();
+        } else {
+            $coTheSua = $ngayHoc->isSameDay($ngayHienTai);
+        }
+        
+        $thongBaoThoiGian = '';
+        if (!$coTheSua) {
+            if ($ngayHoc->isPast()) {
+                $thongBaoThoiGian = 'Đã quá ngày học';
+            } else {
+                $thongBaoThoiGian = 'Chưa đến ngày học';
+            }
+        }
 
         return view('giangvien.diem-danh.show', compact(
             'buoiHoc',
             'sinhViens',
             'diemDanhData',
             'diemDanhGhiChu',
-            'coTheSua'
+            'coTheSua',
+            'thongBaoThoiGian'
         ));
     }
 
@@ -306,8 +326,8 @@ class AttendanceController extends Controller
      * - 'nghi_phep': Sinh viên nghỉ có phép (có giấy phép)
      *
      * Business rules áp dụng:
-     * - Chỉ cho phép điểm danh/sửa trong ngày hoặc trước ngày học
-     * - Không cho sửa điểm danh của các buổi đã qua
+     * - Chỉ cho phép điểm danh/sửa trong ngày học (ngày học = hôm nay)
+     * - Không cho sửa điểm danh của các buổi đã qua hoặc chưa đến ngày
      * - Mỗi sinh viên chỉ có 1 trạng thái điểm danh cho mỗi buổi
      * - Thới gian điểm danh sử dụng server timezone (Asia/Ho_Chi_Minh)
      * - UpdateOrCreate để tránh duplicate records
@@ -352,13 +372,27 @@ class AttendanceController extends Controller
             abort(403, 'Bạn không có quyền điểm danh buổi học này.');
         }
 
-        // Kiểm tra thời gian sửa (chỉ trong ngày, không cho sửa nếu đã qua ngày)
+        // Kiểm tra thời gian sửa
         $ngayHoc = Carbon::parse($buoiHoc->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->startOfDay();
         $ngayHienTai = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
-        $coTheSua = $ngayHoc->isSameDay($ngayHienTai) || $ngayHoc->isFuture();
+        
+        // Kiểm tra cấu hình cho phép điểm danh tương lai
+        $choPhepTuongLai = \App\Models\CauHinhHeThong::choPhepDiemDanhTuongLai();
+        
+        // Logic: Nếu bật cho phép tương lai, cho phép điểm danh trong ngày hoặc tương lai
+        // Nếu tắt, chỉ cho phép điểm danh trong ngày học
+        if ($choPhepTuongLai) {
+            $coTheSua = $ngayHoc->isSameDay($ngayHienTai) || $ngayHoc->isFuture();
+        } else {
+            $coTheSua = $ngayHoc->isSameDay($ngayHienTai);
+        }
 
-        if (!$coTheSua && DiemDanh::where('lich_hoc_chi_tiet_id', $id)->exists()) {
-            return redirect()->back()->with('error', 'Đã quá ngày học. Không thể sửa điểm danh cho các ngày đã qua.');
+        if (!$coTheSua) {
+            if ($ngayHoc->isPast()) {
+                return redirect()->back()->with('error', 'Đã quá ngày học. Không thể điểm danh cho các ngày đã qua.');
+            } else {
+                return redirect()->back()->with('error', 'Chưa đến ngày học. Chỉ có thể điểm danh trong ngày học.');
+            }
         }
 
         $validated = $request->validate([

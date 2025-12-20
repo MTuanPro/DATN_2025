@@ -44,7 +44,18 @@ class HocPhiController extends Controller
             });
         }
 
-        $hocPhis = $query->orderBy('created_at', 'desc')->paginate(20);
+        // Lấy học kỳ hiện tại để ưu tiên hiển thị
+        $hocKyHienTai = HocKy::where('la_hoc_ky_hien_tai', true)->first();
+        
+        // Sắp xếp: ưu tiên học phí của học kỳ hiện tại, sau đó theo thời gian tạo
+        if ($hocKyHienTai) {
+            $query->orderByRaw("CASE WHEN hoc_ky_id = {$hocKyHienTai->id} THEN 0 ELSE 1 END")
+                  ->orderBy('created_at', 'desc');
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+        
+        $hocPhis = $query->paginate(20);
         $hocKys = HocKy::orderBy('nam_hoc', 'desc')->orderBy('ten_hoc_ky', 'desc')->get();
 
         return view('daotao.hoc-phi.index', compact('hocPhis', 'hocKys'));

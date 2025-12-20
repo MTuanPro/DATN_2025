@@ -38,7 +38,13 @@
                                 </tr>
                                 <tr>
                                     <th>Giờ:</th>
-                                    <td>{{ $buoiHoc->gio_bat_dau }} - {{ $buoiHoc->gio_ket_thuc }}</td>
+                                    <td>
+                                        @if($buoiHoc->gio_bat_dau && $buoiHoc->gio_ket_thuc)
+                                            {{ \Carbon\Carbon::parse($buoiHoc->gio_bat_dau)->format('H:i') }} - {{ \Carbon\Carbon::parse($buoiHoc->gio_ket_thuc)->format('H:i') }}
+                                        @else
+                                            N/A
+                                        @endif
+                                    </td>
                                 </tr>
                             </table>
                         </div>
@@ -58,7 +64,7 @@
                                         @if($coTheSua)
                                             <span class="badge bg-success">Có thể sửa</span>
                                         @else
-                                            <span class="badge bg-danger">Đã hết hạn sửa (24h)</span>
+                                            <span class="badge bg-danger">{{ $thongBaoThoiGian ?? 'Không thể sửa' }}</span>
                                         @endif
                                     </td>
                                 </tr>

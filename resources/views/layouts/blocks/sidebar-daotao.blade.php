@@ -109,9 +109,10 @@
 
                 {{-- 5. LỚP HỌC PHẦN --}}
                 @php
-                    $isLopHocPhan = Request::is('dao-tao/lop-hoc-phan*') && 
-                                   !Request::is('dao-tao/lop-hoc-phan/*/lich-co-dinh*') && 
-                                   !Request::is('dao-tao/lop-hoc-phan/*/lich-chi-tiet*');
+                    $isLopHocPhan = Request::is('dao-tao/lop-hoc-phan*') || Request::is('dao-tao/cau-hinh/diem-danh*');
+                    $isLopHocPhanMain = Request::is('dao-tao/lop-hoc-phan*') && 
+                                       !Request::is('dao-tao/lop-hoc-phan/*/lich-co-dinh*') && 
+                                       !Request::is('dao-tao/lop-hoc-phan/*/lich-chi-tiet*');
                 @endphp
                 <li class="sidebar-item has-sub {{ $isLopHocPhan ? 'active' : '' }}">
                     <a href="#" class="sidebar-link">
@@ -119,8 +120,11 @@
                         <span>Lớp học phần</span>
                     </a>
                     <ul class="submenu {{ $isLopHocPhan ? 'active' : '' }}">
-                        <li class="submenu-item {{ Request::is('dao-tao/lop-hoc-phan') || (Request::is('dao-tao/lop-hoc-phan/*') && Request::segment(3) !== 'lich-co-dinh' && Request::segment(3) !== 'lich-chi-tiet' && Request::segment(3) !== 'phan-cong' && Request::segment(3) !== 'cau-hinh-diem') ? 'active' : '' }}">
+                        <li class="submenu-item {{ ($isLopHocPhanMain && Request::segment(3) !== 'phan-cong' && Request::segment(3) !== 'cau-hinh-diem') ? 'active' : '' }}">
                             <a href="{{ route('dao-tao.lop-hoc-phan.index') }}">Quản lý Lớp học phần</a>
+                        </li>
+                        <li class="submenu-item {{ Request::is('dao-tao/cau-hinh/diem-danh*') ? 'active' : '' }}">
+                            <a href="{{ route('dao-tao.cau-hinh.diem-danh') }}">Cấu hình Điểm danh</a>
                         </li>
                     </ul>
                 </li>

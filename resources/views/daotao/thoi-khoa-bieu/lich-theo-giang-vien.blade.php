@@ -123,7 +123,7 @@
                                         </td>
                                         <td>
                                             @if($lich->gio_bat_dau && $lich->gio_ket_thuc)
-                                                {{ $lich->gio_bat_dau->format('H:i') }} - {{ $lich->gio_ket_thuc->format('H:i') }}
+                                                {{ \Carbon\Carbon::parse($lich->gio_bat_dau)->format('H:i') }} - {{ \Carbon\Carbon::parse($lich->gio_ket_thuc)->format('H:i') }}
                                             @else
                                                 N/A
                                             @endif

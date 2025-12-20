@@ -33,8 +33,7 @@ class LichHocChiTiet extends Model
 
     protected $casts = [
         'ngay_hoc' => 'date',
-        'gio_bat_dau' => 'datetime',
-        'gio_ket_thuc' => 'datetime',
+        // gio_bat_dau và gio_ket_thuc là kiểu time, không cần cast
     ];
 
     /**

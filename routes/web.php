@@ -419,6 +419,12 @@ Route::middleware(['auth', 'role:truong_phong_dt,nhan_vien_dt'])->prefix('dao-ta
         Route::get('/export-excel', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'exportExcel'])->name('export-excel');
         Route::get('/export-pdf', [\App\Http\Controllers\DaoTao\BaoCaoController::class, 'exportPdf'])->name('export-pdf');
     });
+
+    // Cấu hình hệ thống
+    Route::prefix('cau-hinh')->name('cau-hinh.')->group(function () {
+        Route::get('/diem-danh', [\App\Http\Controllers\DaoTao\CauHinhHeThongController::class, 'diemDanh'])->name('diem-danh');
+        Route::post('/diem-danh', [\App\Http\Controllers\DaoTao\CauHinhHeThongController::class, 'updateDiemDanh'])->name('diem-danh.update');
+    });
 });
 
 // ========== Giảng viên Routes ==========
