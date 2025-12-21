@@ -214,7 +214,7 @@ class AttendanceController extends Controller
         }
 
         // Lấy buổi học
-        $buoiHoc = LichHocChiTiet::with(['lopHocPhan.monHoc', 'phongHoc'])
+        $buoiHoc = LichHocChiTiet::with(['lopHocPhan.monHoc', 'phongHoc', 'caHoc'])
             ->findOrFail($id);
 
         // Kiểm tra quyền
@@ -245,24 +245,129 @@ class AttendanceController extends Controller
         // Kiểm tra xem có thể sửa điểm danh không
         $ngayHoc = Carbon::parse($buoiHoc->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->startOfDay();
         $ngayHienTai = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
+        $thoiGianHienTai = Carbon::now('Asia/Ho_Chi_Minh');
         
         // Kiểm tra cấu hình cho phép điểm danh tương lai
         $choPhepTuongLai = \App\Models\CauHinhHeThong::choPhepDiemDanhTuongLai();
         
         // Logic: Nếu bật cho phép tương lai, cho phép điểm danh trong ngày hoặc tương lai
-        // Nếu tắt, chỉ cho phép điểm danh trong ngày học
+        // Nếu tắt, chỉ cho phép điểm danh trong ngày học VÀ trong khoảng thời gian ca học (tối đa 45 phút sau khi ca học bắt đầu)
         if ($choPhepTuongLai) {
             $coTheSua = $ngayHoc->isSameDay($ngayHienTai) || $ngayHoc->isFuture();
         } else {
-            $coTheSua = $ngayHoc->isSameDay($ngayHienTai);
+            // Kiểm tra ngày học phải là hôm nay
+            if (!$ngayHoc->isSameDay($ngayHienTai)) {
+                $coTheSua = false;
+            } else {
+                // Kiểm tra thời gian ca học
+                // Lấy giờ bắt đầu ca học (ưu tiên từ caHoc, nếu không có thì dùng gio_bat_dau của buổi học)
+                $gioBatDauCa = null;
+                if ($buoiHoc->caHoc && $buoiHoc->caHoc->gio_bat_dau) {
+                    $gioBatDauCa = $buoiHoc->caHoc->gio_bat_dau;
+                } elseif ($buoiHoc->gio_bat_dau) {
+                    $gioBatDauCa = $buoiHoc->gio_bat_dau;
+                }
+                
+                if (!$gioBatDauCa) {
+                    // Nếu không có thông tin giờ bắt đầu, không cho phép điểm danh
+                    $coTheSua = false;
+                } else {
+                    // Chuyển đổi gio_bat_dau sang string chỉ chứa time (H:i:s)
+                    if ($gioBatDauCa instanceof Carbon) {
+                        $gioBatDauCaString = $gioBatDauCa->format('H:i:s');
+                    } else {
+                        // Nếu là string, kiểm tra xem có phải datetime đầy đủ không
+                        $gioBatDauCaString = $gioBatDauCa;
+                        // Nếu có dấu cách hoặc dấu -, có thể là datetime đầy đủ
+                        if (strpos($gioBatDauCaString, ' ') !== false) {
+                            // Lấy phần sau dấu cách (phần time)
+                            $parts = explode(' ', $gioBatDauCaString);
+                            $gioBatDauCaString = end($parts);
+                        }
+                        // Đảm bảo chỉ lấy phần time (H:i:s hoặc H:i)
+                        if (preg_match('/(\d{2}:\d{2}(?::\d{2})?)/', $gioBatDauCaString, $matches)) {
+                            $gioBatDauCaString = $matches[1];
+                            // Nếu thiếu giây, thêm :00
+                            if (substr_count($gioBatDauCaString, ':') == 1) {
+                                $gioBatDauCaString .= ':00';
+                            }
+                        }
+                    }
+                    
+                    // Tạo thời gian bắt đầu ca học (ngày học + giờ bắt đầu)
+                    $thoiGianBatDauCa = Carbon::parse($buoiHoc->ngay_hoc->format('Y-m-d') . ' ' . $gioBatDauCaString)
+                        ->setTimezone('Asia/Ho_Chi_Minh');
+                    
+                    // Thời gian kết thúc điểm danh: 45 phút sau khi ca học bắt đầu
+                    $thoiGianKetThucDiemDanh = $thoiGianBatDauCa->copy()->addMinutes(45);
+                    
+                    // Cho phép điểm danh nếu: thời gian hiện tại >= thời gian bắt đầu ca học VÀ <= thời gian kết thúc điểm danh
+                    $coTheSua = $thoiGianHienTai->greaterThanOrEqualTo($thoiGianBatDauCa) 
+                        && $thoiGianHienTai->lessThanOrEqualTo($thoiGianKetThucDiemDanh);
+                }
+            }
         }
         
         $thongBaoThoiGian = '';
         if (!$coTheSua) {
-            if ($ngayHoc->isPast()) {
-                $thongBaoThoiGian = 'Đã quá ngày học';
+            if ($choPhepTuongLai) {
+                if ($ngayHoc->isPast()) {
+                    $thongBaoThoiGian = 'Đã quá ngày học';
+                } else {
+                    $thongBaoThoiGian = 'Chưa đến ngày học';
+                }
             } else {
-                $thongBaoThoiGian = 'Chưa đến ngày học';
+                if (!$ngayHoc->isSameDay($ngayHienTai)) {
+                    if ($ngayHoc->isPast()) {
+                        $thongBaoThoiGian = 'Đã quá ngày học';
+                    } else {
+                        $thongBaoThoiGian = 'Chưa đến ngày học';
+                    }
+                } else {
+                    // Kiểm tra lý do không cho phép điểm danh
+                    $gioBatDauCa = null;
+                    if ($buoiHoc->caHoc && $buoiHoc->caHoc->gio_bat_dau) {
+                        $gioBatDauCa = $buoiHoc->caHoc->gio_bat_dau;
+                    } elseif ($buoiHoc->gio_bat_dau) {
+                        $gioBatDauCa = $buoiHoc->gio_bat_dau;
+                    }
+                    
+                    if ($gioBatDauCa) {
+                        // Chuyển đổi gio_bat_dau sang string chỉ chứa time (H:i:s)
+                        if ($gioBatDauCa instanceof Carbon) {
+                            $gioBatDauCaString = $gioBatDauCa->format('H:i:s');
+                        } else {
+                            // Nếu là string, kiểm tra xem có phải datetime đầy đủ không
+                            $gioBatDauCaString = $gioBatDauCa;
+                            // Nếu có dấu cách hoặc dấu -, có thể là datetime đầy đủ
+                            if (strpos($gioBatDauCaString, ' ') !== false) {
+                                // Lấy phần sau dấu cách (phần time)
+                                $parts = explode(' ', $gioBatDauCaString);
+                                $gioBatDauCaString = end($parts);
+                            }
+                            // Đảm bảo chỉ lấy phần time (H:i:s hoặc H:i)
+                            if (preg_match('/(\d{2}:\d{2}(?::\d{2})?)/', $gioBatDauCaString, $matches)) {
+                                $gioBatDauCaString = $matches[1];
+                                // Nếu thiếu giây, thêm :00
+                                if (substr_count($gioBatDauCaString, ':') == 1) {
+                                    $gioBatDauCaString .= ':00';
+                                }
+                            }
+                        }
+                        
+                        $thoiGianBatDauCa = Carbon::parse($buoiHoc->ngay_hoc->format('Y-m-d') . ' ' . $gioBatDauCaString)
+                            ->setTimezone('Asia/Ho_Chi_Minh');
+                        $thoiGianKetThucDiemDanh = $thoiGianBatDauCa->copy()->addMinutes(45);
+                        
+                        if ($thoiGianHienTai->lessThan($thoiGianBatDauCa)) {
+                            $thongBaoThoiGian = 'Chưa đến giờ bắt đầu ca học';
+                        } elseif ($thoiGianHienTai->greaterThan($thoiGianKetThucDiemDanh)) {
+                            $thongBaoThoiGian = 'Đã quá thời gian cho phép điểm danh (45 phút sau khi ca học bắt đầu)';
+                        }
+                    } else {
+                        $thongBaoThoiGian = 'Không xác định được thời gian ca học';
+                    }
+                }
             }
         }
 
@@ -361,7 +466,7 @@ class AttendanceController extends Controller
             abort(403, 'Không tìm thấy hồ sơ giảng viên.');
         }
 
-        $buoiHoc = LichHocChiTiet::findOrFail($id);
+        $buoiHoc = LichHocChiTiet::with('caHoc')->findOrFail($id);
 
         // Kiểm tra quyền
         $phanCong = PhanCongGiangDay::where('lop_hoc_phan_id', $buoiHoc->lop_hoc_phan_id)
@@ -375,23 +480,113 @@ class AttendanceController extends Controller
         // Kiểm tra thời gian sửa
         $ngayHoc = Carbon::parse($buoiHoc->ngay_hoc)->setTimezone('Asia/Ho_Chi_Minh')->startOfDay();
         $ngayHienTai = Carbon::now('Asia/Ho_Chi_Minh')->startOfDay();
+        $thoiGianHienTai = Carbon::now('Asia/Ho_Chi_Minh');
         
         // Kiểm tra cấu hình cho phép điểm danh tương lai
         $choPhepTuongLai = \App\Models\CauHinhHeThong::choPhepDiemDanhTuongLai();
         
         // Logic: Nếu bật cho phép tương lai, cho phép điểm danh trong ngày hoặc tương lai
-        // Nếu tắt, chỉ cho phép điểm danh trong ngày học
+        // Nếu tắt, chỉ cho phép điểm danh trong ngày học VÀ trong khoảng thời gian ca học (tối đa 45 phút sau khi ca học bắt đầu)
         if ($choPhepTuongLai) {
             $coTheSua = $ngayHoc->isSameDay($ngayHienTai) || $ngayHoc->isFuture();
         } else {
-            $coTheSua = $ngayHoc->isSameDay($ngayHienTai);
+            // Kiểm tra ngày học phải là hôm nay
+            if (!$ngayHoc->isSameDay($ngayHienTai)) {
+                $coTheSua = false;
+            } else {
+                // Kiểm tra thời gian ca học
+                // Lấy giờ bắt đầu ca học (ưu tiên từ caHoc, nếu không có thì dùng gio_bat_dau của buổi học)
+                $gioBatDauCa = null;
+                if ($buoiHoc->caHoc && $buoiHoc->caHoc->gio_bat_dau) {
+                    $gioBatDauCa = $buoiHoc->caHoc->gio_bat_dau;
+                } elseif ($buoiHoc->gio_bat_dau) {
+                    $gioBatDauCa = $buoiHoc->gio_bat_dau;
+                }
+                
+                if (!$gioBatDauCa) {
+                    // Nếu không có thông tin giờ bắt đầu, không cho phép điểm danh
+                    $coTheSua = false;
+                } else {
+                    // Chuyển đổi gio_bat_dau sang string chỉ chứa time (H:i:s)
+                    if ($gioBatDauCa instanceof Carbon) {
+                        $gioBatDauCaString = $gioBatDauCa->format('H:i:s');
+                    } else {
+                        // Nếu là string, kiểm tra xem có phải datetime đầy đủ không
+                        $gioBatDauCaString = $gioBatDauCa;
+                        // Nếu có dấu cách hoặc dấu -, có thể là datetime đầy đủ
+                        if (strpos($gioBatDauCaString, ' ') !== false) {
+                            // Lấy phần sau dấu cách (phần time)
+                            $parts = explode(' ', $gioBatDauCaString);
+                            $gioBatDauCaString = end($parts);
+                        }
+                        // Đảm bảo chỉ lấy phần time (H:i:s hoặc H:i)
+                        if (preg_match('/(\d{2}:\d{2}(?::\d{2})?)/', $gioBatDauCaString, $matches)) {
+                            $gioBatDauCaString = $matches[1];
+                            // Nếu thiếu giây, thêm :00
+                            if (substr_count($gioBatDauCaString, ':') == 1) {
+                                $gioBatDauCaString .= ':00';
+                            }
+                        }
+                    }
+                    
+                    // Tạo thời gian bắt đầu ca học (ngày học + giờ bắt đầu)
+                    $thoiGianBatDauCa = Carbon::parse($buoiHoc->ngay_hoc->format('Y-m-d') . ' ' . $gioBatDauCaString)
+                        ->setTimezone('Asia/Ho_Chi_Minh');
+                    
+                    // Thời gian kết thúc điểm danh: 45 phút sau khi ca học bắt đầu
+                    $thoiGianKetThucDiemDanh = $thoiGianBatDauCa->copy()->addMinutes(45);
+                    
+                    // Cho phép điểm danh nếu: thời gian hiện tại >= thời gian bắt đầu ca học VÀ <= thời gian kết thúc điểm danh
+                    $coTheSua = $thoiGianHienTai->greaterThanOrEqualTo($thoiGianBatDauCa) 
+                        && $thoiGianHienTai->lessThanOrEqualTo($thoiGianKetThucDiemDanh);
+                }
+            }
         }
 
         if (!$coTheSua) {
-            if ($ngayHoc->isPast()) {
-                return redirect()->back()->with('error', 'Đã quá ngày học. Không thể điểm danh cho các ngày đã qua.');
+            if ($choPhepTuongLai) {
+                if ($ngayHoc->isPast()) {
+                    return redirect()->back()->with('error', 'Đã quá ngày học. Không thể điểm danh cho các ngày đã qua.');
+                } else {
+                    return redirect()->back()->with('error', 'Chưa đến ngày học. Chỉ có thể điểm danh trong ngày học.');
+                }
             } else {
-                return redirect()->back()->with('error', 'Chưa đến ngày học. Chỉ có thể điểm danh trong ngày học.');
+                if (!$ngayHoc->isSameDay($ngayHienTai)) {
+                    if ($ngayHoc->isPast()) {
+                        return redirect()->back()->with('error', 'Đã quá ngày học. Không thể điểm danh cho các ngày đã qua.');
+                    } else {
+                        return redirect()->back()->with('error', 'Chưa đến ngày học. Chỉ có thể điểm danh trong ngày học.');
+                    }
+                } else {
+                    // Kiểm tra lý do không cho phép điểm danh
+                    $gioBatDauCa = null;
+                    if ($buoiHoc->caHoc && $buoiHoc->caHoc->gio_bat_dau) {
+                        $gioBatDauCa = $buoiHoc->caHoc->gio_bat_dau;
+                    } elseif ($buoiHoc->gio_bat_dau) {
+                        $gioBatDauCa = $buoiHoc->gio_bat_dau;
+                    }
+                    
+                    if ($gioBatDauCa) {
+                        // Chuyển đổi gio_bat_dau sang string nếu là Carbon object
+                        if ($gioBatDauCa instanceof Carbon) {
+                            $gioBatDauCaString = $gioBatDauCa->format('H:i:s');
+                        } else {
+                            $gioBatDauCaString = $gioBatDauCa;
+                        }
+                        
+                        $thoiGianBatDauCa = Carbon::parse($buoiHoc->ngay_hoc->format('Y-m-d') . ' ' . $gioBatDauCaString)
+                            ->setTimezone('Asia/Ho_Chi_Minh');
+                        $thoiGianKetThucDiemDanh = $thoiGianBatDauCa->copy()->addMinutes(45);
+                        
+                        if ($thoiGianHienTai->lessThan($thoiGianBatDauCa)) {
+                            return redirect()->back()->with('error', 'Chưa đến giờ bắt đầu ca học. Chỉ có thể điểm danh khi ca học đã bắt đầu.');
+                        } elseif ($thoiGianHienTai->greaterThan($thoiGianKetThucDiemDanh)) {
+                            return redirect()->back()->with('error', 'Đã quá thời gian cho phép điểm danh. Thời gian điểm danh đã đóng sau 45 phút kể từ khi ca học bắt đầu.');
+                        }
+                    } else {
+                        return redirect()->back()->with('error', 'Không xác định được thời gian ca học. Vui lòng liên hệ quản trị viên.');
+                    }
+                }
             }
         }
 
