@@ -22,6 +22,15 @@
         </div>
 <!-- sửa giao diện -->
         <section class="section">
+            @if (!$sinhVien)
+                <div class="alert alert-warning">
+                    <h4 class="alert-heading">Chưa có thông tin sinh viên</h4>
+                    <p>Tài khoản của bạn chưa được liên kết với hồ sơ sinh viên. Vui lòng liên hệ phòng đào tạo để được hỗ trợ.</p>
+                    <hr>
+                    <a href="{{ route('sinh-vien.dashboard') }}" class="btn btn-primary">Quay về Dashboard</a>
+                </div>
+            @else
+            
             @if (session('success'))
                 <div class="alert alert-success alert-dismissible fade show">
                     {{ session('success') }}
@@ -72,7 +81,7 @@
                                                 <div class="mb-3">
                                                     @php
                                                         $avatarUrl = null;
-                                                        if ($sinhVien->anh_dai_dien) {
+                                                        if ($sinhVien && $sinhVien->anh_dai_dien) {
                                                             // Kiểm tra xem ảnh có tồn tại không
                                                             $avatarPath = 'storage/' . $sinhVien->anh_dai_dien;
                                                             if (file_exists(public_path($avatarPath))) {
@@ -387,4 +396,6 @@
             }
         </script>
     @endpush
+    
+    @endif
 @endsection

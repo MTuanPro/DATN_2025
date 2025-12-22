@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use App\Models\DaoTao\MonHoc;
+use App\Models\DaoTao\SinhVien;
 
 class LopHocPhan extends Model
 {

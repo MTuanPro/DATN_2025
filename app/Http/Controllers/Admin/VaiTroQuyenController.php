@@ -74,22 +74,39 @@ class VaiTroQuyenController extends Controller
     public function updateMatrix(Request $request)
     {
         $validated = $request->validate([
-            'permissions' => 'required|array',
+            'permissions' => 'nullable|array',
+            'role_ids' => 'nullable|array',
+            'role_ids.*' => 'exists:vai_tro,id',
         ]);
 
-        foreach ($validated['permissions'] as $vaiTroId => $quyenIds) {
-            $vaiTro = VaiTro::find($vaiTroId);
-            if ($vaiTro) {
-                // Lọc chỉ những quyền phù hợp với actor của vai trò
-                if ($vaiTro->actor && !empty($quyenIds)) {
-                    $validQuyenIds = Quyen::whereIn('id', $quyenIds)
-                        ->forActor($vaiTro->actor)
-                        ->pluck('id')
-                        ->toArray();
-                    $vaiTro->quyens()->sync($validQuyenIds);
-                } else {
-                    $vaiTro->quyens()->sync($quyenIds ?? []);
-                }
+        // Lấy danh sách role_ids từ form (những vai trò được hiển thị)
+        $roleIds = $validated['role_ids'] ?? [];
+        
+        // Nếu không có role_ids, lấy tất cả vai trò
+        $vaiTros = !empty($roleIds) 
+            ? VaiTro::whereIn('id', $roleIds)->get()
+            : VaiTro::all();
+
+        foreach ($vaiTros as $vaiTro) {
+            // Lấy quyền từ request, nếu không có thì là array rỗng
+            $quyenIds = $validated['permissions'][$vaiTro->id] ?? [];
+            
+            // Lọc chỉ những quyền phù hợp với actor của vai trò
+            if ($vaiTro->actor && !empty($quyenIds)) {
+                // Lấy tất cả quyền được chọn
+                $allSelectedQuyens = Quyen::whereIn('id', $quyenIds)->with('actors')->get();
+                
+                // Lọc: CHỈ giữ lại quyền có actor khớp với vai trò (strict)
+                $validQuyenIds = $allSelectedQuyens->filter(function ($quyen) use ($vaiTro) {
+                    $quyenActors = $quyen->actors->pluck('actor')->toArray();
+                    // Chỉ cho phép quyền có actor khớp với vai trò
+                    return !empty($quyenActors) && in_array($vaiTro->actor, $quyenActors);
+                })->pluck('id')->toArray();
+                
+                $vaiTro->quyens()->sync($validQuyenIds);
+            } else {
+                // Sync với array rỗng nếu vai trò không có actor hoặc không có quyền nào được chọn
+                $vaiTro->quyens()->sync([]);
             }
         }
 

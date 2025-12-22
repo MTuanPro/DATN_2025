@@ -114,16 +114,18 @@
                                                         {{ $actors[$vaiTro->actor] ?? $vaiTro->actor }}
                                                     </span>
                                                 @endif
+                                                {{-- Hidden input để đảm bảo vai trò này được gửi kể cả khi không có checkbox nào được chọn --}}
+                                                <input type="hidden" name="role_ids[]" value="{{ $vaiTro->id }}">
                                             </td>
                                             @foreach ($nhomQuyens as $nhomQuyen)
                                                 @foreach ($nhomQuyen->quyens as $quyen)
                                                     @php
                                                         // Kiểm tra quyền có phù hợp với actor của vai trò không
                                                         $quyenActors = $quyen->actors->pluck('actor')->toArray();
-                                                        $isCompatible =
-                                                            empty($quyenActors) ||
-                                                            empty($vaiTro->actor) ||
-                                                            in_array($vaiTro->actor, $quyenActors);
+                                                        // Chỉ cho phép nếu vai trò và quyền có cùng actor
+                                                        $isCompatible = !empty($vaiTro->actor) && 
+                                                                        !empty($quyenActors) && 
+                                                                        in_array($vaiTro->actor, $quyenActors);
                                                         $isChecked = in_array($quyen->id, $matrix[$vaiTro->id] ?? []);
                                                     @endphp
                                                     <td class="text-center {{ !$isCompatible ? 'bg-light' : '' }}">

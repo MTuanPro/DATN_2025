@@ -5,7 +5,7 @@ namespace App\Http\Controllers\DaoTao;
 use App\Http\Controllers\Controller;
 use Illuminate\Http\Request;
 use App\Models\LichSuSuaDiem;
-use App\Models\SinhVien;
+use App\Models\DaoTao\SinhVien;
 use App\Models\MonHoc;
 use App\Models\HocKy;
 

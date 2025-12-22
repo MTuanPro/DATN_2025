@@ -24,6 +24,8 @@ class ProfileController extends Controller
                 // Refresh relationship để lấy dữ liệu mới nhất
                 $user->load('sinhVien');
                 $sinhVien = $user->sinhVien;
+                
+                // Kiểm tra nếu không có profile sinh viên - truyền null để view xử lý
                 $data['sinhVien'] = $sinhVien;
                 return view('profile.sinh-vien', $data);
 
@@ -59,12 +61,23 @@ class ProfileController extends Controller
 
     private function getUserRole($user)
     {
-        $role = DB::table('tai_khoan_vai_tro')
+        // Ưu tiên role theo thứ tự: admin > dao_tao > giang_vien > sinh_vien
+        $priorityRoles = ['admin', 'truong_phong_dt', 'nhan_vien_dt', 'giang_vien', 'sinh_vien'];
+        
+        $roles = DB::table('tai_khoan_vai_tro')
             ->join('vai_tro', 'tai_khoan_vai_tro.vai_tro_id', '=', 'vai_tro.id')
             ->where('tai_khoan_vai_tro.tai_khoan_id', $user->id)
-            ->first();
+            ->pluck('vai_tro.ma_vai_tro')
+            ->toArray();
 
-        return $role ? $role->ma_vai_tro : null;
+        // Trả về role có độ ưu tiên cao nhất
+        foreach ($priorityRoles as $priorityRole) {
+            if (in_array($priorityRole, $roles)) {
+                return $priorityRole;
+            }
+        }
+
+        return $roles[0] ?? null;
     }
 
 
