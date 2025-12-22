@@ -20,6 +20,10 @@ class DatabaseSeeder extends Seeder
         $this->call(NhomQuyenSeeder::class);
         $this->call(QuyenSeeder::class);
         $this->call(VaiTroQuyenSeeder::class);
+        
+        // Tự động gán actor cho quyền và phân quyền mặc định cho vai trò
+        $this->call(PermissionActorSeeder::class);
+        
         $this->call(AdminSeeder::class);
         $this->call(AdminDaoTaoSeeder::class);
 
