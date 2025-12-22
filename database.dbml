@@ -66,6 +66,7 @@ Table vai_tro {
   ten_vai_tro varchar [not null, unique]
   mo_ta text
   muc_do_uu_tien int [note: 'Mức độ ưu tiên: 1=cao nhất (admin), 5=thấp nhất']
+  actor varchar [note: 'Actor: admin, dao_tao, giang_vien, sinh_vien']
   created_at timestamp
   updated_at timestamp
   note: 'Vai trò: Admin, Trưởng Phòng Đào Tạo, Nhân Viên Đào Tạo, Giảng Viên, Sinh Viên'
@@ -111,6 +112,38 @@ Table vai_tro_quyen {
   created_at timestamp
   updated_at timestamp
   indexes { (vai_tro_id, quyen_id) [unique] }
+}
+
+Table quyen_actor {
+  id int [pk]
+  quyen_id int [ref: > quyen.id, not null]
+  actor varchar [not null, note: 'admin, dao_tao, giang_vien, sinh_vien']
+  created_at timestamp
+  updated_at timestamp
+  indexes { 
+    (quyen_id, actor) [unique]
+    actor [name: 'idx_quyen_actor_actor']
+  }
+  note: 'Bảng liên kết quyền với các actor (nhóm người dùng). Mỗi quyền có thể áp dụng cho một hoặc nhiều actor'
+}
+
+Table chuc_nang {
+  id int [pk]
+  route_name varchar [not null, unique, note: 'Tên route Laravel: dao-tao.khoa.store']
+  ten_chuc_nang varchar [not null, note: 'Tên hiển thị: Thêm khoa']
+  nhom varchar [note: 'Nhóm chức năng: Quản lý khoa']
+  actor varchar [not null, note: 'Actor sở hữu: admin, dao_tao, giang_vien, sinh_vien']
+  method varchar [default: 'GET', note: 'HTTP method: GET, POST, PUT, DELETE']
+  uri varchar [note: 'URI pattern: dao-tao/khoa']
+  quyen_id int [ref: > quyen.id, note: 'Quyền liên kết với chức năng']
+  yeu_cau_quyen boolean [default: true, note: 'Có yêu cầu kiểm tra quyền không']
+  created_at timestamp
+  updated_at timestamp
+  indexes {
+    actor [name: 'idx_chuc_nang_actor']
+    nhom [name: 'idx_chuc_nang_nhom']
+  }
+  note: 'Bảng chức năng - lưu danh sách các route/chức năng trong hệ thống'
 }
 
 // ======================== Nhân sự hệ thống ========================
@@ -221,9 +254,9 @@ Table mon_hoc {
   id int [pk]
   ma_mon varchar [not null, unique]
   ten_mon varchar [not null]
-  so_tin_chi int [not null, note: 'Tổng tín chỉ (1-10), phải = ly_thuyet + thuc_hanh']
-  so_tin_chi_ly_thuyet int [default: 0, note: 'Số tín chỉ lý thuyết (0-10)']
-  so_tin_chi_thuc_hanh int [default: 0, note: 'Số tín chỉ thực hành (0-10)']
+  so_tin_chi int [not null, note: 'Tổng tín chỉ (1-5), phải = ly_thuyet + thuc_hanh']
+  so_tin_chi_ly_thuyet int [default: 0, note: 'Số tín chỉ lý thuyết (0-5)']
+  so_tin_chi_thuc_hanh int [default: 0, note: 'Số tín chỉ thực hành (0-5)']
   mo_ta text
   loai_mon loai_mon_hoc_enum [not null, note: 'Bắt buộc phân loại môn học']
   khoa_id int [ref: > khoa.id, not null, note: 'Bắt buộc - Khoa quản lý môn học']
@@ -233,7 +266,7 @@ Table mon_hoc {
   created_at timestamp
   updated_at timestamp
   deleted_at timestamp [note: 'Soft delete']
-  note: 'CHECK: so_tin_chi = so_tin_chi_ly_thuyet + so_tin_chi_thuc_hanh; so_tin_chi BETWEEN 1 AND 10'
+  note: 'CHECK: so_tin_chi = so_tin_chi_ly_thuyet + so_tin_chi_thuc_hanh; so_tin_chi BETWEEN 1 AND 5'
 }
 
 Table mon_hoc_tien_quyet {
@@ -544,6 +577,18 @@ Table cau_hinh_dau_diem {
   note: 'CHECK: SUM(ty_le) per lop_hoc_phan_id = 100; ty_le > 0 AND ty_le <= 100'
 }
 
+Table cau_hinh_dau_diem_mac_dinh {
+  id int [pk]
+  mon_hoc_id int [ref: > mon_hoc.id, not null]
+  ten_dau_diem varchar [not null, note: 'Chuyên cần, Giữa kỳ, Cuối kỳ, Thực hành, Tiểu luận']
+  ty_le float [not null, note: 'Tỷ lệ % (0-100, tổng của tất cả đầu điểm = 100)']
+  so_cot int [default: 1, note: 'Số cột điểm (VD: 3 cột điểm giữa kỳ)']
+  created_at timestamp
+  updated_at timestamp
+  indexes { (mon_hoc_id, ten_dau_diem) [unique] }
+  note: 'Cấu hình đầu điểm mặc định cho môn học - dùng để tạo tự động cấu hình đầu điểm cho lớp học phần'
+}
+
 Table nhap_diem {
   id int [pk]
   lop_hoc_phan_sinh_vien_id int [ref: > lop_hoc_phan_sinh_vien.id, not null, note: 'Tham chiếu đến bảng lop_hoc_phan_sinh_vien']
@@ -555,6 +600,22 @@ Table nhap_diem {
   updated_at timestamp
   indexes { (lop_hoc_phan_sinh_vien_id, cau_hinh_id, cot_diem) [unique] }
   note: 'CHECK: diem_so BETWEEN 0 AND 10'
+}
+
+Table lich_su_sua_diem {
+  id int [pk]
+  nhap_diem_id int [ref: > nhap_diem.id, note: 'ID bản ghi nhập điểm bị sửa']
+  lop_hoc_phan_sinh_vien_id int [ref: > lop_hoc_phan_sinh_vien.id, not null]
+  cau_hinh_id int [ref: > cau_hinh_dau_diem.id, not null]
+  cot_diem varchar [note: 'chuyen_can, giua_ky, cuoi_ky, v.v.']
+  diem_cu decimal [note: 'Điểm cũ trước khi sửa']
+  diem_moi decimal [note: 'Điểm mới sau khi sửa']
+  nguoi_sua_id int [ref: > giang_vien.id, not null]
+  loai_thao_tac varchar [default: 'sua', note: 'them, sua, xoa']
+  ly_do text [note: 'Lý do sửa điểm']
+  created_at timestamp
+  updated_at timestamp
+  note: 'Lịch sử sửa điểm - ghi lại mọi thay đổi điểm số'
 }
 
 Table bang_diem {
@@ -767,7 +828,7 @@ Table lich_su_dong_hoc_phi {
   id int [pk]
   hoc_phi_hoc_ky_id int [ref: > hoc_phi_hoc_ky.id, not null]
   so_tien_dong float [not null]
-  ngay_dong timestamp [not null]
+  ngay_dong timestamp [note: 'Ngày đóng học phí - có thể NULL']
   phuong_thuc_thanh_toan varchar [note: 'Tiền mặt, Chuyển khoản, Ví điện tử, QR Code']
   ma_giao_dich varchar [unique]
   ngan_hang varchar
@@ -789,6 +850,18 @@ Table trang_thai_hoc_tap {
   deleted_at timestamp [note: 'Soft delete']
 }
 
+Table cau_hinh_he_thong {
+  id int [pk]
+  ma_cau_hinh varchar [not null, unique, note: 'Mã cấu hình (ví dụ: cho_phep_diem_danh_tuong_lai)']
+  ten_cau_hinh varchar [not null, note: 'Tên cấu hình']
+  gia_tri text [note: 'Giá trị cấu hình (JSON hoặc text)']
+  trang_thai boolean [default: true, note: 'Trạng thái: true = bật, false = tắt']
+  mo_ta text [note: 'Mô tả cấu hình']
+  created_at timestamp
+  updated_at timestamp
+  note: 'Bảng cấu hình hệ thống - lưu các cấu hình chung của hệ thống'
+}
+
 // ======================== Cảnh báo học vụ ========================
 Table canh_bao_hoc_vu {
   id int [pk]
@@ -801,6 +874,7 @@ Table canh_bao_hoc_vu {
   nguoi_canh_bao_id int [ref: > dao_tao.id]
   nguoi_tao_id int [note: 'Người tạo cảnh báo (admin hoặc dao_tao)']
   trang_thai varchar [default: 'chua_xu_ly', note: 'chua_xu_ly, dang_xu_ly, da_xu_ly']
+  da_xem boolean [default: false, note: 'Đánh dấu sinh viên đã xem cảnh báo']
   da_xu_ly boolean [default: false, note: 'Deprecated - dùng trang_thai thay thế']
   ngay_xu_ly date
   ket_qua_xu_ly text

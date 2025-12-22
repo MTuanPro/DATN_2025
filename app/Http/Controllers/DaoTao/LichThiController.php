@@ -215,24 +215,6 @@ class LichThiController extends Controller
                 $data['gio_ket_thuc'] = $gioKetThuc;
             }
 
-            // Xử lý upload file đề thi (timestamp + slug)
-            if ($request->hasFile('de_thi_file')) {
-                $file = $request->file('de_thi_file');
-                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $extension = $file->getClientOriginalExtension();
-                $fileName = time() . '_' . \Illuminate\Support\Str::slug($originalName) . '.' . $extension;
-                $data['de_thi_file'] = $file->storeAs('de-thi', $fileName, 'public');
-            }
-
-            // Xử lý upload file đáp án (timestamp + slug)
-            if ($request->hasFile('dap_an_file')) {
-                $file = $request->file('dap_an_file');
-                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $extension = $file->getClientOriginalExtension();
-                $fileName = time() . '_' . \Illuminate\Support\Str::slug($originalName) . '.' . $extension;
-                $data['dap_an_file'] = $file->storeAs('dap-an', $fileName, 'public');
-            }
-
             // Tự động tính số sinh viên dự thi nếu không nhập
             if (!isset($data['so_sinh_vien_du_thi'])) {
                 $data['so_sinh_vien_du_thi'] = $lopHocPhan->lopHocPhanSinhViens->count();
@@ -643,32 +625,6 @@ class LichThiController extends Controller
                 $data['gio_ket_thuc'] = $gioKetThuc;
             }
 
-            // Xử lý upload file đề thi (timestamp + tên gốc)
-            if ($request->hasFile('de_thi_file')) {
-                // Xóa file cũ
-                if ($lichThi->de_thi_file) {
-                    Storage::disk('public')->delete($lichThi->de_thi_file);
-                }
-                $file = $request->file('de_thi_file');
-                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $extension = $file->getClientOriginalExtension();
-                $fileName = time() . '_' . \Illuminate\Support\Str::slug($originalName) . '.' . $extension;
-                $data['de_thi_file'] = $file->storeAs('de-thi', $fileName, 'public');
-            }
-
-            // Xử lý upload file đáp án (timestamp + tên gốc)
-            if ($request->hasFile('dap_an_file')) {
-                // Xóa file cũ
-                if ($lichThi->dap_an_file) {
-                    Storage::disk('public')->delete($lichThi->dap_an_file);
-                }
-                $file = $request->file('dap_an_file');
-                $originalName = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
-                $extension = $file->getClientOriginalExtension();
-                $fileName = time() . '_' . \Illuminate\Support\Str::slug($originalName) . '.' . $extension;
-                $data['dap_an_file'] = $file->storeAs('dap-an', $fileName, 'public');
-            }
-
             // Tự động tính số sinh viên dự thi nếu không nhập
             if (!isset($data['so_sinh_vien_du_thi'])) {
                 $data['so_sinh_vien_du_thi'] = $lopHocPhan->lopHocPhanSinhViens->count();
@@ -742,14 +698,6 @@ class LichThiController extends Controller
     public function destroy(LichThi $lichThi)
     {
         try {
-            // Xóa files đính kèm
-            if ($lichThi->de_thi_file) {
-                Storage::disk('public')->delete($lichThi->de_thi_file);
-            }
-            if ($lichThi->dap_an_file) {
-                Storage::disk('public')->delete($lichThi->dap_an_file);
-            }
-
             $lichThi->delete();
 
             return redirect()->route('dao-tao.lich-thi.index')

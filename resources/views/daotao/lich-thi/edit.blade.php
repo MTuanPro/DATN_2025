@@ -223,34 +223,6 @@
                         </div>
                     </div>
 
-                    <div class="row">
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="de_thi_file">Đề thi (PDF, DOC, DOCX - Max 10MB)</label>
-                                @if($lichThi->de_thi_file)
-                                    <p class="text-muted small">File hiện tại: {{ basename($lichThi->de_thi_file) }}</p>
-                                @endif
-                                <input type="file" name="de_thi_file" id="de_thi_file" class="form-control @error('de_thi_file') is-invalid @enderror" accept=".pdf,.doc,.docx">
-                                @error('de_thi_file')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="col-md-6">
-                            <div class="form-group">
-                                <label for="dap_an_file">Đáp án (PDF, DOC, DOCX - Max 10MB)</label>
-                                @if($lichThi->dap_an_file)
-                                    <p class="text-muted small">File hiện tại: {{ basename($lichThi->dap_an_file) }}</p>
-                                @endif
-                                <input type="file" name="dap_an_file" id="dap_an_file" class="form-control @error('dap_an_file') is-invalid @enderror" accept=".pdf,.doc,.docx">
-                                @error('dap_an_file')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-                        </div>
-                    </div>
-
                     <div class="form-group">
                         <label for="ghi_chu">Ghi chú</label>
                         <textarea name="ghi_chu" id="ghi_chu" rows="3" class="form-control @error('ghi_chu') is-invalid @enderror" 

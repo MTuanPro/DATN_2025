@@ -52,8 +52,6 @@ class UpdateLichThiRequest extends FormRequest
             'giam_thi_2_id' => 'nullable|exists:giang_vien,id|different:giam_thi_1_id',
             'hinh_thuc' => 'required|in:offline,online,hybrid',
             'link_online' => 'nullable|url',
-            'de_thi_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
-            'dap_an_file' => 'nullable|file|mimes:pdf,doc,docx|max:10240',
             'ghi_chu' => 'nullable|string|max:1000',
         ];
     }
@@ -75,8 +73,6 @@ class UpdateLichThiRequest extends FormRequest
             'giam_thi_2_id' => 'giám thị 2',
             'hinh_thuc' => 'hình thức thi',
             'link_online' => 'link thi online',
-            'de_thi_file' => 'đề thi',
-            'dap_an_file' => 'đáp án',
             'ghi_chu' => 'ghi chú',
         ];
     }
@@ -107,12 +103,6 @@ class UpdateLichThiRequest extends FormRequest
             'hinh_thuc.required' => 'Vui lòng chọn hình thức thi.',
             'hinh_thuc.in' => 'Hình thức thi không hợp lệ.',
             'link_online.url' => 'Link thi online không đúng định dạng.',
-            'de_thi_file.file' => 'Đề thi phải là file.',
-            'de_thi_file.mimes' => 'Đề thi phải là file PDF, DOC hoặc DOCX.',
-            'de_thi_file.max' => 'Đề thi không được vượt quá 10MB.',
-            'dap_an_file.file' => 'Đáp án phải là file.',
-            'dap_an_file.mimes' => 'Đáp án phải là file PDF, DOC hoặc DOCX.',
-            'dap_an_file.max' => 'Đáp án không được vượt quá 10MB.',
             'ghi_chu.max' => 'Ghi chú không được vượt quá 1000 ký tự.',
         ];
     }
