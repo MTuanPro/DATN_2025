@@ -125,16 +125,16 @@ class DiemDanhObserver
             $tyLeVang = ($vang / $tongBuoiHoc) * 100;
             $tyLeCoMat = ($coMat / $tongBuoiHoc) * 100;
 
-            // Nếu vắng > 20% → tạo cảnh báo
-            if ($tyLeVang > 20) {
-                // Kiểm tra xem đã có cảnh báo vắng nhiều cho môn này chưa
-                $canhBaoTonTai = CanhBaoHocVu::where('sinh_vien_id', $sinhVien->id)
-                    ->where('hoc_ky_id', $hocKy->id)
-                    ->where('loai_canh_bao', 'vang_nhieu')
-                    ->where('trang_thai', 'chua_xu_ly')
-                    ->where('ghi_chu', 'like', "%{$lopHocPhan->ma_lop_hp}%")
-                    ->first();
+            // Kiểm tra xem đã có cảnh báo vắng nhiều cho môn này chưa
+            $canhBaoTonTai = CanhBaoHocVu::where('sinh_vien_id', $sinhVien->id)
+                ->where('hoc_ky_id', $hocKy->id)
+                ->where('loai_canh_bao', 'vang_nhieu')
+                ->where('trang_thai', 'chua_xu_ly')
+                ->where('ghi_chu', 'like', "%{$lopHocPhan->ma_lop_hp}%")
+                ->first();
 
+            // Nếu vắng > 20% → tạo/cập nhật cảnh báo
+            if ($tyLeVang > 20) {
                 $thongKe = [
                     'tong_buoi' => $tongBuoiHoc,
                     'co_mat' => $coMat,
@@ -209,6 +209,55 @@ class DiemDanhObserver
                     'canh_bao_id' => $canhBao->id,
                     'ty_le_vang' => $tyLeVang,
                 ]);
+            } else {
+                // Nếu tỷ lệ vắng ≤ 20% và có cảnh báo đang tồn tại → gỡ bỏ cảnh báo
+                if ($canhBaoTonTai) {
+                    // Cập nhật trạng thái cảnh báo thành đã xử lý với thông tin chi tiết
+                    $lyDoMoi = "Đã khắc phục. Tỷ lệ vắng ban đầu vượt 20%, sau khôi phục điểm danh đã giảm xuống " . number_format($tyLeVang, 1) . "%. ";
+                    $lyDoMoi .= "Tổng số buổi học: {$tongBuoiHoc}, Có mặt: {$coMat}, Vắng: {$vang}, ";
+                    $lyDoMoi .= "Tỷ lệ có mặt: " . number_format($tyLeCoMat, 1) . "%";
+                    
+                    $canhBaoTonTai->update([
+                        'trang_thai' => 'da_xu_ly',
+                        'ngay_xu_ly' => now(),
+                        'ly_do' => $lyDoMoi,
+                        'ket_qua_xu_ly' => 'Sinh viên đã khôi phục điểm danh. Tỷ lệ vắng hiện tại: ' . number_format($tyLeVang, 1) . '% (đã đạt yêu cầu)',
+                    ]);
+
+                    // Gửi thông báo cập nhật cho sinh viên
+                    if ($sinhVien->user_id) {
+                        $notificationService = new NotificationService();
+                        
+                        $noiDung = "✅ Cập nhật cảnh báo học vụ\n\n";
+                        $noiDung .= "📚 Môn học: {$lopHocPhan->monHoc->ten_mon}\n";
+                        $noiDung .= "📋 Lớp học phần: {$lopHocPhan->ma_lop_hp}\n\n";
+                        $noiDung .= "🎉 Sau khi điểm danh được khôi phục, tỷ lệ vắng của bạn đã giảm xuống " . number_format($tyLeVang, 1) . "%.\n";
+                        $noiDung .= "📊 Thống kê điểm danh hiện tại:\n";
+                        $noiDung .= "• Tổng số buổi học: {$tongBuoiHoc}\n";
+                        $noiDung .= "• Có mặt: {$coMat} buổi\n";
+                        $noiDung .= "• Vắng: {$vang} buổi\n";
+                        $noiDung .= "• Tỷ lệ có mặt: " . number_format($tyLeCoMat, 1) . "%\n\n";
+                        $noiDung .= "✅ Cảnh báo học vụ đã được gỡ bỏ. Hãy tiếp tục duy trì chuyên cần tốt!";
+
+                        $notificationService->createAutoNotification(
+                            loaiThongBao: 'canh_bao_hoc_vu',
+                            tieuDe: '✅ Đã gỡ cảnh báo học vụ - ' . $lopHocPhan->monHoc->ten_mon,
+                            noiDung: $noiDung,
+                            nguoiNhanIds: [$sinhVien->user_id],
+                            options: [
+                                'muc_do_quan_trong' => 'quan_trong',
+                                'gui_web_notification' => true,
+                            ]
+                        );
+                    }
+
+                    Log::info('✅ [AUTO] Đã gỡ cảnh báo vắng nhiều sau khi khôi phục điểm danh', [
+                        'sinh_vien_id' => $sinhVien->id,
+                        'lop_hoc_phan_id' => $lopHocPhan->id,
+                        'canh_bao_id' => $canhBaoTonTai->id,
+                        'ty_le_vang_moi' => $tyLeVang,
+                    ]);
+                }
             }
         } catch (\Exception $e) {
             Log::error("❌ [AUTO] Lỗi kiểm tra và tạo cảnh báo vắng nhiều: {$e->getMessage()}", [

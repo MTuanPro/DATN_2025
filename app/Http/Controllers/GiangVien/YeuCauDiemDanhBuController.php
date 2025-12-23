@@ -6,9 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\YeuCauDiemDanhBu;
 use App\Models\DiemDanh;
 use App\Models\PhanCongGiangDay;
+use App\Models\CanhBaoHocVu;
+use App\Models\LichHocChiTiet;
+use App\Services\NotificationService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class YeuCauDiemDanhBuController extends Controller
@@ -91,7 +95,7 @@ class YeuCauDiemDanhBuController extends Controller
         }
 
         try {
-            \DB::beginTransaction();
+            DB::beginTransaction();
 
             // Cập nhật trạng thái yêu cầu
             $yeuCau->update([
@@ -113,17 +117,20 @@ class YeuCauDiemDanhBuController extends Controller
                 ]
             );
 
+            // Cập nhật lại cảnh báo học vụ dựa trên tỷ lệ vắng mới
+            $this->capNhatCanhBaoHocVu($yeuCau);
+
             // Gửi thông báo cho sinh viên
             $this->guiThongBaoChoSinhVien($yeuCau, 'da_duyet');
 
-            \DB::commit();
+            DB::commit();
 
             return response()->json([
                 'success' => true,
                 'message' => 'Đã duyệt yêu cầu điểm danh bù thành công'
             ]);
         } catch (\Exception $e) {
-            \DB::rollBack();
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'message' => 'Có lỗi xảy ra: ' . $e->getMessage()
@@ -243,7 +250,172 @@ class YeuCauDiemDanhBuController extends Controller
                 'da_doc' => false,
             ]);
         } catch (\Exception $e) {
-            \Log::error('Lỗi gửi thông báo yêu cầu điểm danh bù cho sinh viên: ' . $e->getMessage());
+            Log::error('Lỗi gửi thông báo yêu cầu điểm danh bù cho sinh viên: ' . $e->getMessage());
+        }
+    }
+
+    /**
+     * Cập nhật cảnh báo học vụ sau khi duyệt điểm danh bù
+     */
+    private function capNhatCanhBaoHocVu($yeuCau)
+    {
+        try {
+            $lopHocPhanSinhVien = $yeuCau->lopHocPhanSinhVien;
+            $sinhVien = $lopHocPhanSinhVien->sinhVien;
+            $lopHocPhan = $yeuCau->lichHocChiTiet->lopHocPhan;
+            $hocKy = $lopHocPhan->hocKy;
+
+            if (!$sinhVien || !$lopHocPhan || !$hocKy) {
+                return;
+            }
+
+            // Tính lại tổng số buổi học và thống kê điểm danh
+            $tongBuoiHoc = LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhan->id)
+                ->where('trang_thai', '!=', 'huy')
+                ->count();
+
+            if ($tongBuoiHoc == 0) {
+                return;
+            }
+
+            // Lấy thống kê điểm danh mới nhất
+            $diemDanhStats = DiemDanh::where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVien->id)
+                ->selectRaw('
+                    COUNT(*) as tong_buoi_diem_danh,
+                    SUM(CASE WHEN trang_thai = "co_mat" THEN 1 ELSE 0 END) as co_mat,
+                    SUM(CASE WHEN trang_thai = "vang" THEN 1 ELSE 0 END) as vang,
+                    SUM(CASE WHEN trang_thai = "di_tre" THEN 1 ELSE 0 END) as di_tre,
+                    SUM(CASE WHEN trang_thai = "nghi_phep" THEN 1 ELSE 0 END) as nghi_phep
+                ')
+                ->first();
+
+            $coMat = $diemDanhStats ? ($diemDanhStats->co_mat ?? 0) : 0;
+            $vang = $diemDanhStats ? ($diemDanhStats->vang ?? 0) : 0;
+            
+            // Tính tỷ lệ vắng mới
+            $tyLeVang = ($vang / $tongBuoiHoc) * 100;
+            $tyLeCoMat = ($coMat / $tongBuoiHoc) * 100;
+
+            // Tìm cảnh báo học vụ hiện có
+            $canhBao = CanhBaoHocVu::where('sinh_vien_id', $sinhVien->id)
+                ->where('hoc_ky_id', $hocKy->id)
+                ->where('loai_canh_bao', 'vang_nhieu')
+                ->where('ghi_chu', 'like', "%{$lopHocPhan->ma_lop_hp}%")
+                ->where('trang_thai', 'chua_xu_ly')
+                ->first();
+
+            if ($tyLeVang <= 20) {
+                // Nếu tỷ lệ vắng đã giảm xuống dưới 20%
+                if ($canhBao) {
+                    // Cập nhật trạng thái cảnh báo thành đã xử lý với thông tin chi tiết
+                    $lyDoMoi = "Đã khắc phục. Tỷ lệ vắng ban đầu vượt 20%, sau điểm danh bù đã giảm xuống " . number_format($tyLeVang, 1) . "%. ";
+                    $lyDoMoi .= "Tổng số buổi học: {$tongBuoiHoc}, Có mặt: {$coMat}, Vắng: {$vang}, ";
+                    $lyDoMoi .= "Tỷ lệ có mặt: " . number_format($tyLeCoMat, 1) . "%";
+                    
+                    $canhBao->update([
+                        'trang_thai' => 'da_xu_ly',
+                        'ngay_xu_ly' => now(),
+                        'ly_do' => $lyDoMoi,
+                        'ket_qua_xu_ly' => 'Sinh viên đã điểm danh bù. Tỷ lệ vắng hiện tại: ' . number_format($tyLeVang, 1) . '% (đã đạt yêu cầu)',
+                    ]);
+
+                    // Gửi thông báo cập nhật cho sinh viên
+                    if ($sinhVien->user_id) {
+                        $notificationService = new NotificationService();
+                        
+                        $noiDung = "✅ Cập nhật cảnh báo học vụ\n\n";
+                        $noiDung .= "📚 Môn học: {$lopHocPhan->monHoc->ten_mon}\n";
+                        $noiDung .= "📋 Lớp học phần: {$lopHocPhan->ma_lop_hp}\n\n";
+                        $noiDung .= "🎉 Sau khi điểm danh bù được duyệt, tỷ lệ vắng của bạn đã giảm xuống " . number_format($tyLeVang, 1) . "%.\n";
+                        $noiDung .= "📊 Thống kê điểm danh hiện tại:\n";
+                        $noiDung .= "• Tổng số buổi học: {$tongBuoiHoc}\n";
+                        $noiDung .= "• Có mặt: {$coMat} buổi\n";
+                        $noiDung .= "• Vắng: {$vang} buổi\n";
+                        $noiDung .= "• Tỷ lệ có mặt: " . number_format($tyLeCoMat, 1) . "%\n\n";
+                        $noiDung .= "✅ Cảnh báo học vụ đã được gỡ bỏ. Hãy tiếp tục duy trì chuyên cần tốt!";
+
+                        $notificationService->createAutoNotification(
+                            loaiThongBao: 'canh_bao_hoc_vu',
+                            tieuDe: '✅ Đã gỡ cảnh báo học vụ - ' . $lopHocPhan->monHoc->ten_mon,
+                            noiDung: $noiDung,
+                            nguoiNhanIds: [$sinhVien->user_id],
+                            options: [
+                                'muc_do_quan_trong' => 'quan_trong',
+                                'gui_web_notification' => true,
+                            ]
+                        );
+                    }
+
+                    Log::info('✅ Đã gỡ cảnh báo học vụ sau điểm danh bù', [
+                        'sinh_vien_id' => $sinhVien->id,
+                        'lop_hoc_phan_id' => $lopHocPhan->id,
+                        'ty_le_vang_cu' => $tyLeVang,
+                        'ty_le_vang_moi' => $tyLeVang,
+                    ]);
+                }
+            } else {
+                // Nếu tỷ lệ vắng vẫn > 20% nhưng đã giảm
+                if ($canhBao) {
+                    // Xác định mức độ cảnh báo mới
+                    $mucDo = 'canh_cao';
+                    if ($tyLeCoMat < 60) {
+                        $mucDo = 'dinh_chi';
+                    } elseif ($tyLeCoMat < 70) {
+                        $mucDo = 'canh_cao';
+                    }
+
+                    $lyDoMoi = "Vắng quá 20% số buổi học. ";
+                    $lyDoMoi .= "Tổng số buổi học: {$tongBuoiHoc}, ";
+                    $lyDoMoi .= "Có mặt: {$coMat}, ";
+                    $lyDoMoi .= "Vắng: {$vang}, ";
+                    $lyDoMoi .= "Tỷ lệ có mặt: " . number_format($tyLeCoMat, 1) . "%";
+
+                    // Cập nhật cảnh báo với thông tin mới
+                    $canhBao->update([
+                        'ly_do' => $lyDoMoi,
+                        'muc_do' => $mucDo,
+                        'ngay_canh_bao' => now(),
+                    ]);
+
+                    // Gửi thông báo cập nhật cho sinh viên
+                    if ($sinhVien->user_id) {
+                        $notificationService = new NotificationService();
+                        
+                        $noiDung = "⚠️ Cập nhật cảnh báo học vụ\n\n";
+                        $noiDung .= "📚 Môn học: {$lopHocPhan->monHoc->ten_mon}\n";
+                        $noiDung .= "📋 Lớp học phần: {$lopHocPhan->ma_lop_hp}\n\n";
+                        $noiDung .= "Sau khi điểm danh bù được duyệt, tỷ lệ vắng của bạn hiện tại là " . number_format($tyLeVang, 1) . "%.\n";
+                        $noiDung .= "📊 Thống kê điểm danh:\n";
+                        $noiDung .= "• Tổng số buổi học: {$tongBuoiHoc}\n";
+                        $noiDung .= "• Có mặt: {$coMat} buổi\n";
+                        $noiDung .= "• Vắng: {$vang} buổi\n";
+                        $noiDung .= "• Tỷ lệ có mặt: " . number_format($tyLeCoMat, 1) . "%\n\n";
+                        $noiDung .= "⚠️ Tỷ lệ vắng vẫn vượt quá 20%. Hãy cố gắng tham gia đầy đủ các buổi học tiếp theo!";
+
+                        $notificationService->createAutoNotification(
+                            loaiThongBao: 'canh_bao_hoc_vu',
+                            tieuDe: '⚠️ Cập nhật cảnh báo học vụ - ' . $lopHocPhan->monHoc->ten_mon,
+                            noiDung: $noiDung,
+                            nguoiNhanIds: [$sinhVien->user_id],
+                            options: [
+                                'muc_do_quan_trong' => 'quan_trong',
+                                'gui_web_notification' => true,
+                            ]
+                        );
+                    }
+
+                    Log::info('✅ Đã cập nhật cảnh báo học vụ sau điểm danh bù', [
+                        'sinh_vien_id' => $sinhVien->id,
+                        'lop_hoc_phan_id' => $lopHocPhan->id,
+                        'ty_le_vang_moi' => $tyLeVang,
+                    ]);
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error('Lỗi cập nhật cảnh báo học vụ sau điểm danh bù: ' . $e->getMessage(), [
+                'yeu_cau_id' => $yeuCau->id,
+                'error' => $e->getTraceAsString()
+            ]);
         }
     }
 }
