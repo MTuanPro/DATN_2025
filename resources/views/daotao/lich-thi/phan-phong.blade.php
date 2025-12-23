@@ -9,7 +9,7 @@
         <div>
             <h4 class="mb-1">Phân Phòng Thi</h4>
             <p class="text-muted mb-0">
-                {{ $lichThi->lopHocPhan->monHoc->ten_mon_hoc }} - 
+                {{ $lichThi->lopHocPhan->monHoc->ten_mon }} - 
                 {{ $lichThi->lopHocPhan->ma_lop }}
             </p>
         </div>

@@ -73,6 +73,9 @@ class SinhVienController extends Controller
 
         $sinhViens = $query->orderBy('created_at', 'desc')->paginate(15);
 
+        // Giữ lại các tham số query khi phân trang
+        $sinhViens->appends($request->query());
+
         // Dữ liệu cho bộ lọc
         $khoaHocs = KhoaHoc::orderBy('ten_khoa_hoc')->get();
         $nganhs = Nganh::with('khoa')->orderBy('ten_nganh')->get();
