@@ -9,7 +9,7 @@
         <div>
             <h4 class="mb-1">Danh Sách Sinh Viên Dự Thi</h4>
             <p class="text-muted mb-0">
-                {{ $lichThi->lopHocPhan->monHoc->ten_mon_hoc }} - 
+                {{ $lichThi->lopHocPhan->monHoc->ten_mon }} - 
                 {{ $lichThi->lopHocPhan->ma_lop }}
             </p>
         </div>
@@ -28,7 +28,7 @@
         <div class="card-body">
             <div class="text-center mb-3">
                 <h5>DANH SÁCH SINH VIÊN DỰ THI</h5>
-                <h6>{{ $lichThi->lopHocPhan->monHoc->ten_mon_hoc }}</h6>
+                <h6>{{ $lichThi->lopHocPhan->monHoc->ten_mon }}</h6>
             </div>
             <div class="row">
                 <div class="col-md-6">

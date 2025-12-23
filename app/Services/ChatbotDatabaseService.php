@@ -275,45 +275,109 @@ class ChatbotDatabaseService
     {
         try {
             $today = now()->format('Y-m-d');
-            $time = $entities['time'] ?? 'today';
+            $time = $entities['time'] ?? null;
 
             // Lấy lớp học phần của sinh viên
             $lopHocPhanIds = LopHocPhanSinhVien::where('sinh_vien_id', $sinhVienId)
+                ->where('trang_thai', '!=', 'huy_dang_ky')
                 ->pluck('lop_hoc_phan_id');
 
             if ($lopHocPhanIds->isEmpty()) {
                 return "Bạn chưa đăng ký lớp học phần nào.";
             }
 
-            // Lấy lịch học chi tiết
-            $query = LichHocChiTiet::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
-                ->with(['lopHocPhan.monHoc', 'caHoc', 'phongHoc', 'giangVien']);
+            // BƯỚC 1: Nếu có chỉ định thời gian cụ thể (hôm nay, ngày mai, tuần này), ưu tiên lấy lịch học chi tiết
+            $lichHocs = collect();
+            if ($time) {
+                $query = LichHocChiTiet::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
+                    ->with(['lopHocPhan.monHoc', 'caHoc', 'phongHoc', 'giangVien']);
 
-            // Filter theo thời gian
-            switch ($time) {
-                case 'today':
-                    $query->where('ngay_hoc', $today);
-                    break;
-                case 'tomorrow':
-                    $query->where('ngay_hoc', now()->addDay()->format('Y-m-d'));
-                    break;
-                case 'this_week':
-                    $query->whereBetween('ngay_hoc', [
-                        now()->startOfWeek()->format('Y-m-d'),
-                        now()->endOfWeek()->format('Y-m-d')
-                    ]);
-                    break;
+                // Filter theo thời gian
+                switch ($time) {
+                    case 'today':
+                        $query->where('ngay_hoc', $today);
+                        break;
+                    case 'tomorrow':
+                        $query->where('ngay_hoc', now()->addDay()->format('Y-m-d'));
+                        break;
+                    case 'this_week':
+                        $query->whereBetween('ngay_hoc', [
+                            now()->startOfWeek()->format('Y-m-d'),
+                            now()->endOfWeek()->format('Y-m-d')
+                        ]);
+                        break;
+                }
+
+                $lichHocs = $query->where('trang_thai', '!=', 'huy')
+                    ->orderBy('ngay_hoc')
+                    ->orderBy('tiet_bat_dau')
+                    ->get();
             }
 
-            $lichHocs = $query->where('trang_thai', '!=', 'huy')
-                ->orderBy('ngay_hoc')
-                ->orderBy('tiet_bat_dau')
-                ->get();
-
+            // BƯỚC 2: Nếu không có lịch học chi tiết hoặc không chỉ định thời gian, lấy từ lịch học cố định
             if ($lichHocs->isEmpty()) {
-                return "Không có lịch học nào trong khoảng thời gian này.";
+                $lichHocCoDinhs = LichHocCoDinh::whereIn('lop_hoc_phan_id', $lopHocPhanIds)
+                    ->with(['lopHocPhan.monHoc', 'caHoc', 'phongHoc', 'giangVien'])
+                    ->orderBy('thu_trong_tuan')
+                    ->orderBy('tiet_bat_dau')
+                    ->get();
+
+                if ($lichHocCoDinhs->isEmpty()) {
+                    return "Bạn chưa có lịch học nào được sắp xếp.";
+                }
+
+                // Format lịch học cố định theo thứ trong tuần
+                $response = "📅 **THỜI KHÓA BIỂU CỦA BẠN** (Lịch cố định hàng tuần)\n\n";
+
+                // Nhóm theo thứ trong tuần
+                $groupedByThu = $lichHocCoDinhs->groupBy('thu_trong_tuan');
+                
+                $thuNames = [
+                    2 => 'Thứ 2',
+                    3 => 'Thứ 3',
+                    4 => 'Thứ 4',
+                    5 => 'Thứ 5',
+                    6 => 'Thứ 6',
+                    7 => 'Thứ 7',
+                    8 => 'Chủ nhật',
+                ];
+
+                foreach ($groupedByThu as $thu => $items) {
+                    $thuName = $thuNames[$thu] ?? "Thứ $thu";
+                    $response .= "📆 **{$thuName}**:\n";
+                    
+                    foreach ($items as $lh) {
+                        $caHoc = $lh->caHoc;
+                        if ($caHoc) {
+                            $response .= "  • {$caHoc->ten_ca} ({$lh->gio_bat_dau} - {$lh->gio_ket_thuc})\n";
+                        } else {
+                            $response .= "  • Tiết {$lh->tiet_bat_dau}-{$lh->tiet_ket_thuc} ({$lh->gio_bat_dau} - {$lh->gio_ket_thuc})\n";
+                        }
+                        
+                        $response .= "    📖 {$lh->lopHocPhan->monHoc->ten_mon} ({$lh->lopHocPhan->ma_lop_hp})\n";
+                        
+                        if ($lh->phongHoc) {
+                            $response .= "    🏫 Phòng: {$lh->phongHoc->ten_phong}\n";
+                        }
+                        
+                        if ($lh->giangVien) {
+                            $response .= "    👨‍🏫 GV: {$lh->giangVien->ho_ten}\n";
+                        }
+                        
+                        if ($lh->hinh_thuc) {
+                            $hinhThuc = $lh->hinh_thuc == 'offline' ? 'Trực tiếp' : 
+                                       ($lh->hinh_thuc == 'online' ? 'Trực tuyến' : 'Kết hợp');
+                            $response .= "    💻 Hình thức: {$hinhThuc}\n";
+                        }
+                        
+                        $response .= "\n";
+                    }
+                }
+
+                return $response;
             }
 
+            // BƯỚC 3: Format lịch học chi tiết
             $response = "📅 **THỜI KHÓA BIỂU CỦA BẠN**\n\n";
 
             $groupedByDate = $lichHocs->groupBy('ngay_hoc');
@@ -326,7 +390,7 @@ class ChatbotDatabaseService
                     } else {
                         $response .= "  • Tiết {$lh->tiet_bat_dau}-{$lh->tiet_ket_thuc}\n";
                     }
-                    $response .= "    📖 {$lh->lopHocPhan->monHoc->ten_mon}\n";
+                    $response .= "    📖 {$lh->lopHocPhan->monHoc->ten_mon} ({$lh->lopHocPhan->ma_lop_hp})\n";
                     if ($lh->phongHoc) {
                         $response .= "    🏫 Phòng: {$lh->phongHoc->ten_phong}\n";
                     }
@@ -339,7 +403,9 @@ class ChatbotDatabaseService
 
             return $response;
         } catch (\Exception $e) {
-            Log::error('ChatbotDatabaseService - getThoiKhoaBieuInfo error: ' . $e->getMessage());
+            Log::error('ChatbotDatabaseService - getThoiKhoaBieuInfo error: ' . $e->getMessage(), [
+                'trace' => $e->getTraceAsString()
+            ]);
             return "Xin lỗi, có lỗi xảy ra khi lấy thông tin lịch học. Vui lòng thử lại sau.";
         }
     }

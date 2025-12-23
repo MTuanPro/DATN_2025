@@ -312,8 +312,8 @@
                                                             @foreach($monHocs as $index => $lhpsv)
                                                             <tr>
                                                                 <td>{{ $index + 1 }}</td>
-                                                                <td>{{ $lhpsv->lopHocPhan->monHoc->ma_mon_hoc ?? '-' }}</td>
-                                                                <td>{{ $lhpsv->lopHocPhan->monHoc->ten_mon_hoc ?? '-' }}</td>
+                                                                <td>{{ $lhpsv->lopHocPhan->monHoc->ma_mon ?? '-' }}</td>
+                                                                <td>{{ $lhpsv->lopHocPhan->monHoc->ten_mon ?? '-' }}</td>
                                                                 <td class="text-center">{{ $lhpsv->lopHocPhan->monHoc->so_tin_chi ?? '-' }}</td>
                                                                 <td class="text-center">
                                                                     @if($lhpsv->ketQuaHocTap && $lhpsv->ketQuaHocTap->diem_he_10 !== null)
@@ -383,7 +383,6 @@
                                                     <th>Tên môn học</th>
                                                     <th>Tín chỉ</th>
                                                     <th>Học kỳ</th>
-                                                    <th>Giảng viên</th>
                                                     <th>Trạng thái</th>
                                                     <th>Ngày đăng ký</th>
                                                 </tr>
@@ -392,19 +391,12 @@
                                                 @foreach($lopDangHoc as $index => $lhpsv)
                                                 <tr>
                                                     <td>{{ $index + 1 }}</td>
-                                                    <td>{{ $lhpsv->lopHocPhan->monHoc->ma_mon_hoc ?? '-' }}</td>
-                                                    <td>{{ $lhpsv->lopHocPhan->monHoc->ten_mon_hoc ?? '-' }}</td>
+                                                    <td>{{ $lhpsv->lopHocPhan->monHoc->ma_mon ?? '-' }}</td>
+                                                    <td>{{ $lhpsv->lopHocPhan->monHoc->ten_mon ?? '-' }}</td>
                                                     <td class="text-center">{{ $lhpsv->lopHocPhan->monHoc->so_tin_chi ?? '-' }}</td>
                                                     <td>
                                                         @if($lhpsv->lopHocPhan->hocKy)
                                                             {{ $lhpsv->lopHocPhan->hocKy->ten_hoc_ky }}
-                                                        @else
-                                                            <span class="text-muted">-</span>
-                                                        @endif
-                                                    </td>
-                                                    <td>
-                                                        @if($lhpsv->lopHocPhan->giangVien)
-                                                            {{ $lhpsv->lopHocPhan->giangVien->ho_ten }}
                                                         @else
                                                             <span class="text-muted">-</span>
                                                         @endif
@@ -456,7 +448,6 @@
                                                                 <th>Mã môn</th>
                                                                 <th>Tên môn học</th>
                                                                 <th>Tín chỉ</th>
-                                                                <th>Giảng viên</th>
                                                                 <th>Điểm</th>
                                                                 <th>Kết quả</th>
                                                                 <th>Ngày đăng ký</th>
@@ -466,16 +457,9 @@
                                                             @foreach($monHocs as $index => $lhpsv)
                                                             <tr>
                                                                 <td>{{ $index + 1 }}</td>
-                                                                <td>{{ $lhpsv->lopHocPhan->monHoc->ma_mon_hoc ?? '-' }}</td>
-                                                                <td>{{ $lhpsv->lopHocPhan->monHoc->ten_mon_hoc ?? '-' }}</td>
+                                                                <td>{{ $lhpsv->lopHocPhan->monHoc->ma_mon ?? '-' }}</td>
+                                                                <td>{{ $lhpsv->lopHocPhan->monHoc->ten_mon ?? '-' }}</td>
                                                                 <td class="text-center">{{ $lhpsv->lopHocPhan->monHoc->so_tin_chi ?? '-' }}</td>
-                                                                <td>
-                                                                    @if($lhpsv->lopHocPhan->giangVien)
-                                                                        {{ $lhpsv->lopHocPhan->giangVien->ho_ten }}
-                                                                    @else
-                                                                        <span class="text-muted">-</span>
-                                                                    @endif
-                                                                </td>
                                                                 <td class="text-center">
                                                                     @if($lhpsv->ketQuaHocTap && $lhpsv->ketQuaHocTap->diem_he_10 !== null)
                                                                         <strong>{{ number_format($lhpsv->ketQuaHocTap->diem_he_10, 2) }}</strong>

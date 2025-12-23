@@ -275,7 +275,7 @@
                 container.style.display = 'block';
                 label.textContent = 'Chọn lớp học phần';
                 lopHocPhans.forEach(lop => {
-                    const tenMon = lop.mon_hoc ? lop.mon_hoc.ten_mon_hoc : 'N/A';
+                    const tenMon = lop.mon_hoc ? lop.mon_hoc.ten_mon : 'N/A';
                     select.innerHTML +=
                         `<option value="${lop.id}">${lop.ma_lop_hoc_phan} - ${tenMon}</option>`;
                 });

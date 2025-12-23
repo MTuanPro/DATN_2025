@@ -122,20 +122,33 @@ class YeuCauDiemDanhBuController extends Controller
             // Gửi thông báo cho giảng viên
             $this->guiThongBaoChoGiangVien($yeuCau);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Đã gửi yêu cầu điểm danh bù thành công. Giảng viên sẽ xem xét và phản hồi.'
-            ]);
+            // Kiểm tra nếu là AJAX request
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Đã gửi yêu cầu điểm danh bù thành công. Giảng viên sẽ xem xét và phản hồi.'
+                ]);
+            }
+
+            return redirect()->route('sinh-vien.diem-danh.index')
+                ->with('success', 'Đã gửi yêu cầu điểm danh bù thành công. Giảng viên sẽ xem xét và phản hồi.');
         } catch (\Exception $e) {
             Log::error('Lỗi khi gửi yêu cầu điểm danh bù: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all()
             ]);
             
-            return response()->json([
-                'success' => false,
-                'message' => 'Có lỗi xảy ra khi gửi yêu cầu: ' . $e->getMessage()
-            ], 500);
+            // Kiểm tra nếu là AJAX request
+            if ($request->expectsJson() || $request->ajax()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Có lỗi xảy ra khi gửi yêu cầu: ' . $e->getMessage()
+                ], 500);
+            }
+
+            return redirect()->back()
+                ->with('error', 'Có lỗi xảy ra khi gửi yêu cầu: ' . $e->getMessage())
+                ->withInput();
         }
     }
 
