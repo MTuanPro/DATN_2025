@@ -116,11 +116,19 @@ class YeuCauDiemDanhBuController extends Controller
                 'ngay_gui' => Carbon::now('Asia/Ho_Chi_Minh'),
             ]);
 
-            // Load relationships
+            // Load relationships để đảm bảo data đầy đủ
             $yeuCau->load(['lichHocChiTiet.lopHocPhan.monHoc', 'lopHocPhanSinhVien.sinhVien']);
 
-            // Gửi thông báo cho giảng viên
-            $this->guiThongBaoChoGiangVien($yeuCau);
+            // Gửi thông báo cho giảng viên (không để lỗi ở đây ảnh hưởng đến kết quả chính)
+            try {
+                $this->guiThongBaoChoGiangVien($yeuCau);
+            } catch (\Exception $e) {
+                // Log lỗi nhưng vẫn trả về success vì yêu cầu đã được tạo thành công
+                Log::error('Lỗi khi gửi thông báo cho giảng viên (yêu cầu đã được tạo): ' . $e->getMessage(), [
+                    'yeu_cau_id' => $yeuCau->id,
+                    'trace' => $e->getTraceAsString()
+                ]);
+            }
 
             // Kiểm tra nếu là AJAX request
             if ($request->expectsJson() || $request->ajax()) {
@@ -133,7 +141,7 @@ class YeuCauDiemDanhBuController extends Controller
             return redirect()->route('sinh-vien.diem-danh.index')
                 ->with('success', 'Đã gửi yêu cầu điểm danh bù thành công. Giảng viên sẽ xem xét và phản hồi.');
         } catch (\Exception $e) {
-            Log::error('Lỗi khi gửi yêu cầu điểm danh bù: ' . $e->getMessage(), [
+            Log::error('Lỗi khi tạo yêu cầu điểm danh bù: ' . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),
                 'request' => $request->all()
             ]);

@@ -308,27 +308,58 @@ document.getElementById('formYeuCauDiemDanhBu').addEventListener('submit', funct
         _token: '{{ csrf_token() }}'
     };
     
+    // Hiển thị loading
+    Swal.fire({
+        title: 'Đang gửi yêu cầu...',
+        allowOutsideClick: false,
+        didOpen: () => {
+            Swal.showLoading();
+        }
+    });
+    
     fetch('{{ route("sinh-vien.diem-danh.yeu-cau-diem-danh-bu.store") }}', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
-            'X-CSRF-TOKEN': '{{ csrf_token() }}'
+            'X-CSRF-TOKEN': '{{ csrf_token() }}',
+            'Accept': 'application/json'
         },
         body: JSON.stringify(formData)
     })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            Swal.fire('Thành công!', data.message, 'success').then(() => {
-                location.reload();
+    .then(response => {
+        // Kiểm tra status code trước khi parse JSON
+        if (!response.ok) {
+            return response.json().then(data => {
+                throw new Error(data.message || 'Có lỗi xảy ra');
             });
-        } else {
-            Swal.fire('Lỗi!', data.message, 'error');
         }
+        return response.json();
+    })
+    .then(data => {
+        // Đóng modal
+        const modal = bootstrap.Modal.getInstance(document.getElementById('modalYeuCauDiemDanhBu'));
+        if (modal) {
+            modal.hide();
+        }
+        
+        // Hiển thị thông báo thành công
+        Swal.fire({
+            icon: 'success',
+            title: 'Thành công!',
+            text: data.message || 'Đã gửi yêu cầu điểm danh bù thành công',
+            confirmButtonText: 'OK'
+        }).then(() => {
+            location.reload();
+        });
     })
     .catch(error => {
         console.error('Error:', error);
-        Swal.fire('Lỗi!', 'Có lỗi xảy ra khi gửi yêu cầu', 'error');
+        Swal.fire({
+            icon: 'error',
+            title: 'Lỗi!',
+            text: error.message || 'Có lỗi xảy ra khi gửi yêu cầu',
+            confirmButtonText: 'OK'
+        });
     });
 });
 </script>

@@ -34,7 +34,7 @@
                     <a href="{{ route('sinh-vien.lich-thi.index', ['hoc_ky_id' => $selectedHocKy?->id]) }}" class="btn btn-info">
                         <i class="bi bi-calendar-event"></i> Lịch thi
                     </a>
-                    <a href="{{ route('sinh-vien.diem-danh.index') }}" class="btn btn-warning">
+                    <a href="{{ route('sinh-vien.diem-danh.lich-su') }}" class="btn btn-warning">
                         <i class="bi bi-clipboard-check"></i> Lịch sử điểm danh
                     </a>
                 </div>

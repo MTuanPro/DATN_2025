@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Foundation\Auth\EmailVerificationRequest;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Http\Request;
 use App\Http\Controllers\Auth\LoginController;
 use App\Http\Controllers\Auth\ForgotPasswordController;
@@ -58,7 +59,11 @@ use App\Http\Controllers\SinhVien\ChatbotController;
 Route::get('/', function () {
     if (Auth::check()) {
         $user = Auth::user();
-        $roles = $user->vaiTro()->pluck('ma_vai_tro')->toArray();
+        $roles = DB::table('tai_khoan_vai_tro')
+            ->join('vai_tro', 'tai_khoan_vai_tro.vai_tro_id', '=', 'vai_tro.id')
+            ->where('tai_khoan_vai_tro.tai_khoan_id', $user->id)
+            ->pluck('vai_tro.ma_vai_tro')
+            ->toArray();
         if (in_array('admin', $roles)) {
             return redirect()->route('admin.dashboard');
         }
@@ -92,6 +97,21 @@ Route::post('/reset-password', [AdminUserController::class, 'processReset'])->na
 
 // Logout (Cần đăng nhập) - Hỗ trợ cả GET và POST
 Route::match(['get', 'post'], '/logout', [LoginController::class, 'logout'])->name('logout')->middleware('auth');
+
+// Catch-all yêu cầu điểm danh bù (tránh 404 khi truy cập GET trực tiếp)
+Route::any('/sinh-vien/diem-danh/yeu-cau-diem-danh-bu', function () {
+    if (Auth::check()) {
+        $roles = DB::table('tai_khoan_vai_tro')
+            ->join('vai_tro', 'tai_khoan_vai_tro.vai_tro_id', '=', 'vai_tro.id')
+            ->where('tai_khoan_vai_tro.tai_khoan_id', Auth::id())
+            ->pluck('vai_tro.ma_vai_tro')
+            ->toArray();
+        if (in_array('sinh_vien', $roles)) {
+            return redirect()->route('sinh-vien.diem-danh.index');
+        }
+    }
+    return redirect()->route('login')->with('error', 'Vui lòng đăng nhập bằng tài khoản sinh viên để gửi yêu cầu điểm danh bù.');
+})->name('sinh-vien.diem-danh.yeu-cau-diem-danh-bu.redirect');
 
 // ========== Profile & Settings Routes (All roles) ==========
 Route::middleware(['auth'])->group(function () {
@@ -610,6 +630,7 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
         Route::get('/', [\App\Http\Controllers\SinhVien\DiemDanhController::class, 'index'])->name('index');
         Route::post('/{lichHocChiTietId}', [\App\Http\Controllers\SinhVien\DiemDanhController::class, 'store'])->name('store');
         Route::get('/lich-su', [\App\Http\Controllers\SinhVien\LopHocPhanController::class, 'tongHopDiemDanh'])->name('lich-su');
+        // Chỉ POST để gửi yêu cầu điểm danh bù (GET sẽ được định nghĩa outside middleware để tránh 404 khi khác role)
         Route::post('/yeu-cau-diem-danh-bu', [\App\Http\Controllers\SinhVien\YeuCauDiemDanhBuController::class, 'store'])->name('yeu-cau-diem-danh-bu.store');
     });
 
@@ -704,7 +725,7 @@ Route::middleware(['auth', 'role:sinh_vien'])->prefix('sinh-vien')->name('sinh-v
     });
 });
 
-// PayOS Payment Callback (public routes - no auth required - OUTSIDE middleware group)
+    // PayOS Payment Callback (public routes - no auth required - OUTSIDE middleware group)
 Route::prefix('payment')->name('payment.')->group(function () {
     Route::get('/payos/callback', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'payOSCallback'])->name('payos.callback');
     Route::get('/payos/cancel', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'payOSCancel'])->name('payos.cancel');
@@ -715,6 +736,9 @@ Route::prefix('payment')->name('payment.')->group(function () {
 
     // Casso Webhook (public route - no auth required)
     Route::post('/casso/webhook', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'cassoWebhook'])->name('casso.webhook');
+    
+    // Casso confirm all transactions (auth required)
+    Route::post('/casso/confirm-all', [\App\Http\Controllers\SinhVien\HocPhiController::class, 'cassoConfirmAllTransactions'])->name('casso.confirm-all');
 });
 
 // ZaloPay Redirect Handler (public route)

@@ -37,12 +37,26 @@
                 'buoc_thoi_hoc' => 'dark',
                 default => 'info'
             };
+            
+            // Nếu đã xử lý thì đổi sang màu xanh
+            if ($canhBao->trang_thai == 'da_xu_ly') {
+                $alertType = 'success';
+                $mucDoText = 'ĐÃ GIẢI QUYẾT';
+            }
         @endphp
         <div class="alert alert-{{ $alertType }} alert-dismissible fade show" role="alert">
             <h4 class="alert-heading">
-                <i class="bi bi-exclamation-triangle-fill"></i> MỨC ĐỘ: {{ strtoupper($mucDoText) }}
+                @if($canhBao->trang_thai == 'da_xu_ly')
+                    <i class="bi bi-check-circle-fill"></i> {{ strtoupper($mucDoText) }}
+                @else
+                    <i class="bi bi-exclamation-triangle-fill"></i> MỨC ĐỘ: {{ strtoupper($mucDoText) }}
+                @endif
             </h4>
             <p>{{ $canhBao->ly_do }}</p>
+            @if($canhBao->trang_thai == 'da_xu_ly' && $canhBao->ket_qua_xu_ly)
+                <hr>
+                <p class="mb-0"><strong>✓ Kết quả:</strong> {{ $canhBao->ket_qua_xu_ly }}</p>
+            @endif
             <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
         </div>
 

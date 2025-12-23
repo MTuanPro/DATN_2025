@@ -8,6 +8,8 @@ use App\Models\LopHocPhan;
 use App\Models\DaoTao\PhongHoc;
 use App\Models\GiangVien;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class LichHocCoDinhController extends Controller
 {
@@ -155,9 +157,9 @@ class LichHocCoDinhController extends Controller
         ]);
 
         try {
-            \DB::beginTransaction();
+            DB::beginTransaction();
             
-            \Log::info('Bắt đầu tạo lịch học tự động', [
+            Log::info('Bắt đầu tạo lịch học tự động', [
                 'lop_hoc_phan_id' => $lopHocPhan->id,
                 'ca_hoc_id' => $validated['ca_hoc_id'],
                 'so_buoi_hoc' => $validated['so_buoi_hoc'],
@@ -184,7 +186,7 @@ class LichHocCoDinhController extends Controller
             );
 
             if (count($ngayHocList) < $validated['so_buoi_hoc']) {
-                \DB::rollBack();
+                DB::rollBack();
                 
                 // Tính toán thông tin chi tiết để hiển thị
                 $ngayBatDauFormatted = \Carbon\Carbon::parse($validated['ngay_bat_dau_lich'])->format('d/m/Y');
@@ -224,7 +226,7 @@ class LichHocCoDinhController extends Controller
 
             // Nếu lớp chưa có sinh viên, không cần kiểm tra
             if (empty($sinhVienIds)) {
-                \Log::info('Lớp học phần chưa có sinh viên, bỏ qua kiểm tra trùng lịch');
+                Log::info('Lớp học phần chưa có sinh viên, bỏ qua kiểm tra trùng lịch');
             } else {
                 // Lấy thông tin sinh viên để hiển thị tên khi có lỗi
                 $sinhViens = \App\Models\DaoTao\SinhVien::whereIn('id', $sinhVienIds)->get()->keyBy('id');
@@ -232,50 +234,87 @@ class LichHocCoDinhController extends Controller
                 foreach ($ngayHocList as $index => $ngayHoc) {
                     $ngayHocDate = $ngayHoc['ngay']->format('Y-m-d');
                     
-                    // Kiểm tra xem phòng học này đã có lớp học nào sử dụng ca học này vào ngày này chưa
-                    $conflictPhongCa = \App\Models\LichHocChiTiet::where('phong_hoc_id', $validated['phong_hoc_id'])
+                    // Kiểm tra xung đột phòng học dựa trên ngày, phòng và TIẾT HỌC (không chỉ ca học)
+                    $conflictPhong = \App\Models\LichHocChiTiet::where('phong_hoc_id', $validated['phong_hoc_id'])
                         ->where('ngay_hoc', $ngayHocDate)
-                        ->where('ca_hoc_id', $validated['ca_hoc_id']) // Cùng ca học
                         ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
                         ->where('trang_thai', '!=', 'huy') // Không tính các buổi đã hủy
-                        ->exists();
+                        ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
+                            // Kiểm tra trùng tiết: trùng nếu end1 >= start2 AND start1 <= end2
+                            $q->where(function($query) use ($tietBatDau, $tietKetThuc) {
+                                $query->whereBetween('tiet_bat_dau', [$tietBatDau, $tietKetThuc])
+                                      ->orWhereBetween('tiet_ket_thuc', [$tietBatDau, $tietKetThuc])
+                                      ->orWhere(function($q) use ($tietBatDau, $tietKetThuc) {
+                                          $q->where('tiet_bat_dau', '<=', $tietBatDau)
+                                            ->where('tiet_ket_thuc', '>=', $tietKetThuc);
+                                      });
+                            });
+                        })
+                        ->with('lopHocPhan.monHoc')
+                        ->first();
                     
-                    if ($conflictPhongCa) {
-                        $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Phòng học này đã có lớp học khác sử dụng ca học này";
+                    if ($conflictPhong) {
+                        $phongHoc = \App\Models\DaoTao\PhongHoc::find($validated['phong_hoc_id']);
+                        $monHocTrung = $conflictPhong->lopHocPhan->monHoc;
+                        $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Phòng {$phongHoc->ten_phong} đã có lớp {$monHocTrung->ten_mon} sử dụng từ tiết {$conflictPhong->tiet_bat_dau} đến {$conflictPhong->tiet_ket_thuc} (trùng với tiết {$tietBatDau}-{$tietKetThuc})";
                     }
                     
-                    // Kiểm tra xem có sinh viên nào trong lớp bị trùng ca học vào ngày này không
-                    // Với mỗi sinh viên, kiểm tra xem họ có lịch học chi tiết nào (từ lớp học phần khác) trùng ca học không
+                    // Kiểm tra xem có sinh viên nào trong lớp bị trùng lịch vào ngày này không
+                    // Với mỗi sinh viên, kiểm tra xem họ có lịch học chi tiết nào (từ lớp học phần khác) trùng tiết không
                     foreach ($sinhVienIds as $sinhVienId) {
                         $conflictLich = \App\Models\LichHocChiTiet::where('ngay_hoc', $ngayHocDate)
-                            ->where('ca_hoc_id', $validated['ca_hoc_id']) // Cùng ca học
                             ->whereHas('lopHocPhan.lopHocPhanSinhViens', function($q) use ($sinhVienId) {
                                 $q->where('sinh_vien_id', $sinhVienId)
                                   ->whereIn('trang_thai', ['da_xep_lop', 'dang_hoc']);
                             })
                             ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
                             ->where('trang_thai', '!=', 'huy') // Không tính các buổi đã hủy
+                            ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
+                                // Kiểm tra trùng tiết
+                                $q->where(function($query) use ($tietBatDau, $tietKetThuc) {
+                                    $query->whereBetween('tiet_bat_dau', [$tietBatDau, $tietKetThuc])
+                                          ->orWhereBetween('tiet_ket_thuc', [$tietBatDau, $tietKetThuc])
+                                          ->orWhere(function($q) use ($tietBatDau, $tietKetThuc) {
+                                              $q->where('tiet_bat_dau', '<=', $tietBatDau)
+                                                ->where('tiet_ket_thuc', '>=', $tietKetThuc);
+                                          });
+                                });
+                            })
                             ->with('lopHocPhan.monHoc')
                             ->first();
                         
                         if ($conflictLich) {
                             $tenSinhVien = $sinhViens->get($sinhVienId)->ho_ten ?? 'Sinh viên';
+                            $maSinhVien = $sinhViens->get($sinhVienId)->ma_sinh_vien ?? '';
                             $monHocTrung = $conflictLich->lopHocPhan->monHoc;
-                            $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Sinh viên {$tenSinhVien} đã có lịch học môn {$monHocTrung->ten_mon} vào ca học này";
+                            $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Sinh viên {$tenSinhVien} ({$maSinhVien}) đã có lịch học môn {$monHocTrung->ten_mon} từ tiết {$conflictLich->tiet_bat_dau}-{$conflictLich->tiet_ket_thuc} (trùng với tiết {$tietBatDau}-{$tietKetThuc})";
                             break; // Chỉ cần báo 1 sinh viên bị trùng cho mỗi buổi
                         }
                     }
 
-                    // Kiểm tra xung đột giảng viên với lịch học chi tiết đã tồn tại
+                    // Kiểm tra xung đột giảng viên với lịch học chi tiết đã tồn tại (dựa trên tiết học)
                     $conflictGiangVienChiTiet = \App\Models\LichHocChiTiet::where('giang_vien_id', $validated['giang_vien_id'])
                         ->where('ngay_hoc', $ngayHocDate)
-                        ->where('ca_hoc_id', $validated['ca_hoc_id']) // Cùng ca học
                         ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
                         ->where('trang_thai', '!=', 'huy') // Không tính các buổi đã hủy
-                        ->exists();
+                        ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
+                            // Kiểm tra trùng tiết
+                            $q->where(function($query) use ($tietBatDau, $tietKetThuc) {
+                                $query->whereBetween('tiet_bat_dau', [$tietBatDau, $tietKetThuc])
+                                      ->orWhereBetween('tiet_ket_thuc', [$tietBatDau, $tietKetThuc])
+                                      ->orWhere(function($q) use ($tietBatDau, $tietKetThuc) {
+                                          $q->where('tiet_bat_dau', '<=', $tietBatDau)
+                                            ->where('tiet_ket_thuc', '>=', $tietKetThuc);
+                                      });
+                            });
+                        })
+                        ->with('lopHocPhan.monHoc')
+                        ->first();
                     
                     if ($conflictGiangVienChiTiet) {
-                        $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Giảng viên đã có lịch dạy vào ca học này";
+                        $giangVien = \App\Models\GiangVien::find($validated['giang_vien_id']);
+                        $monHocTrung = $conflictGiangVienChiTiet->lopHocPhan->monHoc;
+                        $conflicts[] = "Buổi " . ($index + 1) . " ({$ngayHoc['ngay_str']}): Giảng viên {$giangVien->ho_ten} đã có lịch dạy môn {$monHocTrung->ten_mon} từ tiết {$conflictGiangVienChiTiet->tiet_bat_dau}-{$conflictGiangVienChiTiet->tiet_ket_thuc} (trùng với tiết {$tietBatDau}-{$tietKetThuc})";
                     }
                     
                     // Kiểm tra xung đột giảng viên với lịch học cố định khác (cùng thứ, trùng ca)
@@ -298,30 +337,52 @@ class LichHocCoDinhController extends Controller
                 }
             }
             
-            \Log::info('Kết quả kiểm tra xung đột', [
+            Log::info('Kết quả kiểm tra xung đột', [
                 'so_buoi_kiem_tra' => count($ngayHocList),
                 'so_xung_dot' => count($conflicts),
                 'xung_dot' => $conflicts
             ]);
 
             if (!empty($conflicts)) {
-                \DB::rollBack();
+                DB::rollBack();
                 return back()
                     ->withErrors(['general' => 'Phát hiện xung đột lịch:<br>- ' . implode('<br>- ', $conflicts)])
                     ->withInput();
             }
 
-            // Kiểm tra xung đột giảng viên với lịch học cố định khác (trước khi tạo)
+            // Kiểm tra xung đột với lịch học cố định (phòng + thứ + tiết) TRƯỚC KHI tạo
             foreach ($thuList as $thu) {
-                $lichHocCoDinhTemp = new LichHocCoDinh([
-                    'giang_vien_id' => $validated['giang_vien_id'],
-                    'thu_trong_tuan' => $thu,
-                    'tiet_bat_dau' => $tietBatDau,
-                    'tiet_ket_thuc' => $tietKetThuc,
-                ]);
+                // Kiểm tra xem phòng này đã có lịch học cố định vào thứ và tiết này chưa
+                $conflictPhongCoDinh = LichHocCoDinh::where('phong_hoc_id', $validated['phong_hoc_id'])
+                    ->where('thu_trong_tuan', $thu)
+                    ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
+                    ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
+                        // Kiểm tra trùng tiết
+                        $q->where(function($query) use ($tietBatDau, $tietKetThuc) {
+                            $query->whereBetween('tiet_bat_dau', [$tietBatDau, $tietKetThuc])
+                                  ->orWhereBetween('tiet_ket_thuc', [$tietBatDau, $tietKetThuc])
+                                  ->orWhere(function($q) use ($tietBatDau, $tietKetThuc) {
+                                      $q->where('tiet_bat_dau', '<=', $tietBatDau)
+                                        ->where('tiet_ket_thuc', '>=', $tietKetThuc);
+                                  });
+                        });
+                    })
+                    ->with('lopHocPhan.monHoc')
+                    ->first();
                 
-                // Kiểm tra xung đột với lịch học cố định khác (không phải lớp hiện tại)
-                $conflictCoDinh = LichHocCoDinh::where('giang_vien_id', $validated['giang_vien_id'])
+                if ($conflictPhongCoDinh) {
+                    DB::rollBack();
+                    $thuNames = [2 => 'Thứ 2', 3 => 'Thứ 3', 4 => 'Thứ 4', 5 => 'Thứ 5', 6 => 'Thứ 6', 7 => 'Thứ 7', 8 => 'Chủ nhật'];
+                    $tenThu = $thuNames[$thu] ?? '';
+                    $phongHoc = PhongHoc::find($validated['phong_hoc_id']);
+                    $monHocTrung = $conflictPhongCoDinh->lopHocPhan->monHoc;
+                    return back()
+                        ->withErrors(['phong_hoc_id' => "Phòng {$phongHoc->ten_phong} đã có lớp {$monHocTrung->ten_mon} (lịch cố định) vào {$tenThu} từ tiết {$conflictPhongCoDinh->tiet_bat_dau}-{$conflictPhongCoDinh->tiet_ket_thuc}. Vui lòng chọn phòng hoặc ca học khác."])
+                        ->withInput();
+                }
+                
+                // Kiểm tra xung đột giảng viên với lịch học cố định khác
+                $conflictGiangVienCoDinh = LichHocCoDinh::where('giang_vien_id', $validated['giang_vien_id'])
                     ->where('thu_trong_tuan', $thu)
                     ->where('lop_hoc_phan_id', '!=', $lopHocPhan->id) // Không phải lớp hiện tại
                     ->where(function ($q) use ($tietBatDau, $tietKetThuc) {
@@ -331,8 +392,8 @@ class LichHocCoDinhController extends Controller
                     })
                     ->exists();
                 
-                if ($conflictCoDinh) {
-                    \DB::rollBack();
+                if ($conflictGiangVienCoDinh) {
+                    DB::rollBack();
                     $thuNames = [2 => 'Thứ 2', 3 => 'Thứ 3', 4 => 'Thứ 4', 5 => 'Thứ 5', 6 => 'Thứ 6', 7 => 'Thứ 7', 8 => 'Chủ nhật'];
                     $tenThu = $thuNames[$thu] ?? '';
                     return back()
@@ -378,9 +439,27 @@ class LichHocCoDinhController extends Controller
             
             // Tạo các LichHocChiTiet cho từng ngày cụ thể
             $createdLichChiTiet = 0;
+            $skippedLichChiTiet = 0;
             foreach ($ngayHocList as $ngayHoc) {
                 try {
                     $lichCoDinh = $lichHocCoDinhMap[$ngayHoc['thu']];
+                    
+                    // Kiểm tra xem đã tồn tại lịch học chi tiết này chưa
+                    $existingLich = \App\Models\LichHocChiTiet::where('lop_hoc_phan_id', $lopHocPhan->id)
+                        ->where('ngay_hoc', $ngayHoc['ngay']->format('Y-m-d'))
+                        ->where('phong_hoc_id', $validated['phong_hoc_id'])
+                        ->where('tiet_bat_dau', $tietBatDau)
+                        ->where('tiet_ket_thuc', $tietKetThuc)
+                        ->first();
+                    
+                    if ($existingLich) {
+                        Log::info('Bỏ qua lịch học chi tiết đã tồn tại', [
+                            'ngay_hoc' => $ngayHoc['ngay']->format('Y-m-d'),
+                            'phong_hoc_id' => $validated['phong_hoc_id'],
+                        ]);
+                        $skippedLichChiTiet++;
+                        continue; // Bỏ qua nếu đã tồn tại
+                    }
                     
                     \App\Models\LichHocChiTiet::create([
                         'lich_hoc_co_dinh_id' => $lichCoDinh->id,
@@ -400,7 +479,7 @@ class LichHocCoDinhController extends Controller
                     ]);
                     $createdLichChiTiet++;
                 } catch (\Exception $e) {
-                    \Log::error('Lỗi khi tạo lịch học chi tiết', [
+                    Log::error('Lỗi khi tạo lịch học chi tiết', [
                         'ngay_hoc' => $ngayHoc['ngay_str'],
                         'thu' => $ngayHoc['thu'],
                         'error' => $e->getMessage(),
@@ -412,15 +491,19 @@ class LichHocCoDinhController extends Controller
             
             $created = $createdLichChiTiet;
 
-            \DB::commit();
+            DB::commit();
             
-            \Log::info('Tạo lịch học tự động thành công', [
+            Log::info('Tạo lịch học tự động thành công', [
                 'lop_hoc_phan_id' => $lopHocPhan->id,
                 'so_lich_co_dinh_da_tao' => $createdLichCoDinh,
-                'so_lich_chi_tiet_da_tao' => $createdLichChiTiet
+                'so_lich_chi_tiet_da_tao' => $createdLichChiTiet,
+                'so_lich_chi_tiet_bo_qua' => $skippedLichChiTiet
             ]);
 
             $message = "Đã tạo thành công {$createdLichChiTiet} buổi học chi tiết";
+            if ($skippedLichChiTiet > 0) {
+                $message .= " (bỏ qua {$skippedLichChiTiet} buổi đã tồn tại)";
+            }
             if ($createdLichCoDinh > 0) {
                 $message .= " và {$createdLichCoDinh} lịch học cố định";
             }
@@ -431,14 +514,14 @@ class LichHocCoDinhController extends Controller
                 ->with('success', $message);
 
         } catch (\Illuminate\Validation\ValidationException $e) {
-            \DB::rollBack();
-            \Log::warning('Validation error khi tạo lịch học tự động', [
+            DB::rollBack();
+            Log::warning('Validation error khi tạo lịch học tự động', [
                 'errors' => $e->errors()
             ]);
             throw $e; // Re-throw để Laravel xử lý validation errors
         } catch (\Exception $e) {
-            \DB::rollBack();
-            \Log::error('Lỗi khi tạo lịch học tự động', [
+            DB::rollBack();
+            Log::error('Lỗi khi tạo lịch học tự động', [
                 'message' => $e->getMessage(),
                 'file' => $e->getFile(),
                 'line' => $e->getLine(),
@@ -608,7 +691,7 @@ class LichHocCoDinhController extends Controller
                 ->delete();
             
             if ($soLichChiTietXoa > 0) {
-                \Log::info('Đã xóa LichHocChiTiet khi thu_trong_tuan thay đổi', [
+                Log::info('Đã xóa LichHocChiTiet khi thu_trong_tuan thay đổi', [
                     'lich_hoc_co_dinh_id' => $lichCoDinh->id,
                     'thu_cu' => $thuTrongTuanCu,
                     'thu_moi' => $validated['thu_trong_tuan'],
@@ -649,7 +732,7 @@ class LichHocCoDinhController extends Controller
     public function destroy(LichHocCoDinh $lichCoDinh)
     {
         try {
-            \DB::beginTransaction();
+            DB::beginTransaction();
             
         $lopHocPhanId = $lichCoDinh->lop_hoc_phan_id;
             
@@ -660,9 +743,9 @@ class LichHocCoDinhController extends Controller
             // Xóa lịch học cố định
         $lichCoDinh->delete();
             
-            \DB::commit();
+            DB::commit();
             
-            \Log::info('Đã xóa lịch học cố định và lịch học chi tiết', [
+            Log::info('Đã xóa lịch học cố định và lịch học chi tiết', [
                 'lich_hoc_co_dinh_id' => $lichCoDinh->id,
                 'so_lich_chi_tiet_da_xoa' => $soLichChiTiet
             ]);
@@ -677,8 +760,8 @@ class LichHocCoDinhController extends Controller
                 ->with('success', $message);
                 
         } catch (\Exception $e) {
-            \DB::rollBack();
-            \Log::error('Lỗi khi xóa lịch học cố định', [
+            DB::rollBack();
+            Log::error('Lỗi khi xóa lịch học cố định', [
                 'lich_hoc_co_dinh_id' => $lichCoDinh->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -698,7 +781,7 @@ class LichHocCoDinhController extends Controller
         try {
             $lopHocPhan = $lichCoDinh->lopHocPhan;
             if (!$lopHocPhan) {
-                \Log::warning('Không tìm thấy lớp học phần', [
+                Log::warning('Không tìm thấy lớp học phần', [
                     'lich_hoc_co_dinh_id' => $lichCoDinh->id
                 ]);
                 return;
@@ -721,7 +804,7 @@ class LichHocCoDinhController extends Controller
             );
 
             if (empty($ngayHocList)) {
-                \Log::warning('Không thể tạo lịch học chi tiết mới', [
+                Log::warning('Không thể tạo lịch học chi tiết mới', [
                     'lich_hoc_co_dinh_id' => $lichCoDinh->id,
                     'thu_trong_tuan' => $lichCoDinh->thu_trong_tuan,
                     'ngay_bat_dau' => $ngayBatDauLich->format('Y-m-d'),
@@ -785,7 +868,7 @@ class LichHocCoDinhController extends Controller
             }
 
             if ($createdCount > 0) {
-                \Log::info('Đã tự động tạo lại LichHocChiTiet khi thứ thay đổi', [
+                Log::info('Đã tự động tạo lại LichHocChiTiet khi thứ thay đổi', [
                     'lich_hoc_co_dinh_id' => $lichCoDinh->id,
                     'thu_moi' => $lichCoDinh->thu_trong_tuan,
                     'so_lich_chi_tiet_da_tao' => $createdCount,
@@ -794,7 +877,7 @@ class LichHocCoDinhController extends Controller
             }
 
         } catch (\Exception $e) {
-            \Log::error('Lỗi khi tạo lại lịch học chi tiết', [
+            Log::error('Lỗi khi tạo lại lịch học chi tiết', [
                 'lich_hoc_co_dinh_id' => $lichCoDinh->id,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
