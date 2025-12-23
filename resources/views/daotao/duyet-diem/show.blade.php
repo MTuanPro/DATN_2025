@@ -545,9 +545,16 @@
             const lhpsvId = input.data('lhpsv-id');
             const cauHinhId = input.data('cau-hinh-id');
             const cotDiem = input.data('cot-diem');
-            const diemSo = parseFloat(input.val()) || null;
+            const inputValue = input.val().trim();
+            
+            // Chỉ xử lý nếu ô có giá trị (không trống)
+            if (inputValue === '') {
+                return true; // Continue to next iteration
+            }
+            
+            const diemSo = parseFloat(inputValue);
 
-            if (diemSo !== null && (diemSo < 0 || diemSo > 10)) {
+            if (isNaN(diemSo) || diemSo < 0 || diemSo > 10) {
                 Swal.fire('Lỗi!', 'Có điểm không hợp lệ (phải từ 0 đến 10)', 'error');
                 return false;
             }

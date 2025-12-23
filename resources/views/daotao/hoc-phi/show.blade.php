@@ -201,7 +201,7 @@
                                                 </div>
                                             @endif
                                         </div>
-                                        <small class="text-muted">{{ $ls->ngay_dong->format('d/m/Y') }}</small>
+                                        <small class="text-muted">{{ $ls->ngay_dong ? $ls->ngay_dong->format('d/m/Y') : 'N/A' }}</small>
                                     </div>
                                 </div>
                             @empty

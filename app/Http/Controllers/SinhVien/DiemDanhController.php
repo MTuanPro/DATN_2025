@@ -46,9 +46,17 @@ class DiemDanhController extends Controller
         // Kiểm tra trạng thái điểm danh và thời gian cho từng lịch học
         foreach ($lichHocHomNay as $lich) {
             // Lấy thông tin điểm danh của sinh viên
-            $diemDanh = DiemDanh::where('lich_hoc_chi_tiet_id', $lich->id)
+            // Tìm bản ghi lop_hoc_phan_sinh_vien
+            $lopHocPhanSinhVien = $lich->lopHocPhan->sinhViens()
                 ->where('sinh_vien_id', $sinhVien->id)
                 ->first();
+            
+            $diemDanh = null;
+            if ($lopHocPhanSinhVien) {
+                $diemDanh = DiemDanh::where('lich_hoc_chi_tiet_id', $lich->id)
+                    ->where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVien->pivot->id ?? $lopHocPhanSinhVien->id)
+                    ->first();
+            }
 
             $lich->diemDanh = $diemDanh;
 
@@ -56,7 +64,9 @@ class DiemDanhController extends Controller
             $gioBatDau = $lich->gio_bat_dau ?? ($lich->caHoc ? $lich->caHoc->gio_bat_dau : null);
             
             if ($gioBatDau) {
-                $thoiGianBatDau = Carbon::parse($lich->ngay_hoc . ' ' . $gioBatDau);
+                // Chỉ lấy phần ngày từ ngay_hoc
+                $ngay = Carbon::parse($lich->ngay_hoc)->format('Y-m-d');
+                $thoiGianBatDau = Carbon::parse($ngay . ' ' . $gioBatDau);
                 $thoiGianKetThucDiemDanh = $thoiGianBatDau->copy()->addMinutes(40);
                 
                 $lich->thoi_gian_bat_dau = $thoiGianBatDau;
@@ -78,9 +88,13 @@ class DiemDanhController extends Controller
             }
 
             // Kiểm tra yêu cầu điểm danh bù
-            $lich->yeuCauDiemDanhBu = YeuCauDiemDanhBu::where('lich_hoc_chi_tiet_id', $lich->id)
-                ->where('sinh_vien_id', $sinhVien->id)
-                ->first();
+            if ($lopHocPhanSinhVien) {
+                $lich->yeuCauDiemDanhBu = YeuCauDiemDanhBu::where('lich_hoc_chi_tiet_id', $lich->id)
+                    ->where('lop_hoc_phan_sinh_vien_id', $lopHocPhanSinhVien->pivot->id ?? $lopHocPhanSinhVien->id)
+                    ->first();
+            } else {
+                $lich->yeuCauDiemDanhBu = null;
+            }
         }
 
         return view('sinhvien.diem-danh.diem-danh-hom-nay', compact('lichHocHomNay', 'sinhVien', 'now'));

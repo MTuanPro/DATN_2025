@@ -619,17 +619,19 @@ class DuyetDiemController extends Controller
                     continue; // Bỏ qua nếu không hợp lệ
                 }
 
-                // Cập nhật hoặc tạo điểm
-                \App\Models\NhapDiem::updateOrCreate(
-                    [
-                        'lop_hoc_phan_sinh_vien_id' => $diemData['lop_hoc_phan_sinh_vien_id'],
-                        'cau_hinh_id' => $diemData['cau_hinh_id'],
-                        'cot_diem' => $diemData['cot_diem'],
-                    ],
-                    [
-                        'diem_so' => $diemData['diem_so'],
-                    ]
-                );
+                // Chỉ cập nhật khi có giá trị điểm (không null)
+                if ($diemData['diem_so'] !== null) {
+                    \App\Models\NhapDiem::updateOrCreate(
+                        [
+                            'lop_hoc_phan_sinh_vien_id' => $diemData['lop_hoc_phan_sinh_vien_id'],
+                            'cau_hinh_id' => $diemData['cau_hinh_id'],
+                            'cot_diem' => $diemData['cot_diem'],
+                        ],
+                        [
+                            'diem_so' => $diemData['diem_so'],
+                        ]
+                    );
+                }
 
                 // Lưu lhpsv_id để tính lại điểm tổng kết
                 if (!in_array($lhpsv->id, $lhpsvIds)) {

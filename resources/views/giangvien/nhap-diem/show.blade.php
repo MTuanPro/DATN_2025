@@ -267,11 +267,8 @@
                                 <tbody>
                                     @foreach ($sinhViens as $index => $lhpsv)
                                         @php
-                                            // Lấy tất cả điểm đã nhập của sinh viên này
-                                            $diemDaNhap = \App\Models\NhapDiem::where(
-                                                'lop_hoc_phan_sinh_vien_id',
-                                                $lhpsv->id,
-                                            )->get();
+                                            // Lấy điểm từ dữ liệu đã eager load (tránh N+1 query)
+                                            $diemDaNhap = $nhapDiems->get($lhpsv->id) ?? collect();
                                             $diemMap = [];
                                             foreach ($diemDaNhap as $diem) {
                                                 $key = $diem->cau_hinh_id . '_' . $diem->cot_diem;
@@ -1040,8 +1037,8 @@ Cột {{ $cot }}
                             <tbody>
                                 @foreach ($sinhViens as $index => $lhpsv)
 @php
-    // Lấy tất cả điểm đã nhập của sinh viên này
-    $diemDaNhap = \App\Models\NhapDiem::where('lop_hoc_phan_sinh_vien_id', $lhpsv->id)->get();
+    // Lấy điểm từ dữ liệu đã eager load (tránh N+1 query)
+    $diemDaNhap = $nhapDiems->get($lhpsv->id) ?? collect();
     $diemMap = [];
     foreach ($diemDaNhap as $diem) {
         $key = $diem->cau_hinh_id . '_' . $diem->cot_diem;
