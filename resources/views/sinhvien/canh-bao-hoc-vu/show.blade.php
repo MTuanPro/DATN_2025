@@ -80,9 +80,20 @@
                                 </tr>
                                 <tr>
                                     <th>Lớp</th>
-                                    <td>{{ $canhBao->sinhVien->nganh }}</td>
+                                   <td>
+                                        @php
+                                            // Hiển thị tên ngành từ relationship
+                                            $lopText = $canhBao->sinhVien->nganh->ten_nganh ?? 'Chưa có thông tin';
+                                            
+                                            // Nếu có chuyên ngành thì hiển thị luôn
+                                            if ($canhBao->sinhVien->chuyenNganh) {
+                                                $lopText .= ' - ' . $canhBao->sinhVien->chuyenNganh->ten_chuyen_nganh;
+                                            }
+                                        @endphp
+                                        {{ $lopText }}zal
+                                    </td>
                                 </tr>
-                                <tr>
+                                <tr>    
                                     <th>Học kỳ</th>
                                     <td>
                                         <span class="badge bg-primary">
